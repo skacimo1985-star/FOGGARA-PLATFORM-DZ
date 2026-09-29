@@ -1,0 +1,24 @@
+# أسرار وتهيئة محلية
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# قواعد بيانات وسجلات ونسخ احتياطية محلية
+*.sql
+*.sql.gz
+backups/
+pgdata/
+
+# قواعد بيانات SQLite المحلية (تطوير/تجربة)
+*.db
+*.db-journal

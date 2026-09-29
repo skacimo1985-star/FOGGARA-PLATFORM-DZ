@@ -1,0 +1,36 @@
+# تشغيل إنتاجي محلي/على خادم: تطبيق + PostgreSQL 16.
+# التهيئة من .env (انسخ .env.example وعبّئه — انظر README «التشغيل الإنتاجي»).
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    # كشف المنفذ 5432 يتيح مسار التطوير الهجين: قاعدة البيانات في Docker
+    # والباكند/الواجهة محليًا على الجهاز (انظر run-local.ps1 — المسار ب).
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-foggara}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-foggara}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod   # بلا pgserver — DATABASE_URL خارجي من .env
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

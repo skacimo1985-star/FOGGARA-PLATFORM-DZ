@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ==== لوحة «مخطوطات صحراوية» — هوية فڨارة/واحة ==== */
+    --ink: #264653; /* أساسي داكن — teal عميق */
+    --oasis: #2a9d8f; /* accent أخضر مريمي */
+    --oasis-strong: #1e766b; /* oasis أعمق للنصوص (تباين ≥ 4.5:1) */
+    --sand: #e9c46a; /* تمييز رملي */
+    --clay: #f4a261; /* دفء طيني */
+    --signal: #e76f51; /* CTA/تنبيه — برتقالي محروق */
+    --signal-strong: #c24c31; /* signal أعمق لأزرار نصية (تباين ≥ 4.5:1) */
+    --paper: #fcfcfc;
+    --parchment: #f7f3ea;
+    --text: #1a1a1a;
+
+    /* ==== ربط رموز shadcn باللوحة (قنوات HSL) ==== */
+    --background: 0 0% 98.8%; /* paper */
+    --foreground: 0 0% 10.2%; /* text */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10.2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10.2%;
+    --primary: 197 37% 24%; /* ink */
+    --primary-foreground: 42 45% 96%;
+    --secondary: 42 45% 94%; /* parchment */
+    --secondary-foreground: 197 37% 24%;
+    --muted: 42 30% 93%;
+    --muted-foreground: 200 14% 31%;
+    --accent: 174 40% 93%; /* رذاذ oasis خافت */
+    --accent-foreground: 197 37% 24%;
+    --destructive: 12 63% 45%; /* danger = signal (درجة نصية) */
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 18% 84%;
+    --input: 40 18% 80%;
+    --ring: 174 58% 32%; /* oasis للتركيز */
+    --radius: 0.625rem;
+    --sidebar-background: 197 37% 24%; /* ink */
+    --sidebar-foreground: 42 45% 94%;
+    --sidebar-primary: 12 63% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 197 30% 30%;
+    --sidebar-accent-foreground: 42 45% 94%;
+    --sidebar-border: 197 25% 32%;
+    --sidebar-ring: 43 74% 66%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-size: 16px;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Tajawal", "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.975rem; /* متن 15–16px */
+    line-height: 1.65;
+  }
+  /* تباعد حروف خفيف للاتينية فقط — ممنوع تشتيت الحروف العربية */
+  html[lang="en"] body,
+  html[lang="fr"] body {
+    letter-spacing: 0;
+  }
+  :focus-visible {
+    outline: 2px solid var(--oasis);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* ==== مقياس طباعي fluid ==== */
+  .t-hero {
+    font-size: clamp(1.9rem, 1.4rem + 2.5vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .t-section {
+    font-size: clamp(1.3rem, 1.1rem + 1vw, 1.9rem);
+    font-weight: 800;
+    line-height: 1.45;
+  }
+  html[lang="en"] .t-hero,
+  html[lang="fr"] .t-hero,
+  html[lang="en"] .t-section,
+  html[lang="fr"] .t-section {
+    letter-spacing: -0.015em;
+  }
+
+  /* ==== زخرفة هندسية إسلامية خافتة جدًا (خطوط 4–6%) ==== */
+  .pattern-moorish {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='none'%3E%3Cpath d='M32 4 L60 32 L32 60 L4 32 Z' stroke='%23264653' stroke-opacity='0.05'/%3E%3Cpath d='M32 18 L46 32 L32 46 L18 32 Z' stroke='%232A9D8F' stroke-opacity='0.06'/%3E%3Ccircle cx='32' cy='32' r='3.5' stroke='%23264653' stroke-opacity='0.05'/%3E%3Cpath d='M0 32 H8 M56 32 H64 M32 0 V8 M32 56 V64' stroke='%23E76F51' stroke-opacity='0.04'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* ==== shimmer متدرج لحالات التحميل ==== */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(42 30% 90%) 25%,
+      hsl(42 45% 95.5%) 40%,
+      hsl(42 30% 90%) 55%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* احترام prefers-reduced-motion: تعطيل كل الحركات */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
