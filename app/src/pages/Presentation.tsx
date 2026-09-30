@@ -17,7 +17,7 @@ export default function Presentation(){
  const {t,i18n}=useTranslation();const c=copy[i18n.language.startsWith('fr')?'fr':i18n.language.startsWith('en')?'en':'ar'];
  const [active,setActive]=useState('all'),[step,setStep]=useState(0),[playing,setPlaying]=useState(false),[expanded,setExpanded]=useState(false),[axes,setAxes]=useState(initialAxes);
  useEffect(()=>{if(!playing)return;const timer=setInterval(()=>setStep(v=>{if(v===4)return 0;return v+1;}),6500);return()=>clearInterval(timer);},[playing]);
- useEffect(()=>{const change=()=>setExpanded(document.fullscreenElement===storyRef.current);document.addEventListener('fullscreenchange',change);return()=>document.removeEventListener('fullscreenchange',change);},[]);
+ useEffect(()=>{const change=()=>setExpanded(document.fullscreenElement===storyRef.current);const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&document.fullscreenElement===storyRef.current)void document.exitFullscreen();};document.addEventListener('fullscreenchange',change);document.addEventListener('keydown',escape);return()=>{document.removeEventListener('fullscreenchange',change);document.removeEventListener('keydown',escape);};},[]);
  const toggleFullscreen=()=>{if(document.fullscreenElement)void document.exitFullscreen();else void storyRef.current?.requestFullscreen().catch(()=>{});};
  const result=evaluatePresentationMatrix(axes),selected=NEXUS_DOMAINS.find(d=>d.key===active);
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
