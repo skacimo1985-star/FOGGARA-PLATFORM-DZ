@@ -1,27 +1,27 @@
-import { Component, type ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Component, Suspense, lazy, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Layout } from "@/components/Layout";
-import Landing from "@/pages/Landing";
-import Login from "@/pages/Login";
-import Home from "@/pages/Home";
-import Projects from "@/pages/Projects";
-import ProjectDetail from "@/pages/ProjectDetail";
-import ReviewQueue from "@/pages/ReviewQueue";
-import AuditPage from "@/pages/AuditPage";
-import Explore from "@/pages/Explore";
-import ExploreDomain from "@/pages/ExploreDomain";
-import Services from "@/pages/Services";
-import Metrology from "@/pages/Metrology";
-import Water from "@/pages/Water";
-import Decisions from "@/pages/Decisions";
-import Telemetry from "@/pages/Telemetry";
-import Simulator from "@/pages/Simulator";
-import Analytics from "@/pages/Analytics";
-import Gis from "@/pages/Gis";
-import Iot from "@/pages/Iot";
-import Vde from "@/pages/Vde";
-import OrganizationPage from "@/pages/Organization";
+const Landing = lazy(() => import("@/pages/Landing"));
+const Login = lazy(() => import("@/pages/Login"));
+const Home = lazy(() => import("@/pages/Home"));
+const Projects = lazy(() => import("@/pages/Projects"));
+const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
+const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"));
+const AuditPage = lazy(() => import("@/pages/AuditPage"));
+const Explore = lazy(() => import("@/pages/Explore"));
+const ExploreDomain = lazy(() => import("@/pages/ExploreDomain"));
+const Services = lazy(() => import("@/pages/Services"));
+const Metrology = lazy(() => import("@/pages/Metrology"));
+const Water = lazy(() => import("@/pages/Water"));
+const Decisions = lazy(() => import("@/pages/Decisions"));
+const Telemetry = lazy(() => import("@/pages/Telemetry"));
+const Simulator = lazy(() => import("@/pages/Simulator"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const Gis = lazy(() => import("@/pages/Gis"));
+const Iot = lazy(() => import("@/pages/Iot"));
+const Vde = lazy(() => import("@/pages/Vde"));
+const OrganizationPage = lazy(() => import("@/pages/Organization"));
 import "@/lib/i18n";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
@@ -47,8 +47,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { message: string
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <div className="p-8 text-center text-muted-foreground">…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   return <>{children}</>;
 }
 
@@ -57,6 +58,7 @@ export default function App() {
     <AuthProvider>
       <Layout>
         <ErrorBoundary>
+          <Suspense fallback={<div className="p-8 text-center text-muted-foreground">…</div>}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -80,6 +82,7 @@ export default function App() {
             <Route path="/app/audit" element={<Protected><AuditPage /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </ErrorBoundary>
       </Layout>
     </AuthProvider>

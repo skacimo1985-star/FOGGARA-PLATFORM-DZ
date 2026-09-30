@@ -45,8 +45,9 @@ Dockerfile          تشغيل شامل بأمر واحد (PostgreSQL مضمّن
 
 ### 0) الأسرع بلا Docker — SQLite تلقائيًا (تطوير/تجربة)
 
-```bat
-run-local.bat
+```powershell
+.\run-local.ps1 -Mode dev
+# أو: .\run-local.bat
 ```
 
 ينشئ بيئة Python، يثبّت الاعتماديات، يطبّق المهاجرات على SQLite (ملف `backend\foggara.db` يُنشأ تلقائيًا)، يزرع البيانات التجريبية، ثم يشغّل الباكند (:8000) والواجهة (:3000) في نافذتين. المتطلبات فقط: Python 3.12+ و Node.js 20+ في PATH. لا يصلح للإنتاج — عند `ENV=prod` يُرفض الإقلاع على SQLite ويُفرض PostgreSQL.
@@ -91,7 +92,7 @@ npm run build     # بناء الإنتاج إلى dist/ — يقدّمه FastAP
 npm run dev       # http://localhost:3000 مع بروكسي /api إلى :8000
 ```
 
-المتوقع: فتح http://localhost:8000 (إنتاج) أو http://localhost:3000 (تطوير) يعرض صفحة المنصة بالعربية RTL.
+المتوقع: فتح http://localhost:8000 (إنتاج) أو http://localhost:3000 (تطوير) يعرض صفحة المنصة بالعربية RTL. بيانات الدخول التجريبية تظهر في شاشة الدخول أثناء تشغيل Vite للتطوير فقط؛ تزال من بناء الإنتاج.
 
 ### 4) الاختبارات
 
@@ -102,7 +103,7 @@ $env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/fogga
 python -m pytest tests/ -q
 ```
 
-المتوقع: `28 passed` — تغطي: سير العمل الكامل حتى القرار البشري، العزل بين المؤسسات عبر API (404 للمؤسسة الأخرى، بما فيه explore وGIS)، منع المؤشر من بيانات غير متحقق منها، منع منح «موثَّق» ذاتيًا، رفض القيم/الوحدات غير الصالحة (422)، عدم افتراضية حالة verified، إلزامية المصادقة، بوابة المعايرة (لا اعتماد لقياس من أداة بلا معايرة سارية)، سير طلب الخدمة ومصفوفة انتقالات حالته (القفزة/الرجوع/الملغى → 409)، قواعد القرار البشري وقرار التوصية (reviewer/admin فقط، السبب إلزامي، منع القرار الذاتي)، طلب التوضيح في المراجعة، منع المراجعة المكررة (409 ALREADY_REVIEWED)، النافذة الزمنية للمؤشر (افتراضية ومخصصة)، شفافية المؤشر (الصيغة/المصادر/النافذة)، تطبيع مرادفات الوحدات (l/s ↔ L/s) حتى لا يُستبعد قياس صالح من الحساب، والتحليل الشمسي الفلكي (خمسة اختبارات تشمل التقاطع مع مرجع مستقل).
+في هذه النسخة جرى تشغيل `62` اختبارًا بنجاح على SQLite. على Windows استخدم `TEST_DATABASE_URL=sqlite:///./test_foggara.db`؛ وفي CI يكفي ضبط `DATABASE_URL` على PostgreSQL، ويُحترم المتغير بدل اتصال Unix socket المحلي.
 
 ## حسابات DEMO
 
@@ -209,11 +210,12 @@ cd backend && python -m alembic upgrade head
 | القسم | المسار | الحالة |
 |---|---|---|
 | الرئيسية العامة | `/` | يعمل — بلا أرقام وطنية وهمية |
+| مشهد الفقارة | الصفحة الرئيسية | تدفق WebGL توضيحي بخمسة مسارات؛ لا يمثل تدفقات أو قياسات حقيقية |
 | استكشاف WEFEH (5 أبعاد) | `/app/explore` ثم `/app/explore/{domain}` | يعمل؛ الأقسام غير المنجزة تظهر «قيد التخطيط» مع البيانات المطلوبة |
 | مساحة العمل والمشاريع | `/app/projects` + `/app/projects/{id}` | يعمل — تبويبات Overview/Data/Evidence/Reviews/Actions/Audit |
 | البيانات والقياسات | داخل المشروع، تبويب Data | يعمل — نموذج موحّد، رفض وحدة/قيمة غير صالحة، حالات جودة وتحقق |
 | المترولوجيا | `/app/metrology` | يعمل — أدوات/معايرات/شهادات بحالة وصلاحية، بوابة اعتماد القياس |
-| الأدلة وسير العمل | تبويب Evidence + `/app/review` | يعمل — قبول/رفض/طلب توضيح، قرارات بشرية موثقة |
+| الأدلة وسير العمل | تبويب Evidence + `/app/review` | يعمل — قبول/رفض/طلب توضيح، قرارات بشرية موثقة، وشارات منشأ منفصلة عن حالة DEMO |
 | الخدمات | `/app/services` | يعمل — كتالوج DEMO موسوم + طلبات خدمة بحالات |
 | المؤسسة والأعضاء | `/app/org` | جزئي — يعرض المتوفر فعليًا؛ الدعوات رسالة ضبطية فقط (لا backend دعوات بعد) |
 | GIS | `/app/gis` | يعمل يدويًا — ولاية/بلدية/إحداثيات يدوية، بلا مكتبة خرائط خارجية |
@@ -223,12 +225,12 @@ cd backend && python -m alembic upgrade head
 
 ## المساهمة عبر GitHub (PowerShell — بدون المساس بأي عمل قائم)
 
-المبدأ: هذه الحزمة هي تحديث للمجلد القائم `FOGGARA-DZ-MVP/app/` في `main`. تُراجع الفروقات على فرع، ولا force push ولا دفع لـ main مباشرة.
+المستودع الحالي هو `skacimo1985-star/FOGGARA-PLATFORM-DZ`، وكل ملفات التطبيق تحت `app/`. استخدم فرعًا للمراجعة ولا تدفع مباشرة إلى `main`.
 
 ```powershell
 # 1) استنساخ مستودعك الحقيقي وفحص main قبل أي تعديل
-git clone https://github.com/SIREP-OASIS-NEXUS-TECH-DZ/FOGGARA-PLATFORM-DZ-.git
-cd FOGGARA-PLATFORM-DZ-
+git clone https://github.com/skacimo1985-star/FOGGARA-PLATFORM-DZ.git
+cd FOGGARA-PLATFORM-DZ
 git checkout main
 git pull origin main
 git log --oneline -5          # تحقق بعينك من رأس main الحقيقي
@@ -236,22 +238,16 @@ git log --oneline -5          # تحقق بعينك من رأس main الحقي�
 # 2) فرع مشتق من main فقط
 git checkout -b feat/platform-extensions
 
-# 3) فك الحزمة في مجلد مؤقت خارج المستودع (عدّل مسار ZIP حسب مكان تنزيله)
-Expand-Archive -Path "$env:USERPROFILE\Downloads\FOGGARA-DZ-MVP.zip" -DestinationPath "$env:TEMP\foggara-mvp"
-
-# 4) نسخ محتوى الحزمة فوق مجلد التطبيق القائم (تحديث لنفس المشروع، وليس مشروعًا جديدًا)
-robocopy "$env:TEMP\foggara-mvp\FOGGARA-DZ-MVP\app" ".\FOGGARA-DZ-MVP\app" /E /NFL /NDL
-
-# 5) راجع الفروقات بعينك قبل الإضافة
+# 3) راجع الفروقات بعد إجراء التعديلات تحت app/
 git status
 git diff --stat
 
-# 6) إضافة مجلد المشروع فقط — لا git add .
-git add FOGGARA-DZ-MVP
-git status                    # تأكد أن التغييرات كلها تحت FOGGARA-DZ-MVP/ فقط
+# 4) أضف الملفات التي راجعتها فقط
+git add README.md .github app
+git status
 
-# 7) commit ودفع الفرع فقط
-git commit -m "feat: metrology, services, human decisions, explore WEFEH, analytics transparency"
+# 5) commit وادفع الفرع للمراجعة
+git commit -m "feat: improve FOGGARA web workspace and provenance"
 git push -u origin feat/platform-extensions
 ```
 

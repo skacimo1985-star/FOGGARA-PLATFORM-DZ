@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 const DOC_TYPES = ["report", "photo", "lab_result", "permit", "field_note"];
 
@@ -105,7 +106,9 @@ export function EvidenceSection({ projectId, evidences, measurements, reload }: 
               {evidences.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell>
-                    {e.title}<DemoBadge show={e.is_demo} />
+                    {e.title}
+                    <ProvenanceBadge value={e.status === "verified" ? "VERIFIED" : "PROPOSED"} />
+                    <DemoBadge show={e.is_demo} />
                     {e.clarification_note && (
                       <p className="mt-1 rounded border border-sand/60 bg-sand/15 px-2 py-1 text-xs text-ink">
                         {t("evidence.clarificationNote")}: {e.clarification_note}

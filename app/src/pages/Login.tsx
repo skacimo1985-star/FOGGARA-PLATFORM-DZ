@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ export default function Login() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<unknown>(null);
@@ -27,7 +28,10 @@ export default function Login() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/app");
+      const from = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
+      const pathname = from?.pathname;
+      const safePath = pathname?.startsWith("/") && !pathname.startsWith("//") ? pathname : "/app";
+      navigate({ pathname: safePath, search: from?.search ?? "", hash: from?.hash ?? "" }, { replace: true });
     } catch (err) {
       setError(err);
     } finally {
@@ -59,12 +63,14 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
-            <p className="mb-1 font-bold text-ink">{t("auth.demoAccounts")}</p>
-            <ul dir="ltr" className="list-inside list-disc">
-              {DEMO_ACCOUNTS.map((a) => <li key={a}>{a} / Demo#2026</li>)}
-            </ul>
-          </div>
+          {import.meta.env.DEV && (
+            <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
+              <p className="mb-1 font-bold text-ink">{t("auth.demoAccounts")}</p>
+              <ul dir="ltr" className="list-inside list-disc">
+                {DEMO_ACCOUNTS.map((a) => <li key={a}>{a} / Demo#2026</li>)}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

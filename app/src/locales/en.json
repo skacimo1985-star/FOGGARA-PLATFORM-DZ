@@ -21,7 +21,8 @@
     "water": "Water",
     "decisions": "Decisions",
     "telemetry": "Telemetry",
-    "simulator": "Simulator"
+    "simulator": "Simulator",
+    "mainNavigation": "Main navigation"
   },
   "landing": {
     "heroTitle": "FOGGARA-DZ — National operational platform for water, energy, food, ecosystem and health",
@@ -481,7 +482,9 @@
     "all": "All",
     "name": "Name",
     "add": "Add",
-    "actions": "Actions"
+    "actions": "Actions",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "errors": {
     "AUTH_REQUIRED": "Sign-in required",
@@ -773,5 +776,18 @@
       "FAILED": "Failed",
       "CANCELLED": "Cancelled"
     }
+  },
+  "provenance": {
+    "OBSERVED": "Observed",
+    "VERIFIED": "Verified",
+    "COMPUTED": "Computed",
+    "INFERRED": "Inferred",
+    "PROPOSED": "Proposed",
+    "SIMULATION": "Simulation"
+  },
+  "foggaraVisual": {
+    "title": "Kasria and foggara channels",
+    "description": "An animated scene connects the kasria to five paths representing the WEFEH dimensions.",
+    "illustrative": "Illustrative — not a field measurement"
   }
 }

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 // لوحة القياس عن بُعد (Phase 03 §27) — عرض فقط، لا تحكم بمعدات
 const QUALITIES = ["VALID", "INVALID", "SUSPECT", "MISSING"] as const;
@@ -50,6 +51,8 @@ export default function Telemetry() {
     }
   }, [filter]);
 
+  // The request helper commits state only after the filter query completes.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load().catch(setError); }, [load]);
 
   const deviceName = (id: number) => devices.find((d) => d.id === id)?.name ?? `#${id}`;
@@ -74,6 +77,7 @@ export default function Telemetry() {
               <div key={r.id} className="border rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">{sensorName(r.sensor_id)}</span>
+                  <ProvenanceBadge value={r.source === "simulator" ? "SIMULATION" : "OBSERVED"} />
                   {r.is_demo && <DemoBadge show />}
                 </div>
                 <div className="text-2xl font-bold mt-1">
@@ -153,7 +157,10 @@ export default function Telemetry() {
                     <TableCell>{t(`telemetry.metrics.${r.metric}`, r.metric)}</TableCell>
                     <TableCell>{r.value ?? "—"} {r.unit}</TableCell>
                     <TableCell><Badge variant={qVariant(r.quality)}>{t(`telemetry.qualities.${r.quality}`)}</Badge></TableCell>
-                    <TableCell>{t(`telemetry.sources.${r.source}`)}</TableCell>
+                    <TableCell>
+                      {t(`telemetry.sources.${r.source}`)}
+                      <ProvenanceBadge value={r.source === "simulator" ? "SIMULATION" : "OBSERVED"} />
+                    </TableCell>
                     <TableCell>{new Date(r.observed_at).toLocaleString()}</TableCell>
                     <TableCell>{r.is_demo && <DemoBadge show />}</TableCell>
                   </TableRow>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FoggaraDivider } from "@/components/common";
 import { useAuth } from "@/context/AuthContext";
+import { FoggaraVisual } from "@/components/FoggaraVisual";
 
 const DOMAINS = [
   { key: "water", icon: Droplets, operational: true },
@@ -56,6 +57,8 @@ export default function Landing() {
           </p>
         )}
       </section>
+
+      <FoggaraVisual />
 
       <FoggaraDivider />
 

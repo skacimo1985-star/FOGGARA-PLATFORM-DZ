@@ -120,6 +120,8 @@ export default function ExploreDomain() {
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
+    // Clear the previous domain immediately so its records cannot appear under the new route.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setData(null);
     setError(null);
     api.get<ExploreDomainData>(`/explore/${domain}`).then(setData).catch(setError);

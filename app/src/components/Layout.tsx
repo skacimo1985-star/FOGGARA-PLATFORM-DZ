@@ -5,7 +5,7 @@ import {
   Droplets, Globe, MapPin, Clock3, LogOut, CloudOff,
   Home, Compass, FolderKanban, Wrench, Gauge, BarChart3,
   Map, Radio, Sun, Building2, ClipboardCheck, ScrollText, Gavel,
-  Activity, FlaskConical,
+  Activity, FlaskConical, Menu, X,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -50,6 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [wilaya, setWilaya] = useState(() => localStorage.getItem("wilaya") || "");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const locale = (i18n.language || "ar") as Locale;
 
   const items = [...NAV_ITEMS];
@@ -93,6 +94,21 @@ export function Layout({ children }: { children: ReactNode }) {
                 ))}
               </select>
             </label>
+
+            {user && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-parchment/85 hover:bg-white/10 hover:text-paper lg:hidden"
+                aria-expanded={mobileNavOpen}
+                aria-controls="mobile-main-navigation"
+                aria-label={t(mobileNavOpen ? "common.closeMenu" : "common.openMenu")}
+                onClick={() => setMobileNavOpen((open) => !open)}
+              >
+                {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
 
             <span
               className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-parchment"
@@ -138,16 +154,21 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* تنقّل أفقي للشاشات الصغيرة */}
+        {/* قائمة قابلة للفتح على الهاتف بدل شريط روابط طويل */}
         {user && (
-          <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 lg:hidden" aria-label="main">
+          <nav
+            id="mobile-main-navigation"
+            className={`${mobileNavOpen ? "grid" : "hidden"} mx-auto max-w-7xl grid-cols-2 gap-1 px-4 pb-3 sm:grid-cols-3 lg:hidden`}
+            aria-label={t("nav.mainNavigation")}
+          >
             {items.map(({ to, key, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
+                onClick={() => setMobileNavOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  `flex min-w-0 items-center gap-1.5 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors ${
                     isActive ? "bg-sand font-bold text-ink" : "text-parchment/80 hover:bg-white/10 hover:text-paper"
                   }`
                 }
