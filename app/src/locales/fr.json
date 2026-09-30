@@ -489,7 +489,7 @@
     "AUTH_REQUIRED": "Connexion requise",
     "AUTH_INVALID": "Session expirée — reconnectez-vous",
     "BAD_CREDENTIALS": "E-mail ou mot de passe incorrect",
-    "ROLE_FORBIDDEN": "Cette opération exige le rôle réviseur",
+    "ROLE_FORBIDDEN": "Vous ne disposez pas du rôle requis.",
     "FORBIDDEN": "Vous n'êtes pas habilité à effectuer cette opération",
     "SELF_REVIEW_FORBIDDEN": "Vous ne pouvez pas réviser votre propre soumission",
     "SELF_DECISION_FORBIDDEN": "Vous ne pouvez pas décider sur un projet/action que vous avez créé",
@@ -503,7 +503,7 @@
     "INVALID_UNIT": "Unité invalide pour cette grandeur",
     "INVALID_VALUE": "Valeur de mesure invalide",
     "INVALID_PARAMETER": "Grandeur mesurée inconnue",
-    "VALUE_OUT_OF_RANGE": "Valeur hors plage plausible",
+    "VALUE_OUT_OF_RANGE": "La valeur dépasse les limites de saisie configurées.",
     "INSUFFICIENT_DATA": "Données insuffisantes — mesures validées requises",
     "VALIDATION_ERROR": "Vérifiez les champs saisis",
     "INDICATOR_EXPIRED": "Validité de la définition de l'indicateur expirée",
@@ -520,7 +520,11 @@
     "DISCLOSURE_INVALID": "Choisissez une preuve vérifiée du projet de la salle.",
     "CONSENT_REQUIRED": "Un consentement explicite à la publication est requis.",
     "IMAGE_REQUIRED": "Joignez une image à la preuve avant examen.",
-    "RATE_LIMITED": "Trop de tentatives ; réessayez après quinze minutes."
+    "RATE_LIMITED": "Trop de tentatives ; réessayez après quinze minutes.",
+    "PASSWORD_UNCHANGED": "Choisissez un mot de passe différent.",
+    "MATRIX_ENGINE_UNAVAILABLE": "Le moteur de calcul sélectionné est indisponible.",
+    "MATRIX_TOO_LARGE": "Le scénario dépasse la limite du moteur.",
+    "INVALID_REFERENCE": "Un identifiant valide est requis pour la référence interne."
   },
   "solar": {
     "title": "Calculateur solaire préliminaire (calculé)",

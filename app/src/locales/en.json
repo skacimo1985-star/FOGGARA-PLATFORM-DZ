@@ -489,7 +489,7 @@
     "AUTH_REQUIRED": "Sign-in required",
     "AUTH_INVALID": "Session expired — please sign in again",
     "BAD_CREDENTIALS": "Invalid email or password",
-    "ROLE_FORBIDDEN": "This operation requires the reviewer role",
+    "ROLE_FORBIDDEN": "You do not have the required role.",
     "FORBIDDEN": "You are not authorized to perform this operation",
     "SELF_REVIEW_FORBIDDEN": "You cannot review your own submission",
     "SELF_DECISION_FORBIDDEN": "You cannot decide on a project/action you created yourself",
@@ -503,7 +503,7 @@
     "INVALID_UNIT": "Invalid unit for this parameter",
     "INVALID_VALUE": "Invalid measurement value",
     "INVALID_PARAMETER": "Unknown measured parameter",
-    "VALUE_OUT_OF_RANGE": "Value outside plausible range",
+    "VALUE_OUT_OF_RANGE": "The value exceeds configured input limits.",
     "INSUFFICIENT_DATA": "Insufficient data — validated measurements required",
     "VALIDATION_ERROR": "Please check the entered fields",
     "INDICATOR_EXPIRED": "Indicator definition validity has expired",
@@ -520,7 +520,11 @@
     "DISCLOSURE_INVALID": "Select verified evidence from the room’s project.",
     "CONSENT_REQUIRED": "Explicit publication consent is required.",
     "IMAGE_REQUIRED": "Attach an image to the evidence before review.",
-    "RATE_LIMITED": "Too many attempts; retry after fifteen minutes."
+    "RATE_LIMITED": "Too many attempts; retry after fifteen minutes.",
+    "PASSWORD_UNCHANGED": "Choose a different password.",
+    "MATRIX_ENGINE_UNAVAILABLE": "The selected calculation engine is unavailable.",
+    "MATRIX_TOO_LARGE": "The scenario exceeds the engine size limit.",
+    "INVALID_REFERENCE": "A valid internal object ID is required."
   },
   "solar": {
     "title": "Preliminary solar calculator (computed)",

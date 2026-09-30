@@ -61,3 +61,14 @@ def test_real_rust_and_python_comparison(monkeypatch):
             if b['score'] is not None:assert a['score']==pytest.approx(b['score'],abs=1e-6)
             else:assert a['score'] is None
         assert rust['field_execution'] is False
+
+
+def test_general_decision_internal_reference_is_tenant_scoped(client,world):
+    own=login(client,'o1m@t.dz');other=login(client,'o2m@t.dz')
+    p=make_project(client,other)
+    data={'domain':'water','decision_type':'review','title':'Resource review','subject_type':'project','subject_id':p['id']}
+    assert client.post('/api/decisions',headers=own,json=data).status_code==404
+    d=client.post('/api/decisions',headers=other,json=data);assert d.status_code==201,d.text
+    own_project=make_project(client,own)
+    assert client.patch(f"/api/decisions/{d.json()['id']}",headers=other,json={'subject_id':own_project['id']}).status_code==404
+    assert client.post(f"/api/decisions/{d.json()['id']}/evidence",headers=other,json={'evidence_type':'document','source_type':'project','source_id':str(own_project['id'])}).status_code==404
