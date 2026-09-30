@@ -60,6 +60,8 @@ export default function ProjectDetail() {
     api.get<Asset[]>("/assets").then(setAssets).catch(() => {});
   }, [pid]);
 
+  // Reload performs asynchronous API reads and commits the resulting records.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { reload(); }, [reload]);
 
   async function changeStatus(status: string) {

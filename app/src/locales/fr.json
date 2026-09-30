@@ -21,11 +21,12 @@
     "water": "Eau",
     "decisions": "Décisions",
     "telemetry": "Télémétrie",
-    "simulator": "Simulateur"
+    "simulator": "Simulateur",
+    "mainNavigation": "Navigation principale"
   },
   "landing": {
-    "heroTitle": "FOGGARA-DZ — Plateforme nationale opérationnelle pour l'eau, l'énergie, l'alimentation, l'écosystème et la santé",
-    "heroSub": "Relie projets, organismes, sites, ressources, mesures, preuves, révision humaine, décisions et suivi. Inspirée de la logique de la foggara et du partage koussari des ressources.",
+    "heroTitle": "Quand l’eau circule, l’oasis s’épanouit",
+    "heroSub": "Une plateforme algérienne qui rend les ressources, les mesures et les décisions des oasis plus lisibles, en reliant savoir local et action durable.",
     "cta": "Accéder à l'espace de travail",
     "exploreCta": "Explorer la plateforme",
     "registerCta": "Créer un compte",
@@ -481,7 +482,9 @@
     "all": "Tous",
     "name": "Nom",
     "add": "Ajouter",
-    "actions": "Actions"
+    "actions": "Actions",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
   },
   "errors": {
     "AUTH_REQUIRED": "Connexion requise",
@@ -773,5 +776,18 @@
       "FAILED": "Échouée",
       "CANCELLED": "Annulée"
     }
+  },
+  "provenance": {
+    "OBSERVED": "Observé",
+    "VERIFIED": "Vérifié",
+    "COMPUTED": "Calculé",
+    "INFERRED": "Déduit",
+    "PROPOSED": "Proposé",
+    "SIMULATION": "Simulation"
+  },
+  "foggaraVisual": {
+    "title": "La kasria et les canaux de la foggara",
+    "description": "Une scène animée relie la kasria à cinq parcours correspondant aux dimensions WEFEH.",
+    "illustrative": "Illustration — aucune mesure de terrain"
   }
 }

@@ -77,6 +77,8 @@ export default function Decisions() {
     setExecutions(ex); setVerifications(vf);
   }, []);
 
+  // The request helper commits state after its asynchronous API response.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load().catch(setError); }, [load]);
 
   const role = user?.role ?? "member";

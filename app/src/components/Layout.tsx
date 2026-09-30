@@ -5,7 +5,7 @@ import {
   Droplets, Globe, MapPin, Clock3, LogOut, CloudOff,
   Home, Compass, FolderKanban, Wrench, Gauge, BarChart3,
   Map, Radio, Sun, Building2, ClipboardCheck, ScrollText, Gavel,
-  Activity, FlaskConical,
+  Activity, FlaskConical, Menu, X,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -50,6 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [wilaya, setWilaya] = useState(() => localStorage.getItem("wilaya") || "");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const locale = (i18n.language || "ar") as Locale;
 
   const items = [...NAV_ITEMS];
@@ -58,26 +59,26 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   const topSelectCls =
-    "rounded-md border border-white/25 bg-white/10 px-2 py-1 text-sm text-parchment " +
+    "rounded-full border border-ink/10 bg-white/75 px-3 py-1.5 text-sm text-ink " +
     "focus-visible:outline-sand [&>option]:text-ink";
 
   return (
     <div className="min-h-screen bg-background">
       {/* ==== الترويسة العلوية: شريط ink بهوية المخطوطات ==== */}
-      <header className="sticky top-0 z-40 border-b border-ink/30 bg-ink text-parchment shadow-[0_1px_4px_rgb(38_70_83/0.25)]">
+      <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper/90 text-ink shadow-[0_4px_20px_rgb(38_70_83/0.035)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
-          <Link to="/" className="flex items-center gap-2 font-extrabold text-paper">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-oasis/20 text-oasis" aria-hidden="true">
+          <Link to="/" className="flex items-center gap-2 font-extrabold text-ink">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-oasis/10 text-oasis-strong" aria-hidden="true">
               <Droplets className="h-5 w-5" />
             </span>
             <span>{t("app.name")}</span>
-            <span className="rounded-full border border-sand/60 bg-sand/20 px-1.5 py-0.5 text-[10px] font-bold text-sand">
+            <span className="rounded-full border border-sand/60 bg-sand/20 px-2 py-0.5 text-[10px] font-bold text-ink/70">
               {t("common.demoBadge")}
             </span>
           </Link>
 
           <div className="ms-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-            <label className="flex items-center gap-1 text-parchment/80">
+            <label className="flex items-center gap-1 text-ink/65">
               <MapPin className="h-4 w-4" aria-hidden="true" />
               <select
                 aria-label={t("topbar.selectWilaya")}
@@ -94,8 +95,23 @@ export function Layout({ children }: { children: ReactNode }) {
               </select>
             </label>
 
+            {user && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-ink/75 hover:bg-ink/5 hover:text-ink lg:hidden"
+                aria-expanded={mobileNavOpen}
+                aria-controls="mobile-main-navigation"
+                aria-label={t(mobileNavOpen ? "common.closeMenu" : "common.openMenu")}
+                onClick={() => setMobileNavOpen((open) => !open)}
+              >
+                {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
+
             <span
-              className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-parchment"
+              className="flex items-center gap-1.5 rounded-full border border-ink/10 bg-white/70 px-3 py-1.5 text-ink"
               title={t("topbar.algiersTime")}
             >
               <Clock3 className="h-4 w-4 text-sand" aria-hidden="true" />
@@ -103,14 +119,14 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
 
             <span
-              className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-parchment/80"
+              className="flex items-center gap-1.5 rounded-full border border-ink/10 bg-white/70 px-3 py-1.5 text-xs text-ink/65"
               title={t("topbar.weatherUnavailable")}
             >
               <CloudOff className="h-4 w-4 text-clay" aria-hidden="true" />
               {t("topbar.weatherUnavailable")}
             </span>
 
-            <label className="flex items-center gap-1 text-parchment/80">
+            <label className="flex items-center gap-1 text-ink/65">
               <Globe className="h-4 w-4" aria-hidden="true" />
               <select
                 aria-label="Language"
@@ -128,7 +144,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-parchment/85 hover:bg-white/10 hover:text-paper"
+                className="text-ink/75 hover:bg-ink/5 hover:text-ink"
                 onClick={() => { logout(); navigate("/"); }}
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
@@ -138,17 +154,22 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* تنقّل أفقي للشاشات الصغيرة */}
+        {/* قائمة قابلة للفتح على الهاتف بدل شريط روابط طويل */}
         {user && (
-          <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 lg:hidden" aria-label="main">
+          <nav
+            id="mobile-main-navigation"
+            className={`${mobileNavOpen ? "grid" : "hidden"} mx-auto max-w-7xl grid-cols-2 gap-1 px-4 pb-3 sm:grid-cols-3 lg:hidden`}
+            aria-label={t("nav.mainNavigation")}
+          >
             {items.map(({ to, key, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
+                onClick={() => setMobileNavOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive ? "bg-sand font-bold text-ink" : "text-parchment/80 hover:bg-white/10 hover:text-paper"
+                  `flex min-w-0 items-center gap-1.5 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors ${
+                    isActive ? "bg-ink font-bold text-paper" : "text-ink/75 hover:bg-ink/5 hover:text-ink"
                   }`
                 }
               >
