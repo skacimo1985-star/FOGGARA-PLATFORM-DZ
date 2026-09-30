@@ -56,7 +56,6 @@
     "email": "E-mail",
     "password": "Mot de passe",
     "submit": "Se connecter",
-    "demoAccounts": "Comptes de démonstration (DEMO)",
     "badCredentials": "E-mail ou mot de passe incorrect"
   },
   "topbar": {
@@ -1181,7 +1180,7 @@
     "groupCore": "Noyau et projets",
     "groupIntelligence": "Analyse et décisions",
     "groupAssurance": "Assurance et collaboration",
-    "statusNotice": "Version de développement opérationnelle. Les données synthétiques portent DEMO ; les connecteurs directs, la vérification juridique et l’IA locale nécessitent une configuration distincte.",
+    "statusNotice": "Version de développement opérationnelle. Aucun projet ni mesure n’est préchargé. Les sources directes, la vérification juridique et l’IA locale exigent une configuration effective.",
     "registered": "Registres de votre organisation",
     "waterSub": "Sources, allocations et qualité de l’eau",
     "energySub": "Production, consommation et efficacité",
@@ -1206,5 +1205,28 @@
     "status": "État",
     "noVerifiedSources": "Aucune source revue disponible pour ce projet.",
     "sourcesNotice": "Lier une preuve documente une source ; cela ne certifie pas que chaque hypothèse ou valeur du scénario est mesurée ou approuvée."
+  },
+  "cinematic": {
+    "pause": "Suspendre l’animation",
+    "play": "Lancer l’animation",
+    "speed": "Vitesse d’animation",
+    "reducedMotion": "Animation réduite",
+    "loop": "Preuve → Décision → Suivi → Preuve",
+    "symbolic": "Animation symbolique de l’architecture",
+    "unavailable": "Animation indisponible"
+  },
+  "accountSecurity": {
+    "title": "Sécurité du compte",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe",
+    "confirm": "Confirmer le mot de passe",
+    "submit": "Changer le mot de passe",
+    "success": "Mot de passe modifié. Les sessions précédentes sont invalidées.",
+    "mismatch": "Les mots de passe ne correspondent pas."
+  },
+  "navigation": {
+    "failure": "Impossible d’afficher la page. Rechargez pour réessayer.",
+    "retry": "Recharger",
+    "skip": "Aller au contenu"
   }
 }

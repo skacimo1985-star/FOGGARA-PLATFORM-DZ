@@ -24,3 +24,5 @@ pgdata/
 # قواعد بيانات SQLite المحلية (تطوير/تجربة)
 *.db
 *.db-journal
+
+engines/nexus-core/target/

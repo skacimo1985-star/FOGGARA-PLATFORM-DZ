@@ -37,3 +37,7 @@ The defining relationship is resource → measurement → rule → actor → dec
 The initial general matrix implementation does not calculate physical irrigation requirements or certify laboratory results. It compares numeric scenario inputs declared by users. A linked reviewed document records provenance; it does not certify every input assumption. Legal or safety limits must be supplied and reviewed by the competent party.
 
 The infrastructure and integrations above are explicit remaining work. The redesigned interface does not label unconfigured providers or AI services as operational.
+
+## تحديث محرك التنفيذ والهوية الحركية
+
+تم إدخال نواة Rust فعلية لمقارنة السيناريوهات فقط، مع اختيار صريح ومحرك Python بديل ذي إصدار منفصل؛ بقية الباكند FastAPI ولم يُعاد بناؤه بالكامل بـRust. القصرية أصبحت مشهد Canvas متحركًا رمزيًا مع تقليل حركة وإيقاف، وليست تمثيلًا جغرافيًا أو مرئيًا لبيانات حية. توقفت تهيئة سجلات الأعمال التجريبية. مراجعة المراجع القانونية الحالية في docs/LEGAL_SOURCE_REGISTER.md ولا تمثل شهادة امتثال.

@@ -56,7 +56,6 @@
     "email": "Email",
     "password": "Password",
     "submit": "Sign in",
-    "demoAccounts": "Demo accounts (DEMO)",
     "badCredentials": "Invalid email or password"
   },
   "topbar": {
@@ -1181,7 +1180,7 @@
     "groupCore": "Core & projects",
     "groupIntelligence": "Analysis & decisions",
     "groupAssurance": "Assurance & collaboration",
-    "statusNotice": "Operational development release. Synthetic records carry DEMO labels; live connectors, legal identity verification and local AI require separate configuration.",
+    "statusNotice": "Operational development release. No projects or measurements are preloaded. Live sources, legal verification and local AI require actual configuration.",
     "registered": "Your organization’s records",
     "waterSub": "Sources, allocations & water quality",
     "energySub": "Generation, consumption & efficiency",
@@ -1206,5 +1205,28 @@
     "status": "Status",
     "noVerifiedSources": "No reviewed sources are available for this project.",
     "sourcesNotice": "Linking evidence records a source. It does not certify that every scenario assumption or value is measured or approved."
+  },
+  "cinematic": {
+    "pause": "Pause animation",
+    "play": "Play animation",
+    "speed": "Animation speed",
+    "reducedMotion": "Motion reduced",
+    "loop": "Evidence → Decision → Monitoring → Evidence",
+    "symbolic": "Symbolic system animation",
+    "unavailable": "Animation unavailable"
+  },
+  "accountSecurity": {
+    "title": "Account security",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm password",
+    "submit": "Change password",
+    "success": "Password changed. Previous sessions have been invalidated.",
+    "mismatch": "Passwords do not match."
+  },
+  "navigation": {
+    "failure": "The page could not be displayed. Reload to try again.",
+    "retry": "Reload",
+    "skip": "Skip to content"
   }
 }

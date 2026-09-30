@@ -2,13 +2,12 @@
 import hashlib
 import hmac
 import time
-from fastapi import Request
+from fastapi import HTTPException, Request
 from sqlalchemy import case, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from . import config
 from .db import engine
-from .deps import api_error
 from .platform_models import AuthThrottle
 
 
@@ -28,4 +27,4 @@ def limit_auth(request: Request):
         conn.execute(delete(table).where(table.c.window_start < now - 86400))
         hits = conn.execute(statement).scalar_one()
     if hits > limit:
-        api_error(429, "RATE_LIMITED", "Too many attempts; wait fifteen minutes")
+        raise HTTPException(status_code=429, detail={"code": "RATE_LIMITED", "message": "Too many attempts; wait fifteen minutes"}, headers={"Retry-After": "900"})

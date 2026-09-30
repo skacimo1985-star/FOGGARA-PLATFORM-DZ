@@ -126,7 +126,7 @@ def admin(user=Depends(get_current_user)):
 
 
 def token_response(user):
-    return {"token": create_token(user.id), "user": UserOut.model_validate(user)}
+    return {"token": create_token(user.id, user.password_hash), "user": UserOut.model_validate(user)}
 
 
 @router.post("/auth/register", status_code=201, dependencies=[Depends(limit_auth)])

@@ -219,7 +219,10 @@ def assessment_data(project_id, user, db):
         for row in records:
             rid = f"{kind}:{row.id}"
             verified = (kind == "evidence" and row.status == "verified") or (kind == "measurement" and row.quality_status == "validated")
-            nodes.append({"id": rid, "type": kind, "title": getattr(row, "title", getattr(row, "parameter", kind)), "provenance": "VERIFIED" if verified else "PROPOSED"})
+            node = {"id": rid, "type": kind, "title": getattr(row, "title", getattr(row, "parameter", kind)), "provenance": "VERIFIED" if verified else "OBSERVED" if kind == "measurement" else "PROPOSED"}
+            if kind == "measurement":
+                node.update(value=row.value, unit=row.unit, measured_at=row.measured_at.isoformat(), source_type=row.source_type, quality_status=row.quality_status)
+            nodes.append(node)
             edges.append({"source": "project:" + str(p.id), "target": rid, "relation": "contains", "provenance": "OBSERVED"})
             if kind == "evidence" and row.measurement_id:
                 edges.append({"source": "measurement:" + str(row.measurement_id), "target": rid, "relation": "documented_by", "provenance": "OBSERVED"})
@@ -271,8 +274,8 @@ class MatrixCriterion(Payload):
     unit: str = Field(min_length=1, max_length=40)
     direction: Literal['minimize', 'maximize']
     weight: float = Field(ge=0, le=100, allow_inf_nan=False)
-    minimum: float | None = Field(default=None, allow_inf_nan=False)
-    maximum: float | None = Field(default=None, allow_inf_nan=False)
+    minimum: float | None = Field(default=None, allow_inf_nan=False, ge=-1e15, le=1e15)
+    maximum: float | None = Field(default=None, allow_inf_nan=False, ge=-1e15, le=1e15)
 
     @model_validator(mode='after')
     def ordered(self):

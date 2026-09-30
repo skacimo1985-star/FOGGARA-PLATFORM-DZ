@@ -8,9 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorText } from "@/components/common";
 
-const DEMO_ACCOUNTS = [
-  "member@demo1.dz", "reviewer@demo1.dz", "admin@demo1.dz", "member@demo2.dz", "reviewer@demo2.dz",
-];
 
 export default function Login() {
   const { t } = useTranslation();
@@ -65,14 +62,6 @@ export default function Login() {
           <p className="mt-4 text-xs text-muted-foreground">{t("membership.sessionNotice")}</p>
           <div className="mt-4 flex flex-wrap justify-between gap-3 text-sm text-oasis-strong"><Link to="/register">{t("membership.register")}</Link><Link to="/join">{t("membership.join")}</Link></div>
 
-          {import.meta.env.DEV && (
-            <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
-              <p className="mb-1 font-bold text-ink">{t("auth.demoAccounts")}</p>
-              <ul dir="ltr" className="list-inside list-disc">
-                {DEMO_ACCOUNTS.map((a) => <li key={a}>{a} / Demo#2026</li>)}
-              </ul>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

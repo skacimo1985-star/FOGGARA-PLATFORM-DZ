@@ -28,6 +28,7 @@ const Iot = lazy(() => import("@/pages/Iot"));
 const Vde = lazy(() => import("@/pages/Vde"));
 const OrganizationPage = lazy(() => import("@/pages/Organization"));
 import "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
   state = { message: null as string | null };
@@ -40,14 +41,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { message: string
   render() {
     if (this.state.message) {
       return (
-        <div role="alert" dir="ltr"
-             className="m-8 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          {this.state.message}
-        </div>
+        <RouteFailure />
       );
     }
     return this.props.children;
   }
+}
+
+function RouteFailure() {
+  const { t } = useTranslation();
+  return <div role="alert" className="m-8 space-y-4 rounded-xl border border-destructive/40 p-6"><p>{t('navigation.failure')}</p><button type="button" className="os-primary" onClick={()=>window.location.reload()}>{t('navigation.retry')}</button><p className="text-xs text-muted-foreground">{t('membership.sessionNotice')}</p></div>;
+}
+function RouteBoundary({children}:{children:ReactNode}) {
+  const location=useLocation();const {t}=useTranslation();
+  return <ErrorBoundary key={location.pathname}><div className="os-route-view"><Suspense fallback={<div role="status" className="p-8 text-center text-muted-foreground">{t('common.loading')}</div>}>{children}</Suspense></div></ErrorBoundary>;
 }
 
 function Protected({ children }: { children: ReactNode }) {
@@ -62,8 +69,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Layout>
-        <ErrorBoundary>
-          <Suspense fallback={<div className="p-8 text-center text-muted-foreground">…</div>}>
+        <RouteBoundary>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -93,8 +99,7 @@ export default function App() {
             <Route path="/app/audit" element={<Protected><AuditPage /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          </Suspense>
-        </ErrorBoundary>
+        </RouteBoundary>
       </Layout>
     </AuthProvider>
   );

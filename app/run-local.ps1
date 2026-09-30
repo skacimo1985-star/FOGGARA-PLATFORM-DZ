@@ -70,13 +70,12 @@ if (-not (Test-Path ".venv")) {
   python -m venv .venv
 }
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.lock
 $env:DATABASE_URL = "sqlite:///./foggara.db"
 $env:JWT_SECRET = New-HexSecret
 $env:ENV = "dev"
 python -m alembic upgrade head
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-python seed.py
 $pythonExe = Join-Path $PWD ".venv\Scripts\python.exe"
 $backendPath = $PWD.Path
 Start-Process -FilePath $pythonExe -ArgumentList @("-m", "uvicorn", "app.main:app", "--port", "8000") -WorkingDirectory $backendPath
@@ -87,3 +86,4 @@ if (-not (Test-Path "node_modules")) { npm install }
 Write-Host "`nالباكند يعمل على http://localhost:8000 — الواجهة ستفتح على http://localhost:3000" -ForegroundColor Green
 Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", "npm run dev") -WorkingDirectory $PSScriptRoot
 Write-Host "افتح http://localhost:3000 في المتصفح. أوقف الخادمين من نافذتيهما عند الانتهاء." -ForegroundColor Green
+

@@ -28,18 +28,26 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE foggara;" -c "CREATE DATABASE foggara_test;"
       - name: Install backend dependencies
         working-directory: app/backend
-        run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run migrations and seed
+        run: |
+          python -m pip install pip==26.2.1
+          pip install -r requirements.lock -r requirements-dev.txt
+      - name: Run migrations
         working-directory: app/backend
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara
           JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
         run: |
           python -m alembic upgrade head
-          python seed.py
+      - name: Build Rust comparison core
+        working-directory: app/engines/nexus-core
+        run: |
+          cargo build --release --locked
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
       - name: Run tests
         working-directory: app/backend
         env:
+          NEXUS_RUST_TEST_BINARY: ${{ github.workspace }}/app/engines/nexus-core/target/release/foggara-nexus-core
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
           JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
         run: python -m pytest tests/ -q
@@ -62,3 +70,4 @@ jobs:
       - name: Lint
         working-directory: app
         run: npm run lint
+

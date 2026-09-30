@@ -31,7 +31,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 && body?.detail?.code !== "BAD_CREDENTIALS") {
       // جلسة منتهية/غير صالحة: إسقاط الرمز وإعادة التوجيه لتسجيل الدخول من الصفحات المحمية
       setToken(null);
       if (window.location.pathname.startsWith("/app")) {
