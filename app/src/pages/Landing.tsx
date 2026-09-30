@@ -1,14 +1,1 @@
-import {useState} from 'react';
-import {Link} from 'react-router';
-import {useTranslation} from 'react-i18next';
-import {ArrowUpRight, Fingerprint, GitBranch, ShieldCheck, Map, Radio, Scale, BriefcaseBusiness, Network} from 'lucide-react';
-import {useAuth} from '@/context/AuthContext';
-import {NexusKasria} from '@/components/NexusKasria';
-import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
-export default function Landing(){const {t}=useTranslation();const {user}=useAuth();const [active,setActive]=useState('all');return <div className="os-landing">
- <section className="os-landing-hero"><div className="os-hero-copy"><p className="os-eyebrow">{t('os.eyebrow')}</p><span className="os-product-tag"><span/>{t('os.platform')}</span><h1>{t('os.title')}</h1><p className="os-hero-sub">{t('os.subtitle')}</p><div className="flex flex-wrap gap-3"><Link className="os-primary" to={user?'/app':'/login'}>{t('os.open')}<ArrowUpRight size={18}/></Link><Link className="os-secondary" to="/register">{t('os.register')}</Link></div><p className="os-sovereign"><ShieldCheck size={16}/>{t('os.sovereign')}</p></div><div className="os-hero-network"><div className="os-visual-caption"><span>FOGGARA</span><span>NEXUS / 05</span></div><NexusKasria active={active} onSelect={setActive}/><p className="os-footnote">{t('os.illustration')}</p></div></section>
- <section className="os-landing-domains"><p className="os-eyebrow">{t('os.platform')}</p><h2>{t('os.domains')}</h2><div className="os-domain-cards">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><Link key={key} to={`/app/explore/${key}`} className={active===key?'selected':''}><span className="os-domain-number" dir="ltr">0{i+1}</span><Icon size={25} style={{color}}/><h3>{t(`landing.${key}`)}</h3><p>{t(`os.${key}Sub`)}</p><ArrowUpRight size={17}/></Link>)}</div></section>
- <section className="os-principles">{[{key:'Evidence',icon:Fingerprint},{key:'Decision',icon:GitBranch},{key:'Collaboration',icon:ShieldCheck}].map(({key,icon:Icon})=><article key={key}><Icon size={23}/><h3>{t(`os.pillar${key}`)}</h3><p>{t(`os.pillar${key}Sub`)}</p></article>)}</section>
- <section className="os-capabilities"><div><p className="os-eyebrow">{t('os.workspace')}</p><h2>{t('os.capabilities')}</h2><p>{t('os.architecture')}</p></div><div className="os-capability-grid">{[{key:'os.studio',to:'/app/studio',icon:Network},{key:'nav.gis',to:'/app/gis',icon:Map},{key:'nav.telemetry',to:'/app/telemetry',icon:Radio},{key:'nav.metrology',to:'/app/metrology',icon:Scale},{key:'nav.vde',to:'/app/vde',icon:ShieldCheck},{key:'opportunities.title',to:'/app/opportunities',icon:BriefcaseBusiness}].map(({key,to,icon:Icon})=><Link key={to} to={to}><Icon size={18}/>{t(key)}<ArrowUpRight size={15}/></Link>)}</div></section>
- <footer className="os-landing-footer"><strong>FOGGARA-DZ</strong><p>{t('os.statusNotice')}</p><span dir="ltr">EURL SIREP OASIS NEXUS WEFEH · DZ</span></footer>
- </div>;}
+export {default} from './Presentation';

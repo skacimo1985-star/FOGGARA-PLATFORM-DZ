@@ -2,6 +2,7 @@ import { Component, Suspense, lazy, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Layout } from "@/components/Layout";
+const Presentation = lazy(() => import("@/pages/Presentation"));
 const Landing = lazy(() => import("@/pages/Landing"));
 const Login = lazy(() => import("@/pages/Login"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
@@ -72,6 +73,7 @@ export default function App() {
         <RouteBoundary>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/presentation" element={<Presentation />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Onboarding />} />
             <Route path="/join" element={<Onboarding />} />

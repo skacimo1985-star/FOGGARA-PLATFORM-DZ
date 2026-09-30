@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:matrix": "node --test tests/presentation-matrix.test.mjs"
   },
   "dependencies": {
     "@fontsource/hanken-grotesk": "^5.3.0",
