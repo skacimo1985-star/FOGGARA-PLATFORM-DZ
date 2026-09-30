@@ -31,6 +31,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app", key: "nav.home", icon: Home, end: true },
   { to: "/app/explore", key: "nav.explore", icon: Compass },
   { to: "/app/projects", key: "nav.projects", icon: FolderKanban },
+  { to: "/app/resources", key: "nexus.title", icon: Compass },
+  { to: "/app/opportunities", key: "opportunities.title", icon: FolderKanban },
   { to: "/app/services", key: "nav.services", icon: Wrench },
   { to: "/app/metrology", key: "nav.metrology", icon: Gauge },
   { to: "/app/water", key: "nav.water", icon: Droplets },
@@ -73,7 +75,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
             <span>{t("app.name")}</span>
             <span className="rounded-full border border-sand/60 bg-sand/20 px-2 py-0.5 text-[10px] font-bold text-ink/70">
-              {t("common.demoBadge")}
+              {t("platform.version")}
             </span>
           </Link>
 

@@ -8,11 +8,12 @@ from ..deps import api_error, get_current_user
 from ..models import User
 from ..schemas import LoginIn, TokenOut, UserOut
 from ..security import create_token, verify_password
+from ..auth_limits import limit_auth
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=TokenOut)
+@router.post("/login", response_model=TokenOut, dependencies=[Depends(limit_auth)])
 def login(payload: LoginIn, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email.lower())).scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):

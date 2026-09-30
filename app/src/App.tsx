@@ -4,6 +4,10 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Layout } from "@/components/Layout";
 const Landing = lazy(() => import("@/pages/Landing"));
 const Login = lazy(() => import("@/pages/Login"));
+const Onboarding = lazy(() => import("@/pages/Onboarding"));
+const DataRoom = lazy(() => import("@/pages/DataRoom"));
+const NexusResources = lazy(() => import("@/pages/NexusResources"));
+const Opportunities = lazy(() => import("@/pages/Opportunities"));
 const Home = lazy(() => import("@/pages/Home"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
@@ -62,6 +66,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Onboarding />} />
+            <Route path="/join" element={<Onboarding />} />
             <Route path="/app" element={<Protected><Home /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
             <Route path="/app/explore/:domain" element={<Protected><ExploreDomain /></Protected>} />
@@ -77,6 +83,9 @@ export default function App() {
             <Route path="/app/gis" element={<Protected><Gis /></Protected>} />
             <Route path="/app/iot" element={<Protected><Iot /></Protected>} />
             <Route path="/app/vde" element={<Protected><Vde /></Protected>} />
+            <Route path="/app/vde/:id" element={<Protected><DataRoom /></Protected>} />
+            <Route path="/app/resources" element={<Protected><NexusResources /></Protected>} />
+            <Route path="/app/opportunities" element={<Protected><Opportunities /></Protected>} />
             <Route path="/app/org" element={<Protected><OrganizationPage /></Protected>} />
             <Route path="/app/review" element={<Protected><ReviewQueue /></Protected>} />
             <Route path="/app/audit" element={<Protected><AuditPage /></Protected>} />

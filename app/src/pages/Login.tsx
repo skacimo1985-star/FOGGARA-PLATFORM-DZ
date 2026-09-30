@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +62,8 @@ export default function Login() {
               {busy ? t("common.loading") : t("auth.submit")}
             </Button>
           </form>
+          <p className="mt-4 text-xs text-muted-foreground">{t("membership.sessionNotice")}</p>
+          <div className="mt-4 flex flex-wrap justify-between gap-3 text-sm text-oasis-strong"><Link to="/register">{t("membership.register")}</Link><Link to="/join">{t("membership.join")}</Link></div>
 
           {import.meta.env.DEV && (
             <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">

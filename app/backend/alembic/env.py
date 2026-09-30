@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import config as app_config  # noqa: E402
 from app.db import Base  # noqa: E402
 from app import models  # noqa: E402,F401
+from app import platform_models  # noqa: E402,F401
 
 alembic_cfg = context.config
 alembic_cfg.set_main_option("sqlalchemy.url", app_config.DATABASE_URL)

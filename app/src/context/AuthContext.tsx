@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { api, setToken } from "@/lib/api";
 import type { User } from "@/types";
 
@@ -7,26 +7,21 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  startSession: (result: { token: string; user: User }) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = false;
 
-  useEffect(() => {
-    api.get<User>("/auth/me")
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+  const startSession = useCallback((result: { token: string; user: User }) => {
+    setToken(result.token); setUser(result.user);
   }, []);
-
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ token: string; user: User }>("/auth/login", { email, password });
-    setToken(res.token);
-    setUser(res.user);
-  }, []);
+    startSession(await api.post<{ token: string; user: User }>("/auth/login", { email, password }));
+  }, [startSession]);
 
   const logout = useCallback(() => {
     setToken(null);
@@ -34,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, startSession }}>
       {children}
     </AuthContext.Provider>
   );
