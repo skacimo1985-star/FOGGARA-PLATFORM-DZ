@@ -171,3 +171,16 @@ class AuthThrottle(Base):
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     window_start: Mapped[int] = mapped_column(BigId)
     hits: Mapped[int] = mapped_column(Integer)
+
+
+class DecisionMatrixRun(Base):
+    __tablename__ = 'decision_matrix_runs'
+    id: Mapped[int] = mapped_column(BigId, primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey('organizations.id'), index=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'), index=True)
+    decision_id: Mapped[int | None] = mapped_column(ForeignKey('gov_decisions.id'))
+    title: Mapped[str] = mapped_column(String(255))
+    inputs: Mapped[dict] = mapped_column(PortableJSON)
+    results: Mapped[dict] = mapped_column(PortableJSON)
+    created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())

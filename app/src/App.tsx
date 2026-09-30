@@ -8,6 +8,7 @@ const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
 const Opportunities = lazy(() => import("@/pages/Opportunities"));
+const DecisionStudio = lazy(() => import("@/pages/DecisionStudio"));
 const Home = lazy(() => import("@/pages/Home"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/app" element={<Protected><Home /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
             <Route path="/app/explore/:domain" element={<Protected><ExploreDomain /></Protected>} />
+            <Route path="/app/studio" element={<Protected><DecisionStudio /></Protected>} />
             <Route path="/app/projects" element={<Protected><Projects /></Protected>} />
             <Route path="/app/projects/:id" element={<Protected><ProjectDetail /></Protected>} />
             <Route path="/app/services" element={<Protected><Services /></Protected>} />

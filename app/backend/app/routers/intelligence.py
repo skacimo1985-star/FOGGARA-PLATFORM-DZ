@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import Action, Evidence, GovDecision, HumanDecision, Measurement, Organization, Project, User
+from ..models import Action, Evidence, GovDecision, GovDecisionEvidence, GovDecisionTransition, HumanDecision, Measurement, Organization, Project, User
 from ..platform_models import AssuranceRecord, DataRoom, NexusResource, Opportunity, RiskRecord
 from .collaboration import Payload, commit, evidence_for_user, room_owner
 from .core import get_project_or_404
@@ -242,4 +242,127 @@ def run_assessment(project_id: int, user=Depends(get_current_user), db: Session 
 
 @router.get("/projects/{project_id}/evidence-graph")
 def evidence_graph(project_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return assessment_data(project_id, user, db)[1]
+    graph = assessment_data(project_id, user, db)[1]
+    root = f'project:{project_id}'
+    for row in db.scalars(select(DecisionMatrixRun).where(DecisionMatrixRun.project_id == project_id)):
+        rid = f'matrix:{row.id}'
+        graph['nodes'].append({'id':rid, 'type':'matrix', 'title':row.title, 'provenance':'COMPUTED'})
+        graph['edges'].append({'source':root, 'target':rid, 'relation':'compared_by', 'provenance':'OBSERVED'})
+        for eid in row.inputs['evidence_ids']:
+            graph['edges'].append({'source':f'evidence:{eid}', 'target':rid, 'relation':'source_for', 'provenance':'OBSERVED'})
+        if row.decision_id is not None:
+            decision = db.get(GovDecision, row.decision_id)
+            did = f'gov_decision:{decision.id}'
+            graph['nodes'].append({'id':did, 'type':'gov_decision', 'title':decision.title, 'provenance':'VERIFIED' if decision.status == 'VERIFIED' else 'PROPOSED'})
+            graph['edges'].append({'source':rid, 'target':did, 'relation':'informs', 'provenance':'OBSERVED'})
+    return graph
+
+
+# Dynamic matrices compare declared alternatives across the five domains.
+from pydantic import model_validator
+from ..platform_models import DecisionMatrixRun
+from ..services.decision_matrix import evaluate_matrix
+
+
+class MatrixCriterion(Payload):
+    key: str = Field(pattern=r'^[a-z][a-z0-9_]{0,39}$')
+    label: str = Field(min_length=2, max_length=100)
+    domain: Literal['water', 'energy', 'food', 'ecosystem', 'health']
+    unit: str = Field(min_length=1, max_length=40)
+    direction: Literal['minimize', 'maximize']
+    weight: float = Field(ge=0, le=100, allow_inf_nan=False)
+    minimum: float | None = Field(default=None, allow_inf_nan=False)
+    maximum: float | None = Field(default=None, allow_inf_nan=False)
+
+    @model_validator(mode='after')
+    def ordered(self):
+        if self.minimum is not None and self.maximum is not None and self.minimum > self.maximum:
+            raise ValueError('Minimum exceeds maximum')
+        return self
+
+
+class MatrixAlternative(Payload):
+    name: str = Field(min_length=2, max_length=100)
+    values: dict[str, float] = Field(min_length=1, max_length=20)
+
+
+class MatrixIn(Payload):
+    title: str = Field(min_length=3, max_length=255)
+    context: str = Field(min_length=10, max_length=3000)
+    criteria: list[MatrixCriterion] = Field(min_length=1, max_length=20)
+    alternatives: list[MatrixAlternative] = Field(min_length=2, max_length=20)
+    evidence_ids: list[int] = Field(default_factory=list, max_length=30)
+
+    @model_validator(mode='after')
+    def complete(self):
+        import math
+        keys = [c.key for c in self.criteria]
+        if len(keys) != len(set(keys)) or sum(c.weight for c in self.criteria) <= 0:
+            raise ValueError('Unique criteria and positive total weight required')
+        names = [a.name for a in self.alternatives]
+        if len(names) != len(set(names)):
+            raise ValueError('Alternative names must be unique')
+        for a in self.alternatives:
+            if set(a.values) != set(keys) or any(not math.isfinite(v) or abs(v) > 1e15 for v in a.values.values()):
+                raise ValueError('Each alternative requires finite values for every criterion')
+        return self
+
+
+def matrix_view(row):
+    return {'id': row.id, 'decision_id': row.decision_id, 'project_id': row.project_id, 'title': row.title, 'inputs': row.inputs, 'results': row.results, 'created_at': row.created_at}
+
+
+@router.post('/projects/{project_id}/decision-matrices', status_code=201)
+def create_matrix(project_id: int, payload: MatrixIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    get_project_or_404(db, user, project_id)
+    for eid in payload.evidence_ids:
+        ev = evidence_for_user(eid, user, db)
+        if ev.project_id != project_id or ev.status != 'verified':
+            api_error(422, 'INVALID_EVIDENCE', 'Reviewed project evidence required')
+    inputs = payload.model_dump()
+    row = DecisionMatrixRun(org_id=user.org_id, project_id=project_id, title=payload.title, inputs=inputs, results=evaluate_matrix(inputs), created_by=user.id)
+    db.add(row); db.flush()
+    audit(db, user, 'compute_matrix', 'decision_matrix', entity_id=row.id, project_id=project_id)
+    commit(db)
+    return matrix_view(row)
+
+
+@router.get('/projects/{project_id}/decision-matrices')
+def list_matrices(project_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    get_project_or_404(db, user, project_id)
+    return [matrix_view(row) for row in db.scalars(select(DecisionMatrixRun).where(DecisionMatrixRun.project_id == project_id).order_by(DecisionMatrixRun.id.desc()))]
+
+
+class MatrixProposal(Payload):
+    alternative: str = Field(min_length=2, max_length=100)
+    reason: str = Field(min_length=10, max_length=3000)
+    risk_level: Literal['low', 'medium', 'high', 'critical']
+
+
+@router.post('/projects/{project_id}/decision-matrices/{run_id}/propose', status_code=201)
+def propose_matrix(project_id: int, run_id: int, payload: MatrixProposal, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    project = get_project_or_404(db, user, project_id)
+    row = db.scalar(select(DecisionMatrixRun).where(DecisionMatrixRun.id == run_id, DecisionMatrixRun.project_id == project_id).with_for_update())
+    if row is None:
+        api_error(404, 'NOT_FOUND', 'Scenario not found')
+    if row.decision_id is not None:
+        api_error(409, 'ALREADY_PROPOSED', 'Scenario already linked to a proposed decision')
+    chosen = next((a for a in row.results['alternatives'] if a['name'] == payload.alternative and a['feasible']), None)
+    if chosen is None:
+        api_error(422, 'INFEASIBLE_OPTION', 'Choose an alternative meeting every declared hard limit')
+    # Re-check evidence because a reviewed source can subsequently be withdrawn.
+    for eid in row.inputs['evidence_ids']:
+        ev = evidence_for_user(eid, user, db)
+        if ev.status != 'verified' or ev.project_id != project_id:
+            api_error(422, 'INVALID_EVIDENCE', 'Scenario source is no longer verified')
+    decision = GovDecision(org_id=user.org_id, domain='cross_domain', decision_type='matrix_comparison', title=row.title,
+        description=row.inputs['context'], status='PROPOSED', risk_level=payload.risk_level,
+        subject_type='project', subject_id=project_id, source_type='decision_matrix', source_id=str(row.id),
+        proposed_by=user.id, reason=payload.reason, expected_result=payload.alternative, is_demo=project.is_demo,
+        meta={'matrix_id':row.id, 'input_sha256':row.results['input_sha256'], 'algorithm':row.results['algorithm'], 'chosen_alternative':payload.alternative, 'field_execution':False})
+    db.add(decision); db.flush(); row.decision_id = decision.id
+    db.add(GovDecisionEvidence(decision_id=decision.id, evidence_type='calculation', source_type='decision_matrix', source_id=str(row.id), quality='declared_scenario', meta={'input_sha256':row.results['input_sha256'], 'algorithm':row.results['algorithm'], 'chosen_alternative':payload.alternative, 'provenance':'COMPUTED'}))
+    db.add(GovDecisionTransition(decision_id=decision.id, from_status='', to_status='PROPOSED', actor_id=user.id, actor_role=user.role, reason=payload.reason))
+    audit(db, user, 'propose_matrix_decision', 'gov_decision', entity_id=decision.id, project_id=project_id, meta={'matrix_id':row.id})
+    commit(db)
+    return {'decision_id':decision.id, 'status':decision.status}

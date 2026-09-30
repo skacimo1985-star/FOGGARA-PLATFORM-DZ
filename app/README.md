@@ -103,7 +103,7 @@ $env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/fogga
 python -m pytest tests/ -q
 ```
 
-في هذه النسخة جرى تشغيل `80` اختبارًا بنجاح على SQLite. على Windows استخدم `TEST_DATABASE_URL=sqlite:///./test_foggara.db`؛ وفي CI يكفي ضبط `DATABASE_URL` على PostgreSQL، ويُحترم المتغير بدل اتصال Unix socket المحلي.
+في هذه النسخة جرى تشغيل `91` اختبارًا بنجاح على SQLite. على Windows استخدم `TEST_DATABASE_URL=sqlite:///./test_foggara.db`؛ وفي CI يكفي ضبط `DATABASE_URL` على PostgreSQL، ويُحترم المتغير بدل اتصال Unix socket المحلي.
 
 ## حسابات DEMO
 
@@ -293,3 +293,9 @@ git push -u origin feat/platform-extensions
 | تقويم المحصول | أحداث حسب المحصول والموقع من مصدر محدد |
 
 المهاجرات الأربع الجديدة إضافية. اختبارات العزل والإفصاح والدعوات والملفات والحسابات الزراعية والمالية وحدود المصادقة ضمن `test_platform_completion.py`. CI يشغّل PostgreSQL 16؛ SQLite مخصص للتطوير. يجب اختيار استضافة وطنية وضبط TLS والنسخ الاحتياطي والمراقبة ومزودي البيانات قبل التشغيل الفعلي.
+
+## Integrated Nexus workspace and dynamic matrices
+
+The redesigned landing and `/app` workspace now organize the five WEFEH domains around a Digital Kasria, actual organization records and project evidence relationships. `/app/studio` persists declared multi-domain decision matrices with hard bounds, weighted objectives, reviewed source links, reproducible inputs and an algorithm fingerprint. A chosen feasible alternative can become a PROPOSED general decision with calculation evidence; human review remains mandatory and there is no field control.
+
+See [NEXUS_BLUEPRINT.md](NEXUS_BLUEPRINT.md) for the product baseline, algorithm limitations and explicit gaps relative to the full sovereign platform. The additional migration `df20260930a1` creates scenario storage without modifying established domain migrations.
