@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 function IndicatorCard({ indicator, projectId }: { indicator: Indicator; projectId: number | null }) {
   const { t, i18n } = useTranslation();
@@ -43,6 +44,7 @@ function IndicatorCard({ indicator, projectId }: { indicator: Indicator; project
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           {name}
+          <ProvenanceBadge value="COMPUTED" />
           <Badge variant="secondary">{indicator.code}</Badge>
           <span className="text-sm font-normal text-muted-foreground" dir="ltr">{indicator.unit}</span>
         </CardTitle>

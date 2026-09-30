@@ -18,8 +18,9 @@ def test_health_requires_no_auth_and_has_security_headers(client):
     assert r.headers["Referrer-Policy"] == "no-referrer"
     csp = r.headers["Content-Security-Policy"]
     assert "default-src 'self'" in csp
-    assert "fonts.gstatic.com" in csp        # Google Fonts مسموح للواجهة
-    assert "fonts.googleapis.com" in csp
+    assert "font-src 'self'" in csp         # fonts are bundled locally
+    assert "fonts.gstatic.com" not in csp
+    assert "fonts.googleapis.com" not in csp
 
 
 def test_docs_pages_exempt_from_csp_but_keep_other_headers(client):

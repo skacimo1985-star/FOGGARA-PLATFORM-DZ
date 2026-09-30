@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create databases
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE foggara;" -c "CREATE DATABASE foggara_test;"
+      - name: Install backend dependencies
+        working-directory: app/backend
+        run: |
+          python -m pip install pip==26.2.1
+          pip install -r requirements.lock -r requirements-dev.txt
+      - name: Audit backend dependency lock
+        working-directory: app/backend
+        run: |
+          python -m pip install pip-audit==2.10.1
+          pip-audit -r requirements.lock
+      - name: Run migrations
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara
+          JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+        run: |
+          python -m alembic upgrade head
+      - name: Build Rust comparison core
+        working-directory: app/engines/nexus-core
+        run: |
+          cargo build --release --locked
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: Run tests
+        working-directory: app/backend
+        env:
+          NEXUS_RUST_TEST_BINARY: ${{ github.workspace }}/app/engines/nexus-core/target/release/foggara-nexus-core
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
+          JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+        run: python -m pytest tests/ -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+      - name: Audit dependencies
+        working-directory: app
+        run: npm audit --audit-level=high
+      - name: Matrix calculation tests
+        working-directory: app
+        run: npm run test:matrix
+      - name: Build
+        working-directory: app
+        run: npm run build
+      - name: Lint
+        working-directory: app
+        run: npm run lint
+

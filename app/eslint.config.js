@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // UI primitives may export their cva factories; AuthContext also exports its hook.
+      'react-refresh/only-export-components': ['error', {
+        allowConstantExport: true,
+        allowExportNames: ['useAuth', 'badgeVariants', 'buttonVariants'],
+      }],
+    },
   },
 ])
