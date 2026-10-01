@@ -9,7 +9,7 @@ from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, User
-from ..services.agriculture import irrigation_scenario
+from ..services.agriculture_operations import irrigation_scenario
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
