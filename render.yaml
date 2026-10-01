@@ -1,0 +1,39 @@
+# Expo pilot only: both resources use Free plans. PostgreSQL expires after 30 days.
+# Select release/expo-2026-rc1 and this file when creating the Blueprint.
+services:
+  - type: web
+    name: foggara-dz-expo
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: release/expo-2026-rc1
+    rootDir: app
+    dockerfilePath: ./Dockerfile.prod
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: ENV
+        value: prod
+      - key: PORT
+        value: "8000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: foggara-dz-expo-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TOKEN_TTL_HOURS
+        value: "2"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: CORS_ORIGINS
+        value: ""
+databases:
+  - name: foggara-dz-expo-db
+    databaseName: foggara_expo
+    user: foggara_app
+    region: frankfurt
+    plan: free
+    postgresMajorVersion: "16"
+    ipAllowList: []
