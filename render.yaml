@@ -1,0 +1,27 @@
+# Free-tier pilot only. Database is provisioned separately on Supabase Free.
+services:
+  - type: web
+    name: foggara-dz-api
+    runtime: docker
+    plan: free
+    branch: codex/agriculture-workspace-2026-10-01
+    rootDir: app
+    dockerfilePath: ./Dockerfile.prod
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: ENV
+        value: prod
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SCHEMA
+        value: foggara
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SEED_DEMO
+        value: "false"
+      - key: TOKEN_TTL_HOURS
+        value: "2"
+      - key: LOG_LEVEL
+        value: INFO
