@@ -27,13 +27,21 @@ export default function Login() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/app");
+      navigate("/app/agriculture");
     } catch (err) {
       setError(err);
     } finally {
       setBusy(false);
     }
   }
+
+  if (import.meta.env.VITE_PREVIEW_ONLY === "true") return (
+    <div className="mx-auto max-w-lg rounded-xl border bg-white p-8 text-center">
+      <h1 className="mb-4 text-xl font-bold">{t("nav.agriculture")}</h1>
+      <p>{t("auth.previewOnly")}</p>
+      <a className="mt-6 inline-block text-teal-700 underline" href="/">{t("auth.returnPreview")}</a>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-md">
@@ -59,14 +67,15 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
+          {import.meta.env.DEV && <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
             <p className="mb-1 font-bold text-ink">{t("auth.demoAccounts")}</p>
             <ul dir="ltr" className="list-inside list-disc">
               {DEMO_ACCOUNTS.map((a) => <li key={a}>{a} / Demo#2026</li>)}
             </ul>
-          </div>
+          </div>}
         </CardContent>
       </Card>
     </div>
   );
 }
+

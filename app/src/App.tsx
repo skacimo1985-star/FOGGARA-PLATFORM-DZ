@@ -2,7 +2,7 @@ import { Component, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Layout } from "@/components/Layout";
-import Landing from "@/pages/Landing";
+import Agriculture from "@/features/agriculture/Agriculture";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
@@ -58,7 +58,9 @@ export default function App() {
       <Layout>
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Agriculture demo />} />
+            <Route path="/demo" element={<Agriculture demo />} />
+            <Route path="/app/agriculture" element={<Protected><Agriculture /></Protected>} />
             <Route path="/login" element={<Login />} />
             <Route path="/app" element={<Protected><Home /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
@@ -85,3 +87,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

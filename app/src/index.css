@@ -5,27 +5,27 @@
 @layer base {
   :root {
     /* ==== لوحة «مخطوطات صحراوية» — هوية فڨارة/واحة ==== */
-    --ink: #264653; /* أساسي داكن — teal عميق */
-    --oasis: #2a9d8f; /* accent أخضر مريمي */
+    --ink: #153e30; /* أساسي داكن — teal عميق */
+    --oasis: #087f64; /* accent أخضر مريمي */
     --oasis-strong: #1e766b; /* oasis أعمق للنصوص (تباين ≥ 4.5:1) */
     --sand: #e9c46a; /* تمييز رملي */
     --clay: #f4a261; /* دفء طيني */
     --signal: #e76f51; /* CTA/تنبيه — برتقالي محروق */
     --signal-strong: #c24c31; /* signal أعمق لأزرار نصية (تباين ≥ 4.5:1) */
     --paper: #fcfcfc;
-    --parchment: #f7f3ea;
+    --parchment: #f0f6ee;
     --text: #1a1a1a;
 
     /* ==== ربط رموز shadcn باللوحة (قنوات HSL) ==== */
-    --background: 0 0% 98.8%; /* paper */
+    --background: 135 18% 97%; /* paper */
     --foreground: 0 0% 10.2%; /* text */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10.2%;
-    --primary: 197 37% 24%; /* ink */
+    --primary: 159 49% 16%; /* ink */
     --primary-foreground: 42 45% 96%;
-    --secondary: 42 45% 94%; /* parchment */
+    --secondary: 110 22% 95%; /* parchment */
     --secondary-foreground: 197 37% 24%;
     --muted: 42 30% 93%;
     --muted-foreground: 200 14% 31%;
@@ -33,7 +33,7 @@
     --accent-foreground: 197 37% 24%;
     --destructive: 12 63% 45%; /* danger = signal (درجة نصية) */
     --destructive-foreground: 0 0% 100%;
-    --border: 40 18% 84%;
+    --border: 125 13% 87%;
     --input: 40 18% 80%;
     --ring: 174 58% 32%; /* oasis للتركيز */
     --radius: 0.625rem;
@@ -159,3 +159,4 @@
     scroll-behavior: auto !important;
   }
 }
+

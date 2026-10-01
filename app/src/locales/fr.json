@@ -21,7 +21,8 @@
     "water": "Eau",
     "decisions": "Décisions",
     "telemetry": "Télémétrie",
-    "simulator": "Simulateur"
+    "simulator": "Simulateur",
+    "agriculture": "Agriculture & ressources"
   },
   "landing": {
     "heroTitle": "FOGGARA-DZ — Plateforme nationale opérationnelle pour l'eau, l'énergie, l'alimentation, l'écosystème et la santé",
@@ -56,7 +57,9 @@
     "password": "Mot de passe",
     "submit": "Se connecter",
     "demoAccounts": "Comptes de démonstration (DEMO)",
-    "badCredentials": "E-mail ou mot de passe incorrect"
+    "badCredentials": "E-mail ou mot de passe incorrect",
+    "previewOnly": "Cette version est une démonstration privée. La connexion nécessite le déploiement du serveur et de la base de données.",
+    "returnPreview": "Retour à la démonstration"
   },
   "topbar": {
     "location": "Localisation",
