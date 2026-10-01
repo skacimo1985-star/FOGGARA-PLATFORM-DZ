@@ -46,6 +46,22 @@ jobs:
           JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
         run: |
           python -m alembic upgrade head
+      - name: Verify migration round-trip
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara
+          JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+        run: |
+          python -m alembic downgrade -1
+          python -m alembic upgrade head
+          python -m alembic current
+
+      - name: Static Python security scan
+        working-directory: app/backend
+        run: |
+          python -m pip install bandit==1.8.6
+          bandit -q -r app -x tests -ll
+
       - name: Build Rust comparison core
         working-directory: app/engines/nexus-core
         run: |
@@ -59,6 +75,17 @@ jobs:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
           JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
         run: python -m pytest tests/ -q
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   frontend:
     runs-on: ubuntu-latest
