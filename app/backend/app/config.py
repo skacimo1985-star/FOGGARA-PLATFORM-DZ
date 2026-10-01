@@ -12,6 +12,12 @@ DATABASE_URL = os.environ.get(
     "sqlite:///./foggara.db",
 )
 
+# Select psycopg 3 for managed-provider URLs without changing credentials.
+for _prefix in ("postgres://", "postgresql://"):
+    if DATABASE_URL.startswith(_prefix):
+        DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len(_prefix):]
+        break
+
 _DEFAULT_JWT_SECRET = "dev-only-secret-change-me-32bytes-min!"
 JWT_SECRET = os.environ.get("JWT_SECRET", _DEFAULT_JWT_SECRET)
 
@@ -64,3 +70,4 @@ NEXUS_MATRIX_ENGINE = os.environ.get("NEXUS_MATRIX_ENGINE", "python").strip().lo
 if NEXUS_MATRIX_ENGINE not in ("python", "rust"):
     raise RuntimeError("NEXUS_MATRIX_ENGINE must be python or rust")
 NEXUS_RUST_BINARY = os.environ.get("NEXUS_RUST_BINARY", "/usr/local/bin/foggara-nexus-core")
+
