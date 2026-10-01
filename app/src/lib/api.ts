@@ -8,14 +8,11 @@ export class ApiError extends Error {
   }
 }
 
-function getToken(): string | null {
-  return localStorage.getItem("token");
-}
-
-export function setToken(token: string | null) {
-  if (token) localStorage.setItem("token", token);
-  else localStorage.removeItem("token");
-}
+let sessionToken: string | null = null;
+// Retire legacy disk tokens. New tokens live only in memory.
+localStorage.removeItem("token");
+function getToken(): string | null { return sessionToken; }
+export function setToken(token: string | null) { sessionToken = token; }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
@@ -54,3 +51,4 @@ export const api = {
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
 };
+

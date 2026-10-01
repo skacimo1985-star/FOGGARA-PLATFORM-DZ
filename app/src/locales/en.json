@@ -21,7 +21,8 @@
     "water": "Water",
     "decisions": "Decisions",
     "telemetry": "Telemetry",
-    "simulator": "Simulator"
+    "simulator": "Simulator",
+    "agriculture": "Agriculture & resources"
   },
   "landing": {
     "heroTitle": "FOGGARA-DZ — National operational platform for water, energy, food, ecosystem and health",
@@ -56,7 +57,9 @@
     "password": "Password",
     "submit": "Sign in",
     "demoAccounts": "Demo accounts (DEMO)",
-    "badCredentials": "Invalid email or password"
+    "badCredentials": "Invalid email or password",
+    "previewOnly": "This is a private preview. Operational sign-in requires a deployed backend and database.",
+    "returnPreview": "Back to preview"
   },
   "topbar": {
     "location": "Location",

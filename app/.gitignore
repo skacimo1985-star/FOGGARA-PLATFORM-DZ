@@ -22,3 +22,9 @@ pgdata/
 # قواعد بيانات SQLite المحلية (تطوير/تجربة)
 *.db
 *.db-journal
+
+
+# Generated frontend output
+dist/
+*.tsbuildinfo
+.sites-runtime/

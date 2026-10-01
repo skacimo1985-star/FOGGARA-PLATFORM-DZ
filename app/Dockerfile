@@ -5,6 +5,7 @@ RUN npm ci
 COPY index.html vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json ./
 COPY tailwind.config.js postcss.config.js components.json ./
 COPY src ./src
+COPY public ./public
 RUN npm run build
 
 FROM python:3.12-slim
@@ -21,3 +22,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=4)"
 CMD ["./docker-entrypoint.sh"]
+

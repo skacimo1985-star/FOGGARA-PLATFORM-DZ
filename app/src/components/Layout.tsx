@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, NavLink, useNavigate } from "react-router";
+import { Link, NavLink, useNavigate, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   Droplets, Globe, MapPin, Clock3, LogOut, CloudOff,
@@ -28,6 +28,7 @@ function AlgeriaClock() {
 type NavItem = { to: string; key: string; icon: LucideIcon; end?: boolean };
 
 const NAV_ITEMS: NavItem[] = [
+  { to: "/app/agriculture", key: "nav.agriculture", icon: FlaskConical },
   { to: "/app", key: "nav.home", icon: Home, end: true },
   { to: "/app/explore", key: "nav.explore", icon: Compass },
   { to: "/app/projects", key: "nav.projects", icon: FolderKanban },
@@ -49,6 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [wilaya, setWilaya] = useState(() => localStorage.getItem("wilaya") || "");
   const locale = (i18n.language || "ar") as Locale;
 
@@ -56,6 +58,8 @@ export function Layout({ children }: { children: ReactNode }) {
   if (user && (user.role === "reviewer" || user.role === "admin")) {
     items.splice(10, 0, { to: "/app/review", key: "nav.review", icon: ClipboardCheck });
   }
+
+  if (["/", "/demo", "/app/agriculture"].includes(location.pathname)) return <>{children}</>;
 
   const topSelectCls =
     "rounded-md border border-white/25 bg-white/10 px-2 py-1 text-sm text-parchment " +
@@ -192,3 +196,4 @@ export function Layout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
