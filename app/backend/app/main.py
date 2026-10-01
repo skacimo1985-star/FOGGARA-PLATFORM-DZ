@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from . import config
 from .db import engine
-from .routers import (agriculture, audit, auth, collaboration, core, decisions, energy, explore, insight, intelligence,
+from .routers import (agriculture, agriculture_operations, audit, auth, collaboration, core, decisions, energy, explore, insight, intelligence,
                         metrology, services, simulator, telemetry, water,
                         workflow)
 
@@ -102,6 +102,7 @@ app.include_router(auth.router)
 app.include_router(collaboration.router)
 app.include_router(intelligence.router)
 app.include_router(agriculture.router)
+app.include_router(agriculture_operations.operations_router)
 app.include_router(core.router)
 app.include_router(workflow.router)
 app.include_router(insight.router)
