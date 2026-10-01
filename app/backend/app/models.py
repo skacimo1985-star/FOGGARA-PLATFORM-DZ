@@ -856,3 +856,60 @@ class TelemetryRule(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(),
                                                  onupdate=func.current_timestamp())
+
+# Agriculture: append-only evidence and reviewable irrigation scenarios.
+class AgriParcel(Base):
+    __tablename__ = 'agri_parcels'
+    id: Mapped[int] = mapped_column(BigId, primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey('organizations.id'), index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    crop: Mapped[str] = mapped_column(String(80))
+    area_ha: Mapped[float] = mapped_column(Numeric(12, 4))
+    location: Mapped[str] = mapped_column(String(160))
+    stage: Mapped[str] = mapped_column(String(30), default='initial')
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
+    __table_args__ = (CheckConstraint('area_ha > 0', name='ck_agri_area'),)
+
+
+class AgriObservation(Base):
+    __tablename__ = 'agri_observations'
+    id: Mapped[int] = mapped_column(BigId, primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey('organizations.id'), index=True)
+    parcel_id: Mapped[int] = mapped_column(ForeignKey('agri_parcels.id'), index=True)
+    metric: Mapped[str] = mapped_column(String(30))
+    value: Mapped[float] = mapped_column(Numeric(16, 6))
+    unit: Mapped[str] = mapped_column(String(30))
+    source_type: Mapped[str] = mapped_column(String(30))
+    source_ref: Mapped[str] = mapped_column(String(300))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    evidence_status: Mapped[str] = mapped_column(String(20), default='OBSERVED')
+    created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    verified_by: Mapped[int | None] = mapped_column(ForeignKey('users.id'))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
+    __table_args__ = (CheckConstraint("evidence_status IN ('OBSERVED','INFERRED','VERIFIED')", name='ck_agri_evidence'),)
+
+
+class AgriPlan(Base):
+    __tablename__ = 'agri_plans'
+    id: Mapped[int] = mapped_column(BigId, primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey('organizations.id'), index=True)
+    parcel_id: Mapped[int] = mapped_column(ForeignKey('agri_parcels.id'), index=True)
+    inputs: Mapped[dict] = mapped_column(PortableJSON)
+    result: Mapped[dict] = mapped_column(PortableJSON)
+    created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
+
+
+class AgriTask(Base):
+    __tablename__ = 'agri_tasks'
+    id: Mapped[int] = mapped_column(BigId, primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey('organizations.id'), index=True)
+    parcel_id: Mapped[int] = mapped_column(ForeignKey('agri_parcels.id'), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    due_date: Mapped[str] = mapped_column(String(10))
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())

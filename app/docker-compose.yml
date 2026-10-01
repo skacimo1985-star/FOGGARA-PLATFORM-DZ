@@ -7,7 +7,7 @@ services:
     # كشف المنفذ 5432 يتيح مسار التطوير الهجين: قاعدة البيانات في Docker
     # والباكند/الواجهة محليًا على الجهاز (انظر run-local.ps1 — المسار ب).
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-foggara}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy

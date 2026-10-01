@@ -75,7 +75,7 @@ def create_evidence(payload: EvidenceIn, user: User = Depends(get_current_user),
     get_project_or_404(db, user, payload.project_id)
     if payload.measurement_id is not None:
         m = db.get(Measurement, payload.measurement_id)
-        if m is None or m.org_id != user.org_id:
+        if m is None or m.org_id != user.org_id or m.project_id != payload.project_id:
             api_error(404, "NOT_FOUND", "Measurement not found")
     # الحالة دائمًا submitted عند الإنشاء — لا يمكن للمستخدم فرض verified
     e = Evidence(org_id=user.org_id, submitted_by=user.id, status="submitted", **payload.model_dump())
@@ -114,7 +114,7 @@ def create_review(payload: ReviewIn, user: User = Depends(require_reviewer), db:
         if target is None or target.org_id != user.org_id:
             api_error(404, "NOT_FOUND", "Measurement not found")
     else:
-        target = db.get(Evidence, payload.target_id)
+        target = db.scalar(select(Evidence).where(Evidence.id == payload.target_id).with_for_update())
         if target is None or target.org_id != user.org_id:
             api_error(404, "NOT_FOUND", "Evidence not found")
 

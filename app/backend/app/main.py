@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from . import config
 from .db import engine
-from .routers import (audit, auth, core, decisions, energy, explore, insight,
+from .routers import (agriculture, agriculture_operations, audit, auth, collaboration, core, decisions, energy, explore, insight, intelligence,
                         metrology, services, simulator, telemetry, water,
                         workflow)
 
@@ -37,12 +37,12 @@ if config.CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-# سياسة أمن المحتوى: self + Google Fonts فقط (الواجهة تحمّل خطوطها منهما).
+# سياسة أمن المحتوى: أصول وخطوط محلية فقط.
 _CSP = (
     "default-src 'self'; "
     "script-src 'self'; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    "font-src 'self' https://fonts.gstatic.com; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self'; "
     "img-src 'self' data:; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "
@@ -67,6 +67,10 @@ async def security_and_request_logging(request: Request, call_next):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
+    if request.url.path.startswith("/api"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    if request.url.path == "/service-worker.js":
+        response.headers.setdefault("Cache-Control", "no-cache")
     if request.url.path not in _DOCS_PATHS:
         response.headers.setdefault("Content-Security-Policy", _CSP)
     return response
@@ -76,7 +80,7 @@ async def security_and_request_logging(request: Request, call_next):
 async def validation_handler(request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={
         "detail": {"code": "VALIDATION_ERROR", "message": "Invalid request payload",
-                   "errors": exc.errors()[:5]}
+                   "errors": [{"loc": e["loc"], "type": e["type"], "msg": e["msg"]} for e in exc.errors()[:5]]}
     })
 
 
@@ -95,6 +99,10 @@ def health():
 
 
 app.include_router(auth.router)
+app.include_router(collaboration.router)
+app.include_router(intelligence.router)
+app.include_router(agriculture.router)
+app.include_router(agriculture_operations.operations_router)
 app.include_router(core.router)
 app.include_router(workflow.router)
 app.include_router(insight.router)
@@ -122,7 +130,11 @@ if _dist.is_dir():
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str):
-        candidate = _dist / full_path
+        if full_path == "api" or full_path.startswith("api/"):
+            return JSONResponse({"detail": {"code": "NOT_FOUND", "message": "API route not found"}}, status_code=404)
+        candidate = (_dist / full_path).resolve()
+        if not candidate.is_relative_to(_dist.resolve()):
+            return JSONResponse({"detail": "Not found"}, status_code=404)
         if full_path and candidate.is_file():
             return FileResponse(candidate)
         return FileResponse(_dist / "index.html")

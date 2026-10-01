@@ -11,21 +11,8 @@ from sqlalchemy.orm import Session
 from ..deps import api_error
 from ..models import Indicator, Measurement
 
-# قاموس المعاملات/الوحدات المعتمد لكل مجال WEFEH.
-# parameter -> (allowed units, min, max)
-# المجالات المنطقية موثقة هنا وتُرفض القيم خارجها بـ 422 VALUE_OUT_OF_RANGE:
-#   flow_rate: 0..100000 L/s (من قطر أنبوب منزلي حتى سد كبير)
-#   water_level: -500..10000 m (منسوب قد يكون سالبًا تحت مستوى البحر)
-#   ph: 0..14 (تعريف مقياس pH)
-#   temperature: -10..80 °C (مياه سطحية/جوفية وصناعية في المناخ الجزائري)
-#   turbidity: 0..10000 NTU (مياه شرب حتى مياه صرف شديدة العكارة)
-#   pressure: 0..1000 bar / ما يعادلها kPa (شبكات حتى آبار عميقة جدًا)
-#   humidity: 0..100 %RH (تعريف الرطوبة النسبية)
-#   electrical_power: 0..100000 kW (عدّاد منشأة حتى محطة متوسطة)
-#   voltage: 0..100000 V (حساس حتى خط نقل 220kV)
-#   rainfall: 0..2000 mm (تراكم سنوي أقصى موثق في الجزائر أقل بكثير)
-#   soil_moisture: 0..100 % (نسبة حجمية)
-#   dissolved_oxygen: 0..30 mg/L (تشبع الماء ~14 mg/L عند 0°C مع هامش)
+# Input guardrails only; these ranges do not establish suitability or regulatory compliance.
+# Pressure and flow are normalized before applying the software limits.
 PARAMETERS: dict[str, tuple[set[str], float, float]] = {
     "flow_rate": ({"L/s", "l/s", "m3/h"}, 0.0, 100_000.0),
     "water_level": ({"m"}, -500.0, 10_000.0),
@@ -42,7 +29,6 @@ PARAMETERS: dict[str, tuple[set[str], float, float]] = {
 }
 
 INDICATOR_CODE = "WATER_FLOW_AVG_LS"
-FLOW_THRESHOLD_LS = 0.5  # عتبة قابلة للتعديل لاحقًا عبر إعداد، موثقة هنا
 MIN_MEASUREMENTS = 1
 
 # مرادفات الوحدات: كل صيغة مقبولة في القاموس تُخزَّن بصيغتها القياسية،
@@ -71,9 +57,10 @@ def validate_measurement(parameter: str, value: float, unit: str):
     if unit not in units:
         api_error(422, "INVALID_UNIT",
                   f"Unit '{unit}' is not valid for {parameter}; allowed: {', '.join(sorted(units))}")
-    if not (vmin <= value <= vmax):
+    normalized = value / 100 if unit == "kPa" else value / 3.6 if unit == "m3/h" else value
+    if not (vmin <= normalized <= vmax):
         api_error(422, "VALUE_OUT_OF_RANGE",
-                  f"Value {value} out of plausible range [{vmin}, {vmax}] for {parameter}")
+                  f"Value {value} outside configured software input range [{vmin}, {vmax}] for {parameter}")
 
 
 def compute_flow_avg(db: Session, org_id: int, project_id: int,
@@ -105,33 +92,19 @@ def compute_flow_avg(db: Session, org_id: int, project_id: int,
 
 def build_recommendation(indicator: Indicator, value: float, n: int,
                          wfrom: datetime, wto: datetime, evidence_ids: list[int]):
-    """Explainable rule: avg flow below threshold => maintenance inspection."""
-    below = value < FLOW_THRESHOLD_LS
-    basis = (
-        f"indicator={indicator.code}; value={value} {indicator.unit}; "
-        f"threshold={FLOW_THRESHOLD_LS} {indicator.unit}; n_validated={n}; "
-        f"window={wfrom.isoformat()}..{wto.isoformat()}; "
-        f"evidence_ids={evidence_ids}"
-    )
-    if below:
-        ar = (f"متوسط التصريف المقاس ({value} ل/ث) أدنى من عتبة {FLOW_THRESHOLD_LS} ل/ث "
-              f"خلال النافذة المحددة. يُقترح تكليف فريق بفحص القنوات والآبار الأم وتنظيفها، "
-              f"مع الاستناد إلى الأدلة المرفقة. القرار النهائي للجهة المخوّلة.")
-        fr = (f"Le débit moyen mesuré ({value} L/s) est inférieur au seuil de {FLOW_THRESHOLD_LS} L/s "
-              f"sur la période. Il est proposé de mandater une équipe pour inspecter et curer "
-              f"les galeries et les puits, en s'appuyant sur les pièces jointes. "
-              f"La décision finale appartient à l'autorité habilitée.")
-        en = (f"Measured average flow ({value} L/s) is below the {FLOW_THRESHOLD_LS} L/s threshold "
-              f"for the selected window. Assigning an inspection/cleaning team to galleries and "
-              f"mother wells is proposed, based on the attached evidence. "
-              f"Final decision rests with the authorized human authority.")
-    else:
-        ar = (f"متوسط التصريف المقاس ({value} ل/ث) ضمن الحد المقبول (≥ {FLOW_THRESHOLD_LS} ل/ث). "
-              f"يُقترح مواصلة المراقبة الدورية وتوثيق القياسات، دون تدخل عاجل.")
-        fr = (f"Le débit moyen mesuré ({value} L/s) est dans la limite acceptable (≥ {FLOW_THRESHOLD_LS} L/s). "
-              f"Poursuite du suivi périodique et de la documentation des mesures, sans intervention urgente.")
-        en = (f"Measured average flow ({value} L/s) is within the acceptable limit (≥ {FLOW_THRESHOLD_LS} L/s). "
-              f"Continue periodic monitoring and measurement documentation; no urgent intervention.")
+    """Report the computed observation without inventing a suitability threshold."""
+    basis = (f"indicator={indicator.code}; value={value} {indicator.unit}; "
+             f"threshold=not_configured; n_validated={n}; "
+             f"window={wfrom.isoformat()}..{wto.isoformat()}; evidence_ids={evidence_ids}")
+    ar = (f"متوسط معدل التدفق {value} ل/ث، محسوب من {n} قياسات متحقق منها خلال الفترة المحددة. "
+          "لم تُحدد قاعدة قبول خاصة بالمشروع؛ لا يثبت هذا المتوسط كفاية المورد أو سلامته. "
+          "يلزم تقييم مختص وربط النتيجة بمتطلبات المشروع قبل اتخاذ إجراء.")
+    fr = (f"Débit moyen : {value} L/s, calculé sur {n} mesures validées pour la période. "
+          "Aucune règle d’acceptation propre au projet n’est configurée. Cette moyenne ne prouve "
+          "ni la suffisance ni la sécurité de la ressource. Une évaluation technique est requise avant intervention.")
+    en = (f"Average flow: {value} L/s, calculated from {n} validated measurements for the period. "
+          "No project-specific acceptance rule is configured. This average does not establish resource "
+          "sufficiency or safety. Technical review against project requirements is needed before action.")
     return basis, ar, fr, en
 
 
@@ -140,13 +113,14 @@ def ensure_default_indicator(db: Session) -> Indicator:
     if ind is None:
         ind = Indicator(
             code=INDICATOR_CODE,
-            name_ar="متوسط تصريف المورد المائي",
+            name_ar="متوسط معدل تدفق المورد المائي",
             name_fr="Débit moyen de la ressource en eau",
             name_en="Average water resource flow",
             formula="mean(value) des mesures flow_rate (L/s) validées sur une fenêtre glissante",
             unit="L/s",
-            source="FOGGARA-DZ operational definition v1 (DEMO)",
+            source="FOGGARA-DZ arithmetic indicator definition v1",
         )
         db.add(ind)
         db.flush()
     return ind
+

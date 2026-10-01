@@ -1,130 +1,31 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import { useTranslation } from "react-i18next";
-import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import type { Action, Project } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorText, DemoBadge } from "@/components/common";
-
-const STEPS = ["discover", "understand", "analyze", "act", "monitor"] as const;
-
-export default function Home() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [actions, setActions] = useState<Action[]>([]);
-  const [pending, setPending] = useState<{ measurements: unknown[]; evidences: unknown[] } | null>(null);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    api.get<Project[]>("/projects")
-      .then(async (ps) => {
-        setProjects(ps);
-        const acts = await Promise.all(ps.map((p) => api.get<Action[]>(`/projects/${p.id}/actions`)));
-        setActions(acts.flat().filter((a) => a.status !== "done"));
-      })
-      .catch(setError);
-    if (user && (user.role === "reviewer" || user.role === "admin")) {
-      api.get<{ measurements: unknown[]; evidences: unknown[] }>("/reviews/pending")
-        .then(setPending)
-        .catch(() => setPending(null));
-    }
-  }, [user]);
-
-  return (
-    <div className="space-y-6">
-      {/* شريط المسار فوق زخرفة هندسية خافتة */}
-      <section className="pattern-moorish rounded-2xl border border-ink/10 bg-parchment/70 p-4">
-        <ol className="flex flex-wrap items-center gap-2" aria-label={t("path.title")}>
-          {STEPS.map((s, i) => (
-            <li key={s} className="flex items-center gap-2">
-              <span className="flex items-center gap-2 rounded-full border border-ink/15 bg-paper px-3 py-1.5 text-sm font-medium">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-oasis text-[11px] font-bold text-white">
-                  {i + 1}
-                </span>
-                {t(`path.${s}`)}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <ErrorText error={error} />
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("project.title")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {projects === null ? (
-              <Skeleton className="h-24 w-full" />
-            ) : projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("project.empty")}</p>
-            ) : (
-              <ul className="divide-y divide-ink/10">
-                {projects.slice(0, 6).map((p) => (
-                  <li key={p.id}>
-                    <Link to={`/app/projects/${p.id}`} className="flex items-center justify-between px-2 py-2.5 text-sm transition-colors hover:bg-parchment/70">
-                      <span>
-                        {p.title}
-                        <DemoBadge show={p.is_demo} />
-                      </span>
-                      <Badge variant="outline">{t(`project.statuses.${p.status}`)}</Badge>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("action.title")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {actions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("action.empty")}</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {actions.slice(0, 6).map((a) => (
-                  <li key={a.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <Link to={`/app/projects/${a.project_id}`} className="hover:underline">{a.title}</Link>
-                    <Badge variant={a.status === "in_progress" ? "default" : "outline"}>
-                      {t(`action.statuses.${a.status}`)}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {pending && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("review.title")}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm">
-            {pending.measurements.length + pending.evidences.length === 0 ? (
-              <p className="text-muted-foreground">{t("review.empty")}</p>
-            ) : (
-              <p>
-                {t("review.pendingMeasurements")}: <strong>{pending.measurements.length}</strong>
-                {" · "}
-                {t("review.pendingEvidences")}: <strong>{pending.evidences.length}</strong>
-                {" — "}
-                <Link to="/app/review" className="font-bold text-oasis-strong underline">{t("nav.review")}</Link>
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+import {useEffect,useMemo,useState} from 'react';
+import {Link} from 'react-router';
+import {useTranslation} from 'react-i18next';
+import {ArrowUpRight, Search, GitBranch, Layers, MapPin, FolderKanban, Network, ShieldCheck, SlidersHorizontal} from 'lucide-react';
+import {api} from '@/lib/api';
+import type {Project,Site,GovDecision} from '@/types';
+import type {NexusResource} from '@/types/platform';
+import {NexusKasria} from '@/components/NexusKasria';
+import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
+import {DemoBadge,ErrorText} from '@/components/common';
+import {ProvenanceBadge,type ProvenanceClass} from '@/components/ProvenanceBadge';
+interface Graph {nodes:{id:string;title:string;type:string;provenance:ProvenanceClass;value?:number;unit?:string;measured_at?:string}[];edges:{source:string;target:string;relation:string;provenance:string}[];}
+export default function Home(){
+ const {t,i18n}=useTranslation();const [data,setData]=useState<{projects:Project[];resources:NexusResource[];sites:Site[];decisions:GovDecision[]}|null>(null);const [error,setError]=useState<unknown>(null);const [domain,setDomain]=useState('all');const [query,setQuery]=useState('');const [selected,setSelected]=useState<number|null>(null);const [graph,setGraph]=useState<Graph|null>(null);
+ useEffect(()=>{let active=true;Promise.all([api.get<Project[]>('/projects'),api.get<NexusResource[]>('/nexus/resources'),api.get<Site[]>('/sites'),api.get<GovDecision[]>('/decisions')]).then(([projects,resources,sites,decisions])=>{if(active){setData({projects,resources,sites,decisions});setSelected(projects[0]?.id??null);}}).catch(e=>{if(active)setError(e);});return()=>{active=false;};},[]);
+ useEffect(()=>{let active=true;if(selected!==null)api.get<Graph>(`/projects/${selected}/evidence-graph`).then(g=>{if(active)setGraph(g);}).catch(e=>{if(active)setError(e);});return()=>{active=false;};},[selected]);
+ const projects=useMemo(()=>data?.projects.filter(p=>(domain==='all'||p.domain===domain)&&p.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()))??[],[data,domain,query]);
+ const project=data?.projects.find(p=>p.id===selected);const number=(n:number)=>new Intl.NumberFormat(i18n.language).format(n);
+ return <div className="nexus-workspace space-y-7">
+  <div className="os-page-heading"><div><p className="os-eyebrow">FOGGARA / {t('os.workspace')}</p><h1>{t('os.workspace')}</h1><p className="os-description">{t('os.workspaceSub')}</p></div><Link className="os-primary" to="/app/studio"><SlidersHorizontal size={16}/>{t('os.studio')}<ArrowUpRight size={16}/></Link></div>
+  <ErrorText error={error}/>
+  <div className="os-metrics">{[{key:'projects',icon:FolderKanban,count:data?.projects.length,to:'/app/projects'},{key:'resources',icon:Layers,count:data?.resources.length,to:'/app/resources'},{key:'decisions',icon:GitBranch,count:data?.decisions.length,to:'/app/decisions'},{key:'sites',icon:MapPin,count:data?.sites.length,to:'/app/gis'}].map(({key,icon:Icon,count,to})=><Link className="os-metric" key={key} to={to}><Icon size={18}/><div><span>{t(`os.${key}`)}</span><strong>{count===undefined?'—':number(count)}</strong></div><ArrowUpRight size={14}/></Link>)}</div>
+  <div className="os-center-grid">
+   <section className="os-panel os-nexus-panel"><div className="os-panel-heading"><div><p className="os-eyebrow">01 / WEFEH</p><h2>{t('os.domains')}</h2></div><button className="os-text-button" onClick={()=>setDomain('all')}>{t('os.all')}</button></div><NexusKasria active={domain} onSelect={setDomain}/><p className="os-footnote">{t('os.illustration')}</p><div className="os-domain-strip">{NEXUS_DOMAINS.map(({key,icon:Icon,color})=><button className={domain===key?'active':''} style={{borderBottomColor:color}} key={key} onClick={()=>setDomain(domain===key?'all':key)} aria-pressed={domain===key}><Icon size={15} style={{color}}/><span>{t(`landing.${key}`)}</span><strong>{data?number(data.resources.filter(r=>r.domain===key).length):'—'}</strong></button>)}</div></section>
+   <section className="os-panel os-portfolio"><div className="os-panel-heading"><div><p className="os-eyebrow">02 / {t('os.selectedContext')}</p><h2>{t('os.portfolio')}</h2></div><Link to="/app/projects"><ArrowUpRight size={18}/><span className="sr-only">{t('os.createProject')}</span></Link></div><label className="os-search"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={t('os.search')} aria-label={t('os.search')}/></label><div className="os-project-list">{projects.map(p=><button type="button" className={`os-project-row ${p.id===selected?'selected':''}`} key={p.id} onClick={()=>{setSelected(p.id);setGraph(null);}}><span className="os-project-symbol"><FolderKanban size={18}/></span><span className="min-w-0"><strong>{p.title}</strong><span>{t(`landing.${p.domain}`)} · {t(`project.statuses.${p.status}`)}<DemoBadge show={p.is_demo}/></span></span><ArrowUpRight size={16}/></button>)}{data&&projects.length===0&&<p className="os-empty">{t('os.projectEmpty')}</p>}{!data&&!error&&<p className="os-empty">{t('common.loading')}</p>}</div><Link className="os-secondary w-full justify-center" to="/app/projects">{t('os.createProject')}</Link></section>
+  </div>
+  <div className="os-bottom-grid"><section className="os-panel"><div className="os-panel-heading"><div><p className="os-eyebrow">03 / {t('os.evidence')}</p><h2>{t('os.evidence')}</h2></div><Network size={20}/></div>{project&&<div className="os-graph-root"><FolderKanban size={18}/><strong>{project.title}</strong><DemoBadge show={project.is_demo}/></div>}<div className="os-evidence-nodes">{graph?.nodes.filter(n=>n.type!=='project').slice(0,8).map(n=><Link key={n.id} className="os-evidence-node" to={`/app/projects/${selected}`}><span className="os-node-pin"/><strong>{n.type==='measurement'?t(`measurement.params.${n.title}`,{defaultValue:n.title}):n.title}</strong>{n.type==='measurement'&&<span className="text-xs" dir="ltr">{n.value} {n.unit}{n.measured_at&&` · ${new Date(n.measured_at).toLocaleString(i18n.language)}`}</span>}<ProvenanceBadge value={n.provenance}/></Link>)}</div>{graph&&graph.nodes.length<2&&<p className="os-empty">{t('os.graphEmpty')}</p>}<p className="os-footnote">{t('os.graphNotice')}</p>{project&&<Link className="os-text-link" to={`/app/projects/${project.id}`}>{t('os.viewProject')}<ArrowUpRight size={15}/></Link>}</section>
+   <section className="os-panel os-next-panel"><p className="os-eyebrow">04 / {t('os.review')}</p><ShieldCheck size={30}/><h2>{t('os.pillarDecision')}</h2><p>{t('os.matrixRule')}</p><Link className="os-primary" to={`/app/studio${selected?`?project=${selected}`:''}`}>{t('os.newMatrix')}<ArrowUpRight size={16}/></Link><Link className="os-text-link" to="/app/decisions">{t('os.review')}<ArrowUpRight size={15}/></Link></section></div>
+  <p className="os-footnote">{t('os.registered')} · {t('os.statusNotice')}</p>
+ </div>;
 }
