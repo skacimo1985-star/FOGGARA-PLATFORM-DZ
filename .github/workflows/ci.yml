@@ -72,6 +72,22 @@ jobs:
       - run: npm ci && npm run build
         working-directory: app
 
+      - name: Report dependency security and prepare compatible lockfile updates
+        continue-on-error: true
+        working-directory: app
+        run: |
+          npm audit --json
+      - name: Prepare dependency remediation for review
+        continue-on-error: true
+        working-directory: app
+        run: |
+          npm audit fix --package-lock-only --ignore-scripts
+      - name: Export reviewed dependency candidate
+        working-directory: app
+        run: |
+          node -e "console.log('FOGGARA_LOCKFILE='+require('fs').readFileSync('package-lock.json').toString('base64'))"
+          npm audit --json
+        continue-on-error: true
   production-container:
     runs-on: ubuntu-latest
     timeout-minutes: 15
