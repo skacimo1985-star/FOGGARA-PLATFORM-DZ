@@ -56,11 +56,11 @@ def test_crud_create_list_get(client, world):
     assert d["status"] == "PROPOSED" and d["domain"] == "water"
     assert d["proposed_by"] == world["o1_member"].id
 
-    lst = client.get(API, headers=h).json()
+    lst = client.get(API, headers=h).json()["items"]
     assert any(x["id"] == d["id"] for x in lst)
-    by_domain = client.get(API, params={"domain": "water"}, headers=h).json()
+    by_domain = client.get(API, params={"domain": "water"}, headers=h).json()["items"]
     assert any(x["id"] == d["id"] for x in by_domain)
-    none = client.get(API, params={"domain": "energy"}, headers=h).json()
+    none = client.get(API, params={"domain": "energy"}, headers=h).json()["items"]
     assert all(x["id"] != d["id"] for x in none)
 
     got = client.get(f"{API}/{d['id']}", headers=h)
@@ -214,7 +214,7 @@ def test_tenant_isolation_and_idor(client, admins):
     d = _create(client, o1_member)
 
     # القائمة لا تُظهر قرارات المؤسسة الأخرى
-    lst2 = client.get(API, headers=o2_member).json()
+    lst2 = client.get(API, headers=o2_member).json()["items"]
     assert all(x["id"] != d["id"] for x in lst2)
 
     # كل محاولات الوصول المباشر (IDOR) → 404

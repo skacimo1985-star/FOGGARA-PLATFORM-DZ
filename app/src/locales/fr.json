@@ -483,6 +483,7 @@
     "add": "Ajouter",
     "actions": "Actions"
   },
+  "pager": { "label": "Navigation entre pages", "prev": "Précédent", "next": "Suivant", "pageOf": "Page {{page}} sur {{pages}}" },
   "errors": {
     "AUTH_REQUIRED": "Connexion requise",
     "AUTH_INVALID": "Session expirée — reconnectez-vous",

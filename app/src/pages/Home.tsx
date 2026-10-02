@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api } from "@/lib/api";
+import { api, type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type {
   Action, Asset, Device, GovDecision, Organization, Project,
@@ -64,7 +64,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const ps = await api.get<Project[]>("/projects");
+        const ps = (await api.get<Paged<Project>>("/projects?page_size=100")).items;
         setProjects(ps);
         const acts = await Promise.all(ps.map((p) => api.get<Action[]>(`/projects/${p.id}/actions`)));
         setActions(acts.flat().filter((a) => a.status !== "done"));
@@ -81,8 +81,8 @@ export default function Home() {
     api.get<Organization>("/org")
       .then((o) => setOrg({ status: "ok", data: o }))
       .catch(() => setOrg({ status: "error", data: null }));
-    Promise.all([api.get<WaterResource[]>("/resources"), api.get<Asset[]>("/assets")])
-      .then(([r, a]) => setResources({ status: "ok", data: { r, a } }))
+    Promise.all([api.get<Paged<WaterResource>>("/resources?page_size=500"), api.get<Paged<Asset>>("/assets?page_size=500")])
+      .then(([r, a]) => setResources({ status: "ok", data: { r: r.items, a: a.items } }))
       .catch(() => setResources({ status: "error", data: null }));
     Promise.all([api.get<Device[]>("/telemetry/devices"), api.get<Sensor[]>("/telemetry/sensors")])
       .then(([d, s]) => setSensors({ status: "ok", data: { d, s } }))

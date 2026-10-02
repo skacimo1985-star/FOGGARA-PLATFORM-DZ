@@ -1,11 +1,23 @@
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Generic, Literal, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class ORM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+# ---- ترقيم الصفحات (غلاف موحد للقوائم) ----
+T = TypeVar("T")
+
+
+class Page(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    page_size: int
+    pages: int
 
 
 # ---- Auth ----

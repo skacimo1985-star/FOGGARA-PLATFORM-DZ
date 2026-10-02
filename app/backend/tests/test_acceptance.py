@@ -109,7 +109,7 @@ def test_cross_org_isolation(client, world, db):
     assert client.get(f"/api/measurements/{m['id']}", headers=member2).status_code == 404
     assert client.get(f"/api/projects/{p['id']}/measurements", headers=member2).status_code == 404
     r = client.get("/api/projects", headers=member2)
-    assert all(x["id"] != p["id"] for x in r.json())
+    assert all(x["id"] != p["id"] for x in r.json()["items"])
 
     # مراجع مؤسسة أخرى لا يستطيع مراجعة هدف المؤسسة الأولى
     reviewer2 = login(client, "o2r@t.dz")

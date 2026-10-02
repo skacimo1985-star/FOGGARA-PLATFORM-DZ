@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: foggara-dz
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: cd app && npm ci && npm run build && pip install -r backend/requirements.txt
+    startCommand: cd app/backend && python -m alembic upgrade head && python seed.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      - key: NODE_VERSION
+        value: 22.18.0
+      - key: ENV
+        value: prod
+      - key: SEED_DEMO
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SETUP_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: TRUST_PROXY_HEADERS
+        value: "true"

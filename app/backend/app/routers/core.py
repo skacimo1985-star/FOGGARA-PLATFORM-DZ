@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from .. import config
 from ..audit import audit
 from ..db import get_db
-from ..deps import api_error, get_current_user
+from ..deps import api_error, get_current_user, paginate, pagination
 from ..models import Asset, AuditLog, Organization, Project, Site, User, WaterResource
-from ..schemas import (AssetIn, AssetOut, AuditOut, OrgOut, ProjectIn,
+from ..schemas import (AssetIn, AssetOut, AuditOut, OrgOut, Page, ProjectIn,
                        ProjectOut, ProjectUpdate, ResourceIn, ResourceOut,
                        SiteIn, SiteOut)
 
@@ -21,10 +21,13 @@ def my_org(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 
 
 # ---------- Sites ----------
-@router.get("/sites", response_model=list[SiteOut])
-def list_sites(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(Site).where(Site.org_id == user.org_id).order_by(Site.id)
-                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
+@router.get("/sites", response_model=Page[SiteOut])
+def list_sites(pg: tuple[int, int] = Depends(pagination),
+               user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    page, page_size = pg
+    stmt = select(Site).where(Site.org_id == user.org_id).order_by(Site.id)
+    items, total, pages = paginate(db, stmt, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
@@ -38,10 +41,13 @@ def create_site(payload: SiteIn, user: User = Depends(get_current_user), db: Ses
 
 
 # ---------- Water resources ----------
-@router.get("/resources", response_model=list[ResourceOut])
-def list_resources(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(WaterResource).where(WaterResource.org_id == user.org_id)
-                      .order_by(WaterResource.id).limit(config.LIST_MAX_LIMIT)).scalars().all()
+@router.get("/resources", response_model=Page[ResourceOut])
+def list_resources(pg: tuple[int, int] = Depends(pagination),
+                   user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    page, page_size = pg
+    stmt = select(WaterResource).where(WaterResource.org_id == user.org_id).order_by(WaterResource.id)
+    items, total, pages = paginate(db, stmt, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
 
 @router.post("/resources", response_model=ResourceOut, status_code=201)
@@ -58,10 +64,13 @@ def create_resource(payload: ResourceIn, user: User = Depends(get_current_user),
 
 
 # ---------- Assets ----------
-@router.get("/assets", response_model=list[AssetOut])
-def list_assets(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(Asset).where(Asset.org_id == user.org_id).order_by(Asset.id)
-                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
+@router.get("/assets", response_model=Page[AssetOut])
+def list_assets(pg: tuple[int, int] = Depends(pagination),
+                user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    page, page_size = pg
+    stmt = select(Asset).where(Asset.org_id == user.org_id).order_by(Asset.id)
+    items, total, pages = paginate(db, stmt, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
 
 @router.post("/assets", response_model=AssetOut, status_code=201)
@@ -93,10 +102,13 @@ def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
             api_error(404, "NOT_FOUND", "Asset not found")
 
 
-@router.get("/projects", response_model=list[ProjectOut])
-def list_projects(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(Project).where(Project.org_id == user.org_id)
-                      .order_by(Project.id.desc()).limit(config.LIST_MAX_LIMIT)).scalars().all()
+@router.get("/projects", response_model=Page[ProjectOut])
+def list_projects(pg: tuple[int, int] = Depends(pagination),
+                  user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    page, page_size = pg
+    stmt = select(Project).where(Project.org_id == user.org_id).order_by(Project.id.desc())
+    items, total, pages = paginate(db, stmt, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
 
 @router.post("/projects", response_model=ProjectOut, status_code=201)

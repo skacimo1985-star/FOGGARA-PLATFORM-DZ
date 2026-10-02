@@ -14,11 +14,11 @@ from sqlalchemy.orm import Session
 from .. import config
 from ..audit import audit
 from ..db import get_db
-from ..deps import api_error, get_current_user
+from ..deps import paginate, pagination, api_error, get_current_user
 from ..models import (GovDecision, GovDecisionEvidence,
                       GovDecisionExecution, GovDecisionTransition,
                       GovDecisionVerification, User)
-from ..schemas import (DecisionEvidenceIn, DecisionEvidenceOut,
+from ..schemas import (DecisionEvidenceIn, DecisionEvidenceOut, Page,
                        DecisionExecutionIn, DecisionExecutionOut, GovDecisionIn,
                        GovDecisionOut, GovDecisionPatchIn, DecisionTransitionIn,
                        DecisionTransitionOut, DecisionVerificationIn,
@@ -37,10 +37,11 @@ def _owned_decision(db: Session, org_id: int, decision_id: int) -> GovDecision:
 
 
 # ---------- القرارات: قائمة / إنشاء / عرض / تعديل ----------
-@router.get("", response_model=list[GovDecisionOut])
+@router.get("", response_model=Page[GovDecisionOut])
 def list_decisions(domain: Optional[str] = Query(default=None),
                    status: Optional[str] = Query(default=None),
                    risk_level: Optional[str] = Query(default=None),
+                   pg: tuple[int, int] = Depends(pagination),
                    user: User = Depends(get_current_user),
                    db: Session = Depends(get_db)):
     q = select(GovDecision).where(GovDecision.org_id == user.org_id)
@@ -50,8 +51,9 @@ def list_decisions(domain: Optional[str] = Query(default=None),
         q = q.where(GovDecision.status == status)
     if risk_level:
         q = q.where(GovDecision.risk_level == risk_level)
-    return db.execute(q.order_by(GovDecision.id.desc())
-                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
+    page, page_size = pg
+    items, total, pages = paginate(db, q.order_by(GovDecision.id.desc()), page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size, pages=pages)
 
 
 @router.post("", response_model=GovDecisionOut, status_code=201)

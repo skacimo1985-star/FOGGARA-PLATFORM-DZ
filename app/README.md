@@ -319,3 +319,18 @@ git push -u origin feat/platform-extensions
 - سقف القوائم `LIST_MAX_LIMIT` (افتراضي 500) على: sites/resources/assets/projects/decisions.
 - فهرسان مركبان لهجرة `d4e5f6a7b8c9` مبنيان على أنماط استعلام فعلية:
   `(org_id, id)` على audit_logs، و`(org_id, status)` على gov_decisions.
+
+### تحديث الجولة الثانية (2026-10-02)
+- **ترقيم الصفحات**: القوائم الخمس (sites/resources/assets/projects/decisions) تعيد
+  غلافًا موحدًا `{items,total,page,page_size,pages}` مع `page` (افتراضي 1) و
+  `page_size` (افتراضي 50؛ فوق 1000 يُرفض 422؛ ويُقيَّد بسقف LIST_MAX_LIMIT).
+  الواجهة تعرض تنقّل صفحات في المشاريع والقرارات.
+- **تحديد المعدل خلف بروكسي**: `TRUST_PROXY_HEADERS=true` (افتراضي في prod) يجعل
+  المفتاح أول عنوان في X-Forwarded-For؛ بلا ثقة تُتجاهل الترويسة (مقاومة تزوير).
+  الحدود: عدّاد لكل عملية — تعدد النسخ يضرب الحد الفعلي بعددها (موثق في ratelimit.py).
+- **الاسترجاع**: `restore-postgres.ps1` يمرر `--dbname` صراحة (pg_restore لا يقرأ
+  PGDATABASE)، ويعلن النجاح فقط بعد: خروج pg_restore بلا خطأ + عدد جداول ≥ 39 +
+  رأس Alembic مطابق + صفر أيتام users×organizations.
+- **تدريب منفذ فعليًا** (2026-10-02، PostgreSQL عبر pgserver): نسخ قاعدة مزروعة ←
+  استرجاع لقاعدة منفصلة ← تحقق (39 جدولًا، head=d4e5f6a7b8c9، 0 أيتام) ← مسار
+  وظيفي كامل (health/db=up ← دخول ← قائمة مرقّمة ← كتابة جديدة): ناجح.

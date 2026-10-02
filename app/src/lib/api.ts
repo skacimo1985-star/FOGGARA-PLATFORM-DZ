@@ -1,3 +1,11 @@
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 export class ApiError extends Error {
   code: string;
   status: number;

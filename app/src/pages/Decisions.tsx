@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "@/lib/api";
+import { api, type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type {
   DecisionDomain, DecisionEvidence, DecisionExecution, DecisionStatus,
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ErrorText, DemoBadge } from "@/components/common";
+import { ErrorText, DemoBadge, Pager } from "@/components/common";
 import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 // محرك القرارات العام (Contract §5..§22) — المرحلة 2
@@ -57,14 +57,20 @@ export default function Decisions() {
   const [filters, setFilters] = useState<{ domain: string; status: string; risk: string }>(
     { domain: "", status: "", risk: "" });
 
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (filters.domain) params.set("domain", filters.domain);
     if (filters.status) params.set("status", filters.status);
     if (filters.risk) params.set("risk_level", filters.risk);
-    const q = params.toString();
-    setList(await api.get<GovDecision[]>(`/decisions${q ? `?${q}` : ""}`));
-  }, [filters]);
+    params.set("page", String(page));
+    params.set("page_size", "20");
+    const r = await api.get<Paged<GovDecision>>(`/decisions?${params.toString()}`);
+    setList(r.items);
+    setPages(r.pages);
+  }, [filters, page]);
 
   const loadDetail = useCallback(async (d: GovDecision) => {
     const [full, tr, ev, ex, vf] = await Promise.all([
@@ -234,6 +240,7 @@ export default function Decisions() {
             ))}
           </CardContent>
         </Card>
+        <Pager page={page} pages={pages} onPage={setPage} />
 
         {/* إنشاء قرار */}
         <Card>

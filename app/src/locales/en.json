@@ -483,6 +483,7 @@
     "add": "Add",
     "actions": "Actions"
   },
+  "pager": { "label": "Page navigation", "prev": "Previous", "next": "Next", "pageOf": "Page {{page}} of {{pages}}" },
   "errors": {
     "AUTH_REQUIRED": "Sign-in required",
     "AUTH_INVALID": "Session expired — please sign in again",

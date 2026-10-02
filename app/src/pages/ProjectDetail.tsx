@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api } from "@/lib/api";
+import { api, type Paged } from "@/lib/api";
 import type { Action, Asset, AuditEntry, Evidence, HumanDecision, Measurement, Project, Recommendation, Review, Site, WaterResource } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,9 +57,9 @@ export default function ProjectDetail() {
     } finally {
       setLoading(false);
     }
-    api.get<Site[]>("/sites").then(setSites).catch(() => {});
-    api.get<WaterResource[]>("/resources").then(setResources).catch(() => {});
-    api.get<Asset[]>("/assets").then(setAssets).catch(() => {});
+    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
+    api.get<Paged<WaterResource>>("/resources?page_size=500").then((r) => setResources(r.items)).catch(() => {});
+    api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
   }, [pid]);
 
   useEffect(() => {

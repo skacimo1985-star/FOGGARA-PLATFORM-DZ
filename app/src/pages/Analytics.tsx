@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, type Paged } from "@/lib/api";
 import type { Indicator, IndicatorValue, Project } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,10 +126,10 @@ export default function Analytics() {
 
   useEffect(() => {
     api.get<Indicator[]>("/indicators").then(setIndicators).catch(setError);
-    api.get<Project[]>("/projects")
+    api.get<Paged<Project>>("/projects?page_size=500")
       .then((ps) => {
-        setProjects(ps);
-        if (ps.length > 0) setProjectId((cur) => cur ?? ps[0].id);
+        setProjects(ps.items);
+        if (ps.items.length > 0) setProjectId((cur) => cur ?? ps.items[0].id);
       })
       .catch(() => setProjects([]));
   }, []);
