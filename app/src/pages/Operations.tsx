@@ -150,7 +150,7 @@ export default function Operations() {
             </>}
             {tab==="listings"&&<><p>{labels[row.kind||""]} · {row.quantity} {row.unit} · {row.wilaya}</p><p className="fg-muted">{row.product_code} · {labels[row.sector||""]}</p>
               {row.status==="active"&&<button className="fg-link" disabled={actionsDisabled} onClick={()=>void run("/listings/"+row.id+"/close")}>إغلاق السجل</button>}</>}
-            {tab==="matches"&&<><p>العرض #{row.offer_id} ← الطلب #{row.demand_id}</p><p className="fg-value">{row.quantity} <small>كمية مقترحة · التوافق {row.score}/100</small></p>
+            {tab==="matches"&&<><p>العرض #{row.offer_id} ← الطلب #{row.demand_id}</p><p className="fg-value">{row.quantity} {row.unit} <small>كمية مقترحة · التوافق {row.score}/100</small></p>
               <p className="fg-muted">بديل للمراجعة داخل المؤسسة؛ لا يحجز مخزونًا ولا ينشئ عقدًا.</p></>}
             {tab==="policies"&&<><p>الإصدار {row.version} · قواعد خاصة بالمؤسسة</p>
               <button className="fg-link" onClick={()=>setExpanded(expanded===row.id?null:row.id)}>عرض الحدود والأوزان</button>

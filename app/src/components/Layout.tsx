@@ -75,7 +75,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
             <span>{t("app.name")}</span>
             <span className="rounded-full border border-sand/60 bg-sand/20 px-1.5 py-0.5 text-[10px] font-bold text-sand">
-              {t("common.demoBadge")}
+              WEFEH
             </span>
           </Link>
 

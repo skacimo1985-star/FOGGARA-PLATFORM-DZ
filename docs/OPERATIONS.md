@@ -106,7 +106,7 @@ retention schedule, controller/processor arrangements, appointed privacy contact
 and applicable authority formalities. They do not certify compliance, trademark
 registration, professional accreditation, or national/international deployment.
 
-The public image is "Foggara in Timimoun" by Bernard Gagnon, Wikimedia Commons,
+The public image is "Foggara in Tala" by Bernard Gagnon, Wikimedia Commons,
 CC BY 4.0. Its presentation is cropped and darkened. Attribution and license
 links appear in /rights. It is not one of the user's local attachments.
 The supplied local files could be read during source research, but their asset

@@ -13,14 +13,14 @@ export default function Landing() {
     <nav className="fg-public-nav" aria-label="تصفح فقارة"><Link to="/about">رؤيتنا</Link><a href="#ecosystem">منظومة WEFEH</a><a href="#solutions">الحلول والخدمات</a><Link to="/contact">الشراكات والتواصل</Link>
       <Link to={user?"/app/operations":"/login"} style={{marginInlineStart:"auto",fontWeight:700}}>مساحة العمل ↗</Link></nav>
     <section className="fg-hero" aria-labelledby="foggara-title">
-      <img className="fg-hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/2/22/Foggara_in_Timimoun.jpg"
-        width={2402} height={1601} alt="قنوات فقارة تقليدية في تيميمون، الجزائر" fetchPriority="high" referrerPolicy="no-referrer"/>
+      <img className="fg-hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Foggara_in_Tala.jpg/1280px-Foggara_in_Tala.jpg"
+        width={3564} height={2268} alt="فقارة في تالا، ولاية تيميمون، الجزائر" fetchPriority="high" referrerPolicy="no-referrer"/>
       <p className="fg-eyebrow">ROOTED IN ALGERIA. CONNECTED BY PURPOSE.</p>
       <h1 id="foggara-title">من عمق الأرض،<br/>نصلُ <em>إلى المستقبل.</em></h1>
       <p className="fg-hero-copy">موارد مترابطة. معرفة تتحوّل إلى قرار. فقارة تجمع المياه والطاقة والغذاء والبيئة والصحة، لتصل المنظومة الإنتاجية من الميدان إلى القيمة.</p>
       <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app/operations":"/login"}>الدخول إلى المنصة <ArrowUpLeft size={18}/></Link><a className="fg-button fg-secondary" href="#ecosystem">اكتشف فقارة <ArrowDown size={16}/></a></div>
       <div className="fg-hero-caption"><span>FOGGARA · WEFEH NEXUS PLATFORM<br/>LAGHOUAT, ALGERIA · 03</span>
-        <span>إرث التدبير المشترك، برؤية رقمية.<br/><Link to="/rights">صورة تيميمون: Bernard Gagnon · CC BY 4.0</Link></span></div>
+        <span>إرث التدبير المشترك، برؤية رقمية.<br/><Link to="/rights">فقارة تالا: Bernard Gagnon · CC BY 4.0</Link></span></div>
     </section>
     <nav className="fg-pillars" aria-label="المجالات الخمسة">{domains.map(({name,key,Icon})=><Link key={key} to={"/app/explore/"+key}><Icon size={21}/><span>{name}</span></Link>)}</nav>
     <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / A CONNECTED ECOSYSTEM</p><h2>خمسة مجالات.<br/>منظومة واحدة للحياة والإنتاج.</h2></div><div><p>استمدّت فقارة اسمها من معرفة جزائرية عريقة في تنظيم المورد وتقاسمه. واليوم، نترجم هذا المعنى إلى بنية رقمية تربط الموارد والبيانات والتجهيزات والمنتجين والمورّدين والخبراء والمؤسسات.</p><p>من الواحة والمزرعة إلى التحويل والخدمات واللوجستيك، تُبنى القرارات على قياسات قابلة للمراجعة، وأدلة واضحة، ومسؤوليات محددة.</p><Link className="fg-link" to="/about">تعرف على المشروع والجهة الناشرة <ArrowUpLeft size={16}/></Link></div></section>

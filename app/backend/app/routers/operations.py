@@ -161,7 +161,14 @@ def listing_close(listing_id: int, user=Depends(get_current_user), db=Depends(ge
 
 @router.get("/matches")
 def matches(pg=Depends(pagination), user=Depends(get_current_user), db=Depends(get_db)):
-    return rows(db, ValueMatch, user, pg, ValueMatch.status == "suggested")
+    result = rows(db, ValueMatch, user, pg, ValueMatch.status == "suggested")
+    offer_ids = [item["offer_id"] for item in result["items"]]
+    offers = {r.id: r for r in db.scalars(select(ValueListing).where(
+        ValueListing.org_id == user.org_id, ValueListing.id.in_(offer_ids)))}
+    for item in result["items"]:
+        offer = offers[item["offer_id"]]
+        item.update(unit=offer.unit, product_code=offer.product_code, title=offer.title)
+    return result
 
 @router.post("/match")
 def match_now(user=Depends(get_current_user), db=Depends(get_db)):

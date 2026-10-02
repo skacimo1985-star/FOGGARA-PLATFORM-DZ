@@ -53,7 +53,7 @@ export default function Legal() {
     {pathname==="/rights"&&<>
       <section><h2>المحتوى والبيانات</h2><p>يحتفظ أصحاب البيانات والمحتوى بحقوقهم. إدخال المحتوى يمنح الجهة المشغلة حق معالجته بالقدر اللازم لتقديم الخدمة وفق الغرض والصلاحيات المعتمدة، ولا يعني نقل الملكية أو إباحة إعادة البيع.</p></section>
       <section><h2>الاسم والبرمجيات</h2><p>يُستخدم اسم FOGGARA وهوية SIREP OASIS NEXUS WEFEH للتعريف بالمشروع والجهة الناشرة. لا تتضمن هذه الصفحة ادعاءً بتسجيل علامة أو براءة أو اعتماد غير موثق. يخضع استخدام الشيفرة والمكونات لتراخيص المستودع والمكونات المعنية، ولا يلغي النص حقوق البرمجيات مفتوحة المصدر.</p></section>
-      <section><h2>الصور والمصادر</h2><p>صورة فقارة تيميمون في الواجهة: Bernard Gagnon، <a href="https://commons.wikimedia.org/wiki/File:Foggara_in_Timimoun.jpg" target="_blank" rel="noreferrer">Wikimedia Commons</a>، بترخيص <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. عُدّل العرض بالاقتصاص وتعتيم الألوان. لا يشير الاستخدام إلى تأييد المصور للمنصة.</p></section>
+      <section><h2>الصور والمصادر</h2><p>صورة فقارة تالا في الواجهة: Bernard Gagnon، <a href="https://commons.wikimedia.org/wiki/File:Foggara_in_Tala.jpg" target="_blank" rel="noreferrer">Wikimedia Commons</a>، بترخيص <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. عُدّل العرض بالاقتصاص وتعتيم الألوان. لا يشير الاستخدام إلى تأييد المصور للمنصة.</p></section>
       <section><h2>الإبلاغ عن انتهاك</h2><p>للتبليغ، أرسل رابط المحتوى ووصف الحق ودليل صفتك ووسيلة التواصل عبر <Link to="/contact">اتصل بنا</Link>. تُراجع البلاغات مع حفظ حقوق الأطراف وعدم الكشف غير الضروري عن بياناتهم.</p></section>
     </>}
     {pathname==="/contact"&&<>
