@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .db import get_db
 from .models import User
-from .security import decode_token
+from .security import decode_token, token_matches_credentials
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -25,7 +25,7 @@ def get_current_user(
     if user_id is None:
         api_error(401, "AUTH_INVALID", "Invalid or expired token")
     user = db.get(User, user_id)
-    if user is None:
+    if user is None or not token_matches_credentials(cred.credentials, user.password_hash):
         api_error(401, "AUTH_INVALID", "Invalid or expired token")
     return user
 

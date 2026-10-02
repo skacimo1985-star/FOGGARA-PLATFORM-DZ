@@ -150,3 +150,21 @@ def test_contact_consent_privacy_and_operator_scope(client, db, ops, monkeypatch
     path = f"{BASE}/privacy/{r.json()['id']}/resolve"
     assert client.post(path, headers=ops["member"], json={"response": "Request processed"}).status_code == 403
     assert client.post(path, headers=ops["admin"], json={"response": "Identity verified and response provided"}).status_code == 200
+
+
+def test_team_scoping_password_redaction_and_token_revocation(client, ops):
+    account = {"email": "new@example.org", "full_name": "New member",
+               "password": "Fresh-secret-928!", "role": "reviewer"}
+    assert client.post(BASE + "/team", headers=ops["member"], json=account).status_code == 403
+    r = client.post(BASE + "/team", headers=ops["admin"], json=account)
+    assert r.status_code == 201, r.text
+    assert "password" not in r.text
+    assert r.json()["role"] == "reviewer"
+    assert client.post(BASE + "/team", headers=ops["admin"], json=account).status_code == 409
+    r = client.post(BASE + "/password", headers=ops["member"],
+                    json={"current_password":"pass#1","new_password":"Changed-secret-928!"})
+    assert r.status_code == 200, r.text
+    assert client.get("/api/auth/me", headers=ops["member"]).status_code == 401
+    r = client.post("/api/auth/login", json={"email":"o1m@t.dz","password":"Changed-secret-928!"})
+    assert r.status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization":"Bearer "+r.json()["token"]}).status_code == 200

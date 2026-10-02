@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: foggara_migration
@@ -50,6 +50,17 @@ jobs:
         with:
           name: foggara-browser-verification
           path: app/backend/qa
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foggara-operational-package
+          path: |
+            app/dist
+            app/backend/app
+            app/backend/alembic
+            app/backend/alembic.ini
+            app/backend/requirements.txt
+            docs/OPERATIONS.md
           retention-days: 14
   frontend:
     runs-on: ubuntu-latest

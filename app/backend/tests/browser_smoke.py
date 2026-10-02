@@ -1,5 +1,6 @@
 """Real Chromium integration checks against a disposable CI PostgreSQL database."""
 import json
+import base64
 import os
 import secrets
 import subprocess
@@ -51,6 +52,7 @@ def main():
                 image_loaded = page.locator(".fg-hero-photo").evaluate("(img) => img.complete && img.naturalWidth > 0")
                 assert image_loaded, "Hero photograph must load"
                 page.screenshot(path=str(out / "landing-desktop.png"), full_page=True)
+                print("FOGGARA_DESKTOP_PREVIEW=" + base64.b64encode(page.screenshot(type="jpeg", quality=60)).decode())
                 for width in (390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), "Horizontal overflow"
@@ -91,6 +93,7 @@ def main():
                 page.screenshot(path=str(out / "operations-mobile.png"), full_page=True)
                 page.set_viewport_size({"width":1440,"height":1000})
                 page.screenshot(path=str(out / "operations-desktop.png"), full_page=True)
+                print("FOGGARA_OPERATIONS_PREVIEW=" + base64.b64encode(page.screenshot(type="jpeg", quality=60)).decode())
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({

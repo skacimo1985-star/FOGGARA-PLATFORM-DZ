@@ -19,7 +19,7 @@ def login(request: Request, payload: LoginIn, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email.lower())).scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):
         api_error(401, "BAD_CREDENTIALS", "Invalid email or password")
-    token = create_token(user.id)
+    token = create_token(user.id, user.password_hash)
     audit(db, user, "login", "user", entity_id=user.id)
     db.commit()
     return TokenOut(token=token, user=UserOut.model_validate(user))

@@ -8,9 +8,9 @@ import "./operations.css";
 
 type Item = {
   id: number; name?: string; version?: number; active?: boolean; status?: string;
-  title?: string; project_id?: number; domain?: string; value?: number; unit?: string;
+  title?: string; project_id?: number; domain?: string; value?: string; unit?: string;
   source?: string; submitted_by?: number; kind?: string; sector?: string; product_code?: string;
-  quantity?: number; wilaya?: string; code?: string; product?: string; stage?: string;
+  quantity?: string; wilaya?: string; code?: string; product?: string; stage?: string;
   offer_id?: number; demand_id?: number; score?: number; attempts?: number; error?: string;
   note?: string; response?: string; rules?: Record<string, Rule>;
   trace?: {stage: string; user_id: number; at: string; note: string}[];

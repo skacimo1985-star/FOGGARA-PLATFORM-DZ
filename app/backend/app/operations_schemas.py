@@ -87,3 +87,15 @@ class PrivacyIn(Input):
 
 class ResolutionIn(Input):
     response: str = Field(min_length=10, max_length=3000)
+
+class TeamIn(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    email: str = Field(min_length=5, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    full_name: str = Field(min_length=2, max_length=150)
+    password: str = Field(min_length=12, max_length=128)
+    role: Literal["member", "reviewer", "admin"] = "member"
+
+class PasswordIn(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)

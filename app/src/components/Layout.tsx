@@ -44,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/simulator", key: "nav.simulator", icon: FlaskConical },
   { to: "/app/vde", key: "nav.vde", icon: Sun },
   { to: "/app/org", key: "nav.org", icon: Building2 },
+  { to: "/app/account", key: "الفريق والحساب", icon: Building2 },
   { to: "/app/audit", key: "nav.audit", icon: ScrollText },
 ];
 

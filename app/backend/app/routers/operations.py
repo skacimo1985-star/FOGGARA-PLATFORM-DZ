@@ -13,7 +13,7 @@ from ..models import User, Project, Organization
 from ..operations_models import (MatrixPolicy, MatrixObservation, MatrixEvaluation, ValueListing,
     ValueMatch, ProductionLot, MatrixJob, ContactTicket, PrivacyRequest)
 from ..operations_schemas import (PolicyIn, ObservationIn, ReviewIn, ListingIn, LotIn,
-    TransitionIn, ContactIn, PrivacyIn, ResolutionIn)
+    TransitionIn, ContactIn, PrivacyIn, ResolutionIn, TeamIn, PasswordIn)
 from ..operations_engine import lock_org, enqueue, evaluate, match_listings
 from ..ratelimit import check_rate_limit
 
@@ -22,7 +22,7 @@ POLICY_VERSION = "2026-10-02"
 
 def record(row):
     # Explicit columns only: no relationships, internal ORM state, or password hashes.
-    return {col.name: (float(getattr(row, col.name)) if isinstance(getattr(row, col.name), Decimal)
+    return {col.name: (str(getattr(row, col.name)) if isinstance(getattr(row, col.name), Decimal)
                        else getattr(row, col.name)) for col in row.__table__.columns}
 
 def own(db, model, row_id, user):
@@ -246,3 +246,51 @@ def privacy_resolve(request_id: int, payload: ResolutionIn, user=Depends(get_cur
         api_error(409, "ALREADY_RESOLVED", "Request already resolved")
     row.status, row.response = "resolved", payload.response
     return saved(db, user, row, "resolve")
+
+
+@router.get("/team")
+def team_list(pg=Depends(pagination), user=Depends(get_current_user), db=Depends(get_db)):
+    from ..schemas import UserOut
+    admin(user)
+    page, size = pg
+    items, total, pages = paginate(db, select(User).where(User.org_id == user.org_id).order_by(User.id), page, size)
+    return {"items": [UserOut.model_validate(r) for r in items], "total": total, "pages": pages, "page": page, "page_size": size}
+
+
+@router.post("/team", status_code=201)
+def team_create(payload: TeamIn, user=Depends(get_current_user), db=Depends(get_db)):
+    from sqlalchemy.exc import IntegrityError
+    from ..security import hash_password
+    from ..schemas import UserOut
+    admin(user)
+    lock_org(db, user.org_id)
+    email = payload.email.lower()
+    if db.scalar(select(User.id).where(User.email == email)):
+        api_error(409, "EMAIL_UNAVAILABLE", "Email unavailable")
+    row = User(org_id=user.org_id, email=email, full_name=payload.full_name,
+               role=payload.role, password_hash=hash_password(payload.password), locale="ar")
+    db.add(row)
+    try:
+        db.flush()
+        audit(db, user, "create", "user", entity_id=row.id, meta={"role": row.role})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        api_error(409, "EMAIL_UNAVAILABLE", "Email unavailable")
+    return UserOut.model_validate(row)
+
+@router.post("/password")
+def change_password(payload: PasswordIn, request: Request, user=Depends(get_current_user), db=Depends(get_db)):
+    from ..security import verify_password, hash_password
+    check_rate_limit(request, "password", "RATE_LIMIT_PASSWORD_MAX", "RATE_LIMIT_PASSWORD_WINDOW", 5, 600)
+    # Lock the account so concurrent password changes cannot overwrite each other.
+    row = db.execute(select(User).where(User.id == user.id).with_for_update()
+                     .execution_options(populate_existing=True)).scalar_one()
+    if not verify_password(payload.current_password, row.password_hash):
+        api_error(403, "BAD_CREDENTIALS", "Current password is incorrect")
+    if payload.current_password == payload.new_password:
+        api_error(422, "PASSWORD_UNCHANGED", "Choose a different password")
+    row.password_hash = hash_password(payload.new_password)
+    audit(db, user, "password_change", "user", entity_id=user.id)
+    db.commit()
+    return {"status": "changed", "reauthenticate": True}
