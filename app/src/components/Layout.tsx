@@ -12,6 +12,7 @@ import { useAuth } from "@/context/useAuth";
 import { setLocale, type Locale } from "@/lib/i18n";
 import { WILAYAS } from "@/lib/wilayas";
 import { Button } from "@/components/ui/button";
+import "@/pages/operations.css";
 
 function AlgeriaClock() {
   const [now, setNow] = useState(new Date());
@@ -29,6 +30,7 @@ type NavItem = { to: string; key: string; icon: LucideIcon; end?: boolean };
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/app", key: "nav.home", icon: Home, end: true },
+  { to: "/app/operations", key: "الإنتاج والمصفوفات", icon: Activity },
   { to: "/app/explore", key: "nav.explore", icon: Compass },
   { to: "/app/projects", key: "nav.projects", icon: FolderKanban },
   { to: "/app/services", key: "nav.services", icon: Wrench },
@@ -189,6 +191,13 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* ==== محتوى مائع ==== */}
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">{children}</main>
       </div>
+      <footer className="fg-footer" dir="rtl">
+        <span>FOGGARA · SIREP OASIS NEXUS WEFEH · الجزائر</span>
+        <nav aria-label="المعلومات والحقوق">
+          <Link to="/about">عن فقارة</Link><Link to="/privacy">الخصوصية</Link>
+          <Link to="/terms">الشروط</Link><Link to="/rights">الحقوق</Link><Link to="/contact">اتصل بنا</Link>
+        </nav>
+      </footer>
     </div>
   );
 }

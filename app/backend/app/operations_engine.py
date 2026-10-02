@@ -92,7 +92,8 @@ def match_listings(db, org_id):
     valid = set()
     for demand in (r for r in rows if r.kind == "demand"):
         # Alternatives only; no inventory reservations or binding allocation.
-        for offer in offers.get((demand.product_code, demand.unit, demand.sector), []):
+        for offer in sorted(offers.get((demand.product_code, demand.unit, demand.sector), []),
+                            key=lambda o: (o.wilaya != demand.wilaya, o.id))[:20]:
             key = (offer.id, demand.id)
             valid.add(key)
             local = offer.wilaya == demand.wilaya

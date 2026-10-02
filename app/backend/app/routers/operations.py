@@ -140,6 +140,9 @@ def listing_create(payload: ListingIn, user=Depends(get_current_user), db=Depend
     lock_org(db, user.org_id)
     if payload.project_id is not None:
         own(db, Project, payload.project_id, user)
+    if db.scalar(select(func.count()).select_from(ValueListing).where(
+        ValueListing.org_id == user.org_id, ValueListing.status == "active")) >= 2000:
+        api_error(409, "CAPACITY_REACHED", "Close inactive listings before adding more")
     row = ValueListing(org_id=user.org_id, created_by=user.id, **payload.model_dump())
     db.add(row)
     enqueue(db, user.org_id, "matching")

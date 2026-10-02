@@ -34,6 +34,23 @@ jobs:
         working-directory: app/backend
         env:
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+      - run: npm ci && npm run build
+        working-directory: app
+      - run: pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m tests.browser_smoke
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foggara-browser-verification
+          path: app/backend/qa
+          retention-days: 14
   frontend:
     runs-on: ubuntu-latest
     steps:

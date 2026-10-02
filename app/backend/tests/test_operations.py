@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import pytest
 from sqlalchemy import select
-from conftest import login
+from .conftest import login
 from app.models import Project
 from app.operations_models import ContactTicket, MatrixObservation, MatrixJob
 from app.operations_engine import evaluate, lock_org
