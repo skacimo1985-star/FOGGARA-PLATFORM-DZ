@@ -131,3 +131,17 @@ IoT/OT gateway, payment/contracts, cross-organization marketplace permissions,
 signed assurance, sovereign infrastructure, disaster recovery certification,
 MFA/SSO, native mobile, automated privacy export/deletion and external agent
 integrations are not implemented by this change.
+
+## Prebuilt artifact
+
+The foggara-operational-package artifact contains the built app/dist and backend
+runtime under their normal paths. It is not a public hosting URL. With a supported
+Python environment and a configured PostgreSQL DATABASE_URL, JWT_SECRET and
+SETUP_KEY, install app/backend/requirements.txt, apply migrations from app/backend,
+then run uvicorn app.main:app and the separate operations worker.
+For source builds and Docker, use the complete repository branch, not the reduced
+runtime artifact.
+
+CI also builds Dockerfile.production and starts the isolated PostgreSQL 16,
+migration, API and worker Compose stack, verifies the database/schema health
+response and worker process, then removes only that disposable CI stack.

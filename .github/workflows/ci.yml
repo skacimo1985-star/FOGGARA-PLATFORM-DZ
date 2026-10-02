@@ -71,3 +71,39 @@ jobs:
           node-version: '22.18.0'
       - run: npm ci && npm run build
         working-directory: app
+
+  production-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_PASSWORD: ci-disposable-database-password
+      DATABASE_URL: postgresql+psycopg://foggara:ci-disposable-database-password@db:5432/foggara
+      JWT_SECRET: ci-disposable-secret-only-not-for-production-94821
+      SETUP_KEY: ci-disposable-bootstrap-key-94821
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start isolated production stack
+        run: docker compose -f compose.production.yml up --build -d
+      - name: Verify API health and persistent worker
+        run: |
+          python - <<'PY'
+          import json, time, urllib.request
+          for attempt in range(40):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
+                      body = json.load(response)
+                      assert body["db"] == "up"
+                      assert body["alembic"] == "e5f6a7b8c9d0"
+                      break
+              except Exception:
+                  if attempt == 39:
+                      raise
+                  time.sleep(2)
+          PY
+          docker compose -f compose.production.yml ps --status running --services | grep -x worker
+      - name: Show failure diagnostics
+        if: failure()
+        run: docker compose -f compose.production.yml logs --tail 80
+      - name: Remove isolated CI containers
+        if: always()
+        run: docker compose -f compose.production.yml down -v

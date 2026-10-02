@@ -11,6 +11,7 @@ import time
 from datetime import datetime, timezone
 from sqlalchemy import select
 from .db import SessionLocal
+from .audit import audit
 from .operations_models import MatrixJob, MatrixPolicy, MatrixObservation
 from .operations_engine import lock_org, enqueue, evaluate, match_listings
 
@@ -36,12 +37,16 @@ def process_one():
                     match_listings(db, job.org_id)
                 else:
                     raise ValueError("UNKNOWN_JOB")
+                audit(db, None, "job_completed", "matrix_jobs", entity_id=job.id,
+                      org_id=job.org_id, project_id=job.project_id, meta={"kind": job.kind})
             job.status, job.error = "completed", None
             job.finished_at = datetime.now(timezone.utc)
         except Exception as exc:
             # Never persist raw database exceptions (may contain personal data or secrets).
             job.error = type(exc).__name__
             job.status = "failed" if job.attempts >= 3 else "pending"
+            if job.status == "failed":
+                job.finished_at = datetime.now(timezone.utc)
             log.warning("job=%s attempt=%s error=%s", job.id, job.attempts, job.error)
         db.commit()
         return job.status
