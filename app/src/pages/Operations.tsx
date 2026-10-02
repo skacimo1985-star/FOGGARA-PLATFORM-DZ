@@ -46,6 +46,21 @@ function TextField({label, name, type="text", required=true, ...props}:
 function SelectField({label,name,values}: {label:string;name:string;values:string[]}) {
   return <Field label={label}><select className={inputClass} name={name}>{values.map(v=><option key={v} value={v}>{labels[v] || v}</option>)}</select></Field>;
 }
+function Review({row,resource,disabled,onReview}:{
+  row:Item;resource:"observations"|"evaluations";disabled:boolean;
+  onReview:(path:string,body?:unknown)=>Promise<boolean>;
+}) {
+  const {user}=useAuth();
+  if(!user||!["admin","reviewer"].includes(user.role)||row.status!=="pending"||row.submitted_by===user.id)return null;
+  return <form className="fg-inline-form" onSubmit={e=>{
+    e.preventDefault();const f=new FormData(e.currentTarget);
+    void onReview("/"+resource+"/"+row.id+"/review",{status:String(f.get("status")),note:String(f.get("note"))});
+  }}>
+    <TextField name="note" label="مبرر المراجعة" minLength={3} maxLength={2000}/>
+    <SelectField name="status" label="القرار" values={["approved","rejected"]}/>
+    <button className="fg-button" disabled={disabled}>تسجيل المراجعة</button>
+  </form>;
+}
 function ProjectSelector({projects}:{projects:Project[]}) {
   return <Field label="المشروع"><select name="project_id" className={inputClass} required>
     <option value="">اختر مشروعًا</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_demo?" · DEMO":""}</option>)}
@@ -103,14 +118,6 @@ export default function Operations() {
   const projectField = <ProjectSelector projects={projects}/>;
   const current=data[tab];
   const actionsDisabled=busy||loading;
-  function Review({row,resource}:{row:Item;resource:"observations"|"evaluations"}) {
-    if(!reviewer||row.status!=="pending"||row.submitted_by===user?.id)return null;
-    return <form className="fg-inline-form" onSubmit={submit(f=>["/"+resource+"/"+row.id+"/review",{status:s(f,"status"),note:s(f,"note")}])}>
-      <TextField name="note" label="مبرر المراجعة" minLength={3} maxLength={2000}/>
-      <SelectField name="status" label="القرار" values={["approved","rejected"]}/>
-      <button className="fg-button" disabled={actionsDisabled}>تسجيل المراجعة</button>
-    </form>;
-  }
   return <div className="fg-console" dir="rtl" lang="ar">
     <div className="fg-console-heading"><div><p className="fg-eyebrow">FOGGARA / OPERATIONS</p>
       <h1>من الموارد إلى القيمة.</h1><p>مساحة العمل الإنتاجية · بيانات مؤسستك وقرارات قابلة للتتبّع</p></div>
@@ -139,9 +146,9 @@ export default function Operations() {
               <div className="fg-domain-bars">{domains.map(d=><div key={d}><span>{labels[d]}</span><meter min={0} max={100} value={row.result?.scores[d]??0} aria-label={labels[d]}/><b>{row.result?.scores[d]??"—"}</b></div>)}</div>
               {!!row.result.missing.length&&<p className="fg-note">بيانات معتمدة مطلوبة: {row.result.missing.map(d=>labels[d]).join("، ")}</p>}
               <p className="fg-muted">لقطة محفوظة بتاريخ {new Date(row.result.evaluated_at).toLocaleString("ar-DZ")} · اعتماد التقييم لا يشغّل معدات ميدانية.</p>
-              <Review row={row} resource="evaluations"/>
+              <Review row={row} resource="evaluations" disabled={actionsDisabled} onReview={run}/>
             </>}
-            {tab==="observations"&&<><p className="fg-value">{row.value} <small>{row.unit}</small></p><p className="fg-muted">{row.metric} · {row.source} · المشروع #{row.project_id}</p><Review row={row} resource="observations"/></>}
+            {tab==="observations"&&<><p className="fg-value">{row.value} <small>{row.unit}</small></p><p className="fg-muted">{row.metric} · {row.source} · المشروع #{row.project_id}</p><Review row={row} resource="observations" disabled={actionsDisabled} onReview={run}/></>}
             {tab==="lots"&&<>
               <p>{row.code} · {row.quantity} {row.unit} · {labels[row.sector||""]}</p>
               <ol className="fg-stages">{stages.map((stage,i)=><li key={stage} className={i<=stages.indexOf(row.stage||"")?"done":""}>{labels[stage]}</li>)}</ol>
