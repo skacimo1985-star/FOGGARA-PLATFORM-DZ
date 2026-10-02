@@ -8,7 +8,7 @@ import "./operations.css";
 
 type Item = {
   id: number; name?: string; version?: number; active?: boolean; status?: string;
-  title?: string; project_id?: number; domain?: string; value?: string; unit?: string;
+  title?: string; project_id?: number; domain?: string; metric?: string; value?: string; unit?: string;
   source?: string; submitted_by?: number; kind?: string; sector?: string; product_code?: string;
   quantity?: string; wilaya?: string; code?: string; product?: string; stage?: string;
   offer_id?: number; demand_id?: number; score?: number; attempts?: number; error?: string;
@@ -17,7 +17,7 @@ type Item = {
   result?: {score: number | null; coverage: number; scores: Record<string, number>; missing: string[];
     evaluated_at: string; policy_version: number; observations: Record<string, number>};
 };
-type Rule = {unit: string; lower: number; upper: number; direction: string; weight: number; max_age_hours: number};
+type Rule = {metric: string; unit: string; lower: number; upper: number; direction: string; weight: number; max_age_hours: number};
 const resources = ["evaluations", "observations", "lots", "listings", "matches", "policies", "jobs", "privacy"] as const;
 type Resource = typeof resources[number];
 const labels: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function Operations() {
   const [expanded,setExpanded] = useState<number | null>(null);
   const [revision,setRevision] = useState(0);
   const [rules,setRules] = useState<Record<string,Rule>>(()=>Object.fromEntries(domains.map(d=>[
-    d,{unit:"%",lower:0,upper:100,direction:"higher",weight:0.2,max_age_hours:24}
+    d,{metric:d+"-index",unit:"%",lower:0,upper:100,direction:"higher",weight:0.2,max_age_hours:24}
   ])));
   const [policyChecked,setPolicyChecked] = useState(false);
   const reviewer = user?.role === "admin" || user?.role === "reviewer";
@@ -138,7 +138,7 @@ export default function Operations() {
               <p className="fg-muted">لقطة محفوظة بتاريخ {new Date(row.result.evaluated_at).toLocaleString("ar-DZ")} · اعتماد التقييم لا يشغّل معدات ميدانية.</p>
               <Review row={row} resource="evaluations"/>
             </>}
-            {tab==="observations"&&<><p className="fg-value">{row.value} <small>{row.unit}</small></p><p className="fg-muted">{row.source} · المشروع #{row.project_id}</p><Review row={row} resource="observations"/></>}
+            {tab==="observations"&&<><p className="fg-value">{row.value} <small>{row.unit}</small></p><p className="fg-muted">{row.metric} · {row.source} · المشروع #{row.project_id}</p><Review row={row} resource="observations"/></>}
             {tab==="lots"&&<>
               <p>{row.code} · {row.quantity} {row.unit} · {labels[row.sector||""]}</p>
               <ol className="fg-stages">{stages.map((stage,i)=><li key={stage} className={i<=stages.indexOf(row.stage||"")?"done":""}>{labels[stage]}</li>)}</ol>
@@ -154,8 +154,8 @@ export default function Operations() {
               <p className="fg-muted">بديل للمراجعة داخل المؤسسة؛ لا يحجز مخزونًا ولا ينشئ عقدًا.</p></>}
             {tab==="policies"&&<><p>الإصدار {row.version} · قواعد خاصة بالمؤسسة</p>
               <button className="fg-link" onClick={()=>setExpanded(expanded===row.id?null:row.id)}>عرض الحدود والأوزان</button>
-              {expanded===row.id&&<div className="fg-table-wrap"><table><thead><tr><th>المجال</th><th>الوحدة</th><th>النطاق</th><th>الوزن</th><th>صلاحية بالساعات</th></tr></thead>
-                <tbody>{Object.entries(row.rules||{}).map(([d,r])=><tr key={d}><td>{labels[d]}</td><td>{r.unit}</td><td>{r.lower} – {r.upper} ({r.direction})</td><td>{r.weight}</td><td>{r.max_age_hours}</td></tr>)}</tbody></table></div>}
+              {expanded===row.id&&<div className="fg-table-wrap"><table><thead><tr><th>المجال</th><th>المؤشر / الوحدة</th><th>النطاق</th><th>الوزن</th><th>صلاحية بالساعات</th></tr></thead>
+                <tbody>{Object.entries(row.rules||{}).map(([d,r])=><tr key={d}><td>{labels[d]}</td><td>{r.metric} / {r.unit}</td><td>{r.lower} – {r.upper} ({r.direction})</td><td>{r.weight}</td><td>{r.max_age_hours}</td></tr>)}</tbody></table></div>}
               {canAdmin&&!row.active&&<button className="fg-button" disabled={actionsDisabled} onClick={()=>void run("/policies/"+row.id+"/activate")}>تفعيل هذا الإصدار</button>}</>}
             {tab==="jobs"&&<p className="fg-muted">المحاولات: {row.attempts} {row.error?" · "+row.error:""} · {row.project_id?"المشروع #"+row.project_id:"المؤسسة"}</p>}
             {tab==="privacy"&&<><p>{row.note}</p>{row.response&&<p className="fg-note">{row.response}</p>}{canAdmin&&row.status==="received"&&<form onSubmit={submit(f=>["/privacy/"+row.id+"/resolve",{response:s(f,"response")}])}>
@@ -168,8 +168,8 @@ export default function Operations() {
         {tab==="evaluations"&&<form onSubmit={submit(f=>["/projects/"+s(f,"project_id")+"/evaluate",undefined])}>
           <p className="fg-note">يجمع التقييم أحدث قياس معتمد لكل مجال وفق الوحدة والصلاحية المحددتين. لا تُحتسب نتيجة شاملة عند نقص البيانات.</p><ProjectField/>
           <button className="fg-button" disabled={actionsDisabled||!projects.length}><Activity size={16}/>تقييم الآن</button></form>}
-        {tab==="observations"&&<form onSubmit={submit(f=>["/observations",{project_id:n(f,"project_id"),domain:s(f,"domain"),value:s(f,"value"),unit:s(f,"unit"),source:s(f,"source"),measured_at:new Date(s(f,"measured_at")).toISOString()}])}>
-          <ProjectField/><SelectField label="المجال" name="domain" values={domains}/><TextField label="القيمة" name="value" type="number" step="0.00001"/>
+        {tab==="observations"&&<form onSubmit={submit(f=>["/observations",{project_id:n(f,"project_id"),domain:s(f,"domain"),metric:s(f,"metric"),value:s(f,"value"),unit:s(f,"unit"),source:s(f,"source"),measured_at:new Date(s(f,"measured_at")).toISOString()}])}>
+          <ProjectField/><SelectField label="المجال" name="domain" values={domains}/><TextField label="رمز المؤشر المطابق للقواعد" name="metric" minLength={2} maxLength={80}/><TextField label="القيمة" name="value" type="number" step="0.00001"/>
           <TextField label="الوحدة المطابقة للقواعد" name="unit" maxLength={30}/><TextField label="مرجع القياس / الدليل" name="source" minLength={3} maxLength={500}/>
           <TextField label="وقت القياس المحلي" name="measured_at" type="datetime-local"/><button className="fg-button" disabled={actionsDisabled||!projects.length}>إرسال للمراجعة</button></form>}
         {tab==="lots"&&<form onSubmit={submit(f=>["/lots",{project_id:n(f,"project_id"),code:s(f,"code"),product:s(f,"product"),sector:s(f,"sector"),quantity:s(f,"quantity"),unit:s(f,"unit")}])}>
@@ -188,9 +188,9 @@ export default function Operations() {
           <p className="fg-note">القيم التالية مثال تحريري وليست معايير علمية أو قانونية. عدّلها بناء على مؤشرات ومراجع مناسبة لمؤسستك. مجموع الأوزان يجب أن يساوي 1.</p>
           <TextField label="اسم الإصدار ومرجعه" name="name" minLength={3} maxLength={150}/>
           {domains.map(d=><fieldset key={d} className="fg-rule"><legend>{labels[d]}</legend>
-            {(["unit","lower","upper","weight","max_age_hours"] as const).map(k=><Field key={k} label={({unit:"الوحدة",lower:"الحد الأدنى",upper:"الحد الأعلى",weight:"الوزن",max_age_hours:"الصلاحية / ساعة"})[k]}>
-              <input className={inputClass} required type={k==="unit"?"text":"number"} step={k==="max_age_hours"?"1":"any"} value={rules[d][k]}
-                onChange={e=>setRules(prev=>({...prev,[d]:{...prev[d],[k]:k==="unit"?e.target.value:Number(e.target.value)}}))}/></Field>)}
+            {(["metric","unit","lower","upper","weight","max_age_hours"] as const).map(k=><Field key={k} label={({metric:"رمز المؤشر",unit:"الوحدة",lower:"الحد الأدنى",upper:"الحد الأعلى",weight:"الوزن",max_age_hours:"الصلاحية / ساعة"})[k]}>
+              <input className={inputClass} required type={k==="unit"||k==="metric"?"text":"number"} step={k==="max_age_hours"?"1":"any"} value={rules[d][k]}
+                onChange={e=>setRules(prev=>({...prev,[d]:{...prev[d],[k]:k==="unit"||k==="metric"?e.target.value:Number(e.target.value)}}))}/></Field>)}
             <Field label="اتجاه الأداء الأفضل"><select className={inputClass} value={rules[d].direction} onChange={e=>setRules(prev=>({...prev,[d]:{...prev[d],direction:e.target.value}}))}><option value="higher">الأعلى أفضل</option><option value="lower">الأقل أفضل</option></select></Field>
           </fieldset>)}
           <label className="fg-checkbox"><input type="checkbox" checked={policyChecked} onChange={e=>setPolicyChecked(e.target.checked)}/>راجعت ملاءمة الحدود والأوزان للمؤشرات المختارة.</label>

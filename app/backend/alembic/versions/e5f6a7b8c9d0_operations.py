@@ -32,6 +32,7 @@ def upgrade():
         Column('org_id', BigId, ForeignKey('organizations.id'), nullable=False),
         Column('project_id', BigId, ForeignKey('projects.id'), nullable=False),
         Column('domain', String(20), nullable=False),
+        Column('metric', String(80), nullable=False),
         Column('value', Numeric(18,5), nullable=False),
         Column('unit', String(30), nullable=False),
         Column('source', String(500), nullable=False),

@@ -12,7 +12,7 @@ screens remains a release task.
   company deck and narration. Professional services, software and field systems
   are distinguished; experimental data is not described as national measurements.
 - Versioned organization-owned WEFEH rules and independently reviewed observations.
-  Five domains are mandatory, positive weights sum to one, units match exactly,
+  Five domains are mandatory, positive weights sum to one, metric codes and units match exactly,
   timestamps include time zones, future and non-finite input is rejected.
 - Reproducible evaluation snapshots reference their policy version and input IDs.
   Latest approved, correctly unit-labelled observations within their freshness

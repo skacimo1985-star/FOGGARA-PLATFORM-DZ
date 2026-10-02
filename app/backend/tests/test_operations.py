@@ -24,7 +24,7 @@ def ops(client, db, world):
     }
 
 def policy(client, ops):
-    rules = {d: {"unit": "%", "lower": 0, "upper": 100, "direction": "higher",
+    rules = {d: {"metric": d + "-index", "unit": "%", "lower": 0, "upper": 100, "direction": "higher",
         "weight": 0.2, "max_age_hours": 24} for d in ["water", "energy", "food", "ecosystem", "health"]}
     r = client.post(BASE + "/policies", headers=ops["admin"], json={"name": "Test policy", "rules": rules})
     assert r.status_code == 201, r.text
@@ -34,7 +34,7 @@ def policy(client, ops):
 
 def observation(client, ops, domain="water", age=0):
     r = client.post(BASE + "/observations", headers=ops["member"], json={
-        "project_id": ops["project"], "domain": domain, "unit": "%", "value": 80,
+        "project_id": ops["project"], "domain": domain, "metric": domain + "-index", "unit": "%", "value": 80,
         "source": "Field report test", "measured_at": (datetime.now(timezone.utc) - timedelta(hours=age)).isoformat()})
     assert r.status_code == 201, r.text
     return r.json()["id"]
@@ -168,3 +168,17 @@ def test_team_scoping_password_redaction_and_token_revocation(client, ops):
     r = client.post("/api/auth/login", json={"email":"o1m@t.dz","password":"Changed-secret-928!"})
     assert r.status_code == 200
     assert client.get("/api/auth/me", headers={"Authorization":"Bearer "+r.json()["token"]}).status_code == 200
+
+
+def test_different_metrics_in_same_domain_are_not_mixed(client, ops):
+    policy(client, ops)
+    r = client.post(BASE + "/observations", headers=ops["member"], json={
+        "project_id": ops["project"], "domain": "water", "metric": "different-water-indicator",
+        "unit": "%", "value": 95, "source": "Other valid but unrelated indicator",
+        "measured_at": (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()})
+    assert r.status_code == 201
+    approve(client, ops, r.json()["id"])
+    r = client.post(f"{BASE}/projects/{ops['project']}/evaluate", headers=ops["member"])
+    assert r.status_code == 200
+    assert r.json()["result"]["coverage"] == 0
+    assert "water" in r.json()["result"]["missing"]

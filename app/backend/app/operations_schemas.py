@@ -11,6 +11,7 @@ class Input(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
 
 class Rule(Input):
+    metric: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{1,79}$")
     unit: str = Field(min_length=1, max_length=30)
     lower: float = Field(ge=-1e12, le=1e12)
     upper: float = Field(ge=-1e12, le=1e12)
@@ -37,6 +38,7 @@ class PolicyIn(Input):
 class ObservationIn(Input):
     project_id: int = Field(gt=0)
     domain: Domain
+    metric: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{1,79}$")
     value: Decimal = Field(max_digits=18, decimal_places=5)
     unit: str = Field(min_length=1, max_length=30)
     source: str = Field(min_length=3, max_length=500)

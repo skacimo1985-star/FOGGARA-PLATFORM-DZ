@@ -21,6 +21,7 @@ class MatrixObservation(Base):
     org_id = Column(BigId, ForeignKey('organizations.id'), nullable=False, index=True)
     project_id = Column(BigId, ForeignKey('projects.id'), nullable=False, index=True)
     domain = Column(String(20), nullable=False)
+    metric = Column(String(80), nullable=False)
     value = Column(Numeric(18,5), nullable=False)
     unit = Column(String(30), nullable=False)
     source = Column(String(500), nullable=False)

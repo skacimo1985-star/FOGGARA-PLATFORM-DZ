@@ -37,11 +37,12 @@ def evaluate(db, org_id, project_id, now=None):
     scores, references, missing = {}, {}, []
     for domain in DOMAINS:
         rule = policy.rules[domain]
-        # Filter by unit BEFORE choosing latest; unmatched units are never converted silently.
+        # Filter by metric and unit BEFORE choosing latest; unmatched units are never converted silently.
         row = db.execute(select(MatrixObservation).where(
             MatrixObservation.org_id == org_id,
             MatrixObservation.project_id == project_id,
             MatrixObservation.domain == domain,
+            MatrixObservation.metric == rule["metric"],
             MatrixObservation.status == "approved",
             MatrixObservation.unit == rule["unit"],
             MatrixObservation.measured_at <= now,
