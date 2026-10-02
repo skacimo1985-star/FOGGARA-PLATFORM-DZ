@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import type { Device, SimScenario, SimulationResult, SimulationRun, TelemetryRule } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 // المحاكي الحتمي (Phase 03 §28/§29) — SIMULATION ONLY، بلا صيغ اعتباطية
 const SCENARIOS: SimScenario[] = ["NORMAL", "HIGH_DEMAND", "LOW_WATER",
@@ -111,6 +112,7 @@ export default function Simulator() {
                   <div key={p.id} className="border rounded p-2 flex items-center justify-between">
                     <span>
                       {p.title} — <Badge variant="outline">{t(`decisions.statuses.${p.status}`)}</Badge>
+                      <ProvenanceBadge kind="PROPOSED" className="ms-1" />
                       <span className="text-muted-foreground ms-2">{p.reason}</span>
                     </span>
                     <Link to="/app/decisions" className="underline text-primary">{t("simulator.openDecision")}</Link>

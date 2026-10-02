@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Header, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
@@ -49,7 +50,8 @@ def list_decisions(domain: Optional[str] = Query(default=None),
         q = q.where(GovDecision.status == status)
     if risk_level:
         q = q.where(GovDecision.risk_level == risk_level)
-    return db.execute(q.order_by(GovDecision.id.desc())).scalars().all()
+    return db.execute(q.order_by(GovDecision.id.desc())
+                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
 
 
 @router.post("", response_model=GovDecisionOut, status_code=201)

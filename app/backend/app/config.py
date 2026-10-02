@@ -1,4 +1,4 @@
-﻿"""تهيئة التطبيق — كل القيم تُقرأ من متغيرات البيئة (انظر .env.example).
+"""تهيئة التطبيق — كل القيم تُقرأ من متغيرات البيئة (انظر .env.example).
 
 قاعدة الأمان الأساسية: عند ENV=prod يُرفض الإقلاع بأي JWT_SECRET افتراضي/ضعيف.
 """
@@ -10,6 +10,14 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "sqlite:///./foggara.db",
 )
+
+# توحيد مخطط الاتصال لسائق psycopg v3 (السائق الوحيد المثبّت في requirements).
+# Supabase/Render يعطيان postgresql:// أو postgres:// — بدون هذا التوحيد يحاول
+# SQLAlchemy تحميل psycopg2 غير المثبّت ويفشل الإقلاع في الإنتاج.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
 
 _DEFAULT_JWT_SECRET = "dev-only-secret-change-me-32bytes-min!"
 JWT_SECRET = os.environ.get("JWT_SECRET", _DEFAULT_JWT_SECRET)
@@ -30,11 +38,17 @@ CORS_ORIGINS = [
 # مستوى السجلات (DEBUG/INFO/WARNING/ERROR)
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
 
+# سقف السجلات المُعادة في نقاط القوائم (حماية أداء/ذاكرة) — قابل للضبط.
+LIST_MAX_LIMIT = int(os.environ.get("LIST_MAX_LIMIT", "500"))
+
 APP_VERSION = "0.1.0"
 
 if ENV == "prod":
-    if not DATABASE_URL.startswith(("postgresql+psycopg://", "postgresql://")):
-        raise RuntimeError("ENV=prod requires PostgreSQL DATABASE_URL.")
+    if DATABASE_URL.startswith("sqlite"):
+        raise RuntimeError(
+            "FATAL: ENV=prod requires a PostgreSQL DATABASE_URL. "
+            "SQLite is forbidden in production."
+        )
     if not JWT_SECRET or JWT_SECRET == _DEFAULT_JWT_SECRET:
         raise RuntimeError(
             "FATAL: ENV=prod requires a strong JWT_SECRET. "
@@ -45,4 +59,3 @@ if ENV == "prod":
         raise RuntimeError(
             "FATAL: ENV=prod requires JWT_SECRET of at least 32 characters."
         )
-

@@ -486,6 +486,7 @@
   "errors": {
     "AUTH_REQUIRED": "Connexion requise",
     "AUTH_INVALID": "Session expirée — reconnectez-vous",
+    "RATE_LIMITED": "Trop de tentatives — patientez puis réessayez",
     "BAD_CREDENTIALS": "E-mail ou mot de passe incorrect",
     "ROLE_FORBIDDEN": "Cette opération exige le rôle réviseur",
     "FORBIDDEN": "Vous n'êtes pas habilité à effectuer cette opération",
@@ -508,7 +509,8 @@
     "INDICATOR_NOT_IMPLEMENTED": "Aucune routine de calcul pour cet indicateur",
     "NETWORK": "Impossible de joindre le serveur",
     "SOLAR_COMPUTED_NOT_MEASURED": "Valeur calculée astronomiquement à partir des coordonnées — pas une mesure de terrain ni un substitut à une étude solaire agréée",
-    "OUT_OF_ALGERIA_BOUNDS": "Coordonnées hors des limites approximatives de l'Algérie"
+    "OUT_OF_ALGERIA_BOUNDS": "Coordonnées hors des limites approximatives de l'Algérie",
+    "TIMEOUT": "Délai de connexion au serveur dépassé — vérifiez le réseau et réessayez"
   },
   "solar": {
     "title": "Calculateur solaire préliminaire (calculé)",
@@ -773,5 +775,44 @@
       "FAILED": "Échouée",
       "CANCELLED": "Annulée"
     }
+  },
+  "provenance": {
+    "labels": {
+      "OBSERVED": "OBSERVÉ",
+      "VERIFIED": "VÉRIFIÉ",
+      "COMPUTED": "CALCULÉ",
+      "INFERRED": "INFÉRÉ",
+      "PROPOSED": "PROPOSÉ"
+    },
+    "descriptions": {
+      "OBSERVED": "Lecture capteur ou observation terrain directe",
+      "VERIFIED": "A passé une revue/vérification humaine documentée",
+      "COMPUTED": "Résultat d'un calcul déterministe reproductible",
+      "INFERRED": "Relation inférée par un modèle — pas une mesure directe",
+      "PROPOSED": "Proposition automatique en attente de décision humaine habilitée"
+    }
+  },
+  "nexus": {
+    "title": "Vue opérationnelle Nexus",
+    "kasria": "Kasria — point de coordination et de distribution",
+    "organization": "Organisation",
+    "projects": "Projets",
+    "resources": "Ressources et actifs",
+    "sensors": "Appareils et capteurs",
+    "latestMeasurements": "Dernières lectures",
+    "activeRules": "Règles actives",
+    "simulationRuns": "Exécutions de simulation",
+    "pendingDecisions": "Décisions en attente de revue",
+    "unavailable": "Indisponible pour le moment",
+    "noData": "Aucune donnée pour l'instant",
+    "open": "Ouvrir"
+  },
+  "chart": {
+    "title": "Série temporelle",
+    "observed": "Observé",
+    "simulated": "Simulé",
+    "empty": "Aucune lecture dans cette série",
+    "selectSensor": "Sélectionnez un capteur pour afficher la série",
+    "points": "points"
   }
 }

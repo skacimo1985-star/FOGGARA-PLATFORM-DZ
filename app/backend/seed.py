@@ -6,6 +6,7 @@ so running the script multiple times never duplicates rows.
 Passwords below are for local demo only. Never use in production.
 """
 from datetime import datetime, timedelta, timezone
+import os
 
 from sqlalchemy import select
 
@@ -34,12 +35,22 @@ def get_or_create(db, model_cls, defaults=None, **lookup):
 
 
 def main():
+    # SEED_DEMO: في الإنتاج (ENV=prod) الافتراضي false — لا حسابات/بيانات تجريبية
+    # إطلاقًا ما لم تُضبط القيمة صراحة. المؤشر الافتراضي يُنشأ دائمًا.
+    seed_demo = os.environ.get(
+        "SEED_DEMO", "false" if os.environ.get("ENV", "dev") == "prod" else "true"
+    ).strip().lower() in ("1", "true", "yes")
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
                "calibrations": 0, "certificates": 0, "inspections": 0,
                "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0}
     try:
+        if not seed_demo:
+            ensure_default_indicator(db)
+            db.commit()
+            print("SEED_DEMO=false — no demo data inserted (default indicator ensured).")
+            return
         # ---- Organizations ----
         org1, c = get_or_create(db, Organization, code="DEMO-ADRAR-ADE", defaults=dict(
             name_ar="مديرية الموارد المائية — أدرار (تجريبي)",

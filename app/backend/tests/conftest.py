@@ -23,6 +23,14 @@ def setup_db():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """عزل الاختبارات: عدّادات تحديد المعدل تُصفَّر قبل كل اختبار."""
+    from app.ratelimit import limiter
+    limiter.reset()
+    yield
+
+
 @pytest.fixture()
 def db():
     s = SessionLocal()

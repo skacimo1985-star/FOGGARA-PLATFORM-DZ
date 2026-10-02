@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
+import { TelemetryChart } from "@/components/TelemetryChart";
 
 // لوحة القياس عن بُعد (Phase 03 §27) — عرض فقط، لا تحكم بمعدات
 const QUALITIES = ["VALID", "INVALID", "SUSPECT", "MISSING"] as const;
@@ -23,16 +25,21 @@ export default function Telemetry() {
   const [readings, setReadings] = useState<TelemetryReading[] | null>(null);
   const [latest, setLatest] = useState<TelemetryReading[]>([]);
   const [agg, setAgg] = useState<TelemetryAggregate | null>(null);
+  const [series, setSeries] = useState<TelemetryReading[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [filter, setFilter] = useState({ device_id: "", sensor_id: "", metric: "", quality: "" });
 
   useEffect(() => {
-    Promise.all([
-      api.get<Device[]>("/telemetry/devices"),
-      api.get<Sensor[]>("/telemetry/sensors"),
-      api.get<TelemetryReading[]>("/telemetry/latest"),
-    ]).then(([d, s, l]) => { setDevices(d); setSensors(s); setLatest(l); })
-      .catch(setError);
+    (async () => {
+      try {
+        const [d, s, l] = await Promise.all([
+          api.get<Device[]>("/telemetry/devices"),
+          api.get<Sensor[]>("/telemetry/sensors"),
+          api.get<TelemetryReading[]>("/telemetry/latest"),
+        ]);
+        setDevices(d); setSensors(s); setLatest(l);
+      } catch (e) { setError(e); }
+    })();
   }, []);
 
   const load = useCallback(async () => {
@@ -44,13 +51,22 @@ export default function Telemetry() {
     const q = params.toString();
     setReadings(await api.get<TelemetryReading[]>(`/telemetry${q ? `?${q}` : ""}`));
     setAgg(null);
+    setSeries(null);
     if (filter.sensor_id) {
-      setAgg(await api.get<TelemetryAggregate>(
-        `/telemetry/aggregate?sensor_id=${filter.sensor_id}`));
+      const [a, sr] = await Promise.all([
+        api.get<TelemetryAggregate>(`/telemetry/aggregate?sensor_id=${filter.sensor_id}`),
+        api.get<TelemetryReading[]>(`/telemetry/series?sensor_id=${filter.sensor_id}`),
+      ]);
+      setAgg(a);
+      setSeries(sr);
     }
   }, [filter]);
 
-  useEffect(() => { load().catch(setError); }, [load]);
+  useEffect(() => {
+    (async () => {
+      try { await load(); } catch (e) { setError(e); }
+    })();
+  }, [load]);
 
   const deviceName = (id: number) => devices.find((d) => d.id === id)?.name ?? `#${id}`;
   const sensorName = (id: number) => sensors.find((s) => s.id === id)?.name ?? `#${id}`;
@@ -72,9 +88,12 @@ export default function Telemetry() {
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {latest.map((r) => (
               <div key={r.id} className="border rounded-lg p-3">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-1">
                   <span className="font-medium">{sensorName(r.sensor_id)}</span>
-                  {r.is_demo && <DemoBadge show />}
+                  <span className="flex items-center gap-1">
+                    <ProvenanceBadge kind={r.simulation_run_id !== null ? "COMPUTED" : "OBSERVED"} />
+                    {r.is_demo && <DemoBadge show />}
+                  </span>
                 </div>
                 <div className="text-2xl font-bold mt-1">
                   {r.value ?? "—"} <span className="text-sm font-normal">{r.unit}</span>
@@ -127,6 +146,22 @@ export default function Telemetry() {
         </Card>
       )}
 
+      {/* السلسلة الزمنية للمستشعر المحدد — تمييز المرصود عن المحاكى */}
+      {filter.sensor_id && (
+        <Card>
+          <CardHeader><CardTitle>{t("chart.title")} — {sensorName(Number(filter.sensor_id))}</CardTitle></CardHeader>
+          <CardContent>
+            {series === null && <Skeleton className="h-52 w-full" />}
+            {series !== null && (
+              <TelemetryChart
+                readings={series}
+                unit={sensors.find((s) => s.id === Number(filter.sensor_id))?.unit ?? ""}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* القراءات */}
       <Card>
         <CardHeader><CardTitle>{t("telemetry.readings")}</CardTitle></CardHeader>
@@ -155,7 +190,12 @@ export default function Telemetry() {
                     <TableCell><Badge variant={qVariant(r.quality)}>{t(`telemetry.qualities.${r.quality}`)}</Badge></TableCell>
                     <TableCell>{t(`telemetry.sources.${r.source}`)}</TableCell>
                     <TableCell>{new Date(r.observed_at).toLocaleString()}</TableCell>
-                    <TableCell>{r.is_demo && <DemoBadge show />}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1">
+                        <ProvenanceBadge kind={r.simulation_run_id !== null ? "COMPUTED" : "OBSERVED"} />
+                        {r.is_demo && <DemoBadge show />}
+                      </span>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

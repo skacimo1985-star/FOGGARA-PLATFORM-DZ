@@ -116,13 +116,22 @@ function SectionItems({ section, data }: { section: SectionKey; data: Item[] }) 
 export default function ExploreDomain() {
   const { t } = useTranslation();
   const { domain = "" } = useParams<{ domain: string }>();
-  const [data, setData] = useState<ExploreDomainData | null>(null);
-  const [error, setError] = useState<unknown>(null);
+  // نخزّن النتيجة مقرونة بالبُعد حتى لا تُعرض بيانات بُعد سابق أثناء التحميل
+  const [result, setResult] = useState<{ domain: string; data: ExploreDomainData } | null>(null);
+  const [errorState, setErrorState] = useState<{ domain: string; e: unknown } | null>(null);
+  const data = result?.domain === domain ? result.data : null;
+  const error = errorState?.domain === domain ? errorState.e : null;
 
   useEffect(() => {
-    setData(null);
-    setError(null);
-    api.get<ExploreDomainData>(`/explore/${domain}`).then(setData).catch(setError);
+    (async () => {
+      try {
+        const d = await api.get<ExploreDomainData>(`/explore/${domain}`);
+        setErrorState(null);
+        setResult({ domain, data: d });
+      } catch (e) {
+        setErrorState({ domain, e });
+      }
+    })();
   }, [domain]);
 
   return (

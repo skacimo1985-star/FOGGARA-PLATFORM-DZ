@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import type { Action, HumanDecision, Recommendation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

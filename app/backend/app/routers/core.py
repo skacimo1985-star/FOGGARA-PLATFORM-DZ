@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
@@ -22,7 +23,8 @@ def my_org(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 # ---------- Sites ----------
 @router.get("/sites", response_model=list[SiteOut])
 def list_sites(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(Site).where(Site.org_id == user.org_id).order_by(Site.id)).scalars().all()
+    return db.execute(select(Site).where(Site.org_id == user.org_id).order_by(Site.id)
+                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
 
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
@@ -39,7 +41,7 @@ def create_site(payload: SiteIn, user: User = Depends(get_current_user), db: Ses
 @router.get("/resources", response_model=list[ResourceOut])
 def list_resources(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.execute(select(WaterResource).where(WaterResource.org_id == user.org_id)
-                      .order_by(WaterResource.id)).scalars().all()
+                      .order_by(WaterResource.id).limit(config.LIST_MAX_LIMIT)).scalars().all()
 
 
 @router.post("/resources", response_model=ResourceOut, status_code=201)
@@ -58,7 +60,8 @@ def create_resource(payload: ResourceIn, user: User = Depends(get_current_user),
 # ---------- Assets ----------
 @router.get("/assets", response_model=list[AssetOut])
 def list_assets(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.execute(select(Asset).where(Asset.org_id == user.org_id).order_by(Asset.id)).scalars().all()
+    return db.execute(select(Asset).where(Asset.org_id == user.org_id).order_by(Asset.id)
+                      .limit(config.LIST_MAX_LIMIT)).scalars().all()
 
 
 @router.post("/assets", response_model=AssetOut, status_code=201)
@@ -93,7 +96,7 @@ def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
 @router.get("/projects", response_model=list[ProjectOut])
 def list_projects(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.execute(select(Project).where(Project.org_id == user.org_id)
-                      .order_by(Project.id.desc())).scalars().all()
+                      .order_by(Project.id.desc()).limit(config.LIST_MAX_LIMIT)).scalars().all()
 
 
 @router.post("/projects", response_model=ProjectOut, status_code=201)

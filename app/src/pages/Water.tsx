@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import type {
   IrrigationZone, Pump, Reservoir, Site, Valve, Vfd, WaterAllocation, Well,
 } from "@/types";

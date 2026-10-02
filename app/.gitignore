@@ -12,6 +12,7 @@ venv/
 
 # Node
 node_modules/
+dist/
 
 # قواعد بيانات وسجلات ونسخ احتياطية محلية
 *.sql

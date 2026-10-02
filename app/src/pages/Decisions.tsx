@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import type {
   DecisionDomain, DecisionEvidence, DecisionExecution, DecisionStatus,
   DecisionTransitionRecord, DecisionVerification, GovDecision,
@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 // محرك القرارات العام (Contract §5..§22) — المرحلة 2
 const DOMAINS: DecisionDomain[] = ["water", "energy", "food", "ecosystem", "health", "cross_domain"];
@@ -77,7 +78,11 @@ export default function Decisions() {
     setExecutions(ex); setVerifications(vf);
   }, []);
 
-  useEffect(() => { load().catch(setError); }, [load]);
+  useEffect(() => {
+    (async () => {
+      try { await load(); } catch (e) { setError(e); }
+    })();
+  }, [load]);
 
   const role = user?.role ?? "member";
   const isReviewer = role === "reviewer" || role === "admin";
@@ -217,6 +222,7 @@ export default function Decisions() {
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{d.title}</span>
                   <div className="flex gap-1 items-center">
+                    {d.source_type === "telemetry_rule" && <ProvenanceBadge kind="PROPOSED" />}
                     {d.is_demo && <DemoBadge show />}
                     <Badge variant={statusVariant(d.status)}>{t(`decisions.statuses.${d.status}`)}</Badge>
                   </div>
@@ -264,6 +270,7 @@ export default function Decisions() {
               <Badge variant={statusVariant(selected.status)}>
                 {t(`decisions.statuses.${selected.status}`)}
               </Badge>
+              {selected.source_type === "telemetry_rule" && <ProvenanceBadge kind="PROPOSED" />}
               {selected.is_demo && <DemoBadge show />}
             </CardTitle>
           </CardHeader>

@@ -17,6 +17,8 @@ export function setToken(token: string | null) {
   else localStorage.removeItem("token");
 }
 
+const DEFAULT_TIMEOUT_MS = 20_000;
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -24,11 +26,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  // مهلة افتراضية لكل طلب — تمنع تعليق الواجهة عند شبكة بطيئة (معرض/ميدان)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, { ...options, headers });
-  } catch {
+    res = await fetch(`/api${path}`, { ...options, headers, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "TIMEOUT", "request timeout");
+    }
     throw new ApiError(0, "NETWORK", "network error");
+  } finally {
+    clearTimeout(timer);
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {

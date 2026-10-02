@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { Layout } from "@/components/Layout";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";

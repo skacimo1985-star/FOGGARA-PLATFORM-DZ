@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 function IndicatorCard({ indicator, projectId }: { indicator: Indicator; projectId: number | null }) {
   const { t, i18n } = useTranslation();
@@ -78,8 +79,9 @@ function IndicatorCard({ indicator, projectId }: { indicator: Indicator; project
           <dl className="grid gap-2 rounded-md border p-3 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <dt className="text-muted-foreground">{t("analytics.value")}</dt>
-              <dd className="text-lg font-bold tabular-nums" dir="ltr">
+              <dd className="flex items-center gap-2 text-lg font-bold tabular-nums" dir="ltr">
                 {value.sufficient ? `${value.value} ${value.unit}` : t("common.none")}
+                <span dir={i18n.dir()}><ProvenanceBadge kind="COMPUTED" /></span>
               </dd>
             </div>
             <div>

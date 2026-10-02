@@ -1,5 +1,6 @@
 import logging
 import time
+import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from .db import engine
 from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         metrology, services, simulator, telemetry, water,
                         workflow)
+from .routers.setup import router as setup_router
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -58,15 +60,23 @@ _DOCS_PATHS = {"/api/docs", "/api/docs/oauth2-redirect", "/api/openapi.json", "/
 @app.middleware("http")
 async def security_and_request_logging(request: Request, call_next):
     start = time.perf_counter()
+    request_id = uuid.uuid4().hex[:8]
     response = await call_next(request)
     elapsed_ms = (time.perf_counter() - start) * 1000
-    # سجل الطلب: method/path/status/ms فقط — لا ترويسات إطلاقًا، فلا يمكن
-    # أن يتسرّب Authorization أو كلمات المرور إلى السجلات بنيويًا.
-    log.info("%s %s -> %s %.1fms", request.method, request.url.path,
-             response.status_code, elapsed_ms)
+    # سجل الطلب: method/path/status/ms + معرف طلب للتتبع — لا ترويسات إطلاقًا،
+    # فلا يمكن أن يتسرّب Authorization أو كلمات المرور إلى السجلات بنيويًا.
+    log.info("%s %s -> %s %.1fms req=%s", request.method, request.url.path,
+             response.status_code, elapsed_ms, request_id)
+    response.headers.setdefault("X-Request-ID", request_id)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    # HSTS في الإنتاج فقط (التطوير قد يعمل على HTTP محلي).
+    if config.ENV == "prod":
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
     if request.url.path not in _DOCS_PATHS:
         response.headers.setdefault("Content-Security-Policy", _CSP)
     return response
@@ -82,15 +92,29 @@ async def validation_handler(request, exc: RequestValidationError):
 
 @app.get("/api/health")
 def health():
-    """فحص صحة بلا مصادقة: db=up فقط بعد SELECT 1 فعلي ناجح."""
+    """فحص صحة بلا مصادقة: db=up فقط بعد SELECT 1 فعلي ناجح.
+
+    يضيف زمن استجابة القاعدة ورأس مخطط Alembic — مؤشران تشغيليان لا يكشفان
+    أي بيانات حساسة (رقم نسخة المخطط ليس سرًا).
+    """
+    t0 = time.perf_counter()
+    alembic_head = "unknown"
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
+            try:
+                alembic_head = conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar_one()
+            except Exception:
+                alembic_head = "none"
         db_status = "up"
     except Exception:
         db_status = "down"
+    db_ms = round((time.perf_counter() - t0) * 1000, 1)
     body = {"status": "ok" if db_status == "up" else "error",
-            "db": db_status, "version": config.APP_VERSION}
+            "db": db_status, "version": config.APP_VERSION,
+            "db_ms": db_ms, "alembic": alembic_head}
     return JSONResponse(body, status_code=200 if db_status == "up" else 503)
 
 
@@ -108,6 +132,7 @@ app.include_router(decisions.router)
 app.include_router(telemetry.router)
 app.include_router(simulator.router)
 app.include_router(simulator.rules_router)
+app.include_router(setup_router)
 
 
 # تقديم الواجهة المبنية (إن وُجدت) مع دعم SPA — مسارات /api تبقى للـAPI فقط

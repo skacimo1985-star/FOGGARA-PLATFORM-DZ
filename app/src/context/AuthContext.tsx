@@ -1,25 +1,22 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, setToken } from "@/lib/api";
 import type { User } from "@/types";
-
-interface AuthState {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
+import { AuthContext } from "@/context/useAuth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<User>("/auth/me")
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        setUser(await api.get<User>("/auth/me"));
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -38,10 +35,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth outside AuthProvider");
-  return ctx;
 }

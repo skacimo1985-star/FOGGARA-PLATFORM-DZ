@@ -36,31 +36,35 @@ export default function ProjectDetail() {
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(() => {
-    setError(null);
-    Promise.all([
-      api.get<Project>(`/projects/${pid}`),
-      api.get<Measurement[]>(`/projects/${pid}/measurements`),
-      api.get<Evidence[]>(`/projects/${pid}/evidences`),
-      api.get<Recommendation[]>(`/projects/${pid}/recommendations`),
-      api.get<Action[]>(`/projects/${pid}/actions`),
-      api.get<AuditEntry[]>(`/projects/${pid}/history`),
-      api.get<Review[]>(`/projects/${pid}/reviews`),
-      api.get<HumanDecision[]>(`/projects/${pid}/human-decisions`),
-    ])
-      .then(([p, m, e, r, a, h, rv, hd]) => {
-        setProject(p); setMeasurements(m); setEvidences(e);
-        setRecommendations(r); setActions(a); setHistory(h);
-        setReviews(rv); setHumanDecisions(hd);
-      })
-      .catch(setError)
-      .finally(() => setLoading(false));
+  const reload = useCallback(async () => {
+    try {
+      const [p, m, e, r, a, h, rv, hd] = await Promise.all([
+        api.get<Project>(`/projects/${pid}`),
+        api.get<Measurement[]>(`/projects/${pid}/measurements`),
+        api.get<Evidence[]>(`/projects/${pid}/evidences`),
+        api.get<Recommendation[]>(`/projects/${pid}/recommendations`),
+        api.get<Action[]>(`/projects/${pid}/actions`),
+        api.get<AuditEntry[]>(`/projects/${pid}/history`),
+        api.get<Review[]>(`/projects/${pid}/reviews`),
+        api.get<HumanDecision[]>(`/projects/${pid}/human-decisions`),
+      ]);
+      setError(null);
+      setProject(p); setMeasurements(m); setEvidences(e);
+      setRecommendations(r); setActions(a); setHistory(h);
+      setReviews(rv); setHumanDecisions(hd);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
     api.get<Site[]>("/sites").then(setSites).catch(() => {});
     api.get<WaterResource[]>("/resources").then(setResources).catch(() => {});
     api.get<Asset[]>("/assets").then(setAssets).catch(() => {});
   }, [pid]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    (async () => { await reload(); })();
+  }, [reload]);
 
   async function changeStatus(status: string) {
     try {

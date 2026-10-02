@@ -486,6 +486,7 @@
   "errors": {
     "AUTH_REQUIRED": "Sign-in required",
     "AUTH_INVALID": "Session expired — please sign in again",
+    "RATE_LIMITED": "Too many attempts — please wait and try again",
     "BAD_CREDENTIALS": "Invalid email or password",
     "ROLE_FORBIDDEN": "This operation requires the reviewer role",
     "FORBIDDEN": "You are not authorized to perform this operation",
@@ -508,7 +509,8 @@
     "INDICATOR_NOT_IMPLEMENTED": "No computation routine for this indicator yet",
     "NETWORK": "Cannot reach the server",
     "SOLAR_COMPUTED_NOT_MEASURED": "Astronomically computed value from coordinates — not a field measurement and not a substitute for a licensed solar study",
-    "OUT_OF_ALGERIA_BOUNDS": "Coordinates outside the approximate bounds of Algeria"
+    "OUT_OF_ALGERIA_BOUNDS": "Coordinates outside the approximate bounds of Algeria",
+    "TIMEOUT": "Server request timed out — check the network and retry"
   },
   "solar": {
     "title": "Preliminary solar calculator (computed)",
@@ -773,5 +775,44 @@
       "FAILED": "Failed",
       "CANCELLED": "Cancelled"
     }
+  },
+  "provenance": {
+    "labels": {
+      "OBSERVED": "OBSERVED",
+      "VERIFIED": "VERIFIED",
+      "COMPUTED": "COMPUTED",
+      "INFERRED": "INFERRED",
+      "PROPOSED": "PROPOSED"
+    },
+    "descriptions": {
+      "OBSERVED": "Direct sensor reading or field observation",
+      "VERIFIED": "Passed documented human review/verification",
+      "COMPUTED": "Output of a deterministic, re-runnable calculation",
+      "INFERRED": "Model-inferred relationship — not a direct measurement",
+      "PROPOSED": "Automated proposal awaiting an authorized human decision"
+    }
+  },
+  "nexus": {
+    "title": "Operational Nexus overview",
+    "kasria": "Kasria — coordination and distribution point",
+    "organization": "Organization",
+    "projects": "Projects",
+    "resources": "Resources & assets",
+    "sensors": "Devices & sensors",
+    "latestMeasurements": "Latest readings",
+    "activeRules": "Active rules",
+    "simulationRuns": "Simulation runs",
+    "pendingDecisions": "Decisions awaiting review",
+    "unavailable": "Currently unavailable",
+    "noData": "No data yet",
+    "open": "Open"
+  },
+  "chart": {
+    "title": "Time series",
+    "observed": "Observed",
+    "simulated": "Simulated",
+    "empty": "No readings in this series",
+    "selectSensor": "Select a sensor to view its time series",
+    "points": "points"
   }
 }
