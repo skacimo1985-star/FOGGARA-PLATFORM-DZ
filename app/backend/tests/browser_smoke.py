@@ -80,10 +80,16 @@ def main():
                 expect(page.locator(".fg-empty")).to_be_visible()
                 page.get_by_role("button", name="دفعات الإنتاج", exact=True).click()
                 page.locator('[name="project_id"]').select_option(label="واحة الاختبار · DEMO")
+                selected_project = page.locator('[name="project_id"]').input_value()
+                page.get_by_role("button", name="تحديث البيانات").click()
+                expect(page.get_by_role("button", name="إضافة دفعة إنتاج")).to_be_enabled()
+                expect(page.locator('[name="project_id"]')).to_have_value(selected_project)
                 page.locator('[name="code"]').fill("CI-LOT-001")
                 page.locator('[name="product"]').fill("تمور الاختبار")
                 page.locator('[name="quantity"]').fill("25")
-                page.get_by_role("button", name="إضافة دفعة إنتاج").click()
+                with page.expect_response(lambda r: r.url.endswith("/api/operations/lots") and r.request.method == "POST") as saved:
+                    page.get_by_role("button", name="إضافة دفعة إنتاج").click()
+                assert saved.value.status == 201, saved.value.text()
                 expect(page.locator(".fg-record")).to_contain_text("CI-LOT-001")
                 page.reload()
                 expect(page.locator(".fg-console")).to_be_visible()
@@ -102,6 +108,14 @@ def main():
                               "authenticated operations","lot creation and reload","API 404","no page errors"]
                 }, indent=2))
                 browser.close()
+        except Exception:
+            if "page" in locals():
+                try:
+                    page.screenshot(path=str(out / "failure.png"), full_page=True)
+                    print("FOGGARA_BROWSER_ERROR=" + page.locator("body").inner_text()[:4000])
+                except Exception:
+                    pass
+            raise
         finally:
             process.terminate()
             process.wait(timeout=15)

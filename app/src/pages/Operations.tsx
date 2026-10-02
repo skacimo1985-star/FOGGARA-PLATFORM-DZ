@@ -46,6 +46,11 @@ function TextField({label, name, type="text", required=true, ...props}:
 function SelectField({label,name,values}: {label:string;name:string;values:string[]}) {
   return <Field label={label}><select className={inputClass} name={name}>{values.map(v=><option key={v} value={v}>{labels[v] || v}</option>)}</select></Field>;
 }
+function ProjectSelector({projects}:{projects:Project[]}) {
+  return <Field label="المشروع"><select name="project_id" className={inputClass} required>
+    <option value="">اختر مشروعًا</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_demo?" · DEMO":""}</option>)}
+  </select></Field>;
+}
 export default function Operations() {
   const {user} = useAuth();
   const [tab,setTab] = useState<Resource>("evaluations");
@@ -95,9 +100,7 @@ export default function Operations() {
   };
   const s=(f:FormData,k:string)=>String(f.get(k)||"");
   const n=(f:FormData,k:string)=>Number(f.get(k));
-  const ProjectField=()=> <Field label="المشروع"><select name="project_id" className={inputClass} required>
-    <option value="">اختر مشروعًا</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_demo?" · DEMO":""}</option>)}
-  </select></Field>;
+  const projectField = <ProjectSelector projects={projects}/>;
   const current=data[tab];
   const actionsDisabled=busy||loading;
   function Review({row,resource}:{row:Item;resource:"observations"|"evaluations"}) {
@@ -166,14 +169,14 @@ export default function Operations() {
       <aside className="fg-panel fg-compose">
         <div className="fg-section-heading"><h2>{tab==="jobs"?"كيف يعمل التشغيل؟":"إجراء جديد"}</h2><Plus size={18}/></div>
         {tab==="evaluations"&&<form onSubmit={submit(f=>["/projects/"+s(f,"project_id")+"/evaluate",undefined])}>
-          <p className="fg-note">يجمع التقييم أحدث قياس معتمد لكل مجال وفق الوحدة والصلاحية المحددتين. لا تُحتسب نتيجة شاملة عند نقص البيانات.</p><ProjectField/>
+          <p className="fg-note">يجمع التقييم أحدث قياس معتمد لكل مجال وفق الوحدة والصلاحية المحددتين. لا تُحتسب نتيجة شاملة عند نقص البيانات.</p>{projectField}
           <button className="fg-button" disabled={actionsDisabled||!projects.length}><Activity size={16}/>تقييم الآن</button></form>}
         {tab==="observations"&&<form onSubmit={submit(f=>["/observations",{project_id:n(f,"project_id"),domain:s(f,"domain"),metric:s(f,"metric"),value:s(f,"value"),unit:s(f,"unit"),source:s(f,"source"),measured_at:new Date(s(f,"measured_at")).toISOString()}])}>
-          <ProjectField/><SelectField label="المجال" name="domain" values={domains}/><TextField label="رمز المؤشر المطابق للقواعد" name="metric" minLength={2} maxLength={80}/><TextField label="القيمة" name="value" type="number" step="0.00001"/>
+          {projectField}<SelectField label="المجال" name="domain" values={domains}/><TextField label="رمز المؤشر المطابق للقواعد" name="metric" minLength={2} maxLength={80}/><TextField label="القيمة" name="value" type="number" step="0.00001"/>
           <TextField label="الوحدة المطابقة للقواعد" name="unit" maxLength={30}/><TextField label="مرجع القياس / الدليل" name="source" minLength={3} maxLength={500}/>
           <TextField label="وقت القياس المحلي" name="measured_at" type="datetime-local"/><button className="fg-button" disabled={actionsDisabled||!projects.length}>إرسال للمراجعة</button></form>}
         {tab==="lots"&&<form onSubmit={submit(f=>["/lots",{project_id:n(f,"project_id"),code:s(f,"code"),product:s(f,"product"),sector:s(f,"sector"),quantity:s(f,"quantity"),unit:s(f,"unit")}])}>
-          <ProjectField/><TextField label="رمز الدفعة الفريد" name="code" minLength={2} maxLength={80}/><TextField label="المنتج" name="product" minLength={2} maxLength={150}/>
+          {projectField}<TextField label="رمز الدفعة الفريد" name="code" minLength={2} maxLength={80}/><TextField label="المنتج" name="product" minLength={2} maxLength={150}/>
           <SelectField label="القطاع" name="sector" values={["agriculture","livestock","aquaculture","processing","logistics","equipment","services"]}/>
           <TextField label="الكمية" name="quantity" type="number" min={0.0001} step="0.0001"/><SelectField label="الوحدة" name="unit" values={units}/>
           <button className="fg-button" disabled={actionsDisabled||!projects.length}>إضافة دفعة إنتاج</button></form>}
