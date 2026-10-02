@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import config as app_config  # noqa: E402
 from app.db import Base  # noqa: E402
+from app import operations_models  # noqa: F401
 from app import models  # noqa: E402,F401
 
 alembic_cfg = context.config
