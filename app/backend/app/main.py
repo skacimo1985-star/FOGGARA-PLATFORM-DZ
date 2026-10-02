@@ -2,9 +2,10 @@ import logging
 import time
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 
@@ -14,6 +15,7 @@ from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         metrology, services, simulator, telemetry, water,
                         workflow)
 from .routers.setup import router as setup_router
+from .routers.operations import router as operations_router
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -45,7 +47,7 @@ _CSP = (
     "script-src 'self'; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
-    "img-src 'self' data:; "
+    "img-src 'self' data: https://upload.wikimedia.org https://thumb.wikimedia.org; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
@@ -86,7 +88,7 @@ async def security_and_request_logging(request: Request, call_next):
 async def validation_handler(request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={
         "detail": {"code": "VALIDATION_ERROR", "message": "Invalid request payload",
-                   "errors": exc.errors()[:5]}
+                   "errors": jsonable_encoder([{k: v for k, v in e.items() if k not in ("ctx", "input")} for e in exc.errors()[:5]])}
     })
 
 
@@ -133,6 +135,7 @@ app.include_router(telemetry.router)
 app.include_router(simulator.router)
 app.include_router(simulator.rules_router)
 app.include_router(setup_router)
+app.include_router(operations_router)
 
 
 # تقديم الواجهة المبنية (إن وُجدت) مع دعم SPA — مسارات /api تبقى للـAPI فقط
@@ -147,7 +150,11 @@ if _dist.is_dir():
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str):
-        candidate = _dist / full_path
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        candidate = (_dist / full_path).resolve()
+        if not candidate.is_relative_to(_dist.resolve()):
+            raise HTTPException(status_code=404, detail="Not found")
         if full_path and candidate.is_file():
             return FileResponse(candidate)
         return FileResponse(_dist / "index.html")

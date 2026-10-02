@@ -25,15 +25,29 @@ def verify_password(password: str, stored: str) -> bool:
         return False
 
 
-def create_token(user_id: int) -> str:
+def credential_stamp(password_hash: str) -> str:
+    return hmac.new(config.JWT_SECRET.encode(), password_hash.encode(), hashlib.sha256).hexdigest()
+
+
+def create_token(user_id: int, password_hash: str) -> str:
     now = datetime.now(timezone.utc)
-    payload = {"sub": str(user_id), "iat": now, "exp": now + timedelta(hours=config.TOKEN_TTL_HOURS)}
+    payload = {"sub": str(user_id), "iat": now, "exp": now + timedelta(hours=config.TOKEN_TTL_HOURS),
+               "credential": credential_stamp(password_hash)}
     return jwt.encode(payload, config.JWT_SECRET, algorithm=_ALGO)
 
 
 def decode_token(token: str) -> int | None:
     try:
-        payload = jwt.decode(token, config.JWT_SECRET, algorithms=[_ALGO])
+        payload = jwt.decode(token, config.JWT_SECRET, algorithms=[_ALGO], options={"require": ["sub", "iat", "exp", "credential"]})
         return int(payload["sub"])
     except Exception:
         return None
+
+
+def token_matches_credentials(token: str, password_hash: str) -> bool:
+    try:
+        payload = jwt.decode(token, config.JWT_SECRET, algorithms=[_ALGO],
+                             options={"require": ["sub", "iat", "exp", "credential"]})
+        return hmac.compare_digest(payload["credential"], credential_stamp(password_hash))
+    except Exception:
+        return False

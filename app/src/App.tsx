@@ -4,6 +4,9 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/useAuth";
 import { Layout } from "@/components/Layout";
 import Landing from "@/pages/Landing";
+import Operations from "@/pages/Operations";
+import Legal from "@/pages/Legal";
+import Account from "@/pages/Account";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import Projects from "@/pages/Projects";
@@ -61,6 +64,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            {["about", "privacy", "terms", "rights", "contact"].map(path => <Route key={path} path={"/" + path} element={<Legal />} />)}
+            <Route path="/app/operations" element={<Protected><Operations /></Protected>} />
+            <Route path="/app/account" element={<Protected><Account /></Protected>} />
             <Route path="/app" element={<Protected><Home /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
             <Route path="/app/explore/:domain" element={<Protected><ExploreDomain /></Protected>} />
