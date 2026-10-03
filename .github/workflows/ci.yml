@@ -153,6 +153,8 @@ jobs:
                   time.sleep(2)
           PY
           docker compose -f compose.production.yml ps --status running --services | grep -x worker
+      - name: Verify production login and module APIs
+        run: python app/backend/tests/production_smoke.py
       - name: Show failure diagnostics
         if: failure()
         run: docker compose -f compose.production.yml logs --tail 80

@@ -1,0 +1,33 @@
+name: Review dependency lock on GitHub
+on:
+  push:
+    branches: [codex/reviewed-integration-2026-10-03]
+    paths: [.github/workflows/dependency-lock-review.yml]
+permissions:
+  contents: write
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+      - name: Resolve available compatible fixes without package scripts
+        working-directory: app
+        run: |
+          npm audit fix --package-lock-only --ignore-scripts || result=$?
+          if [ "${result:-0}" -gt 1 ]; then exit "$result"; fi
+          npm audit --json || result=$?
+      - name: Store candidate lock blob for review without updating a branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          Path('candidate-blob.json').write_text(json.dumps({'content':Path('app/package-lock.json').read_text(),'encoding':'utf-8'}))
+          PY
+          gh api --method POST "repos/${{ github.repository }}/git/blobs" --input candidate-blob.json --jq '"CANDIDATE_LOCK_BLOB=" + .sha'

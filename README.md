@@ -1,17 +1,15 @@
 # FOGGARA-DZ
 
-Algerian WEFEH operational platform by SIREP Oasis Nexus WEFEH. The repository contains the React/Vite web application and FastAPI backend under [`app/`](app/).
+Algerian WEFEH production and decision-support platform by SIREP Oasis Nexus WEFEH. The React/Vite application, FastAPI API, PostgreSQL migrations and Rust comparison engine are under [app/](app/).
 
-## Run locally on Windows without Docker
+Development and verification are organized through GitHub branches, pull requests and GitHub Actions. Main is the reference branch; changes are reviewed before merging.
 
-Requirements: Python 3.12+ and Node.js 20+ on `PATH`.
+The reviewed integration combines project/evidence workflows, agriculture, versioned WEFEH evaluations, production lots, durable jobs, GIS, telemetry, simulation and permissioned Data Rooms. Decisions have explicit human review and authorization. Calculations and proposals are labelled with their provenance.
 
-```powershell
-cd app
-.\run-local.bat
-```
+- [Component and branch review](docs/INTEGRATION-REVIEW-2026-10-03.md)
+- [Production stack and feature boundaries](docs/OPERATIONS.md)
+- [Requested main protection and permission limitation](docs/MAIN-PROTECTION.md)
+- [Dependency security review](docs/DEPENDENCY-SECURITY.md)
+- [Application configuration](app/README.md)
 
-This starts the development backend with SQLite and the web app. Open `http://localhost:3000`; the API health check is `http://localhost:8000/api/health`. No projects, measurements, services or accounts are preloaded. Register your organization through `/register`. This local mode is for evaluation, not production.
-
-For PostgreSQL, migrations, tests, production configuration, architecture notes, and current feature boundaries, see [`app/README.md`](app/README.md).
-
+A running production deployment is not established by a successful build alone. Live hosting/database configuration and the remaining release boundaries are listed in the review. No production accounts or credentials are embedded in the repository.
