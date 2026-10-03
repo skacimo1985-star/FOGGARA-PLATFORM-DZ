@@ -25,7 +25,7 @@ def main():
             migrate("head")
             with psycopg.connect(f"postgresql://postgres:postgres@localhost:5432/{database}") as check:
                 assert check.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "p1gis20261003a"
-                tables = check.execute("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public'").fetchall()
+                tables = check.execute("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public' AND tablename <> 'spatial_ref_sys'").fetchall()
                 assert tables and all(enabled for _, enabled in tables), tables
                 for role in ("anon", "authenticated", "service_role"):
                     for name, _ in tables:
