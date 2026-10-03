@@ -1,7 +1,7 @@
-name: Verify hosted Render deployment
+name: Verify primary main Render deployment
 on:
   push:
-    branches: [codex/reviewed-integration-2026-10-03]
+    branches: [codex/verify-main-render-2026-10-03]
     paths:
       - 'app/Dockerfile.production'
       - 'app/docker-entrypoint.prod.sh'
@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: verify-hosted-render
+  group: verify-primary-main-render
   cancel-in-progress: true
 jobs:
   hosted:
@@ -21,7 +21,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, re, time, urllib.request, urllib.error
-          base = "https://foggara-platform-dz-4.onrender.com"
+          base = "https://foggara-dz.onrender.com"
           for attempt in range(90):
               try:
                   with urllib.request.urlopen(base + "/api/health", timeout=10) as response:
