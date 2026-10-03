@@ -13,7 +13,7 @@ _connect_args = {"check_same_thread": False} if _IS_SQLITE else {}
 _pool_kwargs: dict = {}
 if not _IS_SQLITE:
     _timeout_ms = int(os.environ.get("DB_STATEMENT_TIMEOUT_MS", "30000"))
-    _connect_args = {"options": f"-c statement_timeout={_timeout_ms}"}
+    _connect_args = {"options": f"-c statement_timeout={_timeout_ms} -c timezone=UTC"}
     _pool_kwargs = {
         "pool_size": 5,
         "max_overflow": 5,
