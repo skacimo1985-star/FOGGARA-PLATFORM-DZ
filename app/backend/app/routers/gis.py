@@ -49,8 +49,10 @@ def wilayas(lang: str = Query("ar", pattern="^(ar|fr|en)$"),
     return {
         "count": len(rows),
         "items": [
-            {"id": r.id, "code": r.official_code, "name": _lang_name(r, lang),
-             "name_ar": r.name_ar, "name_fr": r.name_fr, "name_en": r.name_en,
+            {"id": r.id, "reference_key": r.reference_key, "code": r.official_code,
+             "name": _lang_name(r, lang), "name_ar": r.name_ar, "name_fr": r.name_fr,
+             "name_en": r.name_en,
+             "operational_from": r.operational_from.isoformat() if r.operational_from else None,
              "verified": r.verified}
             for r in rows
         ],
@@ -64,9 +66,9 @@ def dairas(wilaya_id: int, lang: str = Query("ar", pattern="^(ar|fr|en)$"),
         api_error(404, "NOT_FOUND", "Wilaya not found")
     rows = db.scalars(select(Daira).where(Daira.wilaya_id == wilaya_id).order_by(Daira.name_fr, Daira.id)).all()
     return {"count": len(rows), "items": [
-        {"id": r.id, "code": r.official_code, "name": _lang_name(r, lang),
-         "name_ar": r.name_ar, "name_fr": r.name_fr, "name_en": r.name_en,
-         "verified": r.verified}
+        {"id": r.id, "reference_key": r.reference_key, "code": r.official_code,
+         "name": _lang_name(r, lang), "name_ar": r.name_ar, "name_fr": r.name_fr,
+         "name_en": r.name_en, "verified": r.verified}
         for r in rows
     ]}
 
