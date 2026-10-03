@@ -12,6 +12,7 @@ def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
+    import app.gis_models  # register GIS FK targets for standalone ORM use
     from app.models import Organization, User, Project, Site
     from app.security import hash_password
     from playwright.sync_api import sync_playwright, expect
