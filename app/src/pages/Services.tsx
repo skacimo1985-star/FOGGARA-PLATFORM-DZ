@@ -53,7 +53,7 @@ export default function Services() {
     const suffix = qs.size ? `?${qs.toString()}` : "";
     api.get<Service[]>(`/services${suffix}`).then(setServices).catch(setError);
     api.get<ServiceRequest[]>("/service-requests").then(setRequests).catch(() => setRequests([]));
-    api.get<Project[]>("/projects").then(setProjects).catch(() => {});
+    api.get<Paged<Project>>("/projects?page_size=500").then(r=>setProjects(r.items)).catch(() => {});
     api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
   }, [typeFilter, domainFilter]);
 
