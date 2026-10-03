@@ -116,7 +116,12 @@ def main():
                              f"/app/projects/{project_id}"):
                     authenticated_visit(path)
                     expect(page.locator("#main-content")).to_be_visible()
-                    assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
+                    if path == "/app/iot":
+                        # This planned module deliberately shows one field-control safety notice.
+                        expect(page.get_by_role("alert")).to_have_count(1)
+                        expect(page.get_by_role("alert")).to_contain_text("الأوامر الميدانية حساسة وممنوعة")
+                    else:
+                        assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                 assert not errors, errors
