@@ -13,7 +13,7 @@ from . import config
 from .db import engine
 from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         metrology, services, simulator, telemetry, water,
-                        workflow)
+                        workflow, gis)
 from .routers.setup import router as setup_router
 from .routers.operations import router as operations_router
 from .routers import agriculture, agriculture_operations, collaboration, intelligence
@@ -133,6 +133,7 @@ app.include_router(audit.router)
 app.include_router(metrology.router)
 app.include_router(services.router)
 app.include_router(explore.router)
+app.include_router(gis.router)
 app.include_router(energy.router)
 app.include_router(water.router)
 app.include_router(decisions.router)
