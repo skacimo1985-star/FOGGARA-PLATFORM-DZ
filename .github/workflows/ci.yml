@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        image: postgis/postgis:16-3.5
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: foggara_migration
@@ -157,7 +157,7 @@ jobs:
                   with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
                       body = json.load(response)
                       assert body["db"] == "up"
-                      assert body["alembic"] == "int20261003s1"
+                      assert body["alembic"] == "p1gis20261003a"
                       break
               except Exception:
                   if attempt == 39:
