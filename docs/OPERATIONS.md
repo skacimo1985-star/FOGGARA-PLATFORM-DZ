@@ -40,7 +40,7 @@ screens remains a release task.
   in account responses. Users can change passwords. Credential-bound JWTs become
   invalid when the password changes. Old JWTs issued before this update require
   users to log in again. Logout removes the browser token; it does not revoke a
-  previously copied token. Browser tokens currently remain in localStorage.
+  previously copied token. Browser bearer tokens remain in memory only; reloading/closing the page requires login.
 - Navigation to /app/operations and /app/account, public legal/contact routes,
   phone/tablet layouts, reduced-motion support, loading/error/empty states.
 
@@ -60,7 +60,7 @@ Failed jobs remain visible; the worker does not silently retry forever.
 Investigate before enqueueing another evaluation. Pending jobs do not prove a
 worker is online. UI manual evaluation and matching remain available.
 
-The migration is e5f6a7b8c9d0, based on d4e5f6a7b8c9. It creates nine
+The operational migration is e5f6a7b8c9d0, based on d4e5f6a7b8c9. The reviewed integration preserves it and merges with RC1 through int20261003m1, followed by the int20261003s1 security revision. It creates nine
 new tables and their indexes without deleting existing application data.
 Take a backup before applying it to an existing installation. Downgrading
 this extension drops its operational records and must not be used as a routine
@@ -137,7 +137,7 @@ integrations are not implemented by this change.
 The foggara-operational-package artifact contains the built app/dist and backend
 runtime under their normal paths. It is not a public hosting URL. With a supported
 Python environment and a configured PostgreSQL DATABASE_URL, JWT_SECRET and
-SETUP_KEY, install app/backend/requirements.txt, apply migrations from app/backend,
+SETUP_KEY, install app/backend/requirements.lock, apply migrations from app/backend,
 then run uvicorn app.main:app and the separate operations worker.
 For source builds and Docker, use the complete repository branch, not the reduced
 runtime artifact.
@@ -148,3 +148,8 @@ response and worker process, then removes only that disposable CI stack.
 
 
 Integrated migration head: int20261003s1. Credentials use release scoped, password-bound JWTs; old sessions require login.
+
+
+## Render worker requirement
+
+The preserved render.yaml web service does not provision a worker. A persistent worker using the same database and revision must run `cd app/backend && python -m app.operations_worker` for queued jobs and hourly freshness refresh. Its hosting plan, credentials and lifecycle require deployment configuration; successful web health alone does not verify it. Compose includes this separate worker and CI verifies that stack. The current free web plan has no production availability guarantee.

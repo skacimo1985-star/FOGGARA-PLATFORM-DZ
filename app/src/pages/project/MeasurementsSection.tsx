@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 // وحدات كل كمية كما يفرضها الـbackend (services/indicators.py) — ممنوع إدخال وحدة خارج القائمة
 const PARAM_UNITS: Record<string, string[]> = {
@@ -150,7 +151,12 @@ export function MeasurementsSection({ projectId, measurements, reload }: {
                   <TableCell>{m.source}</TableCell>
                   <TableCell><Badge variant="secondary">{t(`measurement.sourceTypes.${m.source_type}`, m.source_type)}</Badge></TableCell>
                   <TableCell><Badge variant={qVariant(m.quality_status)}>{t(`measurement.qualityStatuses.${m.quality_status}`)}</Badge></TableCell>
-                  <TableCell><Badge variant={vVariant(m.verification_status)}>{t(`measurement.verificationStatuses.${m.verification_status}`, m.verification_status)}</Badge></TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1">
+                      <Badge variant={vVariant(m.verification_status)}>{t(`measurement.verificationStatuses.${m.verification_status}`, m.verification_status)}</Badge>
+                      <ProvenanceBadge kind={m.verification_status === "verified" ? "VERIFIED" : "OBSERVED"} />
+                    </span>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
