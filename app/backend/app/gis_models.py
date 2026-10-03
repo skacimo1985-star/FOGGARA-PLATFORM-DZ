@@ -30,6 +30,7 @@ class Wilaya(Base):
     version_id: Mapped[int] = mapped_column(ForeignKey("administrative_versions.id"), nullable=False, index=True)
     reference_key: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     official_code: Mapped[str | None] = mapped_column(String(20), index=True)
+    operational_from: Mapped[date | None] = mapped_column(Date)
     name_ar: Mapped[str] = mapped_column(String(150), nullable=False)
     name_fr: Mapped[str] = mapped_column(String(150), nullable=False)
     name_en: Mapped[str] = mapped_column(String(150), nullable=False)
