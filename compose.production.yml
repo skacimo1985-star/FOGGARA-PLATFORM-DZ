@@ -32,7 +32,7 @@ services:
   migrate:
     <<: *app
     restart: "no"
-    command: ["python", "-m", "alembic", "upgrade", "head"]
+    command: ["/bin/sh", "-c", "python -m alembic upgrade head && python seed.py"]
     healthcheck:
       disable: true
     depends_on:
