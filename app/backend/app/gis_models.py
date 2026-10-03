@@ -20,6 +20,7 @@ class AdministrativeVersion(Base):
     source_title: Mapped[str] = mapped_column(String(255), nullable=False)
     source_uri: Mapped[str] = mapped_column(Text, nullable=False)
     source_date: Mapped[date] = mapped_column(Date, nullable=False)
+    source_sha256: Mapped[str | None] = mapped_column(String(64))
     verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 

@@ -26,6 +26,7 @@ def upgrade():
         sa.Column("source_title", sa.String(255), nullable=False),
         sa.Column("source_uri", sa.Text(), nullable=False),
         sa.Column("source_date", sa.Date(), nullable=False),
+        sa.Column("source_sha256", sa.String(64), nullable=True),
         sa.Column("verified", sa.Boolean(), nullable=False, server_default=sa.false()),
     )
     op.create_table(
