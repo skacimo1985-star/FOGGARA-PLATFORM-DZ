@@ -32,15 +32,17 @@ def upgrade():
         "wilayas",
         sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), primary_key=True),
         sa.Column("version_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("administrative_versions.id"), nullable=False),
-        sa.Column("official_code", sa.String(20), nullable=False),
+        sa.Column("reference_key", sa.String(80), nullable=False),
+        sa.Column("official_code", sa.String(20), nullable=True),
         sa.Column("name_ar", sa.String(150), nullable=False),
         sa.Column("name_fr", sa.String(150), nullable=False),
         sa.Column("name_en", sa.String(150), nullable=False),
         sa.Column("source_uri", sa.Text(), nullable=False),
         sa.Column("verified", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.UniqueConstraint("version_id", "official_code", name="uq_wilaya_version_code"),
+        sa.UniqueConstraint("version_id", "reference_key", name="uq_wilaya_version_key"),
     )
     op.create_index("ix_wilayas_version_id", "wilayas", ["version_id"])
+    op.create_index("ix_wilayas_reference_key", "wilayas", ["reference_key"])
     op.create_index("ix_wilayas_official_code", "wilayas", ["official_code"])
 
     op.create_table(
@@ -48,6 +50,7 @@ def upgrade():
         sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), primary_key=True),
         sa.Column("version_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("administrative_versions.id"), nullable=False),
         sa.Column("wilaya_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("wilayas.id"), nullable=False),
+        sa.Column("reference_key", sa.String(100), nullable=False),
         sa.Column("official_code", sa.String(30), nullable=True),
         sa.Column("name_ar", sa.String(150), nullable=False),
         sa.Column("name_fr", sa.String(150), nullable=False),
@@ -57,6 +60,7 @@ def upgrade():
     )
     op.create_index("ix_dairas_version_id", "dairas", ["version_id"])
     op.create_index("ix_dairas_wilaya_id", "dairas", ["wilaya_id"])
+    op.create_index("ix_dairas_reference_key", "dairas", ["reference_key"])
     op.create_index("ix_dairas_official_code", "dairas", ["official_code"])
 
     op.create_table(
@@ -65,17 +69,19 @@ def upgrade():
         sa.Column("version_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("administrative_versions.id"), nullable=False),
         sa.Column("wilaya_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("wilayas.id"), nullable=False),
         sa.Column("daira_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("dairas.id"), nullable=True),
-        sa.Column("official_code", sa.String(30), nullable=False),
+        sa.Column("reference_key", sa.String(120), nullable=False),
+        sa.Column("official_code", sa.String(30), nullable=True),
         sa.Column("name_ar", sa.String(150), nullable=False),
         sa.Column("name_fr", sa.String(150), nullable=False),
         sa.Column("name_en", sa.String(150), nullable=False),
         sa.Column("source_uri", sa.Text(), nullable=False),
         sa.Column("verified", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.UniqueConstraint("version_id", "official_code", name="uq_commune_version_code"),
+        sa.UniqueConstraint("version_id", "reference_key", name="uq_commune_version_key"),
     )
     op.create_index("ix_communes_version_id", "communes", ["version_id"])
     op.create_index("ix_communes_wilaya_id", "communes", ["wilaya_id"])
     op.create_index("ix_communes_daira_id", "communes", ["daira_id"])
+    op.create_index("ix_communes_reference_key", "communes", ["reference_key"])
     op.create_index("ix_communes_official_code", "communes", ["official_code"])
 
     op.add_column("sites", sa.Column("wilaya_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), nullable=True))
