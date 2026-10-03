@@ -19,6 +19,7 @@ WORKDIR /app/backend
 COPY backend/requirements.lock ./requirements.lock
 RUN pip install --no-cache-dir -r requirements.lock
 COPY backend ./
+COPY docker-entrypoint.prod.sh /usr/local/bin/foggara-entrypoint
 COPY --from=nexus /engine/target/release/foggara-nexus-core /usr/local/bin/foggara-nexus-core
 ENV NEXUS_MATRIX_ENGINE=rust
 COPY --from=web /app/dist /app/dist
@@ -26,5 +27,5 @@ RUN useradd --create-home foggara && chown -R foggara:foggara /app
 USER foggara
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=4)"
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:' + __import__('os').environ.get('PORT', '8000') + '/api/health', timeout=4)"
+CMD ["/bin/sh", "/usr/local/bin/foggara-entrypoint"]
