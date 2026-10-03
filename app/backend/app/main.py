@@ -50,6 +50,7 @@ _CSP = (
     "font-src 'self' https://fonts.gstatic.com; "
     "img-src 'self' data: https://upload.wikimedia.org https://thumb.wikimedia.org; "
     "connect-src 'self'; "
+    "worker-src 'self' blob:; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
     "form-action 'self'"
