@@ -3,3 +3,6 @@
 32706f892df17b1e9a61b92e16bea2dbd57d0293:.github/workflows/ci.yml:generic-api-key:53
 # Negative production-config subprocess test: synthetic fixture, not a deployed credential.
 c40a5f01b0b86663d3495adcf6f6010b9923aa5a:app/backend/tests/test_security_hardening.py:generic-api-key:87
+
+# Reviewed synthetic negative-config fixture introduced by integration; replaced with generated test key.
+3101dbdb63eb81e0185afd8c1f5b586b5324221a:app/backend/tests/test_security_claims.py:generic-api-key:87

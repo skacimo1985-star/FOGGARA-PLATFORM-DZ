@@ -1,6 +1,7 @@
 """Claim scope, credential lifecycle and password-verifier migration regressions."""
 import hashlib
 import os
+import secrets
 import subprocess
 import sys
 import jwt
@@ -84,7 +85,7 @@ def test_role_checked_against_current_database(client, world, db):
 
 @pytest.mark.parametrize("overrides", [{"JWT_SECRET": "a" * 64}, {"CORS_ORIGINS": "*"}, {"CORS_ORIGINS": "http://example.com"}, {"TOKEN_TTL_HOURS": "0"}, {"TOKEN_TTL_HOURS": "999"}])
 def test_production_rejects_unsafe_config(overrides):
-    env = dict(os.environ, ENV="prod", DATABASE_URL="postgresql+psycopg://user:password@localhost/foggara", JWT_SECRET="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", CORS_ORIGINS="", TOKEN_TTL_HOURS="12")
+    env = dict(os.environ, ENV="prod", DATABASE_URL="postgresql+psycopg://user:password@localhost/foggara", JWT_SECRET=secrets.token_urlsafe(48), CORS_ORIGINS="", TOKEN_TTL_HOURS="12")
     env.update(overrides)
     result = subprocess.run([sys.executable, "-c", "import app.config"], env=env, capture_output=True, text=True)
     assert result.returncode != 0

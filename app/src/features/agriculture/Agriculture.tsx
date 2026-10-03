@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Sprout, Droplets, FlaskConical, CalendarDays, Wrench, ShieldCheck, ChartNoAxesCombined, Plus, Download, Search, X, ChevronRight, LogOut, Menu, Leaf, Zap, HeartPulse, CircleHelp, Check, ArrowUpRight, Satellite, CloudSun, Bug, Gauge, FileCheck2, Layers, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { setLocale } from '@/lib/i18n';
 import { translate, type Lang, type TextKey } from './i18n';
 import './agriculture.css';
