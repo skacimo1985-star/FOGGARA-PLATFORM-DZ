@@ -11,6 +11,7 @@ import os
 from sqlalchemy import select
 
 from app.db import SessionLocal
+from app.admin_reference import ensure_2026_wilaya_reference
 from app.models import (VFD, Asset, Calibration, Certificate, Evidence,
                         Device, GovDecision, GovDecisionEvidence,
                         GovDecisionTransition, Sensor, TelemetryRule,
@@ -48,10 +49,12 @@ def main():
                "calibrations": 0, "certificates": 0, "inspections": 0,
                "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0}
     try:
+        # National reference data is authoritative platform data, never DEMO.
+        ensure_2026_wilaya_reference(db)
         if not seed_demo:
             ensure_default_indicator(db)
             db.commit()
-            print("SEED_DEMO=false — no demo data inserted (default indicator ensured).")
+            print("SEED_DEMO=false — national reference + default indicator ensured; no demo business data inserted.")
             return
         # ---- Organizations ----
         org1, c = get_or_create(db, Organization, code="DEMO-ADRAR-ADE", defaults=dict(

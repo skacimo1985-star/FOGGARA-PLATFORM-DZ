@@ -139,3 +139,31 @@ P1 is complete only when:
 - security regression tests pass;
 - existing baseline does not regress;
 - CI is green.
+
+
+## 11. Official hierarchy import gate
+
+Daïra/commune hierarchy imports are intentionally offline and review-gated.
+
+Command:
+
+```bash
+cd app/backend
+python -m scripts.import_admin_reference <official.json> \
+  --sha256 <reviewed-sha256> \
+  --verified \
+  --complete-2026
+```
+
+Rules:
+
+- the importer never downloads data;
+- the exact source file is pinned by SHA-256;
+- provenance metadata is mandatory;
+- `--complete-2026` requires exactly 69 wilayas and 1541 communes;
+- parent links (wilaya -> daira -> commune) are validated before writes;
+- a verified flag requires explicit operator approval;
+- an existing version code is immutable: the same checksum is idempotent, while a different checksum is rejected and requires a new version code;
+- boundary geometry remains a separate reviewed import because administrative names/hierarchy and polygon licensing/provenance are different assurance concerns.
+
+This prevents community/cached datasets from being silently promoted to official national reference data.

@@ -12,7 +12,8 @@ def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
-    from app.models import Organization, User, Project
+    import app.gis_models  # register GIS FK targets for standalone ORM use
+    from app.models import Organization, User, Project, Site
     from app.security import hash_password
     from playwright.sync_api import sync_playwright, expect
     out = Path("qa")
@@ -30,6 +31,9 @@ def main():
         db.add(project)
         db.flush()
         project_id = project.id
+        site = Site(org_id=org.id, name="موقع اختبار GIS", wilaya="الأغواط", commune="الأغواط",
+                    lat=33.8000, lon=2.8800, is_demo=True)
+        db.add(site)
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
     with (out / "server.log").open("w") as log:
@@ -122,13 +126,16 @@ def main():
                         expect(page.get_by_role("alert")).to_contain_text("الأوامر الميدانية حساسة وممنوعة")
                     else:
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
+                    if path == "/app/gis":
+                        expect(page.locator(".maplibregl-canvas")).to_be_visible()
+                        expect(page.get_by_text("موقع اختبار GIS", exact=True).first).to_be_visible()
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
                     "checks":["public routes","photograph","mobile overflow","contact persistence",
-                              "authenticated operations","lot creation and reload","API 404","23 protected routes including project details","no page errors"]
+                              "authenticated operations","lot creation and reload","GIS MapLibre runtime","API 404","23 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()
         except Exception:

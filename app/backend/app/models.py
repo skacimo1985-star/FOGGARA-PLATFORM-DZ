@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
+from .gis_types import Geometry
 
 # أنواع محمولة بين المحركين:
 # PortableJSON — JSONB على PostgreSQL، JSON عادي على SQLite.
@@ -52,6 +53,10 @@ class Site(Base):
     commune: Mapped[str | None] = mapped_column(String(100))
     lat: Mapped[float | None] = mapped_column(Numeric(9, 5))
     lon: Mapped[float | None] = mapped_column(Numeric(9, 5))
+    wilaya_id: Mapped[int | None] = mapped_column(ForeignKey("wilayas.id"), index=True)
+    daira_id: Mapped[int | None] = mapped_column(ForeignKey("dairas.id"), index=True)
+    commune_id: Mapped[int | None] = mapped_column(ForeignKey("communes.id"), index=True)
+    geom: Mapped[object | None] = mapped_column(Geometry("Point", 4326).with_variant(Text(), "sqlite"))
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
 

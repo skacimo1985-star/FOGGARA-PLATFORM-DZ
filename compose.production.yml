@@ -16,7 +16,7 @@ x-app: &app
   restart: unless-stopped
 services:
   db:
-    image: postgres:16
+    image: postgis/postgis:16-3.5
     restart: unless-stopped
     environment:
       POSTGRES_DB: foggara
@@ -32,7 +32,7 @@ services:
   migrate:
     <<: *app
     restart: "no"
-    command: ["python", "-m", "alembic", "upgrade", "head"]
+    command: ["/bin/sh", "-c", "python -m alembic upgrade head && python seed.py"]
     healthcheck:
       disable: true
     depends_on:

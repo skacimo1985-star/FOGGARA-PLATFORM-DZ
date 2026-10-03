@@ -36,6 +36,9 @@ def main():
     session = call("/auth/login", body={"email": credentials["email"], "password": credentials["password"]})
     headers = {"Authorization": "Bearer " + session["token"]}
     assert call("/auth/me", headers=headers)["role"] == "admin"
+    wilaya_reference = call("/gis/wilayas?lang=en", headers=headers)
+    assert wilaya_reference["count"] == 69, wilaya_reference
+    assert sum(1 for item in wilaya_reference["items"] if item["operational_from"] == "2027-01-01") == 11
     for path in ("/projects", "/org", "/sites", "/resources", "/assets", "/decisions",
                  "/telemetry/devices", "/simulator/runs", "/nexus/resources",
                  "/data-rooms", "/opportunities", "/agriculture/parcels",
@@ -45,7 +48,7 @@ def main():
     page = call("/projects?page_size=12", headers=headers)
     assert any(item["id"] == project["id"] for item in page["items"])
     call("/projects/" + str(project["id"]), headers=headers)
-    print("Production HTTP checks passed: concurrent bootstrap and closure, login, authorization, 14 modules, persisted project")
+    print("Production HTTP checks passed: bootstrap, auth, 69-wilaya national reference, module APIs, persisted project")
 
 if __name__ == "__main__":
     main()
