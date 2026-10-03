@@ -24,12 +24,12 @@ def main():
             migrate("int20261003m1", "downgrade")
             migrate("head")
             with psycopg.connect(f"postgresql://postgres:postgres@localhost:5432/{database}") as check:
-                assert check.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "int20261003s1"
+                assert check.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "p1gis20261003a"
                 tables = check.execute("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public'").fetchall()
                 assert tables and all(enabled for _, enabled in tables), tables
                 for role in ("anon", "authenticated", "service_role"):
                     for name, _ in tables:
                         assert not check.execute("SELECT has_table_privilege(%s, %s, 'SELECT')", (role, "public."+name)).fetchone()[0], (role,name)
-            print(f"MIGRATION_PATH_PASS={start}->int20261003s1; RLS/grants verified")
+            print(f"MIGRATION_PATH_PASS={start}->p1gis20261003a; RLS/grants verified")
 if __name__ == "__main__":
     main()
