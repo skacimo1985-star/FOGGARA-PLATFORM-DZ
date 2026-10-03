@@ -81,6 +81,7 @@ export default function Gis() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const mapReadyRef = useRef(false);
+  const latestGeoJSONRef = useRef<SitesGeoJSON>(EMPTY_GEOJSON);
 
   useEffect(() => {
     let active = true;
@@ -218,8 +219,9 @@ export default function Gis() {
       });
 
       const source = map.getSource("sites") as GeoJSONSource;
-      source.setData(filteredGeoJSON);
-      fitFeatures(map, filteredGeoJSON.features);
+      const currentGeoJSON = latestGeoJSONRef.current;
+      source.setData(currentGeoJSON);
+      fitFeatures(map, currentGeoJSON.features);
     });
 
     return () => {
@@ -230,6 +232,7 @@ export default function Gis() {
   }, []);
 
   useEffect(() => {
+    latestGeoJSONRef.current = filteredGeoJSON;
     const map = mapRef.current;
     if (!map || !mapReadyRef.current) return;
     const source = map.getSource("sites") as GeoJSONSource | undefined;
