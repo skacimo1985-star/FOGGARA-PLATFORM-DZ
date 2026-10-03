@@ -13,7 +13,7 @@ import json
 from datetime import date
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .gis_models import AdministrativeVersion, Commune, Daira, Wilaya
@@ -156,29 +156,25 @@ def import_administrative_json(
                 raise AdministrativeImportError(f"commune {key} daira/wilaya parent mismatch")
 
     version = db.scalar(select(AdministrativeVersion).where(AdministrativeVersion.code == version_code))
-    if version is None:
-        version = AdministrativeVersion(
-            code=version_code,
-            title=title,
-            valid_from=valid_from,
-            source_title=source_title,
-            source_uri=source_uri,
-            source_date=source_date,
-            verified=requested_verified,
+    if version is not None:
+        if version.source_sha256 == actual_sha256:
+            return version
+        raise AdministrativeImportError(
+            "version_code already exists with a different source checksum; create a new version"
         )
-        db.add(version)
-        db.flush()
-    else:
-        version.title = title
-        version.valid_from = valid_from
-        version.source_title = source_title
-        version.source_uri = source_uri
-        version.source_date = source_date
-        version.verified = requested_verified
-        db.execute(delete(Commune).where(Commune.version_id == version.id))
-        db.execute(delete(Daira).where(Daira.version_id == version.id))
-        db.execute(delete(Wilaya).where(Wilaya.version_id == version.id))
-        db.flush()
+
+    version = AdministrativeVersion(
+        code=version_code,
+        title=title,
+        valid_from=valid_from,
+        source_title=source_title,
+        source_uri=source_uri,
+        source_date=source_date,
+        source_sha256=actual_sha256,
+        verified=requested_verified,
+    )
+    db.add(version)
+    db.flush()
 
     wilaya_models: dict[str, Wilaya] = {}
     for key, row in wilayas.items():
