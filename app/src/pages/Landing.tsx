@@ -1,111 +1,40 @@
-import { useState } from "react";
 import { Link } from "react-router";
-import { useTranslation } from "react-i18next";
-import { ArrowLeft, ArrowRight, Droplets, Zap, Wheat, Leaf, HeartPulse, Compass, UserPlus, LayoutGrid } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { FoggaraDivider } from "@/components/common";
+import { ArrowUpLeft, Droplets, Zap, Wheat, Leaf, HeartPulse, Wrench, Layers3, Radio, ArrowDown } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
-
-const DOMAINS = [
-  { key: "water", icon: Droplets, operational: true },
-  { key: "energy", icon: Zap, operational: false },
-  { key: "food", icon: Wheat, operational: false },
-  { key: "ecosystem", icon: Leaf, operational: false },
-  { key: "health", icon: HeartPulse, operational: false },
+import "./operations.css";
+const domains = [
+  {name:"المياه",key:"water",Icon:Droplets},{name:"الطاقة",key:"energy",Icon:Zap},
+  {name:"الغذاء",key:"food",Icon:Wheat},{name:"النظام البيئي",key:"ecosystem",Icon:Leaf},
+  {name:"الصحة",key:"health",Icon:HeartPulse}
 ];
-
-const STEPS = ["discover", "understand", "analyze", "act", "monitor"] as const;
-
 export default function Landing() {
-  const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const [showRegisterNotice, setShowRegisterNotice] = useState(false);
-  const Arrow = i18n.dir() === "rtl" ? ArrowLeft : ArrowRight;
-
-  return (
-    <div className="space-y-8">
-      {/* ==== hero بزخرفة هندسية إسلامية خافتة ==== */}
-      <section className="pattern-moorish overflow-hidden rounded-2xl border border-ink/10 bg-gradient-to-b from-parchment to-paper p-8">
-        <Badge variant="secondary" className="mb-3">{t("landing.versionStatus")}</Badge>
-        <h1 className="t-hero max-w-3xl text-ink">{t("landing.heroTitle")}</h1>
-        <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">{t("landing.heroSub")}</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild size="lg" variant="outline">
-            <Link to="/app/explore">
-              <Compass className="h-4 w-4" aria-hidden="true" />
-              {t("landing.exploreCta")}
-            </Link>
-          </Button>
-          <Button size="lg" variant="secondary" onClick={() => setShowRegisterNotice((v) => !v)}>
-            <UserPlus className="h-4 w-4" aria-hidden="true" />
-            {t("landing.registerCta")}
-          </Button>
-          <Button asChild size="lg">
-            <Link to={user ? "/app" : "/login"}>
-              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-              {t("landing.workspaceCta")}
-              <Arrow className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </div>
-        {showRegisterNotice && (
-          <p role="note" className="mt-4 max-w-2xl rounded-md border border-oasis/40 bg-oasis/10 p-3 text-sm text-ink">
-            {t("landing.registerNotice")}
-          </p>
-        )}
-      </section>
-
-      <FoggaraDivider />
-
-      <section>
-        <h2 className="t-section mb-4 text-ink">{t("landing.domains")}</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {DOMAINS.map(({ key, icon: Icon, operational }) => (
-            <Link key={key} to={`/app/explore/${key}`}>
-              <Card className={`h-full transition-colors duration-300 hover:border-oasis/60 hover:bg-parchment/40 ${operational ? "border-oasis/50" : "opacity-80"}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${operational ? "bg-oasis/15 text-oasis-strong" : "bg-sand/25 text-ink/70"}`} aria-hidden="true">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    {t(`landing.${key}`)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant={operational ? "oasis" : "secondary"}>
-                    {t(operational ? "landing.operational" : "landing.planned")}
-                  </Badge>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <FoggaraDivider />
-
-      <section>
-        <h2 className="t-section mb-4 text-ink">{t("path.title")}</h2>
-        <ol className="flex flex-wrap items-center gap-2">
-          {STEPS.map((s, i) => (
-            <li key={s} className="flex items-center gap-2">
-              <span className="flex items-center gap-2 rounded-full border border-ink/15 bg-card px-4 py-2 text-sm font-medium">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-bold text-paper">
-                  {i + 1}
-                </span>
-                {t(`path.${s}`)}
-              </span>
-              {i < STEPS.length - 1 && <Arrow className="h-4 w-4 text-oasis" aria-hidden="true" />}
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <p className="rounded-lg border border-sand/70 bg-sand/15 p-4 text-sm font-medium text-ink">
-        {t("landing.demoNotice")}
-      </p>
-    </div>
-  );
+  const {user}=useAuth();
+  return <div className="fg-public" dir="rtl" lang="ar">
+    <nav className="fg-public-nav" aria-label="تصفح فقارة"><Link to="/about">رؤيتنا</Link><a href="#ecosystem">منظومة WEFEH</a><a href="#solutions">الحلول والخدمات</a><Link to="/contact">الشراكات والتواصل</Link>
+      <Link to={user?"/app/operations":"/login"} style={{marginInlineStart:"auto",fontWeight:700}}>مساحة العمل ↗</Link></nav>
+    <section className="fg-hero" aria-labelledby="foggara-title">
+      <img className="fg-hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Foggara_in_Tala.jpg/1280px-Foggara_in_Tala.jpg"
+        width={3564} height={2268} alt="فقارة في تالا، ولاية تيميمون، الجزائر" fetchPriority="high" referrerPolicy="no-referrer"/>
+      <p className="fg-eyebrow">ROOTED IN ALGERIA. CONNECTED BY PURPOSE.</p>
+      <h1 id="foggara-title">من عمق الأرض،<br/>نصلُ <em>إلى المستقبل.</em></h1>
+      <p className="fg-hero-copy">موارد مترابطة. معرفة تتحوّل إلى قرار. فقارة تجمع المياه والطاقة والغذاء والبيئة والصحة، لتصل المنظومة الإنتاجية من الميدان إلى القيمة.</p>
+      <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app/operations":"/login"}>الدخول إلى المنصة <ArrowUpLeft size={18}/></Link><a className="fg-button fg-secondary" href="#ecosystem">اكتشف فقارة <ArrowDown size={16}/></a></div>
+      <div className="fg-hero-caption"><span>FOGGARA · WEFEH NEXUS PLATFORM<br/>LAGHOUAT, ALGERIA · 03</span>
+        <span>إرث التدبير المشترك، برؤية رقمية.<br/><Link to="/rights">فقارة تالا: Bernard Gagnon · CC BY 4.0</Link></span></div>
+    </section>
+    <nav className="fg-pillars" aria-label="المجالات الخمسة">{domains.map(({name,key,Icon})=><Link key={key} to={"/app/explore/"+key}><Icon size={21}/><span>{name}</span></Link>)}</nav>
+    <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / A CONNECTED ECOSYSTEM</p><h2>خمسة مجالات.<br/>منظومة واحدة للحياة والإنتاج.</h2></div><div><p>استمدّت فقارة اسمها من معرفة جزائرية عريقة في تنظيم المورد وتقاسمه. واليوم، نترجم هذا المعنى إلى بنية رقمية تربط الموارد والبيانات والتجهيزات والمنتجين والمورّدين والخبراء والمؤسسات.</p><p>من الواحة والمزرعة إلى التحويل والخدمات واللوجستيك، تُبنى القرارات على قياسات قابلة للمراجعة، وأدلة واضحة، ومسؤوليات محددة.</p><Link className="fg-link" to="/about">تعرف على المشروع والجهة الناشرة <ArrowUpLeft size={16}/></Link></div></section>
+    <section id="solutions"><p className="fg-eyebrow">02 / FROM KNOWLEDGE TO THE FIELD</p><h2 className="fg-section-title">الخبرة، والبرمجيات، والميدان.</h2>
+      <div className="fg-services-grid">
+        {[{n:"01",Icon:Wrench,title:"خدمات هندسية",body:"تنظيم طلبات الخدمات والمترولوجيا والمعايرة ومراجع الأدلة، وربط الاحتياج بالخبرة المناسبة.",to:"/app/services"},
+          {n:"02",Icon:Layers3,title:"منظومة إنتاج مترابطة",body:"مشاريع ودفعات إنتاج ومصفوفات WEFEH، مع اقتراحات العرض والطلب وسجل مراجعة واضح.",to:"/app/operations"},
+          {n:"03",Icon:Radio,title:"متابعة الميدان",body:"إدارة الأجهزة والقراءات والمحاكاة، والتمييز بين البيانات التجريبية والربط الميداني الفعلي.",to:"/app/telemetry"}
+        ].map(({n,Icon,title,body,to})=><article className="fg-service" key={n}><span>FOGGARA / {n}</span><Icon size={29}/><h3>{title}</h3><p>{body}</p><Link to={to} className="fg-link">فتح مساحة العمل <ArrowUpLeft size={14}/></Link></article>)}
+      </div>
+    </section>
+    <section className="fg-feature"><div><p className="fg-eyebrow">03 / ACCOUNTABLE INTELLIGENCE</p><h2>بيانات تعرف مصدرها.<br/>قرارات تعرف مسؤولها.</h2><p>تقيّم المصفوفات البيانات المعتمدة وتكشف النقص وتقترح مسارات المراجعة. وتبقى القرارات والاعتمادات قابلة للتتبّع، مع فصل الإدخال عن المراجعة.</p><Link to={user?"/app/operations":"/login"} className="fg-button">استكشف مساحة العمليات <ArrowUpLeft size={17}/></Link></div>
+      <div className="fg-flow">{["مشروع وقياسات ومراجع","مراجعة واعتماد جودة البيانات","تحليل WEFEH ومطابقة الفرص","قرار بشري ومتابعة وتدقيق"].map((text,i)=><div key={text}><b>0{i+1}</b><span>{text}</span></div>)}</div>
+    </section>
+    <section className="fg-editorial"><div><p className="fg-eyebrow">04 / BUILD WITH US</p><h2>قيمة محلية.<br/>آفاق مشتركة.</h2></div><div><p>للمزارع والواحات والتعاونيات ومؤسسات التحويل واللوجستيك والمورّدين والخبراء والشركاء: نبدأ من احتياجاتكم الميدانية، ونبني دورة عمل يمكن قياسها ومتابعتها.</p><Link to="/contact" className="fg-button">تواصل مع فريق فقارة <ArrowUpLeft size={17}/></Link><p className="fg-muted">السجلات الموسومة DEMO بيانات توضيحية. الوحدات التجريبية لا تمثل ربطًا وطنيًا حيًا أو شهادات اعتماد.</p></div></section>
+  </div>;
 }

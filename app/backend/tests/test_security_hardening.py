@@ -77,6 +77,7 @@ def test_page_size_clamped_to_server_max(client, world, monkeypatch):
 def test_rate_limit_uses_forwarded_for_when_trusted(client, monkeypatch):
     """خلف بروكسي الاستضافة: المفتاح هو أول عنوان في X-Forwarded-For عند الثقة."""
     monkeypatch.setenv("TRUST_PROXY_HEADERS", "true")
+    monkeypatch.setenv("TRUSTED_PROXY_PEERS", "testclient")
     monkeypatch.setenv("RATE_LIMIT_LOGIN_MAX", "2")
     payload = {"email": "nobody@t.dz", "password": "wrong-pass-1"}
     h1 = {"X-Forwarded-For": "203.0.113.10, 10.0.0.1"}

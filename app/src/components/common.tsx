@@ -1,6 +1,6 @@
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "@/lib/api";
-import { Button } from "@/components/ui/button";
 
 export function ErrorText({ error }: { error: unknown }) {
   const { t } = useTranslation();

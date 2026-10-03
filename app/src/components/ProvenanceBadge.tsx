@@ -11,13 +11,15 @@ import { cn } from "@/lib/utils";
  *   INFERRED  علاقة مستنتجة من نموذج
  *   PROPOSED  اقتراح (قاعدة/وكيل) بانتظار مراجعة بشرية
  */
-export type ProvenanceKind = "OBSERVED" | "VERIFIED" | "COMPUTED" | "INFERRED" | "PROPOSED";
+export type ProvenanceKind = "OBSERVED" | "VERIFIED" | "COMPUTED" | "INFERRED" | "PROPOSED" | "SIMULATION";
+export type ProvenanceClass = ProvenanceKind;
 
 const STYLES: Record<ProvenanceKind, string> = {
   OBSERVED: "border-oasis/50 bg-oasis/10 text-oasis-strong",
   VERIFIED: "border-ink/50 bg-ink/10 text-ink",
   COMPUTED: "border-sand/70 bg-sand/20 text-ink",
   INFERRED: "border-clay/60 bg-clay/15 text-ink",
+  SIMULATION: "border-violet-500/50 bg-violet-100 text-violet-900",
   PROPOSED: "border-signal/50 bg-signal/10 text-signal-strong",
 };
 
@@ -27,28 +29,32 @@ const ICONS: Record<ProvenanceKind, typeof Eye> = {
   COMPUTED: Calculator,
   INFERRED: GitBranch,
   PROPOSED: Lightbulb,
+  SIMULATION: Calculator,
 };
 
 export function ProvenanceBadge({
   kind,
+  value,
   className,
 }: {
-  kind: ProvenanceKind;
+  kind?: ProvenanceKind;
+  value?: ProvenanceKind;
   className?: string;
 }) {
   const { t } = useTranslation();
-  const Icon = ICONS[kind];
+  const actual = kind ?? value ?? "PROPOSED";
+  const Icon = ICONS[actual];
   return (
     <span
       className={cn(
         "inline-flex w-fit shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold",
-        STYLES[kind],
+        STYLES[actual],
         className,
       )}
-      title={t(`provenance.descriptions.${kind}`)}
+      title={t(`provenance.descriptions.${actual}`)}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
-      {t(`provenance.labels.${kind}`)}
+      {t(`provenance.labels.${actual}`)}
     </span>
   );
 }

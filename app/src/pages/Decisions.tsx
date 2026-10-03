@@ -84,6 +84,7 @@ export default function Decisions() {
     setExecutions(ex); setVerifications(vf);
   }, []);
 
+  // The request helper commits state after its asynchronous API response.
   useEffect(() => {
     (async () => {
       try { await load(); } catch (e) { setError(e); }

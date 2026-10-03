@@ -334,3 +334,8 @@ git push -u origin feat/platform-extensions
 - **تدريب منفذ فعليًا** (2026-10-02، PostgreSQL عبر pgserver): نسخ قاعدة مزروعة ←
   استرجاع لقاعدة منفصلة ← تحقق (39 جدولًا، head=d4e5f6a7b8c9، 0 أيتام) ← مسار
   وظيفي كامل (health/db=up ← دخول ← قائمة مرقّمة ← كتابة جديدة): ناجح.
+
+
+## Integrated workspaces
+
+Reviewed integration adds Data Room, invitations, agricultural intelligence, /app/agriculture, /app/nexus, /app/studio and WEFEH / production. See docs/INTEGRATION-REVIEW-2026-10-03.md. Access tokens are held in memory; reload requires login. Production never seeds demo accounts. SEED_DEMO=true is development-only.

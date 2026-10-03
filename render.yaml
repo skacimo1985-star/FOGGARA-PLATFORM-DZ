@@ -5,8 +5,8 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: cd app && npm ci && npm run build && pip install -r backend/requirements.txt
-    startCommand: cd app/backend && python -m alembic upgrade head && python seed.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: cd app && npm ci && npm run build && pip install -r backend/requirements.lock
+    startCommand: cd app/backend && python -m alembic upgrade head && python seed.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
@@ -24,4 +24,10 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: TRUST_PROXY_HEADERS
-        value: "true"
+        value: "false"
+      - key: NEXUS_MATRIX_ENGINE
+        value: python
+      - key: TOKEN_TTL_HOURS
+        value: "2"
+      - key: TRUSTED_PROXY_PEERS
+        value: ""

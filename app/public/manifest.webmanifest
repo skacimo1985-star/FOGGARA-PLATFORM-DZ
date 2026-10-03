@@ -1,0 +1,7 @@
+{
+  "id": "/", "name": "FOGGARA-DZ | فڨارة", "short_name": "FOGGARA-DZ",
+  "description": "SIREP Oasis Nexus WEFEH — evidence and resource intelligence",
+  "start_url": "/", "scope": "/", "display": "standalone",
+  "background_color": "#F4F1E8", "theme_color": "#276A7A",
+  "icons": [{ "src": "/foggara-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

@@ -16,13 +16,12 @@ export class ApiError extends Error {
   }
 }
 
-function getToken(): string | null {
-  return localStorage.getItem("token");
-}
+let sessionToken: string | null = null;
+// Remove legacy tokens; authentication is held in memory only.
+localStorage.removeItem("token");
 
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem("token", token);
-  else localStorage.removeItem("token");
+  sessionToken = token;
 }
 
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -32,7 +31,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
   };
-  const token = getToken();
+  const token = sessionToken;
   if (token) headers["Authorization"] = `Bearer ${token}`;
   // مهلة افتراضية لكل طلب — تمنع تعليق الواجهة عند شبكة بطيئة (معرض/ميدان)
   const controller = new AbortController();
@@ -50,7 +49,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 && body?.detail?.code !== "BAD_CREDENTIALS") {
       // جلسة منتهية/غير صالحة: إسقاط الرمز وإعادة التوجيه لتسجيل الدخول من الصفحات المحمية
       setToken(null);
       if (window.location.pathname.startsWith("/app")) {
@@ -71,4 +70,16 @@ export const api = {
     request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  upload: <T>(path: string, file: File) => request<T>(path, {
+    method: "POST", body: file, headers: { "Content-Type": file.type },
+  }),
+  download: async (path: string, filename: string) => {
+    const response = await fetch(`/api${path}`, { headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {} });
+    if (!response.ok) throw new ApiError(response.status, "FORBIDDEN", response.statusText);
+    const url = URL.createObjectURL(await response.blob());
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = filename; anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };

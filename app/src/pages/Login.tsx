@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorText } from "@/components/common";
 
-const DEMO_ACCOUNTS = [
-  "member@demo1.dz", "reviewer@demo1.dz", "admin@demo1.dz", "member@demo2.dz", "reviewer@demo2.dz",
-];
 
 export default function Login() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<unknown>(null);
@@ -27,7 +25,10 @@ export default function Login() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/app");
+      const from = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
+      const pathname = from?.pathname;
+      const safePath = pathname?.startsWith("/") && !pathname.startsWith("//") ? pathname : "/app";
+      navigate({ pathname: safePath, search: from?.search ?? "", hash: from?.hash ?? "" }, { replace: true });
     } catch (err) {
       setError(err);
     } finally {
@@ -58,13 +59,9 @@ export default function Login() {
               {busy ? t("common.loading") : t("auth.submit")}
             </Button>
           </form>
+          <p className="mt-4 text-xs text-muted-foreground">{t("membership.sessionNotice")}</p>
+          <div className="mt-4 flex flex-wrap justify-between gap-3 text-sm text-oasis-strong"><Link to="/register">{t("membership.register")}</Link><Link to="/join">{t("membership.join")}</Link></div>
 
-          <div className="mt-6 rounded-md border border-sand/60 bg-parchment p-3 text-xs text-ink/80">
-            <p className="mb-1 font-bold text-ink">{t("auth.demoAccounts")}</p>
-            <ul dir="ltr" className="list-inside list-disc">
-              {DEMO_ACCOUNTS.map((a) => <li key={a}>{a} / Demo#2026</li>)}
-            </ul>
-          </div>
         </CardContent>
       </Card>
     </div>

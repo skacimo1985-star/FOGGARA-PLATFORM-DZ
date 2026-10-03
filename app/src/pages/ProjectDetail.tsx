@@ -14,6 +14,8 @@ import { InsightSection } from "./project/InsightSection";
 import { ActionsSection } from "./project/ActionsSection";
 import { ReviewsSection } from "./project/ReviewsSection";
 import { HumanDecisionsSection } from "./project/HumanDecisionsSection";
+import { AssuranceSection } from "./project/AssuranceSection";
+import { AgricultureSection } from "./project/AgricultureSection";
 
 const STATUSES = ["draft", "active", "suspended", "closed"] as const;
 
@@ -62,6 +64,7 @@ export default function ProjectDetail() {
     api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
   }, [pid]);
 
+  // Reload performs asynchronous API reads and commits the resulting records.
   useEffect(() => {
     (async () => { await reload(); })();
   }, [reload]);
@@ -120,13 +123,15 @@ export default function ProjectDetail() {
       <ErrorText error={error} />
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap">
+        <TabsList className="h-auto max-w-full flex-wrap gap-1 [&>button]:h-auto">
           <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="data">{t("project.tabs.data")}</TabsTrigger>
           <TabsTrigger value="evidence">{t("project.tabs.evidence")}</TabsTrigger>
           <TabsTrigger value="reviews">{t("project.tabs.reviews")}</TabsTrigger>
           <TabsTrigger value="actions">{t("project.tabs.actions")}</TabsTrigger>
           <TabsTrigger value="audit">{t("project.tabs.audit")}</TabsTrigger>
+          <TabsTrigger value="assurance">{t("assurance.title")}</TabsTrigger>
+          <TabsTrigger value="agriculture">{t("agri.title")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -170,6 +175,8 @@ export default function ProjectDetail() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="assurance"><AssuranceSection projectId={pid} evidences={evidences} /></TabsContent>
+        <TabsContent value="agriculture"><AgricultureSection projectId={pid} evidences={evidences} /></TabsContent>
 
         <TabsContent value="data">
           <Card><CardContent className="pt-6">

@@ -71,7 +71,9 @@ def _trust_proxy() -> bool:
 
 
 def _client_key(request: Request) -> str:
-    if _trust_proxy():
+    peer = request.client.host if request.client else "unknown"
+    trusted = {x.strip() for x in os.environ.get("TRUSTED_PROXY_PEERS", "").split(",") if x.strip()}
+    if _trust_proxy() and peer in trusted:
         xff = request.headers.get("x-forwarded-for")
         if xff:
             return xff.split(",")[0].strip()  # أول عنوان = العميل الأصلي

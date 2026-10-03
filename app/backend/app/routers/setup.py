@@ -13,7 +13,7 @@ import os
 
 from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from ..audit import audit
@@ -40,6 +40,9 @@ def bootstrap_first_admin(request: Request, payload: BootstrapIn,
                           db: Session = Depends(get_db),
                           x_setup_key: str | None = Header(default=None)):
     check_setup_rate(request)
+    # Serialize the one-time bootstrap across PostgreSQL workers/processes.
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(7026100301)"))
     users_count = db.execute(select(func.count(User.id))).scalar_one()
     if users_count > 0:
         api_error(409, "SETUP_CLOSED",
