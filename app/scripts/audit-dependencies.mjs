@@ -18,7 +18,10 @@ for(const [name,v] of findings){
     ? v.via.every(item=>typeof item==='object'&&item.url===advisory)
     : v.via.every(item=>typeof item==='string'&&allowed.has(item));
   const isolated=v.nodes.length>0&&v.nodes.every(node=>lock.packages[node]?.dev===true);
-  if(Date.now()>=deadline||!allowed.has(name)||!legitimate||!isolated||v.fixAvailable){
+  // npm audit fix --package-lock-only left this lock unchanged on GitHub.
+  // npm reports fast-glob's propagated finding as fixAvailable:true despite the unpatched braces root.
+  const propagatedFlag=name==='fast-glob'&&v.fixAvailable===true&&v.via.length===1&&v.via[0]==='micromatch'&&v.nodes.every(node=>lock.packages[node]?.version==='3.3.3');
+  if(Date.now()>=deadline||v.severity!=='high'||!allowed.has(name)||!legitimate||!isolated||(v.fixAvailable&&!propagatedFlag)){
     console.error('Unaccepted dependency finding:',name,JSON.stringify(v));process.exit(1);
   }
 }

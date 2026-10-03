@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type Paged } from "@/lib/api";
@@ -25,7 +25,7 @@ export default function Projects() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
 
-  const load = (p = page) => {
+  const load = useCallback((p: number) => {
     api.get<Paged<Project>>(`/projects?page=${p}&page_size=12`)
       .then((r) => { setProjects(r.items); setPages(r.pages); })
       .catch(setError);
@@ -33,8 +33,8 @@ export default function Projects() {
     api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
     api.get<Paged<WaterResource>>("/resources?page_size=500").then((r) => setResources(r.items)).catch(() => {});
     api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
-  };
-  useEffect(() => load(page), [page]);
+  }, []);
+  useEffect(() => load(page), [page, load]);
 
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,7 +52,7 @@ export default function Projects() {
         asset_id: num("asset_id"),
       });
       setShowForm(false);
-      load();
+      load(page);
     } catch (err) {
       setError(err);
     } finally {

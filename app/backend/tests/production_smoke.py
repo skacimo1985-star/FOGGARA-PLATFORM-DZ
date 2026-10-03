@@ -1,5 +1,6 @@
 """Production-container HTTP checks against isolated GitHub Actions infrastructure."""
 import json
+from concurrent.futures import ThreadPoolExecutor
 import os
 import secrets
 import urllib.error
@@ -19,15 +20,18 @@ def main():
                 status, content = response.status, response.read()
         except urllib.error.HTTPError as response:
             status, content = response.code, response.read()
-        assert status == expected, (path, status, expected)
-        return json.loads(content) if content else None
+        assert status in (expected if isinstance(expected, tuple) else (expected,)), (path, status, expected)
+        decoded = json.loads(content) if content else None
+        return (status, decoded) if isinstance(expected, tuple) else decoded
 
     call("/auth/me", 401)
     credentials = {"email": "production-qa@example.invalid", "full_name": "Production QA",
                    "password": secrets.token_urlsafe(32)}
     call("/setup/bootstrap", 403, body=credentials, headers={"X-Setup-Key": "invalid"})
     setup = {"X-Setup-Key": os.environ["SETUP_KEY"]}
-    call("/setup/bootstrap", 201, body=credentials, headers=setup)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        responses = list(pool.map(lambda _: call("/setup/bootstrap", (201, 409), body=credentials, headers=setup), range(2)))
+    assert sorted(status for status, _ in responses) == [201, 409]
     call("/setup/bootstrap", 409, body=credentials, headers=setup)
     session = call("/auth/login", body={"email": credentials["email"], "password": credentials["password"]})
     headers = {"Authorization": "Bearer " + session["token"]}
@@ -41,7 +45,7 @@ def main():
     page = call("/projects?page_size=12", headers=headers)
     assert any(item["id"] == project["id"] for item in page["items"])
     call("/projects/" + str(project["id"]), headers=headers)
-    print("Production HTTP checks passed: bootstrap closure, login, authorization, 14 modules, persisted project")
+    print("Production HTTP checks passed: concurrent bootstrap and closure, login, authorization, 14 modules, persisted project")
 
 if __name__ == "__main__":
     main()
