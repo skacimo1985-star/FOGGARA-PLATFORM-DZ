@@ -124,7 +124,6 @@ export default function ExploreDomain() {
 
   useEffect(() => {
     // Clear the previous domain immediately so its records cannot appear under the new route.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     (async () => {
       try {
         const d = await api.get<ExploreDomainData>(`/explore/${domain}`);

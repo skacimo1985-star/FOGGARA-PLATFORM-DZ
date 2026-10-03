@@ -96,8 +96,8 @@ export default function Home() {
     api.get<SimulationRun[]>("/simulator/runs")
       .then((r) => setRuns({ status: "ok", data: r }))
       .catch(() => setRuns({ status: "error", data: null }));
-    api.get<GovDecision[]>("/decisions?status=REVIEW_REQUIRED")
-      .then((d) => setPendingDecisions({ status: "ok", data: d }))
+    api.get<Paged<GovDecision>>("/decisions?status=REVIEW_REQUIRED&page_size=100")
+      .then((d) => setPendingDecisions({ status: "ok", data: d.items }))
       .catch(() => setPendingDecisions({ status: "error", data: null }));
   }, [user]);
 

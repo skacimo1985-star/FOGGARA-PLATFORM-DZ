@@ -65,7 +65,6 @@ export default function ProjectDetail() {
   }, [pid]);
 
   // Reload performs asynchronous API reads and commits the resulting records.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     (async () => { await reload(); })();
   }, [reload]);

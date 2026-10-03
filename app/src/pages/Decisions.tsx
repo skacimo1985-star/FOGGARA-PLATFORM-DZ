@@ -85,7 +85,6 @@ export default function Decisions() {
   }, []);
 
   // The request helper commits state after its asynchronous API response.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     (async () => {
       try { await load(); } catch (e) { setError(e); }

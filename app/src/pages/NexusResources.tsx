@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Droplets, Zap, Sprout, Leaf, HeartPulse } from "lucide-react";
-import { api } from "@/lib/api";
+import { api,type Paged } from "@/lib/api";
 import type { Project } from "@/types";
 import type { NexusResource } from "@/types/platform";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ const icons = [Droplets, Zap, Sprout, Leaf, HeartPulse];
 export default function NexusResources() {
   const { t } = useTranslation(); const [resources, setResources] = useState<NexusResource[]>([]); const [projects, setProjects] = useState<Project[]>([]);
   const [domain, setDomain] = useState<string>("water"); const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
-  const reload = useCallback(async () => { const [r, p] = await Promise.all([api.get<NexusResource[]>("/nexus/resources"), api.get<Project[]>("/projects")]); setResources(r); setProjects(p); }, []);
+  const reload = useCallback(async () => { const [r, p] = await Promise.all([api.get<NexusResource[]>("/nexus/resources"), api.get<Paged<Project>>("/projects?page_size=500").then(r=>r.items)]); setResources(r); setProjects(p); }, []);
   useEffect(() => { reload().catch(setError).finally(() => setLoading(false)); }, [reload]);
   const selectClass = "w-full rounded-md border bg-background px-3 py-2 text-sm";
   return <div className="space-y-6"><div><h1 className="t-section text-ink">{t("nexus.title")}</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">{t("nexus.subtitle")}</p></div>

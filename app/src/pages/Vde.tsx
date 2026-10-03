@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, FolderLock, Plus, ShieldCheck } from "lucide-react";
-import { api } from "@/lib/api";
+import { api,type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type { Project } from "@/types";
 import type { RoomSummary } from "@/types/platform";
@@ -19,7 +19,7 @@ export default function Vde() {
   const [rooms, setRooms] = useState<RoomSummary[]>([]); const [projects, setProjects] = useState<Project[]>([]);
   const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
   const manage = user?.role === "reviewer" || user?.role === "admin";
-  const reload = useCallback(async () => { const [r, p] = await Promise.all([api.get<RoomSummary[]>("/data-rooms"), api.get<Project[]>("/projects")]); setRooms(r); setProjects(p); }, []);
+  const reload = useCallback(async () => { const [r, p] = await Promise.all([api.get<RoomSummary[]>("/data-rooms"), api.get<Paged<Project>>("/projects?page_size=500").then(r=>r.items)]); setRooms(r); setProjects(p); }, []);
   useEffect(() => { reload().catch(setError).finally(() => setLoading(false)); }, [reload]);
   async function create(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = event.currentTarget; const fd = new FormData(form); setBusy(true); setError(null);
     try { await api.post("/data-rooms", { project_id: Number(fd.get("project_id")), title: fd.get("title"), purpose: fd.get("purpose"), discoverable: fd.get("discoverable") === "on" }); form.reset(); await reload(); } catch (err) { setError(err); } finally { setBusy(false); }

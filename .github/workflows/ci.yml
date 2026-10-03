@@ -21,8 +21,10 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - run: pip install -r requirements.lock -r requirements-dev.txt
@@ -46,7 +48,7 @@ jobs:
         env:
           NEXUS_RUST_TEST_BINARY: ${{ github.workspace }}/app/engines/nexus-core/target/release/foggara-nexus-core
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22.18.0'
       - run: npm ci && npm run build
@@ -57,13 +59,13 @@ jobs:
         working-directory: app/backend
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: foggara-browser-verification
           path: app/backend/qa
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: foggara-operational-package
           path: |
@@ -77,30 +79,35 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - run: pip install pip-audit==2.10.1 bandit==1.8.6
       - run: pip-audit -r app/backend/requirements.lock
       - run: bandit -q -r app/backend/app -ll
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_COMMENTS: "false"
   rust:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - working-directory: app/engines/nexus-core
         run: cargo test --locked && cargo clippy --locked --all-targets -- -D warnings
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22.18.0'
       - run: npm ci && npm run build
@@ -114,7 +121,7 @@ jobs:
         working-directory: app
       - name: Audit locked dependencies
         working-directory: app
-        run: npm audit --audit-level=high
+        run: node scripts/audit-dependencies.mjs
   production-container:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -124,7 +131,9 @@ jobs:
       JWT_SECRET: ci-disposable-secret-only-not-for-production-94821
       SETUP_KEY: ci-disposable-bootstrap-key-94821
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build and start isolated production stack
         run: docker compose -f compose.production.yml up --build -d
       - name: Verify API health and persistent worker

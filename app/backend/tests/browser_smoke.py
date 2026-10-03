@@ -26,7 +26,10 @@ def main():
                     full_name="Browser QA", role="admin", locale="ar")
         db.add(user)
         db.flush()
-        db.add(Project(org_id=org.id, title="واحة الاختبار", domain="water", created_by=user.id, is_demo=True))
+        project = Project(org_id=org.id, title="واحة الاختبار", domain="water", created_by=user.id, is_demo=True)
+        db.add(project)
+        db.flush()
+        project_id = project.id
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
     with (out / "server.log").open("w") as log:
@@ -46,6 +49,8 @@ def main():
                 browser = p.chromium.launch()
                 page = browser.new_page(viewport={"width": 1440, "height": 1000}, reduced_motion="reduce")
                 errors = []
+                console_errors = []
+                page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
@@ -105,15 +110,20 @@ def main():
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
                 for path in ("/app", "/app/projects", "/app/org", "/app/account", "/app/nexus",
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
-                             "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis"):
+                             "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis",
+                             "/app/decisions", "/app/services", "/app/metrology", "/app/water",
+                             "/app/review", "/app/audit", "/app/explore", "/app/analytics", "/app/iot",
+                             f"/app/projects/{project_id}"):
                     authenticated_visit(path)
-                    expect(page.locator("main")).to_be_visible()
-                    assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000])
+                    expect(page.locator("#main-content")).to_be_visible()
+                    assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
+                    if path in ("/app", "/app/nexus", "/app/agriculture"):
+                        page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
                     "checks":["public routes","photograph","mobile overflow","contact persistence",
-                              "authenticated operations","lot creation and reload","API 404","no page errors"]
+                              "authenticated operations","lot creation and reload","API 404","23 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()
         except Exception:

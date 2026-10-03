@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Sprout, Droplets, FlaskConical, CalendarDays, Wrench, ShieldCheck, ChartNoAxesCombined, Plus, Download, Search, X, ChevronRight, LogOut, Menu, Leaf, Zap, HeartPulse, CircleHelp, Check, ArrowUpRight, Satellite, CloudSun, Bug, Gauge, FileCheck2, Layers, RefreshCw } from 'lucide-react';
@@ -31,7 +31,7 @@ const demoObs: Observation[] = [
 ];
 function Modal({title,close,children}:{title:string;close:()=>void;children:ReactNode}) {
  const ref=useRef<HTMLDialogElement>(null);
- useEffect(()=>{ref.current?.showModal(); return ()=>ref.current?.close();},[]);
+ useEffect(()=>{const dialog=ref.current;dialog?.showModal(); return ()=>dialog?.close();},[]);
  return <dialog ref={ref} className="fg-dialog" onCancel={close} onClick={e=>{if(e.target===e.currentTarget)close();}}><header><h2>{title}</h2><button className="fg-icon" onClick={close} aria-label={title}><X size={20}/></button></header>{children}</dialog>;
 }
 function Field({label,children}:{label:string;children:ReactNode}) {return <label className="fg-field"><span>{label}</span>{children}</label>;}
@@ -50,8 +50,8 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  const active=parcels.filter(p=>!p.archived); const number=(n:number,d=1)=>new Intl.NumberFormat(lang==='ar'?'ar-DZ':lang,{maximumFractionDigits:d}).format(n);
  const cropName=(c:string)=>({date_palm:['نخيل التمر','Palmier dattier','Date palm'],wheat:['القمح','Blé','Wheat'],vegetables:['خضروات','Maraîchage','Vegetables']}[c]?.[lang==='ar'?0:lang==='fr'?1:2]||c);
  const notify=()=>{setToast(t('saved'));}; useEffect(()=>{if(toast){const timer=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(timer);}},[toast]);
- async function refresh(){if(demo)return;setLoading(true);setError('');try{const [p,o,pl,ta]=await Promise.all([api.get<Parcel[]>('/agriculture/parcels'),api.get<Observation[]>('/agriculture/observations'),api.get<Plan[]>('/agriculture/plans'),api.get<Task[]>('/agriculture/tasks')]);setParcels(p);setObs(o);setPlans(pl);setTasks(ta);}catch{setError(t('connection'));}finally{setLoading(false);}}
- useEffect(()=>{void refresh();},[demo]);
+ const refresh=useCallback(async ()=>{if(demo)return;setLoading(true);setError('');try{const [p,o,pl,ta]=await Promise.all([api.get<Parcel[]>('/agriculture/parcels'),api.get<Observation[]>('/agriculture/observations'),api.get<Plan[]>('/agriculture/plans'),api.get<Task[]>('/agriculture/tasks')]);setParcels(p);setObs(o);setPlans(pl);setTasks(ta);}catch{setError(translate(lang,'connection'));}finally{setLoading(false);}},[demo,lang]);
+ useEffect(()=>{void refresh();},[refresh]);
  const workspaceRef = useRef({mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks});
  workspaceRef.current = {mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks};
  useEffect(()=>{
