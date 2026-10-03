@@ -141,10 +141,6 @@ export default function Gis() {
   );
 
   useEffect(() => {
-    if (selectedSiteId !== null && !selected) setSelectedSiteId(null);
-  }, [selected, selectedSiteId]);
-
-  useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = new MapLibreMap({
