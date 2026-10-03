@@ -1,8 +1,9 @@
 import os
 
-# يمكن توجيه الاختبارات إلى SQLite محليًا: TEST_DATABASE_URL=sqlite:///./test_foggara.db
+# يدعم TEST_DATABASE_URL للاختبار المحلي، ويحترم DATABASE_URL في CI/PostgreSQL.
 os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"
+    "TEST_DATABASE_URL",
+    os.environ.get("DATABASE_URL", "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"),
 )
 os.environ["JWT_SECRET"] = "test-secret-0123456789abcdef0123456789"
 
@@ -28,6 +29,9 @@ def _reset_rate_limiter():
     """عزل الاختبارات: عدّادات تحديد المعدل تُصفَّر قبل كل اختبار."""
     from app.ratelimit import limiter
     limiter.reset()
+    from app.platform_models import AuthThrottle
+    with engine.begin() as connection:
+        connection.execute(AuthThrottle.__table__.delete())
     yield
 
 

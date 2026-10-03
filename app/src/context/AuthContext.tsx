@@ -1,29 +1,19 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { api, setToken } from "@/lib/api";
 import type { User } from "@/types";
+
 import { AuthContext } from "@/context/useAuth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = false;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setUser(await api.get<User>("/auth/me"));
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const startSession = useCallback((result: { token: string; user: User }) => {
+    setToken(result.token); setUser(result.user);
   }, []);
-
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ token: string; user: User }>("/auth/login", { email, password });
-    setToken(res.token);
-    setUser(res.user);
-  }, []);
+    startSession(await api.post<{ token: string; user: User }>("/auth/login", { email, password }));
+  }, [startSession]);
 
   const logout = useCallback(() => {
     setToken(null);
@@ -31,8 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, startSession }}>
       {children}
     </AuthContext.Provider>
   );
 }
+

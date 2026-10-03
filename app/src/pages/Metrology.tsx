@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { api, type Paged } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Asset, Calibration, Certificate, Inspection, Instrument, MetrologyStatus, Site } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,8 +56,8 @@ export default function Metrology() {
       .catch(setError);
     api.get<Certificate[]>("/certificates").then(setCertificates).catch(() => setCertificates([]));
     api.get<Inspection[]>("/inspections").then(setInspections).catch(() => setInspections([]));
-    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
-    api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
+    api.get<Site[]>("/sites").then(setSites).catch(() => {});
+    api.get<Asset[]>("/assets").then(setAssets).catch(() => {});
   }, []);
 
   useEffect(reload, [reload]);

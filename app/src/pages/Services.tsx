@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, type Paged } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type { Project, Service, ServiceRequest, Site } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +54,7 @@ export default function Services() {
     api.get<Service[]>(`/services${suffix}`).then(setServices).catch(setError);
     api.get<ServiceRequest[]>("/service-requests").then(setRequests).catch(() => setRequests([]));
     api.get<Project[]>("/projects").then(setProjects).catch(() => {});
-    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
+    api.get<Site[]>("/sites").then(setSites).catch(() => {});
   }, [typeFilter, domainFilter]);
 
   useEffect(reload, [reload]);

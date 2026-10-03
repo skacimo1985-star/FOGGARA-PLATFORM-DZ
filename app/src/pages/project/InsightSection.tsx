@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorText } from "@/components/common";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 
 export function InsightSection({ projectId, recommendations, reload }: {
   projectId: number; recommendations: Recommendation[]; reload: () => void;
@@ -64,7 +65,9 @@ export function InsightSection({ projectId, recommendations, reload }: {
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">{t("indicator.title")}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            {t("indicator.title")}<ProvenanceBadge value="COMPUTED" />
+          </CardTitle>
           <Button variant="outline" size="sm" onClick={compute}>{t("indicator.compute")}</Button>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
@@ -120,7 +123,11 @@ export function InsightSection({ projectId, recommendations, reload }: {
             recommendations.map((r) => (
               <div key={r.id} className="space-y-2 rounded-md border p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline">{r.indicator_code}</Badge>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge variant="outline">{r.indicator_code}</Badge>
+                    <ProvenanceBadge value="INFERRED" />
+                    {r.status === "proposed" && <ProvenanceBadge value="PROPOSED" />}
+                  </div>
                   <Badge variant={r.status === "accepted" ? "default" : r.status === "rejected" ? "destructive" : "outline"}>
                     {t(`recommendation.statuses.${r.status}`)}
                   </Badge>

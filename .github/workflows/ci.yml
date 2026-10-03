@@ -1,5 +1,8 @@
 name: Verify FOGGARA
 on: [push, pull_request, workflow_dispatch]
+concurrency:
+  group: foggara-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -7,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: foggara_migration
@@ -22,18 +25,77 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pip install -r requirements.lock -r requirements-dev.txt
         working-directory: app/backend
       - run: python -m alembic upgrade head
         working-directory: app/backend
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+      - name: Verify migration paths and SQL isolation
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+        run: python -m tests.migration_smoke
       - run: >-
           python -c "import psycopg; c = psycopg.connect('postgresql://postgres:postgres@localhost:5432/postgres', autocommit=True); c.execute('CREATE DATABASE foggara_test'); c.close()"
+      - name: Build real Rust comparison engine
+        working-directory: app/engines/nexus-core
+        run: cargo build --release --locked
       - run: python -m pytest tests/ -q
         working-directory: app/backend
         env:
+          NEXUS_RUST_TEST_BINARY: ${{ github.workspace }}/app/engines/nexus-core/target/release/foggara-nexus-core
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+      - run: npm ci && npm run build
+        working-directory: app
+      - run: pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m tests.browser_smoke
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foggara-browser-verification
+          path: app/backend/qa
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foggara-operational-package
+          path: |
+            app/dist
+            app/backend/app
+            app/backend/alembic
+            app/backend/alembic.ini
+            app/backend/requirements.txt
+            docs/OPERATIONS.md
+          retention-days: 14
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pip-audit==2.10.1 bandit==1.8.6
+      - run: pip-audit -r app/backend/requirements.lock
+      - run: bandit -q -r app/backend/app -ll
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - working-directory: app/engines/nexus-core
+        run: cargo test --locked && cargo clippy --locked --all-targets -- -D warnings
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -43,3 +105,48 @@ jobs:
           node-version: '22.18.0'
       - run: npm ci && npm run build
         working-directory: app
+
+      - run: npm run typecheck
+        working-directory: app
+      - run: npm run lint
+        working-directory: app
+      - run: npm run test:matrix
+        working-directory: app
+      - name: Audit locked dependencies
+        working-directory: app
+        run: npm audit --audit-level=high
+  production-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_PASSWORD: ci-disposable-database-password
+      DATABASE_URL: postgresql+psycopg://foggara:ci-disposable-database-password@db:5432/foggara
+      JWT_SECRET: ci-disposable-secret-only-not-for-production-94821
+      SETUP_KEY: ci-disposable-bootstrap-key-94821
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start isolated production stack
+        run: docker compose -f compose.production.yml up --build -d
+      - name: Verify API health and persistent worker
+        run: |
+          python - <<'PY'
+          import json, time, urllib.request
+          for attempt in range(40):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
+                      body = json.load(response)
+                      assert body["db"] == "up"
+                      assert body["alembic"] == "int20261003s1"
+                      break
+              except Exception:
+                  if attempt == 39:
+                      raise
+                  time.sleep(2)
+          PY
+          docker compose -f compose.production.yml ps --status running --services | grep -x worker
+      - name: Show failure diagnostics
+        if: failure()
+        run: docker compose -f compose.production.yml logs --tail 80
+      - name: Remove isolated CI containers
+        if: always()
+        run: docker compose -f compose.production.yml down -v

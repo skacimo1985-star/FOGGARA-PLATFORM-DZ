@@ -1,90 +1,49 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowUpRight, FolderLock, Plus, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
-import type { PlannedStatus } from "@/types";
+import { useAuth } from "@/context/useAuth";
+import type { Project } from "@/types";
+import type { RoomSummary } from "@/types/platform";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText } from "@/components/common";
 
-const PIPELINE = ["project", "evidence", "disclosure", "review", "qa", "decision"] as const;
-
 export default function Vde() {
-  const { t, i18n } = useTranslation();
-  const [status, setStatus] = useState<PlannedStatus | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const Arrow = i18n.dir() === "rtl" ? ArrowLeft : ArrowRight;
-
-  useEffect(() => {
-    api.get<PlannedStatus>("/vde/status").then(setStatus).catch(setError);
-  }, []);
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="t-section text-ink">{t("vde.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("vde.noSimulation")}</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            {t("vde.pipelineTitle")}
-            <Badge variant="outline">{t("vde.plannedCard")}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="flex flex-wrap items-center gap-2">
-            {PIPELINE.map((s, i) => (
-              <li key={s} className="flex items-center gap-2">
-                <span className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-bold text-paper">
-                    {i + 1}
-                  </span>
-                  {t(`vde.pipeline.${s}`)}
-                </span>
-                {i < PIPELINE.length - 1 && <Arrow className="h-4 w-4 text-muted-foreground" />}
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
-
-      <ErrorText error={error} />
-
-      {status === null && !error ? (
-        <Skeleton className="h-40 w-full" />
-      ) : status ? (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                {t("vde.plannedEntities")}
-                <Badge variant="outline">{t("vde.plannedCard")}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="flex flex-wrap gap-2">
-                {status.model.map((m) => (
-                  <li key={m} className="rounded-md border bg-parchment/70 px-3 py-1.5 text-sm" dir="ltr">{m}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">{t("vde.warningsTitle")}</CardTitle></CardHeader>
-            <CardContent>
-              <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                {status.warnings.map((w) => (
-                  <li key={w}>{t(`vde.warnings.${w}`, w)}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </>
-      ) : null}
-    </div>
-  );
+  const { t } = useTranslation(); const { user } = useAuth();
+  const [rooms, setRooms] = useState<RoomSummary[]>([]); const [projects, setProjects] = useState<Project[]>([]);
+  const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
+  const manage = user?.role === "reviewer" || user?.role === "admin";
+  const reload = useCallback(async () => { const [r, p] = await Promise.all([api.get<RoomSummary[]>("/data-rooms"), api.get<Project[]>("/projects")]); setRooms(r); setProjects(p); }, []);
+  useEffect(() => { reload().catch(setError).finally(() => setLoading(false)); }, [reload]);
+  async function create(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = event.currentTarget; const fd = new FormData(form); setBusy(true); setError(null);
+    try { await api.post("/data-rooms", { project_id: Number(fd.get("project_id")), title: fd.get("title"), purpose: fd.get("purpose"), discoverable: fd.get("discoverable") === "on" }); form.reset(); await reload(); } catch (err) { setError(err); } finally { setBusy(false); }
+  }
+  return <div className="space-y-6">
+    <div className="rounded-3xl border bg-paper p-6 sm:p-8"><p className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-oasis-strong"><FolderLock size={18} />{t("rooms.controlled")}</p><h1 className="t-section text-ink">{t("rooms.title")}</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">{t("rooms.subtitle")}</p></div>
+    <ErrorText error={error} />
+    {manage && <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plus size={18} />{t("rooms.create")}</CardTitle></CardHeader><CardContent>
+      <form onSubmit={create} className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1"><Label htmlFor="room-title">{t("rooms.roomTitle")}</Label><Input id="room-title" name="title" required minLength={3} maxLength={255} /></div>
+        <div className="space-y-1"><Label htmlFor="room-project">{t("nav.projects")}</Label><select id="room-project" name="project_id" required className="w-full rounded-md border bg-background px-3 py-2 text-sm"><option value="">{t("rooms.chooseProject")}</option>{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></div>
+        <div className="space-y-1 sm:col-span-2"><Label htmlFor="room-purpose">{t("rooms.purpose")}</Label><Textarea id="room-purpose" name="purpose" required minLength={5} maxLength={3000} /></div>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="discoverable" />{t("rooms.discoverable")}</label>
+        <p className="text-xs text-muted-foreground sm:col-span-2">{t("rooms.publicNotice")}</p>
+        <Button disabled={busy || projects.length === 0}>{t("rooms.create")}</Button>
+      </form>
+    </CardContent></Card>}
+    {loading ? <p>{t("common.loading")}</p> : rooms.length === 0 ? <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">{t("rooms.empty")}</div> : <div className="grid gap-4 md:grid-cols-2">
+      {rooms.map(room => <Card key={room.id}><CardHeader><CardTitle className="flex justify-between gap-3 text-lg">{room.title}<Badge variant="outline">{t(`rooms.status.${room.status}`)}</Badge></CardTitle></CardHeader><CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">{room.purpose}</p><p className="flex items-center gap-2 text-xs text-oasis-strong"><ShieldCheck size={14} />{t(`rooms.status.${room.access}`)}</p>
+        {(room.own || room.access === "approved") && room.status === "open" && <Button asChild><Link to={`/app/vde/${room.id}`}>{t("rooms.open")}<ArrowUpRight size={16} /></Link></Button>}
+        {!room.own && room.access === "none" && <form className="space-y-2" onSubmit={async e => { e.preventDefault(); const fd = new FormData(e.currentTarget); setError(null); setBusy(true); try { await api.post(`/data-rooms/${room.id}/access`, { reason: fd.get("reason") }); await reload(); } catch (err) { setError(err); } finally { setBusy(false); } }}><Textarea aria-label={t("rooms.reason")} name="reason" placeholder={t("rooms.reason")} required minLength={5} maxLength={3000} /><Button variant="outline" disabled={busy}>{t("rooms.requestAccess")}</Button></form>}
+        {room.can_manage && <Button disabled={busy} variant="outline" onClick={async () => { setBusy(true); setError(null); try { await api.patch(`/data-rooms/${room.id}`, { status: room.status === "open" ? "closed" : "open" }); await reload(); } catch (err) { setError(err); } finally { setBusy(false); } }}>{t(room.status === "open" ? "rooms.close" : "rooms.reopen")}</Button>}
+      </CardContent></Card>)}
+    </div>}
+  </div>;
 }

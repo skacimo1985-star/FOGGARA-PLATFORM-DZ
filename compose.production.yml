@@ -1,0 +1,56 @@
+# Use behind a TLS reverse proxy. Set required values in an untracked .env.
+x-app: &app
+  image: foggara-operational:local
+  build:
+    context: ./app
+    dockerfile: Dockerfile.production
+  environment:
+    ENV: prod
+    DATABASE_URL: ${DATABASE_URL:?Set a URL-encoded PostgreSQL connection URL using host db}
+    JWT_SECRET: ${JWT_SECRET:?Set a random secret of at least 32 characters}
+    SETUP_KEY: ${SETUP_KEY:?Set a separate random bootstrap key}
+    SEED_DEMO: "false"
+    CONTACT_ORG_CODE: ${CONTACT_ORG_CODE:-DEFAULT-ORG}
+    TRUST_PROXY_HEADERS: "false"
+  init: true
+  restart: unless-stopped
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: foggara
+      POSTGRES_USER: foggara
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong PostgreSQL password}
+    volumes:
+      - foggara_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foggara -d foggara"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    healthcheck:
+      disable: true
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  worker:
+    <<: *app
+    command: ["python", "-m", "app.operations_worker"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+volumes:
+  foggara_db:

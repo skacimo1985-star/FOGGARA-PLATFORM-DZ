@@ -44,6 +44,7 @@ function IndicatorCard({ indicator, projectId }: { indicator: Indicator; project
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           {name}
+          <ProvenanceBadge value="COMPUTED" />
           <Badge variant="secondary">{indicator.code}</Badge>
           <span className="text-sm font-normal text-muted-foreground" dir="ltr">{indicator.unit}</span>
         </CardTitle>

@@ -13,7 +13,7 @@ from ..models import (Action, Decision, Evidence, Indicator, Recommendation,
 from ..schemas import (ActionIn, ActionOut, ActionUpdate, DecisionIn,
                        DecisionOut, IndicatorOut, IndicatorValueOut,
                        RecommendationOut)
-from ..services.indicators import (FLOW_THRESHOLD_LS, INDICATOR_CODE,
+from ..services.indicators import (INDICATOR_CODE,
                                    MIN_MEASUREMENTS, build_recommendation,
                                    compute_flow_avg, ensure_default_indicator)
 from .core import get_project_or_404
@@ -52,7 +52,7 @@ def indicator_value(project_id: int, code: str,
         formula=ind.formula, source=ind.source,
         valid_from=ind.valid_from, valid_to=ind.valid_to,
         message=None if sufficient else "INSUFFICIENT_DATA",
-        params={"threshold": FLOW_THRESHOLD_LS, "min_measurements": MIN_MEASUREMENTS,
+        params={"threshold": None, "acceptance_rule": "not_configured", "min_measurements": MIN_MEASUREMENTS,
                 "parameter": "flow_rate", "accepted_unit": "L/s",
                 "default_window_days": 30},
     )
@@ -112,6 +112,9 @@ def create_action(payload: ActionIn, user: User = Depends(get_current_user), db:
         dec = db.get(Decision, payload.decision_id)
         if dec is None or dec.org_id != user.org_id:
             api_error(404, "NOT_FOUND", "Decision not found")
+        rec = db.get(Recommendation, dec.recommendation_id)
+        if rec is None or rec.project_id != payload.project_id:
+            api_error(404, "NOT_FOUND", "Decision not found")
     a = Action(org_id=user.org_id, created_by=user.id, **payload.model_dump())
     db.add(a)
     db.flush()
@@ -139,3 +142,4 @@ def list_actions(project_id: int, user: User = Depends(get_current_user), db: Se
     get_project_or_404(db, user, project_id)
     return db.execute(select(Action).where(Action.project_id == project_id)
                       .order_by(Action.id.desc())).scalars().all()
+

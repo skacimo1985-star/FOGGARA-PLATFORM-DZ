@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, type Paged } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Asset, Project, Site, WaterResource } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorText, DemoBadge, Pager } from "@/components/common";
+import { ErrorText, DemoBadge } from "@/components/common";
 
 export default function Projects() {
   const { t } = useTranslation();
@@ -22,19 +22,13 @@ export default function Projects() {
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
-
-  const load = (p = page) => {
-    api.get<Paged<Project>>(`/projects?page=${p}&page_size=12`)
-      .then((r) => { setProjects(r.items); setPages(r.pages); })
-      .catch(setError);
-    // قوائم مرجعية للنماذج: صفحة واحدة بالسقف الأعلى تكفي للاختيارات
-    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
-    api.get<Paged<WaterResource>>("/resources?page_size=500").then((r) => setResources(r.items)).catch(() => {});
-    api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
+  const load = () => {
+    api.get<Project[]>("/projects").then(setProjects).catch(setError);
+    api.get<Site[]>("/sites").then(setSites).catch(() => {});
+    api.get<WaterResource[]>("/resources").then(setResources).catch(() => {});
+    api.get<Asset[]>("/assets").then(setAssets).catch(() => {});
   };
-  useEffect(() => load(page), [page]);
+  useEffect(load, []);
 
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -147,7 +141,6 @@ export default function Projects() {
           ))}
         </ul>
       )}
-      <Pager page={page} pages={pages} onPage={setPage} />
     </div>
   );
 }

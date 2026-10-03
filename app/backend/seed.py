@@ -38,8 +38,10 @@ def main():
     # SEED_DEMO: في الإنتاج (ENV=prod) الافتراضي false — لا حسابات/بيانات تجريبية
     # إطلاقًا ما لم تُضبط القيمة صراحة. المؤشر الافتراضي يُنشأ دائمًا.
     seed_demo = os.environ.get(
-        "SEED_DEMO", "false" if os.environ.get("ENV", "dev") == "prod" else "true"
+        "SEED_DEMO", "false"
     ).strip().lower() in ("1", "true", "yes")
+    if os.environ.get("ENV", "dev") == "prod" and seed_demo:
+        raise RuntimeError("Demo business data is forbidden in production")
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,

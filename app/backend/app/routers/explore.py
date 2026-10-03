@@ -12,6 +12,7 @@ from ..deps import api_error, get_current_user
 from ..models import (Asset, Indicator, Project, Service, ServiceRequest, Site,
                       User, WaterResource)
 from ..wilayas import WILAYAS
+from ..platform_models import NexusResource
 
 router = APIRouter(prefix="/api", tags=["explore"])
 
@@ -76,6 +77,8 @@ def explore_domain(domain: str, user: User = Depends(get_current_user), db: Sess
                                 .order_by(WaterResource.id)).scalars().all()
         ]
 
+    resources.extend({"id": r.id, "type": r.kind, "name": r.name, "status": "registered", "site_id": None, "is_demo": r.is_demo}
+                     for r in db.scalars(select(NexusResource).where(NexusResource.org_id == user.org_id, NexusResource.domain == domain)))
     assets = []
     if domain == "water":
         assets = [

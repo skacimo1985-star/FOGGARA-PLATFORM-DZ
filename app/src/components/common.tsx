@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { ApiError } from "@/lib/api";
-import { Button } from "@/components/ui/button";
 
 export function ErrorText({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -55,25 +54,5 @@ export function FoggaraDivider({ className = "" }: { className?: string }) {
         ))}
       </svg>
     </div>
-  );
-}
-
-export function Pager({ page, pages, onPage }: {
-  page: number; pages: number; onPage: (p: number) => void;
-}) {
-  const { t } = useTranslation();
-  if (pages <= 1) return null;
-  return (
-    <nav className="flex items-center justify-center gap-3 pt-2" aria-label={t("pager.label")}>
-      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        {t("pager.prev")}
-      </Button>
-      <span className="text-sm text-ink-soft tabular-nums">
-        {t("pager.pageOf", { page, pages })}
-      </span>
-      <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        {t("pager.next")}
-      </Button>
-    </nav>
   );
 }

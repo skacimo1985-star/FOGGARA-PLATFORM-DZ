@@ -36,6 +36,31 @@ def _owned_decision(db: Session, org_id: int, decision_id: int) -> GovDecision:
     return d
 
 
+# Internal links must resolve inside the same organization, even when supplied as generic IDs.
+from .. import models as domain_models
+from ..platform_models import NexusResource, DecisionMatrixRun
+_REFERENCE_MODELS = {name: getattr(domain_models, cls) for name, cls in {
+    'project':'Project', 'site':'Site', 'asset':'Asset', 'water_resource':'WaterResource',
+    'measurement':'Measurement', 'evidence':'Evidence', 'instrument':'Instrument',
+    'well':'Well', 'reservoir':'Reservoir', 'pump':'Pump', 'vfd':'VFD',
+    'irrigation_zone':'IrrigationZone', 'valve':'Valve', 'water_allocation':'WaterAllocation',
+    'device':'Device', 'sensor':'Sensor', 'gov_decision':'GovDecision'}.items()}
+_REFERENCE_MODELS.update(nexus_resource=NexusResource, decision_matrix=DecisionMatrixRun)
+
+
+def _check_reference(db, org_id, kind, identifier):
+    model = _REFERENCE_MODELS.get(kind)
+    if model is None:
+        return  # External reference labels are declarations, never proof of verification.
+    try:
+        reference_id = int(identifier)
+    except (ValueError, TypeError):
+        api_error(422, 'INVALID_REFERENCE', 'Internal reference requires an object ID')
+    record = db.get(model, reference_id)
+    if record is None or record.org_id != org_id:
+        api_error(404, 'NOT_FOUND', 'Referenced object not found')
+
+
 # ---------- القرارات: قائمة / إنشاء / عرض / تعديل ----------
 @router.get("", response_model=Page[GovDecisionOut])
 def list_decisions(domain: Optional[str] = Query(default=None),
@@ -59,6 +84,8 @@ def list_decisions(domain: Optional[str] = Query(default=None),
 @router.post("", response_model=GovDecisionOut, status_code=201)
 def create_decision(payload: GovDecisionIn, user: User = Depends(get_current_user),
                     db: Session = Depends(get_db)):
+    _check_reference(db, user.org_id, payload.subject_type, payload.subject_id)
+    _check_reference(db, user.org_id, payload.source_type, payload.source_id)
     d = GovDecision(org_id=user.org_id, proposed_by=user.id, status="PROPOSED",
                  **payload.model_dump())
     db.add(d)
@@ -88,7 +115,10 @@ def patch_decision(decision_id: int, payload: GovDecisionPatchIn,
         api_error(409, "DECISION_LOCKED", "Only PROPOSED decisions can be edited")
     if user.role != "admin" and user.id != d.proposed_by:
         api_error(403, "ROLE_FORBIDDEN", "Only the proposer or an admin can edit")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    _check_reference(db, user.org_id, changes.get('subject_type', d.subject_type), changes.get('subject_id', d.subject_id))
+    _check_reference(db, user.org_id, changes.get('source_type', d.source_type), changes.get('source_id', d.source_id))
+    for field, value in changes.items():
         setattr(d, field, value)
     audit(db, user, "update", "gov_decision", entity_id=d.id)
     db.commit()
@@ -132,6 +162,7 @@ def add_evidence(decision_id: int, payload: DecisionEvidenceIn,
     d = _owned_decision(db, user.org_id, decision_id)
     if d.status in ("VERIFIED", "CANCELLED"):
         api_error(409, "DECISION_CLOSED", "Cannot add evidence to a closed decision")
+    _check_reference(db, user.org_id, payload.source_type, payload.source_id)
     ev = GovDecisionEvidence(decision_id=d.id, **payload.model_dump())
     db.add(ev)
     db.flush()
@@ -217,3 +248,4 @@ def record_verification(decision_id: int, payload: DecisionVerificationIn,
           meta={"decision_id": d.id, "verification_status": v.verification_status})
     db.commit()
     return v
+

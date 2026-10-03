@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const source=readFileSync(new URL('../src/lib/presentation-matrix.ts',import.meta.url),'utf8');
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+const {evaluatePresentationMatrix:run}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const axis=(patch={})=>({key:'user-axis',weight:20,value:'5',lower:'0',upper:'10',direction:'maximize',hard:false,...patch});
+test('requires user inputs and positive total weight',()=>{assert.equal(run([]).status,'incomplete');assert.equal(run([axis({value:''})]).score,null);assert.equal(run([axis({weight:0})]).status,'incomplete');});
+test('normalizes weights rather than assuming their sum is 100',()=>{assert.equal(run([axis({weight:3,value:'10'}),axis({weight:1,value:'0'})]).score,75);});
+test('minimization reverses utility and non-hard outliers saturate',()=>{assert.equal(run([axis({value:'2',direction:'minimize'})]).score,80);assert.equal(run([axis({value:'20'})]).score,100);});
+test('hard violations block even a zero-weight criterion; bounds are inclusive',()=>{assert.equal(run([axis(),axis({weight:0,value:'11',hard:true})]).status,'blocked');assert.equal(run([axis({value:'10',hard:true})]).status,'ready');});
+test('invalid bounds, numbers and weights never yield a result',()=>{for(const patch of [{upper:'0'},{value:'NaN'},{value:'Infinity'},{value:'1e308'},{weight:-1},{weight:101},{lower:'10',upper:'1'}])assert.equal(run([axis(patch)]).score,null);});

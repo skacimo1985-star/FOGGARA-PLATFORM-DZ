@@ -14,15 +14,14 @@ if not exist .venv (
   python -m venv .venv
 )
 call .venv\Scripts\activate.bat
-pip install -q -r requirements.txt
+pip install -q -r requirements.lock
 if errorlevel 1 ( echo خطأ في تثبيت اعتماديات Python & pause & exit /b 1 )
 
 echo [2/4] تطبيق المهاجرات على SQLite...
 python -m alembic upgrade head
 if errorlevel 1 ( echo خطأ في المهاجرات & pause & exit /b 1 )
 
-echo [3/4] زرع البيانات التجريبية (idempotent — آمن عند التكرار)...
-python seed.py
+echo [3/4] Initial database ready. Register your organization at /register.
 
 echo [4/4] تشغيل الباكند والواجهة في نافذتين منفصلتين...
 start "FOGGARA-API" cmd /k ".venv\Scripts\python.exe -m uvicorn app.main:app --port 8000"
@@ -36,7 +35,6 @@ echo.
 echo ============================================================
 echo  الواجهة:  http://localhost:3000
 echo  الباكند:  http://localhost:8000  (فحص الصحة: /api/health)
-echo  دخول تجريبي: member@demo1.dz / reviewer@demo1.dz / admin@demo1.dz
-echo  كلمة المرور للجميع: Demo#2026   (بيانات DEMO موسومة)
 echo ============================================================
 pause
+

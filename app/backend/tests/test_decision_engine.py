@@ -25,7 +25,7 @@ def admins(db, world):
 def _create(client, headers, **over):
     payload = {"domain": "water", "decision_type": "water_allocation_approval",
                "title": "قرار اختبار", "priority": "high", "risk_level": "medium",
-               "subject_type": "water_allocation", "subject_id": 17,
+               "subject_type": "external_allocation", "subject_id": 17,
                "expected_result": "نتيجة متوقعة"}
     payload.update(over)
     r = client.post(API, json=payload, headers=headers)
@@ -240,7 +240,7 @@ def test_evidence_crud_and_closure(client, world):
     d = _create(client, member_h)
     r = client.post(f"{API}/{d['id']}/evidence",
                     json={"evidence_type": "measurement", "value": 42.5, "unit": "m3",
-                          "source_type": "well", "source_id": "12", "quality": "good"},
+                          "source_type": "external_well", "source_id": "12", "quality": "good"},
                     headers=member_h)
     assert r.status_code == 201, r.text
     ev = client.get(f"{API}/{d['id']}/evidence", headers=member_h).json()
@@ -330,3 +330,4 @@ def test_audit_trail(client, admins):
     tr_log = [l for l in logs if l["entity_type"] == "gov_decision"
               and l["action"] == "transition"][0]
     assert tr_log["meta"]["to"] == "EXECUTION_AUTHORIZED"
+
