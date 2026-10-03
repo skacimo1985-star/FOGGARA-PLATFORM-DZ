@@ -16,7 +16,7 @@ x-app: &app
   restart: unless-stopped
 services:
   db:
-    image: postgres:16
+    image: postgis/postgis:16-3.5
     restart: unless-stopped
     environment:
       POSTGRES_DB: foggara
