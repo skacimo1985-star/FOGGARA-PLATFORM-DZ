@@ -8,9 +8,11 @@ os.environ["DATABASE_URL"] = os.environ.get(
 os.environ["JWT_SECRET"] = "test-secret-0123456789abcdef0123456789"
 
 import pytest
+from sqlalchemy import text
 from fastapi.testclient import TestClient
 
 from app.db import Base, engine, SessionLocal
+import app.gis_models  # register national GIS reference tables in Base.metadata
 from app.main import app
 from app.models import Organization, User
 from app.security import hash_password
@@ -19,6 +21,9 @@ from app.services.indicators import ensure_default_indicator
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as connection:
+            connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     yield
