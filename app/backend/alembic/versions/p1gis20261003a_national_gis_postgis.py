@@ -34,6 +34,7 @@ def upgrade():
         sa.Column("version_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("administrative_versions.id"), nullable=False),
         sa.Column("reference_key", sa.String(80), nullable=False),
         sa.Column("official_code", sa.String(20), nullable=True),
+        sa.Column("operational_from", sa.Date(), nullable=True),
         sa.Column("name_ar", sa.String(150), nullable=False),
         sa.Column("name_fr", sa.String(150), nullable=False),
         sa.Column("name_en", sa.String(150), nullable=False),
