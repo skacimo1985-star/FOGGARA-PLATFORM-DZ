@@ -1180,7 +1180,10 @@
       "etc_mm_day": "Crop evapotranspiration (mm/day)",
       "net_mm_day": "Net daily depth (mm)",
       "gross_mm_day": "Gross daily depth (mm)",
-      "volume_m3_day": "Scenario volume (m³/day)"
+      "volume_m3_day": "Scenario volume (m³/day)",
+      "report_ref": "Provider report reference",
+      "source_resolution_m": "Source spatial resolution (m), if known",
+      "update_interval_days": "Reported update interval (days), if known"
     }
   },
   "os": {
@@ -1710,5 +1713,62 @@
     "formula": "1 hectare × 1 mm = 10 m³. Demand accounts for distribution efficiency. Energy uses lift, volume and assumed pump efficiency, excluding additional losses.",
     "startProject": "Open a real project",
     "matrix": "Explore the WEFEH matrix"
+  },
+  "agroProvider": {
+    "title": "Agricultural monitoring and satellite data",
+    "notice": "FOGGARA workflows for source records, indicator analysis and specialist review. Sat2Farm API integration is under evaluation and is currently disconnected.",
+    "claimsNotice": "The figures below are claims in the Sat2Farm presentation summary supplied to us; they are not FOGGARA accuracy or Algeria coverage guarantees.",
+    "cadenceNotice": "Daily recommendations do not imply daily soil-moisture measurement. Spatial resolution is not analytical error. The 10/20 m LSWI discrepancy needs provider clarification.",
+    "rightsNotice": "Provider reports are not automatically copied or republished. Storage, translation and Data Room sharing need explicit rights and separate review.",
+    "validationNotice": "Estimates remain INFERRED, calculations COMPUTED, and alerts proposals for review. Local field/laboratory validation is required. No yield or water-saving percentage is promised, and no chemical or microbiological water-quality service is implied.",
+    "request": "Request service evaluation",
+    "explore": "Explore eight agricultural services",
+    "openRecords": "Open projects and agricultural records",
+    "importTitle": "Record an external provider estimate",
+    "importNotice": "Manually enter results you may lawfully store, linked to reviewed project evidence. Reviewing a source does not validate its quantities. There is no automatic provider connection, irrigation execution or external sharing.",
+    "rightsConfirm": "I have reviewed my right to store these values for internal use; report redistribution requires separate permission.",
+    "requestNotice": "Request evaluation and scope review; the external integration is disconnected.",
+    "products": {
+      "soil": {
+        "title": "Soil N/P/K, organic carbon and pH estimates",
+        "use": "Record estimates separately from laboratory measurements and compare them later.",
+        "claim": "Claimed: 10 m, once per season, up to three reports annually."
+      },
+      "moisture": {
+        "title": "Soil-moisture estimates",
+        "use": "Track dated estimates alongside field sensors.",
+        "claim": "Claimed: 20 m, every 12 days."
+      },
+      "ndvi": {
+        "title": "Vegetation index NDVI",
+        "use": "Record provider indices or compute them from compatible bands.",
+        "claim": "Claimed: 10 m, every five days subject to conditions."
+      },
+      "lswi": {
+        "title": "Water index LSWI",
+        "use": "Track an index with imagery date, grid and source resolution.",
+        "claim": "Claimed: 20 m in the booklet versus 10 m in the presentation; every five days subject to conditions."
+      },
+      "irrigation": {
+        "title": "Irrigation guidance",
+        "use": "Calculate water balance, then review water, energy and equipment constraints.",
+        "claim": "Claimed: daily recommendations; spatial resolution unspecified."
+      },
+      "pests": {
+        "title": "Pest and disease alerts",
+        "use": "Record a sourced alert for specialist review before action.",
+        "claim": "Claimed: weekly updates; resolution unspecified."
+      },
+      "images": {
+        "title": "Crop-image diagnosis",
+        "use": "Attach an evidence image and record specialist opinion; automated diagnosis is disconnected.",
+        "claim": "Claimed: within five working hours; not a guaranteed FOGGARA turnaround."
+      },
+      "weather": {
+        "title": "Weather forecasts up to 15 days",
+        "use": "Enter a dated forecast of at most 15 days; forecasts remain inferred.",
+        "claim": "Claimed: daily update of a 15-day forecast; resolution unspecified."
+      }
+    }
   }
 }

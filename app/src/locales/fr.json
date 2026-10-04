@@ -1180,7 +1180,10 @@
       "etc_mm_day": "Évapotranspiration culturale (mm/jour)",
       "net_mm_day": "Lame nette journalière (mm)",
       "gross_mm_day": "Lame brute journalière (mm)",
-      "volume_m3_day": "Volume du scénario (m³/jour)"
+      "volume_m3_day": "Volume du scénario (m³/jour)",
+      "report_ref": "Référence du rapport fournisseur",
+      "source_resolution_m": "Résolution spatiale source (m), si connue",
+      "update_interval_days": "Intervalle annoncé des mises à jour (jours), si connu"
     }
   },
   "os": {
@@ -1710,5 +1713,62 @@
     "formula": "1 hectare × 1 mm = 10 m³. La demande tient compte du rendement de distribution. L’énergie utilise hauteur, volume et rendement de pompage supposé, hors pertes supplémentaires.",
     "startProject": "Ouvrir un projet réel",
     "matrix": "Explorer la matrice WEFEH"
+  },
+  "agroProvider": {
+    "title": "Suivi agricole et données satellitaires",
+    "notice": "FOGGARA assure la traçabilité des sources, l’analyse et la revue spécialisée. L’intégration API Sat2Farm est en évaluation et actuellement déconnectée.",
+    "claimsNotice": "Les chiffres ci-dessous proviennent du résumé Sat2Farm fourni ; ils ne garantissent ni la précision FOGGARA ni la couverture algérienne.",
+    "cadenceNotice": "Une recommandation quotidienne ne signifie pas une mesure quotidienne de l’humidité. La résolution spatiale n’est pas une marge d’erreur. Le désaccord LSWI 10/20 m doit être clarifié.",
+    "rightsNotice": "Les rapports ne sont pas automatiquement copiés ou republiés. Stockage, traduction et partage Data Room nécessitent des droits explicites et une revue distincte.",
+    "validationNotice": "Les estimations restent INFERRED, les calculs COMPUTED et les alertes des propositions à examiner. Validation locale terrain/laboratoire requise. Aucun gain de rendement ou d’eau chiffré, ni analyse chimique ou microbiologique de l’eau, n’est promis.",
+    "request": "Demander une évaluation",
+    "explore": "Explorer les huit services agricoles",
+    "openRecords": "Ouvrir les projets et leurs données agricoles",
+    "importTitle": "Enregistrer une estimation externe",
+    "importNotice": "Saisie manuelle de résultats que vous pouvez légalement conserver, liés à une preuve de projet revue. La revue de la source ne valide pas les valeurs. Aucun accès automatique au fournisseur, pilotage d’irrigation ou partage externe.",
+    "rightsConfirm": "J’ai vérifié mon droit de conserver ces valeurs en interne ; la redistribution du rapport exige une autorisation distincte.",
+    "requestNotice": "Demande d’évaluation du périmètre ; l’intégration externe est déconnectée.",
+    "products": {
+      "soil": {
+        "title": "Estimations du sol N/P/K, carbone et pH",
+        "use": "Conserver les estimations séparément des analyses de laboratoire pour comparaison.",
+        "claim": "Annoncé : 10 m, une fois par saison, jusqu’à trois rapports par an."
+      },
+      "moisture": {
+        "title": "Estimation de l’humidité du sol",
+        "use": "Suivre des estimations datées et les comparer aux capteurs.",
+        "claim": "Annoncé : 20 m, tous les 12 jours."
+      },
+      "ndvi": {
+        "title": "Indice de végétation NDVI",
+        "use": "Saisir un indice fournisseur ou le calculer à partir de bandes compatibles.",
+        "claim": "Annoncé : 10 m, tous les cinq jours selon les conditions."
+      },
+      "lswi": {
+        "title": "Indice hydrique LSWI",
+        "use": "Conserver la date de l’image, sa grille et sa résolution.",
+        "claim": "Annoncé : 20 m dans le livret contre 10 m dans la présentation ; tous les cinq jours selon conditions."
+      },
+      "irrigation": {
+        "title": "Conseils d’irrigation",
+        "use": "Calculer le bilan hydrique puis examiner eau, énergie et équipements.",
+        "claim": "Annoncé : recommandation quotidienne ; résolution non précisée."
+      },
+      "pests": {
+        "title": "Alertes ravageurs et maladies",
+        "use": "Enregistrer une alerte sourcée pour revue spécialisée avant action.",
+        "claim": "Annoncé : mise à jour hebdomadaire ; résolution non précisée."
+      },
+      "images": {
+        "title": "Diagnostic d’images de cultures",
+        "use": "Joindre une image et saisir l’avis du spécialiste ; diagnostic automatique déconnecté.",
+        "claim": "Annoncé : cinq heures ouvrées ; délai non garanti par FOGGARA."
+      },
+      "weather": {
+        "title": "Prévisions météo jusqu’à 15 jours",
+        "use": "Saisir une prévision datée de 15 jours maximum ; elle reste inférée.",
+        "claim": "Annoncé : mise à jour quotidienne sur 15 jours ; résolution non précisée."
+      }
+    }
   }
 }

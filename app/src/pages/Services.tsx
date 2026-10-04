@@ -33,6 +33,7 @@ export default function Services() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [query] = useSearchParams();
+  const topic = ["soil","moisture","ndvi","lswi","irrigation","pests","images","weather"].includes(query.get("topic") ?? "") ? query.get("topic") : null;
   const [selectedService, setSelectedService] = useState(query.get("service") ?? "");
   const [services, setServices] = useState<Service[] | null>(null);
   const [requests, setRequests] = useState<ServiceRequest[] | null>(null);
@@ -152,7 +153,7 @@ export default function Services() {
           <form onSubmit={onRequest} className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="sr-service">{t("service.selectService")}</Label>
-              <select id="sr-service" name="service_id" required className={selectCls} value={services?.some(s=>String(s.id)===selectedService)?selectedService:""} onChange={e=>setSelectedService(e.target.value)}>
+              <select id="sr-service" name="service_id" required className={selectCls} value={services?.some(s=>String(s.id)===selectedService)?selectedService:topic?String(services?.find(s=>s.type===(topic==="irrigation"?"irrigation_service":"technical_study"))?.id??""):""} onChange={e=>setSelectedService(e.target.value)}>
                 <option value="" disabled>{t("service.selectService")}</option>
                 {(services ?? []).map((s) => <option key={s.id} value={s.id}>{serviceName(s)}</option>)}
               </select>
@@ -177,7 +178,7 @@ export default function Services() {
             </div>
             <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="sr-notes">{t("service.notes")}</Label>
-              <Textarea id="sr-notes" name="notes" rows={2} />
+              <Textarea id="sr-notes" name="notes" defaultValue={topic?`${t(`agroProvider.products.${topic}.title`)} — ${t("agroProvider.requestNotice")}`:""} rows={2} />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={busy}>{busy ? t("common.loading") : t("service.submit")}</Button>

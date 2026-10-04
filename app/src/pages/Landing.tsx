@@ -5,6 +5,7 @@ import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPul
 import { useAuth } from "@/context/useAuth";
 import { NexusKasria } from "@/components/NexusKasria";
 import { WorkflowGuide } from "@/components/WorkflowGuide";
+import { AgroCapabilities } from "@/components/AgroCapabilities";
 import { ServiceOfferings } from "@/components/ServiceOfferings";
 import "./operations.css";
 import "./landing.css";
@@ -38,6 +39,7 @@ export default function Landing() {
       </div>
     </section>
     <ServiceOfferings/>
+    <AgroCapabilities compact/>
     <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / WEFEH</p><h2>{t("publicExperience.ecosystemTitle")}</h2></div>
       <div><p>{t("publicExperience.ecosystemBody")}</p><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/about">{t("publicExperience.about")}<ArrowUpRight size={16}/></Link></div></section>
     <WorkflowGuide/>

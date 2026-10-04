@@ -55,6 +55,32 @@ class SoilIn(SourceIn):
         return self
 
 
+class ProviderEstimateIn(SourceIn):
+    product: Literal["soil", "moisture", "ndvi", "lswi"]
+    report_ref: str = Field(min_length=3, max_length=255)
+    method: str = Field(min_length=3, max_length=255)
+    source_resolution_m: float | None = Field(default=None, gt=0, le=10000, allow_inf_nan=False)
+    update_interval_days: int | None = Field(default=None, ge=1, le=366)
+    rights_confirmed: Literal[True]
+    nitrogen_mg_kg: float | None = Field(default=None, ge=0, le=1000000, allow_inf_nan=False)
+    phosphorus_mg_kg: float | None = Field(default=None, ge=0, le=1000000, allow_inf_nan=False)
+    potassium_mg_kg: float | None = Field(default=None, ge=0, le=1000000, allow_inf_nan=False)
+    soc_g_kg: float | None = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
+    ph: float | None = Field(default=None, ge=0, le=14, allow_inf_nan=False)
+    moisture_percent: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    ndvi: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
+    lswi: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def product_values(self):
+        allowed = {"soil": {"nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph"},
+                   "moisture": {"moisture_percent"}, "ndvi": {"ndvi"}, "lswi": {"lswi"}}[self.product]
+        supplied = {k for k in ("nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "ndvi", "lswi") if getattr(self, k) is not None}
+        if not supplied or not supplied.issubset(allowed):
+            raise ValueError("Supply values only for the selected estimate product")
+        return self
+
+
 class ForecastDay(Payload):
     day: date
     min_c: float = Field(ge=-90, le=70, allow_inf_nan=False)
@@ -138,7 +164,7 @@ def records(project_id: int, user=Depends(get_current_user), db: Session = Depen
     return {"project_id": p.id, "is_demo": p.is_demo, "live_feed": False,
             "records": [{"id": r.id, "kind": r.kind, "source": r.source, "observed_at": r.observed_at,
                          "evidence_id": r.evidence_id, "content": r.content,
-                         "provenance": "COMPUTED" if r.kind in ("satellite", "irrigation") else "PROPOSED" if r.kind in ("diagnosis", "forewarning", "calendar") else "OBSERVED" if r.kind == "soil" else "INFERRED"} for r in rows]}
+                         "provenance": r.content["provenance"] if r.content.get("provenance") in ("INFERRED", "COMPUTED", "PROPOSED") else "COMPUTED" if r.kind in ("satellite", "irrigation") else "PROPOSED" if r.kind in ("diagnosis", "forewarning", "calendar") else "OBSERVED" if r.kind == "soil" else "INFERRED"} for r in rows]}
 
 
 @router.post("/projects/{project_id}/agriculture/satellite", status_code=201)
@@ -186,3 +212,14 @@ def irrigation(project_id: int, payload: IrrigationIn, user=Depends(get_current_
                 "gross_mm_day": round(gross, 4), "volume_m3_day": round(gross * payload.area_ha * 10, 4),
                 "formula": "ETc=Kc*ETo; net=max(0,ETc-effective_rain); gross=net/efficiency; volume=gross*ha*10",
                 "method_version": "water-budget-v1", "field_execution": False, "review_required": True})
+
+
+@router.post("/projects/{project_id}/agriculture/provider-estimate", status_code=201)
+def provider_estimate(project_id: int, payload: ProviderEstimateIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if user.role not in ("reviewer", "admin"):
+        api_error(403, "ROLE_FORBIDDEN", "Reviewer required for provider estimates")
+    kind = "satellite" if payload.product in ("ndvi", "lswi") else "soil"
+    # Reviewed report provenance does not validate the estimated physical quantities.
+    return save(kind, project_id, payload, user, db, {"provenance": "INFERRED", "external_estimate": True,
+                "live_feed": False, "local_validation": False, "method_version": "provider-estimate-v1",
+                "field_execution": False, "review_required": True, "redistribution_authorized": False})

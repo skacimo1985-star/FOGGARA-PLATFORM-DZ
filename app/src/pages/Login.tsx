@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/useAuth";
@@ -17,8 +17,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -52,16 +51,16 @@ export default function Login() {
           <CardTitle className="t-section">{t("auth.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="email">{t("auth.email")}</Label>
               <Input id="email" name="email" type="email" required maxLength={255} autoComplete="username" autoCapitalize="none" spellCheck={false} dir="ltr"
-                     value={email} onChange={(e) => setEmail(e.target.value)} />
+                     defaultValue="" />
             </div>
             <div className="space-y-1">
               <Label htmlFor="password">{t("auth.password")}</Label>
               <div className="flex gap-2"><Input id="password" name="password" type={showPassword ? "text" : "password"} required maxLength={1024} autoComplete="current-password" dir="ltr"
-                     value={password} onChange={(e) => setPassword(e.target.value)} onKeyUp={e=>setCapsLock(e.getModifierState("CapsLock"))} />
+                     defaultValue="" onKeyUp={e=>setCapsLock(e.getModifierState("CapsLock"))} />
                 <Button type="button" variant="outline" aria-label={t(showPassword ? "auth.hidePassword" : "auth.showPassword")} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</Button></div>
               {capsLock && <p role="status" className="text-xs text-muted-foreground">{t("auth.capsLock")}</p>}
             </div>
@@ -73,7 +72,7 @@ export default function Login() {
               {busy ? t("common.loading") : t("auth.submit")}
             </Button>
           </form>
-          <Button className="mt-3" type="button" variant="ghost" disabled={busy || retryIn > 0} onClick={()=>{setEmail("");setPassword("");setError(null);setShowPassword(false);setCapsLock(false);}}>{t("auth.clearSaved")}</Button>
+          <Button className="mt-3" type="button" variant="ghost" disabled={busy || retryIn > 0} onClick={()=>{formRef.current?.reset();setError(null);setShowPassword(false);setCapsLock(false);}}>{t("auth.clearSaved")}</Button>
           <p className="mt-3 text-xs text-muted-foreground">{t("auth.autofillNotice")}</p>
           <Link className="mt-3 inline-block text-sm text-oasis-strong underline" to="/demo">{t("demo.try")}</Link>
           <p className="mt-4 text-xs text-muted-foreground">{t("membership.sessionNotice")}</p>

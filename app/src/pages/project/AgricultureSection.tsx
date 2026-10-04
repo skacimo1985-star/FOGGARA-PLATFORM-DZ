@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ErrorText } from "@/components/common";
+import { ProviderEstimateForm } from "@/components/ProviderEstimateForm";
+import { AgroCapabilities } from "@/components/AgroCapabilities";
 import { ProvenanceBadge, type ProvenanceClass } from "@/components/ProvenanceBadge";
 
 interface AgriRecord { id: number; kind: string; source: string; observed_at: string; evidence_id: number; content: Record<string, unknown>; provenance: string; }
@@ -23,7 +25,7 @@ const fields: Record<string, string[]> = {
 };
 const numeric = new Set(["red", "nir", "swir1", "common_resolution_m", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "latitude", "longitude", "eto_mm_day", "kc", "effective_rain_mm", "area_ha", "efficiency"]);
 const soilOptional = new Set(["nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent"]);
-const displayKeys = ["ndvi", "lswi", "quality", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "sample_id", "method", "crop", "location", "conclusion", "etc_mm_day", "net_mm_day", "gross_mm_day", "volume_m3_day", "product_id", "common_resolution_m"];
+const displayKeys = ["report_ref", "source_resolution_m", "update_interval_days","ndvi", "lswi", "quality", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "sample_id", "method", "crop", "location", "conclusion", "etc_mm_day", "net_mm_day", "gross_mm_day", "volume_m3_day", "product_id", "common_resolution_m"];
 
 export function AgricultureSection({ projectId, evidences }: { projectId: number; evidences: Evidence[] }) {
   const { t, i18n } = useTranslation(); const { user } = useAuth(); const [records, setRecords] = useState<AgriRecord[]>([]);
@@ -39,6 +41,8 @@ export function AgricultureSection({ projectId, evidences }: { projectId: number
   }
   return <div className="space-y-6"><div className="rounded-2xl border bg-paper p-5"><h2 className="flex items-center gap-2 text-xl font-semibold"><Satellite size={22} />{t("agri.title")}</h2><p className="mt-3 text-sm text-muted-foreground">{t("agri.subtitle")}</p><p className="mt-2 text-xs text-muted-foreground">{t("agri.liveNotice")}</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{services.map((service, i) => { const Icon = [Sprout, Leaf, Satellite, CloudSun][i % 4]; return <article key={service} className="rounded-xl border p-4 space-y-2"><Icon size={18} className="text-oasis-strong" /><h3 className="text-sm font-semibold">{t(`agri.services.${service}`)}</h3><p className="text-xs text-muted-foreground">{t(serviceAvailable(service) ? "agri.recorded" : "agri.unavailable")}</p>{(service === "crop" || service === "lswi") && <p className="text-xs text-oasis-strong">{t("agri.complimentary")}</p>}</article>; })}</div>
+    <AgroCapabilities compact/>
+    <ProviderEstimateForm projectId={projectId} evidences={evidences} onSaved={reload}/>
     <ErrorText error={error} />
     <form className="grid gap-4 rounded-2xl border p-5 sm:grid-cols-2" onSubmit={async event => { event.preventDefault(); const form = event.currentTarget; const fd = new FormData(form); setBusy(true); setError(null);
       const body: Record<string, unknown> = { evidence_id: Number(fd.get("evidence_id")), source: fd.get("source"), observed_at: new Date(String(fd.get("observed_at"))).toISOString() };

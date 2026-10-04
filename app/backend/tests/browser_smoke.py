@@ -146,10 +146,24 @@ def main():
                 # Simulate password-manager DOM autofill without React input events.
                 page.locator("#email").evaluate("e => e.value = 'BROWSER@EXAMPLE.INVALID'")
                 page.locator("#password").evaluate("(e, value) => e.value = value", password)
+                page.get_by_role("button", name="مسح حقول الدخول", exact=True).click()
+                expect(page.locator("#email")).to_have_value("")
+                expect(page.locator("#password")).to_have_value("")
+                page.locator("#email").evaluate("e => e.value = 'BROWSER@EXAMPLE.INVALID'")
+                page.locator("#password").evaluate("(e, value) => e.value = value", password)
+                page.get_by_role("button", name="إظهار كلمة المرور", exact=True).click()
+                expect(page.locator("#password")).to_have_value(password)
                 page.locator('button[type="submit"]').click()
                 expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
                 expect(page.locator('[name="service_id"]')).not_to_have_value("")
                 page.reload()  # Memory-only session; subsequent protected visits authenticate normally.
+                page.goto("http://127.0.0.1:8000/agriculture-services", wait_until="networkidle")
+                expect(page.get_by_test_id("agro-capability")).to_have_count(8)
+                for locale in ("ar", "fr", "en"):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    page.set_viewport_size({"width":390,"height":1000})
+                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
+                page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
                 for path in ("about", "privacy", "terms", "rights", "contact"):
                     response = page.goto("http://127.0.0.1:8000/" + path)
                     assert response.status == 200

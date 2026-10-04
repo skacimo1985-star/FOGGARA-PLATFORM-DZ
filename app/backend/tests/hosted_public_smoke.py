@@ -62,6 +62,13 @@ def main():
         for width in (390, 768, 1440):
             page.set_viewport_size({"width": width, "height": 1000})
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("demo", width)
+        page.goto(BASE + "/agriculture-services", wait_until="networkidle")
+        expect(page.get_by_test_id("agro-capability")).to_have_count(8)
+        for locale in ("ar", "fr", "en"):
+            page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+            page.set_viewport_size({"width":390,"height":1000})
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
+        page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
         assert not errors, errors
         print("Hosted release passed: AR/FR/EN, responsive layout, role workflows, matrix, hard constraints and SPA stylesheet isolation.")
         browser.close()
