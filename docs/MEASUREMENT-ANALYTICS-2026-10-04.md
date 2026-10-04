@@ -13,7 +13,7 @@ This change adds measurement trends to the existing FOGGARA analytics page. It d
 
 ## Database and access
 
-JSON and CSV routes require a valid user and the owned project. Measurement queries include org_id explicitly. Filters are validated and parameterized. API cache/security middleware remains active. The only schema change is reversible composite index ix_measurements_series. Migration head: an20261004m1, parent int20261003s1. Existing records and migration identities are retained.
+JSON and CSV routes require a valid user and the owned project. Measurement queries include org_id explicitly. Summary statistics and sampled rows use one SQL statement and the same database snapshot, preventing count/row divergence during concurrent writes. Filters are validated and parameterized. API cache/security middleware remains active. The only schema change is reversible composite index ix_measurements_series. Migration head: an20261004m1, parent int20261003s1. Existing records and migration identities are retained.
 
 ## Dependency/security work
 

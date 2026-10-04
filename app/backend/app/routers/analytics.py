@@ -6,7 +6,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from ..audit import audit
@@ -78,15 +78,19 @@ def build_series(db: Session, user: User, project_id: int, filters: dict) -> Mea
         predicates.append(Measurement.quality_status == filters["quality"])
     if not filters["include_demo"]:
         predicates.append(Measurement.is_demo.is_(False))
-    count, minimum, maximum, average = db.execute(select(
-        func.count(Measurement.id), func.min(Measurement.value),
-        func.max(Measurement.value), func.avg(Measurement.value),
-    ).where(*predicates)).one()
-    # Most recent bounded sample, stable ordering for equal timestamps.
-    rows = db.scalars(select(Measurement).where(*predicates).order_by(
-        Measurement.measured_at.desc(), Measurement.id.desc()).limit(filters["limit"])).all()
+    summary = select(
+        func.count(Measurement.id).label("total"), func.min(Measurement.value).label("minimum"),
+        func.max(Measurement.value).label("maximum"), func.avg(Measurement.value).label("average"),
+    ).where(*predicates).subquery()
+    # One SQL statement gives summary and bounded rows the same database snapshot.
+    # Stable ordering keeps the latest sample deterministic for equal timestamps.
+    rows = db.execute(select(Measurement, summary.c.total, summary.c.minimum,
+        summary.c.maximum, summary.c.average).select_from(Measurement).join(summary, true())
+        .where(*predicates).order_by(Measurement.measured_at.desc(), Measurement.id.desc())
+        .limit(filters["limit"])).all()
+    count, minimum, maximum, average = rows[0][1:] if rows else (0, None, None, None)
     items = []
-    for row in reversed(rows):
+    for row, *_ in reversed(rows):
         item = MeasurementOut.model_validate(row)
         # SQLite drops tzinfo; historical naive timestamps are stored as UTC.
         if item.measured_at.tzinfo is None:
