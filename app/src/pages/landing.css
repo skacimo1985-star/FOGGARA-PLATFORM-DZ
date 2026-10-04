@@ -1,0 +1,26 @@
+.fg-landing{max-width:1200px;--fg-green:#194b40;--fg-lime:#dcedc7}
+.fg-landing .fg-public-nav{justify-content:center;gap:clamp(14px,3vw,36px);padding:8px 0 20px;border-bottom:1px solid #dce5d9}
+.fg-landing-hero{display:grid;grid-template-columns:1.08fr 1fr;align-items:center;gap:clamp(24px,4vw,65px);padding:48px 0 22px;isolation:isolate}
+.fg-landing-copy{min-width:0}.fg-landing .fg-eyebrow{color:#42694e;font-size:10px;letter-spacing:.12em}
+.fg-landing-kicker{color:#537158;font-size:13px;margin:25px 0 14px}
+.fg-landing h1{font-size:clamp(38px,4.2vw,64px);font-weight:700;line-height:1.3;letter-spacing:-.025em;color:#173f35}
+.fg-landing h1 em{font-style:normal;color:#497845}.fg-landing[lang=ar] h1{letter-spacing:0;line-height:1.55}
+.fg-landing-intro{max-width:540px;margin:24px 0;color:#536459;font-size:16px;line-height:1.95}
+.fg-landing .fg-hero-actions{margin:28px 0 18px;gap:10px}.fg-landing .fg-button{min-height:48px;padding:12px 22px;border-radius:100px}
+.fg-landing-trust{display:flex;align-items:center;gap:8px;color:#64745f;font-size:11px;line-height:1.8}.fg-landing-trust svg{flex-shrink:0}
+.fg-landing-scene{min-width:0;background:#ecf0e6;padding:18px;border:1px solid #d7e2ce;border-radius:30px;box-shadow:0 30px 65px -45px #3b5c32;position:relative}
+.fg-landing-scene:before{content:"";position:absolute;z-index:-1;inset:0;border-radius:50%;background:radial-gradient(ellipse,#dce8cb88,transparent 70%);pointer-events:none}
+.fg-landing-scene .kasria-network{position:relative}.fg-landing-scene .kasria-node{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fg-landing-selection{margin-top:15px;padding:16px 18px;border-radius:16px;background:#ffffffb3;min-height:135px;border:1px solid #fff}
+.fg-landing-selection>span{font-size:14px;font-weight:700;color:#315a42}.fg-landing-selection p{font-size:12px;line-height:1.9;color:#576a56;margin:7px 0}
+.fg-landing-selection a{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#315a42;text-decoration:underline;text-underline-offset:3px}
+.fg-landing .fg-pillars{margin:24px 0 60px;border-radius:16px}.fg-landing .fg-pillars button{display:flex;align-items:center;justify-content:center;gap:10px;padding:20px 10px;min-height:56px;border-inline-end:1px solid #dbe1d4;background:#fafcf6;font-size:13px}
+.fg-landing .fg-pillars button:last-child{border:0}.fg-landing .fg-pillars button:hover,.fg-landing .fg-pillars button[aria-pressed=true]{background:#e5efd7;color:#234e33}
+.fg-landing .fg-pillars svg{color:#4b7449}.fg-landing-section-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.fg-landing-section-heading>svg{color:#668258;flex-shrink:0}
+.fg-landing .fg-service{border-radius:20px;display:flex;flex-direction:column}.fg-landing .fg-service>svg{margin:24px 0 20px}.fg-landing .fg-service p{flex:1}.fg-landing .fg-service .fg-link svg{margin:0}
+.fg-landing .fg-flow li{display:flex;gap:20px;align-items:center;padding:17px;border:1px solid #ffffff25;border-radius:12px;background:#ffffff05}
+.fg-landing-cta{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:30px 0 55px}.fg-landing-cta h2{font-size:clamp(26px,3vw,36px);font-weight:600}.fg-landing-cta p:not(.fg-eyebrow){color:#5a6c54;font-size:14px;max-width:680px;line-height:2;margin-top:10px}.fg-landing-cta .fg-button{flex-shrink:0}
+.fg-landing-footer{padding:28px 0 16px;border-top:1px solid #dce4d5;display:flex;gap:18px;justify-content:space-between;flex-wrap:wrap;color:#53664e;font-size:11px}.fg-landing-footer nav{display:flex;gap:20px}.fg-landing-footer p{width:100%;max-width:850px;line-height:1.9}.fg-landing-footer .fg-link{margin:0}.fg-up{transform:rotate(180deg)}
+.fg-landing[dir=rtl] .fg-button>svg,.fg-landing[dir=rtl] .fg-link>svg:not(.fg-up),.fg-landing[dir=rtl] .fg-landing-selection a>svg{transform:scaleX(-1)}
+@media(max-width:900px){.fg-landing-hero{grid-template-columns:1fr;max-width:680px;margin:auto;padding-top:26px}.fg-landing-copy{max-width:600px}.fg-landing-scene{padding:14px}.fg-landing h1{font-size:clamp(36px,6vw,60px)}.fg-landing-cta{flex-direction:column;align-items:start}.fg-landing .fg-services-grid{grid-template-columns:1fr}.fg-landing .fg-services-grid .fg-service{min-height:0}}
+@media(max-width:480px){.fg-landing .fg-public-nav{font-size:11px;gap:13px}.fg-landing .fg-pillars button{flex-direction:column;font-size:10px;padding:14px 2px;gap:6px}.fg-landing-scene{border-radius:22px}.fg-landing .fg-hero-actions{flex-direction:column;align-items:stretch}.fg-landing h1{font-size:38px}.fg-landing .fg-feature{padding:25px 20px}.fg-landing .fg-feature h2{font-size:27px}.fg-landing-selection{min-height:145px}}

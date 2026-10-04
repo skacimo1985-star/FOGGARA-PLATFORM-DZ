@@ -11,7 +11,9 @@ export function applyDir(locale: Locale) {
   document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
 }
 
-const saved = (localStorage.getItem("locale") as Locale) || "ar";
+const supportedLocales: readonly string[] = ["ar", "fr", "en"];
+const stored = localStorage.getItem("locale");
+const saved: Locale = stored && supportedLocales.includes(stored) ? stored as Locale : "ar";
 applyDir(saved);
 
 i18n.use(initReactI18next).init({
@@ -21,11 +23,13 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
   },
   lng: saved,
+  supportedLngs: [...supportedLocales],
   fallbackLng: "ar",
   interpolation: { escapeValue: false },
 });
 
 export function setLocale(locale: Locale) {
+  if (!supportedLocales.includes(locale)) return;
   localStorage.setItem("locale", locale);
   applyDir(locale);
   i18n.changeLanguage(locale);
