@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
@@ -32,6 +32,8 @@ const srVariant = (s: string) =>
 export default function Services() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const [query] = useSearchParams();
+  const [selectedService, setSelectedService] = useState(query.get("service") ?? "");
   const [services, setServices] = useState<Service[] | null>(null);
   const [requests, setRequests] = useState<ServiceRequest[] | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -52,7 +54,7 @@ export default function Services() {
     if (domainFilter) qs.set("domain", domainFilter);
     const suffix = qs.size ? `?${qs.toString()}` : "";
     api.get<Service[]>(`/services${suffix}`).then(setServices).catch(setError);
-    api.get<ServiceRequest[]>("/service-requests").then(setRequests).catch(() => setRequests([]));
+    api.get<ServiceRequest[]>("/service-requests").then(setRequests).catch(setError);
     api.getAll<Project>("/projects").then(setProjects).catch(setError);
     api.getAll<Site>("/sites").then(setSites).catch(setError);
   }, [typeFilter, domainFilter]);
@@ -135,7 +137,7 @@ export default function Services() {
                     {s.domain && <Badge variant="outline">{t(`landing.${s.domain}`, s.domain)}</Badge>}
                     {s.is_demo && <Badge variant="outline">{t("service.demoNote")}</Badge>}
                   </div>
-                  {s.description && <p className="text-xs text-muted-foreground">{s.description}</p>}
+                  {s.description && <p className="text-xs text-muted-foreground">{s.provider === "EURL SIREP OASES NEXUS WEFEH-DZ" && !s.is_demo ? t(`service.catalogDescriptions.${s.type}`) : s.description}</p>}
                   <p className="text-xs text-muted-foreground">{t("service.provider")}: {s.provider}</p>
                 </li>
               ))}
@@ -150,7 +152,7 @@ export default function Services() {
           <form onSubmit={onRequest} className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="sr-service">{t("service.selectService")}</Label>
-              <select id="sr-service" name="service_id" required className={selectCls} defaultValue="">
+              <select id="sr-service" name="service_id" required className={selectCls} value={services?.some(s=>String(s.id)===selectedService)?selectedService:""} onChange={e=>setSelectedService(e.target.value)}>
                 <option value="" disabled>{t("service.selectService")}</option>
                 {(services ?? []).map((s) => <option key={s.id} value={s.id}>{serviceName(s)}</option>)}
               </select>

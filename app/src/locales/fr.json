@@ -61,7 +61,15 @@
     "password": "Mot de passe",
     "submit": "Se connecter",
     "demoAccounts": "Comptes de démonstration (DEMO)",
-    "badCredentials": "E-mail ou mot de passe incorrect"
+    "badCredentials": "E-mail ou mot de passe incorrect",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "capsLock": "Verr. Maj est activée.",
+    "clearSaved": "Effacer les champs",
+    "autofillNotice": "Le navigateur peut remplir d’anciens identifiants. Effacer les champs ne supprime pas le gestionnaire de mots de passe.",
+    "loginHelp": "Vérifiez l’adresse, la casse et le mot de passe enregistré. Sans compte, créez celui de votre organisation. En cas d’oubli, contactez l’administrateur : la récupération par e-mail n’est pas activée.",
+    "retryIn": "Nouvelle tentative dans {{seconds}} secondes.",
+    "startupNotice": "Connexion en cours. Le serveur peut devoir sortir de veille ; ne renvoyez pas la demande."
   },
   "topbar": {
     "location": "Localisation",
@@ -348,6 +356,18 @@
       "in_progress": "En cours",
       "completed": "Terminée",
       "cancelled": "Annulée"
+    },
+    "offeringsTitle": "Des services ancrés dans votre besoin terrain.",
+    "offeringsNotice": "Catalogue SIREP en base de données. Chaque demande est soumise à une revue du périmètre, des capacités et des conditions ; une offre ne constitue ni accréditation ni contrat.",
+    "requestThis": "Demander ce service",
+    "catalogDescriptions": {
+      "calibration": "Définir instrument, plage et référence d’étalonnage, puis documenter le travail.",
+      "inspection": "Examiner l’état des équipements avec observations et preuves.",
+      "measurement": "Organiser les mesures avec source, méthode, unité et état de revue.",
+      "technical_study": "Étudier besoins, ressources, alternatives et contraintes techniques.",
+      "irrigation_service": "Étudier besoin en irrigation et efficacité avec données vérifiables.",
+      "maintenance": "Relier équipements, tâches d’inspection et maintenance, et résultats.",
+      "consultation": "Connecter données, preuves et décision dans les cinq domaines WEFEH."
     }
   },
   "metrology": {
@@ -536,7 +556,11 @@
     "PASSWORD_UNCHANGED": "Choisissez un mot de passe différent.",
     "MATRIX_ENGINE_UNAVAILABLE": "Le moteur de calcul sélectionné est indisponible.",
     "MATRIX_TOO_LARGE": "Le scénario dépasse la limite du moteur.",
-    "INVALID_REFERENCE": "Un identifiant valide est requis pour la référence interne."
+    "INVALID_REFERENCE": "Un identifiant valide est requis pour la référence interne.",
+    "AUTH_BUSY": "Authentification temporairement occupée. Patientez puis réessayez.",
+    "PAYLOAD_TOO_LARGE": "La demande de connexion ou d’inscription est trop volumineuse.",
+    "REQUEST_TIMEOUT": "Le délai de réception de la demande a expiré.",
+    "INVALID_RESPONSE": "Réponse serveur invalide. Attendez le démarrage puis réessayez."
   },
   "solar": {
     "title": "Calculateur solaire préliminaire (calculé)",
@@ -1656,5 +1680,35 @@
     "toggle": "Basculer le thème clair/sombre",
     "light": "Thème clair",
     "dark": "Thème sombre"
+  },
+  "demo": {
+    "try": "Essayer FOGGARA sans compte",
+    "imageNotice": "Image générée par IA, inspirée des oasis algériennes.",
+    "synthetic": "Données synthétiques",
+    "title": "De l’eau à l’énergie, explorez la décision.",
+    "notice": "Démo locale avec données synthétiques. Aucun compte, projet enregistré ou appareil connecté. Calculs pédagogiques, sans conseil d’irrigation validé.",
+    "back": "Retour à l’accueil",
+    "inputs": "Ajuster le scénario",
+    "balanced": "Ressource disponible",
+    "stress": "Ressource sous pression",
+    "area": "Surface de la parcelle",
+    "depth": "Profondeur d’irrigation supposée",
+    "efficiency": "Efficacité de distribution",
+    "lift": "Hauteur de pompage",
+    "reset": "Réinitialiser",
+    "assumptions": "Rendement de pompage supposé : 65 %. Un projet réel nécessite mesures et revue du sol, de la culture et des équipements.",
+    "result": "Résultat du calcul de démonstration",
+    "demand": "Besoin en eau",
+    "energy": "Énergie de pompage calculée",
+    "available": "Eau disponible au jour 7",
+    "invalid": "Complétez les entrées dans leurs limites pour calculer.",
+    "blocked": "Scénario bloqué : le besoin dépasse l’eau disponible. Réduisez la demande ou revoyez la ressource avant toute décision.",
+    "feasible": "Besoin dans la limite d’eau supposée. Comparaison mathématique uniquement, sans validation opérationnelle.",
+    "chartTitle": "Eau disponible sur sept jours fictifs",
+    "chartNote": "D1–D7 sont fictifs. Tous les points sont synthétiques, sans mesures ni prévisions météo.",
+    "method": "Formules et limites",
+    "formula": "1 hectare × 1 mm = 10 m³. La demande tient compte du rendement de distribution. L’énergie utilise hauteur, volume et rendement de pompage supposé, hors pertes supplémentaires.",
+    "startProject": "Ouvrir un projet réel",
+    "matrix": "Explorer la matrice WEFEH"
   }
 }

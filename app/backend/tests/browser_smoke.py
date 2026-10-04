@@ -26,6 +26,7 @@ def main():
     from app.db import SessionLocal
     from app.models import Organization, User, Project, Site, Measurement
     from datetime import datetime, timedelta, timezone
+    from app.services.catalog import ensure_service_catalog
     from app.security import hash_password
     from playwright.sync_api import sync_playwright, expect
     out = Path("qa")
@@ -53,6 +54,7 @@ def main():
                 source="CI synthetic meter", method="CI fixture", submitted_by=user.id,
                 is_demo=True, quality_status=quality,
                 verification_status="verified" if quality == "validated" else "unverified"))
+        ensure_service_catalog(db)
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
     os.environ["OPERATIONS_AUTOMATION_ENABLED"] = "true"
@@ -78,6 +80,8 @@ def main():
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
+                expect(page.locator(".fg-offerings-grid article")).to_have_count(7)
+                assert page.locator(".fg-oasis-image img").evaluate("e => e.complete && e.naturalWidth > 0")
                 expect(page.locator(".wefeh-links")).to_be_visible()
                 expect(page.locator(".wefeh-node")).to_have_count(5)
                 for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
@@ -121,6 +125,31 @@ def main():
                     page.set_viewport_size({"width": width, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), "Horizontal overflow"
                     page.screenshot(path=str(out / f"landing-{width}.png"), full_page=True)
+                page.goto("http://127.0.0.1:8000/demo", wait_until="networkidle")
+                page.get_by_role("combobox", name="Language", exact=True).select_option("en")
+                expect(page.get_by_test_id("demo-demand")).to_contain_text("100")
+                page.locator(".fg-demo-scenarios button").nth(1).click()
+                expect(page.get_by_test_id("demo-decision")).to_have_class("fg-demo-decision blocked")
+                page.locator(".fg-demo-inputs input").first.fill("")
+                expect(page.get_by_test_id("demo-demand")).to_contain_text("—")
+                page.locator(".fg-demo-reset").click()
+                expect(page.get_by_test_id("demo-demand")).to_contain_text("100")
+                for locale in ("ar", "fr", "en"):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    for width in (390, 768, 1440):
+                        page.set_viewport_size({"width": width, "height": 1000})
+                        ensure_no_overflow(page, ("demo", locale, width))
+                    page.screenshot(path=str(out / f"demo-{locale}.png"), full_page=True)
+                page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
+                page.locator(".fg-offerings-grid article a").first.click()
+                expect(page.locator("#email")).to_be_visible()
+                # Simulate password-manager DOM autofill without React input events.
+                page.locator("#email").evaluate("e => e.value = 'BROWSER@EXAMPLE.INVALID'")
+                page.locator("#password").evaluate("(e, value) => e.value = value", password)
+                page.locator('button[type="submit"]').click()
+                expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
+                expect(page.locator('[name="service_id"]')).not_to_have_value("")
+                page.reload()  # Memory-only session; subsequent protected visits authenticate normally.
                 for path in ("about", "privacy", "terms", "rights", "contact"):
                     response = page.goto("http://127.0.0.1:8000/" + path)
                     assert response.status == 200

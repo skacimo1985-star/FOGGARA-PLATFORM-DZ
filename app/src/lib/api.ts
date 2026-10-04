@@ -11,16 +11,18 @@ export interface Paged<T> {
 export class ApiError extends Error {
   code: string;
   status: number;
-  constructor(status: number, code: string, message: string) {
+  retryAfter: number | null;
+  constructor(status: number, code: string, message: string, retryAfter: number | null = null) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryAfter = retryAfter;
   }
 }
 
 let sessionToken: string | null = null;
 // Remove legacy tokens; authentication is held in memory only.
-localStorage.removeItem("token");
+try { localStorage.removeItem("token"); } catch { /* Storage may be blocked. */ }
 
 export function setToken(token: string | null) {
   sessionToken = token;
@@ -37,19 +39,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   // مهلة افتراضية لكل طلب — تمنع تعليق الواجهة عند شبكة بطيئة (معرض/ميدان)
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), path.startsWith("/auth/") || path === "/org/invitations/accept" ? 60_000 : DEFAULT_TIMEOUT_MS);
   let res: Response;
+  let body;
   try {
     res = await fetch(`/api${path}`, { ...options, headers, signal: controller.signal });
+    body = await res.json().catch((error: unknown) => {
+      if (controller.signal.aborted) throw error;
+      return null;
+    });
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
+    if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
       throw new ApiError(0, "TIMEOUT", "request timeout");
     }
     throw new ApiError(0, "NETWORK", "network error");
   } finally {
     clearTimeout(timer);
   }
-  const body = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && body?.detail?.code !== "BAD_CREDENTIALS") {
       // جلسة منتهية/غير صالحة: إسقاط الرمز وإعادة التوجيه لتسجيل الدخول من الصفحات المحمية
@@ -61,8 +67,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const detail = body?.detail;
     const code = typeof detail === "object" && detail?.code ? detail.code : "ERROR";
     const message = typeof detail === "object" && detail?.message ? detail.message : res.statusText;
-    throw new ApiError(res.status, code, message);
+    const seconds = Number(res.headers.get("Retry-After"));
+    const retryAfter = seconds > 0 && Number.isFinite(seconds) ? Math.min(900, Math.ceil(seconds)) : null;
+    throw new ApiError(res.status, code, message, retryAfter);
   }
+  if (body === null) throw new ApiError(0, "INVALID_RESPONSE", "Unexpected server response");
   return body as T;
 }
 
