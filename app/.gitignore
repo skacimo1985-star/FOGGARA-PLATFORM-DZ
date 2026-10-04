@@ -26,6 +26,7 @@ pgdata/
 *.db-journal
 
 engines/nexus-core/target/
+backend/qa/
 
 .env.*
 !.env.example

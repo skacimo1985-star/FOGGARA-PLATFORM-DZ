@@ -1,40 +1,42 @@
+import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowUpLeft, Droplets, Zap, Wheat, Leaf, HeartPulse, Wrench, Layers3, Radio, ArrowDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
+import { NexusKasria } from "@/components/NexusKasria";
 import "./operations.css";
-const domains = [
-  {name:"المياه",key:"water",Icon:Droplets},{name:"الطاقة",key:"energy",Icon:Zap},
-  {name:"الغذاء",key:"food",Icon:Wheat},{name:"النظام البيئي",key:"ecosystem",Icon:Leaf},
-  {name:"الصحة",key:"health",Icon:HeartPulse}
-];
+import "./landing.css";
+const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
+const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"review",Icon:ShieldCheck,to:"/app/review"},{key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}];
 export default function Landing() {
-  const {user}=useAuth();
-  return <div className="fg-public" dir="rtl" lang="ar">
-    <nav className="fg-public-nav" aria-label="تصفح فقارة"><Link to="/about">رؤيتنا</Link><a href="#ecosystem">منظومة WEFEH</a><a href="#solutions">الحلول والخدمات</a><Link to="/contact">الشراكات والتواصل</Link>
-      <Link to={user?"/app/operations":"/login"} style={{marginInlineStart:"auto",fontWeight:700}}>مساحة العمل ↗</Link></nav>
-    <section className="fg-hero" aria-labelledby="foggara-title">
-      <img className="fg-hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Foggara_in_Tala.jpg/1280px-Foggara_in_Tala.jpg"
-        width={3564} height={2268} alt="فقارة في تالا، ولاية تيميمون، الجزائر" fetchPriority="high" referrerPolicy="no-referrer"/>
-      <p className="fg-eyebrow">ROOTED IN ALGERIA. CONNECTED BY PURPOSE.</p>
-      <h1 id="foggara-title">من عمق الأرض،<br/>نصلُ <em>إلى المستقبل.</em></h1>
-      <p className="fg-hero-copy">موارد مترابطة. معرفة تتحوّل إلى قرار. فقارة تجمع المياه والطاقة والغذاء والبيئة والصحة، لتصل المنظومة الإنتاجية من الميدان إلى القيمة.</p>
-      <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app/operations":"/login"}>الدخول إلى المنصة <ArrowUpLeft size={18}/></Link><a className="fg-button fg-secondary" href="#ecosystem">اكتشف فقارة <ArrowDown size={16}/></a></div>
-      <div className="fg-hero-caption"><span>FOGGARA · WEFEH NEXUS PLATFORM<br/>LAGHOUAT, ALGERIA · 03</span>
-        <span>إرث التدبير المشترك، برؤية رقمية.<br/><Link to="/rights">فقارة تالا: Bernard Gagnon · CC BY 4.0</Link></span></div>
-    </section>
-    <nav className="fg-pillars" aria-label="المجالات الخمسة">{domains.map(({name,key,Icon})=><Link key={key} to={"/app/explore/"+key}><Icon size={21}/><span>{name}</span></Link>)}</nav>
-    <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / A CONNECTED ECOSYSTEM</p><h2>خمسة مجالات.<br/>منظومة واحدة للحياة والإنتاج.</h2></div><div><p>استمدّت فقارة اسمها من معرفة جزائرية عريقة في تنظيم المورد وتقاسمه. واليوم، نترجم هذا المعنى إلى بنية رقمية تربط الموارد والبيانات والتجهيزات والمنتجين والمورّدين والخبراء والمؤسسات.</p><p>من الواحة والمزرعة إلى التحويل والخدمات واللوجستيك، تُبنى القرارات على قياسات قابلة للمراجعة، وأدلة واضحة، ومسؤوليات محددة.</p><Link className="fg-link" to="/about">تعرف على المشروع والجهة الناشرة <ArrowUpLeft size={16}/></Link></div></section>
-    <section id="solutions"><p className="fg-eyebrow">02 / FROM KNOWLEDGE TO THE FIELD</p><h2 className="fg-section-title">الخبرة، والبرمجيات، والميدان.</h2>
-      <div className="fg-services-grid">
-        {[{n:"01",Icon:Wrench,title:"خدمات هندسية",body:"تنظيم طلبات الخدمات والمترولوجيا والمعايرة ومراجع الأدلة، وربط الاحتياج بالخبرة المناسبة.",to:"/app/services"},
-          {n:"02",Icon:Layers3,title:"منظومة إنتاج مترابطة",body:"مشاريع ودفعات إنتاج ومصفوفات WEFEH، مع اقتراحات العرض والطلب وسجل مراجعة واضح.",to:"/app/operations"},
-          {n:"03",Icon:Radio,title:"متابعة الميدان",body:"إدارة الأجهزة والقراءات والمحاكاة، والتمييز بين البيانات التجريبية والربط الميداني الفعلي.",to:"/app/telemetry"}
-        ].map(({n,Icon,title,body,to})=><article className="fg-service" key={n}><span>FOGGARA / {n}</span><Icon size={29}/><h3>{title}</h3><p>{body}</p><Link to={to} className="fg-link">فتح مساحة العمل <ArrowUpLeft size={14}/></Link></article>)}
+  const {user}=useAuth(); const {t,i18n}=useTranslation(); const [active,setActive]=useState("all");
+  return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
+    <nav className="fg-public-nav" aria-label={t("publicExperience.navigation")}>
+      <a href="#ecosystem">{t("publicExperience.ecosystem")}</a><a href="#collaboration">{t("publicExperience.collaboration")}</a>
+      <Link to="/presentation">{t("publicExperience.presentation")}</Link><Link to="/contact">{t("publicExperience.contact")}</Link>
+    </nav>
+    <section className="fg-landing-hero" aria-labelledby="foggara-title">
+      <div className="fg-landing-copy"><p className="fg-eyebrow" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</p>
+        <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
+        <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
+        <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
+        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app/operations":"/login"}>{t("publicExperience.enter")}<ArrowUpRight size={18}/></Link>
+          <Link className="fg-button fg-secondary" to={user?"/app/projects":"/register"}>{t(user?"publicExperience.projectsTitle":"publicExperience.register")}</Link></div>
+        <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
+      </div>
+      <div className="fg-landing-scene"><NexusKasria active={active} onSelect={setActive}/>
+        <div className="fg-landing-selection" aria-live="polite" aria-atomic="true"><span>{t(active==="all"?"publicExperience.network":`landing.${active}`)}</span>
+          <p>{t(`publicExperience.domainCopy.${active}`)}</p><Link to={active==="all"?"/app/nexus":`/app/explore/${active}`}>{t("publicExperience.explore")}<ArrowUpRight size={14}/></Link></div>
       </div>
     </section>
-    <section className="fg-feature"><div><p className="fg-eyebrow">03 / ACCOUNTABLE INTELLIGENCE</p><h2>بيانات تعرف مصدرها.<br/>قرارات تعرف مسؤولها.</h2><p>تقيّم المصفوفات البيانات المعتمدة وتكشف النقص وتقترح مسارات المراجعة. وتبقى القرارات والاعتمادات قابلة للتتبّع، مع فصل الإدخال عن المراجعة.</p><Link to={user?"/app/operations":"/login"} className="fg-button">استكشف مساحة العمليات <ArrowUpLeft size={17}/></Link></div>
-      <div className="fg-flow">{["مشروع وقياسات ومراجع","مراجعة واعتماد جودة البيانات","تحليل WEFEH ومطابقة الفرص","قرار بشري ومتابعة وتدقيق"].map((text,i)=><div key={text}><b>0{i+1}</b><span>{text}</span></div>)}</div>
-    </section>
-    <section className="fg-editorial"><div><p className="fg-eyebrow">04 / BUILD WITH US</p><h2>قيمة محلية.<br/>آفاق مشتركة.</h2></div><div><p>للمزارع والواحات والتعاونيات ومؤسسات التحويل واللوجستيك والمورّدين والخبراء والشركاء: نبدأ من احتياجاتكم الميدانية، ونبني دورة عمل يمكن قياسها ومتابعتها.</p><Link to="/contact" className="fg-button">تواصل مع فريق فقارة <ArrowUpLeft size={17}/></Link><p className="fg-muted">السجلات الموسومة DEMO بيانات توضيحية. الوحدات التجريبية لا تمثل ربطًا وطنيًا حيًا أو شهادات اعتماد.</p></div></section>
+    <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
+    <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / WEFEH</p><h2>{t("publicExperience.ecosystemTitle")}</h2></div>
+      <div><p>{t("publicExperience.ecosystemBody")}</p><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/about">{t("publicExperience.about")}<ArrowUpRight size={16}/></Link></div></section>
+    <section id="collaboration" aria-labelledby="collaboration-title"><div className="fg-landing-section-heading"><div><p className="fg-eyebrow">02 / {t("publicExperience.collaboration")}</p><h2 id="collaboration-title" className="fg-section-title">{t("publicExperience.collaborationTitle")}</h2></div><Users size={32}/></div>
+      <div className="fg-services-grid">{workspaces.map(({key,Icon,to},i)=><article className="fg-service" key={key}><span dir="ltr">0{i+1} / FOGGARA</span><Icon size={28}/><h3>{t(`publicExperience.${key}Title`)}</h3><p>{t(`publicExperience.${key}Body`)}</p><Link to={to} className="fg-link">{t("publicExperience.openWorkspace")}<ArrowUpRight size={15}/></Link></article>)}</div></section>
+    <section className="fg-feature"><div><p className="fg-eyebrow">03 / {t("publicExperience.decision")}</p><h2>{t("publicExperience.decisionTitle")}</h2><p>{t("publicExperience.decisionBody")}</p><Link to="/app/studio" className="fg-button">{t("publicExperience.decisionOpen")}<ArrowUpRight size={17}/></Link></div>
+      <ol className="fg-flow">{["resources","reviewed","analysis","human"].map((key,i)=><li key={key}><b dir="ltr">0{i+1}</b><span>{t(`publicExperience.steps.${key}`)}</span></li>)}</ol></section>
+    <section className="fg-landing-cta"><div><p className="fg-eyebrow">04 / SIREP OASES</p><h2>{t("publicExperience.ctaTitle")}</h2><p>{t("publicExperience.ctaBody")}</p></div><Link to="/contact" className="fg-button">{t("publicExperience.contact")}<ArrowUpRight size={18}/></Link></section>
+    <footer className="fg-landing-footer"><span dir="ltr">FOGGARA-DZ · SIREP OASES NEXUS WEFEH-DZ</span><nav aria-label={t("publicExperience.legal")}><Link to="/privacy">{t("publicExperience.privacy")}</Link><Link to="/terms">{t("publicExperience.terms")}</Link><Link to="/rights">{t("publicExperience.rights")}</Link></nav><p>{t("publicExperience.scope")}</p><a href="#foggara-title" className="fg-link">{t("publicExperience.top")}<ArrowDown className="fg-up" size={14}/></a></footer>
   </div>;
 }

@@ -54,8 +54,25 @@ def main():
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
-                image_loaded = page.locator(".fg-hero-photo").evaluate("(img) => img.complete && img.naturalWidth > 0")
-                assert image_loaded, "Hero photograph must load"
+                expect(page.locator(".cinematic-canvas")).to_be_visible()
+                expect(page.locator(".cinematic-node")).to_have_count(5)
+                for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    expect(page.locator("#foggara-title")).to_contain_text(title)
+                    expect(page.locator("html")).to_have_attribute("dir", "rtl" if locale == "ar" else "ltr")
+                    page.locator(".fg-pillars button").first.click()
+                    expect(page.locator(".fg-pillars button").first).to_have_attribute("aria-pressed", "true")
+                    expect(page.locator(".fg-landing-selection a")).to_have_attribute("href", "/app/explore/water")
+                    page.locator(".fg-pillars button").first.click()
+                    for width in (390, 768, 1440):
+                        page.set_viewport_size({"width": width, "height": 1000})
+                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), (locale, width)
+                        page.wait_for_function("""() => {
+                            const canvas = document.querySelector('.cinematic-canvas');
+                            const pixel = canvas.getContext('2d').getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
+                            return pixel[0] + pixel[1] + pixel[2] > 0;
+                        }""")
+                    page.screenshot(path=str(out / f"landing-{locale}.png"), full_page=True)
                 page.screenshot(path=str(out / "landing-desktop.png"), full_page=True)
 
                 for width in (390, 768):
@@ -94,6 +111,12 @@ def main():
                 page.locator('[name="code"]').fill("CI-LOT-001")
                 page.locator('[name="product"]').fill("تمور الاختبار")
                 page.locator('[name="quantity"]').fill("25")
+                for locale, button in (("fr", "Ajouter un lot de production"), ("en", "Add production lot"), ("ar", "إضافة دفعة إنتاج")):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    expect(page.get_by_role("button", name=button, exact=True)).to_be_enabled()
+                    expect(page.locator('[name="project_id"]')).to_have_value(selected_project)
+                    expect(page.locator('[name="code"]')).to_have_value("CI-LOT-001")
+                    expect(page.locator('[name="quantity"]')).to_have_value("25")
                 with page.expect_response(lambda r: r.url.endswith("/api/operations/lots") and r.request.method == "POST") as saved:
                     page.get_by_role("button", name="إضافة دفعة إنتاج").click()
                 assert saved.value.status == 201, saved.value.text()
@@ -124,10 +147,14 @@ def main():
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
+                    if path == "/app/account":
+                        for locale, title in (("fr", "Équipe et compte"), ("en", "Team and account"), ("ar", "الفريق والحساب")):
+                            page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                            expect(page.locator(".fg-console h1")).to_have_text(title)
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
-                    "checks":["public routes","photograph","mobile overflow","contact persistence",
+                    "checks":["public routes","interactive Kasria","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
                               "authenticated operations","lot creation and reload","API 404","23 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()
