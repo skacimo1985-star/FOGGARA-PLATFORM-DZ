@@ -37,6 +37,7 @@ const Vde = lazy(() => import("@/pages/Vde"));
 const OrganizationPage = lazy(() => import("@/pages/Organization"));
 import "@/lib/i18n";
 import "@/agriculture-glass.css";
+import "@/themes.css";
 import { useTranslation } from "react-i18next";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {

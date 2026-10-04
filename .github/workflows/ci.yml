@@ -129,7 +129,7 @@ jobs:
         working-directory: app
       - run: npm run lint
         working-directory: app
-      - run: npm run test:matrix
+      - run: npm test
         working-directory: app
       - name: Audit locked dependencies
         working-directory: app
@@ -157,7 +157,7 @@ jobs:
                   with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
                       body = json.load(response)
                       assert body["db"] == "up"
-                      assert body["alembic"] == "int20261003s1"
+                      assert body["alembic"] == "an20261004m1"
                       break
               except Exception:
                   if attempt == 39:

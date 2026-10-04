@@ -1,3 +1,5 @@
+import { collectPages } from "./pagination";
+
 export interface Paged<T> {
   items: T[];
   total: number;
@@ -66,6 +68,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  getAll: <T>(path: string) => collectPages<T>((page) => {
+    const [pathname, query = ""] = path.split("?");
+    const params = new URLSearchParams(query);
+    params.set("page", String(page));
+    params.set("page_size", "100");
+    return request<Paged<T>>(`${pathname}?${params}`);
+  }),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) =>
@@ -75,9 +84,28 @@ export const api = {
     method: "POST", body: file, headers: { "Content-Type": file.type },
   }),
   download: async (path: string, filename: string) => {
-    const response = await fetch(`/api${path}`, { headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {} });
-    if (!response.ok) throw new ApiError(response.status, "FORBIDDEN", response.statusText);
-    const url = URL.createObjectURL(await response.blob());
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    let blob: Blob;
+    try {
+      const response = await fetch(`/api${path}`, {
+        headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        if (response.status === 401) {
+          setToken(null);
+          if (window.location.pathname.startsWith("/app")) window.location.assign("/login");
+        }
+        throw new ApiError(response.status, body?.detail?.code ?? "ERROR", body?.detail?.message ?? response.statusText);
+      }
+      blob = await response.blob();
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(0, controller.signal.aborted ? "TIMEOUT" : "NETWORK", "download failed");
+    } finally { clearTimeout(timer); }
+    const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = filename; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);

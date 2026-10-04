@@ -1627,5 +1627,34 @@
     "publicTitle": "Des données qui font évoluer votre système.",
     "publicBody": "Règles versionnées, revue indépendante, calculs reproductibles et enrichissement sourcé.",
     "open": "Ouvrir l’automatisation"
+  },
+  "trends": {
+    "title": "Évolution des mesures et preuves",
+    "refresh": "Actualiser",
+    "csv": "Exporter CSV",
+    "print": "Imprimer / PDF",
+    "days": "{{count}} derniers jours",
+    "reviewedOnly": "Validées uniquement",
+    "pendingOnly": "En attente de revue",
+    "allAccepted": "Validées et en attente",
+    "includeDemo": "Inclure les données DEMO",
+    "chartTitle": "Évolution des mesures enregistrées",
+    "timezone": "Heure d’Algérie · UTC+01:00",
+    "count": "Nombre de mesures",
+    "average": "Moyenne arithmétique",
+    "minimum": "Minimum",
+    "maximum": "Maximum",
+    "basis": "Le résumé couvre toutes les mesures filtrées dans une seule unité. Les mesures rejetées sont exclues. Cette analyse descriptive ne démontre pas la sécurité d’une ressource et n’autorise pas le pilotage des équipements.",
+    "demoWarning": "Ces résultats incluent des données DEMO synthétiques ; elles ne constituent pas des preuves de terrain.",
+    "truncated": "Affichage et export des {{shown}} mesures les plus récentes sur {{total}}. Le résumé couvre le total. Réduisez la période pour afficher toute la série.",
+    "records": "Mesures et sources ({{count}})",
+    "emptyTitle": "Aucune mesure correspondante",
+    "emptyBody": "Enregistrez les mesures et leurs sources, puis demandez une revue, ou modifiez la période et le statut. Les données DEMO sont masquées par défaut.",
+    "generatedAt": "Rapport généré le"
+  },
+  "theme": {
+    "toggle": "Basculer le thème clair/sombre",
+    "light": "Thème clair",
+    "dark": "Thème sombre"
   }
 }

@@ -8,11 +8,24 @@ import time
 from pathlib import Path
 import httpx
 
+def ensure_no_overflow(page, context):
+    if page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"):
+        return
+    page.screenshot(path="qa/overflow-failure.png", full_page=True)
+    offending = page.evaluate("""() => [...document.querySelectorAll('body *')].map(e => {
+        const r=e.getBoundingClientRect();
+        return {tag:e.tagName, cls:e.className?.baseVal ?? e.className,
+                left:Math.round(r.left), right:Math.round(r.right), width:Math.round(r.width)};
+    }).filter(e => e.width>0 && (e.right>innerWidth+1 || e.left < -1)).slice(0,20)""")
+    raise AssertionError((context, offending))
+
+
 def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
-    from app.models import Organization, User, Project, Site
+    from app.models import Organization, User, Project, Site, Measurement
+    from datetime import datetime, timedelta, timezone
     from app.security import hash_password
     from playwright.sync_api import sync_playwright, expect
     out = Path("qa")
@@ -34,6 +47,12 @@ def main():
         db.add(project)
         db.flush()
         project_id = project.id
+        for i, quality in enumerate(("validated", "validated", "validated", "pending", "rejected")):
+            db.add(Measurement(org_id=org.id, project_id=project.id, parameter="flow_rate", unit="L/s",
+                value=float(i + 1), measured_at=datetime.now(timezone.utc) - timedelta(hours=5-i),
+                source="CI synthetic meter", method="CI fixture", submitted_by=user.id,
+                is_demo=True, quality_status=quality,
+                verification_status="verified" if quality == "validated" else "unverified"))
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
     os.environ["OPERATIONS_AUTOMATION_ENABLED"] = "true"
@@ -179,11 +198,44 @@ def main():
                     expect(page.locator(".ag-automation h1")).to_have_text(title)
                     for width in (390,768,1440):
                         page.set_viewport_size({"width":width,"height":1000})
-                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("automation",locale,width)
+                        ensure_no_overflow(page, ("automation",locale,width))
                 page.screenshot(path=str(out / "automation-desktop.png"), full_page=True)
                 page.set_viewport_size({"width":390,"height":844})
                 page.screenshot(path=str(out / "automation-mobile.png"), full_page=True)
                 page.set_viewport_size({"width":1440,"height":1000})
+                authenticated_visit("/app/analytics")
+                expect(page.locator(".an-empty")).to_be_visible()
+                page.locator(".an-checkbox input").check()
+                expect(page.locator(".an-chart circle")).to_have_count(3)
+                expect(page.locator(".an-point.an-demo")).to_have_count(3)
+                page.locator(".an-filters select").nth(3).select_option("all")
+                expect(page.locator(".an-chart circle")).to_have_count(4)
+                for locale in ("ar", "fr", "en"):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    expect(page.locator("html")).to_have_attribute("dir", "rtl" if locale == "ar" else "ltr")
+                    expect(page.locator(".an-chart circle")).to_have_count(4)
+                    for theme in ("dark", "light"):
+                        page.locator(".os-theme-toggle").click()
+                        expect(page.locator("html")).to_have_attribute("data-theme", theme)
+                        for width in (390, 768, 1440):
+                            page.set_viewport_size({"width":width,"height":1000})
+                            ensure_no_overflow(page, ("analytics",locale,theme,width))
+                        page.screenshot(path=str(out / f"analytics-{locale}-{theme}.png"), full_page=True)
+                page.locator(".an-records summary").click()
+                expect(page.locator(".an-records tbody tr")).to_have_count(4)
+                with page.expect_download() as exported:
+                    page.locator(".an-actions button").nth(1).click()
+                exported.value.save_as(str(out / "measurement-series.csv"))
+                csv_text = (out / "measurement-series.csv").read_text(encoding="utf-8-sig")
+                assert "CI synthetic meter" in csv_text and "matching_total" in csv_text
+                page.emulate_media(media="print")
+                expect(page.locator(".os-header")).not_to_be_visible()
+                page.pdf(path=str(out / "measurement-series.pdf"), format="A4", print_background=True)
+                page.emulate_media(media="screen")
+                page.locator(".an-filters select").nth(0).select_option("ph")
+                expect(page.locator(".an-empty")).to_be_visible()
+                expect(page.locator(".an-filters select").nth(1)).to_have_value("pH")
+                page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
                 for path in ("/app", "/app/automation", "/app/projects", "/app/org", "/app/account", "/app/nexus",
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
@@ -208,7 +260,7 @@ def main():
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
-                    "checks":["public routes","interactive resource network and original logo", "automatic queue completion and connection matrix","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
+                    "checks":["measurement chart quality/demo filters and source rows", "AR/FR/EN analytics in both themes without mobile overflow", "audited CSV download and print PDF", "public routes","interactive resource network and original logo", "automatic queue completion and connection matrix","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
                               "authenticated operations","lot creation and reload","API 404","24 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()

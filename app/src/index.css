@@ -1,6 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@config "../tailwind.config.js";
+
+/* Preserve the v3 visual scale while using the patched v4 build pipeline. */
+@theme {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --blur-sm: 4px;
+  --blur: 8px;
+}
+@layer base {
+  *, ::before, ::after { border-color: var(--color-gray-200, currentColor); }
+  button, [role="button"] { cursor: pointer; }
+}
 
 @layer base {
   :root {

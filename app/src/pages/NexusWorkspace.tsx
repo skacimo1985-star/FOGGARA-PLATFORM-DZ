@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Link} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {ArrowUpRight, Search, GitBranch, Layers, MapPin, FolderKanban, Network, ShieldCheck, SlidersHorizontal} from 'lucide-react';
-import {api, type Paged} from '@/lib/api';
+import {api} from '@/lib/api';
 import type {Project,Site,GovDecision} from '@/types';
 import type {NexusResource} from '@/types/platform';
 import {NexusKasria} from '@/components/NexusKasria';
@@ -12,7 +12,7 @@ import {ProvenanceBadge,type ProvenanceClass} from '@/components/ProvenanceBadge
 interface Graph {nodes:{id:string;title:string;type:string;provenance:ProvenanceClass;value?:number;unit?:string;measured_at?:string}[];edges:{source:string;target:string;relation:string;provenance:string}[];}
 export default function Home(){
  const {t,i18n}=useTranslation();const [data,setData]=useState<{projects:Project[];resources:NexusResource[];sites:Site[];decisions:GovDecision[]}|null>(null);const [error,setError]=useState<unknown>(null);const [domain,setDomain]=useState('all');const [query,setQuery]=useState('');const [selected,setSelected]=useState<number|null>(null);const [graph,setGraph]=useState<Graph|null>(null);
- useEffect(()=>{let active=true;Promise.all([api.get<Paged<Project>>('/projects?page_size=500'),api.get<NexusResource[]>('/nexus/resources'),api.get<Paged<Site>>('/sites?page_size=500'),api.get<Paged<GovDecision>>('/decisions?page_size=500')]).then(([projects,resources,sites,decisions])=>{if(active){setData({projects:projects.items,resources,sites:sites.items,decisions:decisions.items});setSelected(projects.items[0]?.id??null);}}).catch(e=>{if(active)setError(e);});return()=>{active=false;};},[]);
+ useEffect(()=>{let active=true;Promise.all([api.getAll<Project>('/projects'),api.get<NexusResource[]>('/nexus/resources'),api.getAll<Site>('/sites'),api.getAll<GovDecision>('/decisions')]).then(([projects,resources,sites,decisions])=>{if(active){setData({projects,resources,sites,decisions});setSelected(projects[0]?.id??null);}}).catch(e=>{if(active)setError(e);});return()=>{active=false;};},[]);
  useEffect(()=>{let active=true;if(selected!==null)api.get<Graph>(`/projects/${selected}/evidence-graph`).then(g=>{if(active)setGraph(g);}).catch(e=>{if(active)setError(e);});return()=>{active=false;};},[selected]);
  const projects=useMemo(()=>data?.projects.filter(p=>(domain==='all'||p.domain===domain)&&p.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()))??[],[data,domain,query]);
  const project=data?.projects.find(p=>p.id===selected);const number=(n:number)=>new Intl.NumberFormat(i18n.language).format(n);

@@ -81,8 +81,8 @@ export default function Home() {
     api.get<Organization>("/org")
       .then((o) => setOrg({ status: "ok", data: o }))
       .catch(() => setOrg({ status: "error", data: null }));
-    Promise.all([api.get<Paged<WaterResource>>("/resources?page_size=500"), api.get<Paged<Asset>>("/assets?page_size=500")])
-      .then(([r, a]) => setResources({ status: "ok", data: { r: r.items, a: a.items } }))
+    Promise.all([api.getAll<WaterResource>("/resources"), api.getAll<Asset>("/assets")])
+      .then(([r, a]) => setResources({ status: "ok", data: { r, a } }))
       .catch(() => setResources({ status: "error", data: null }));
     Promise.all([api.get<Device[]>("/telemetry/devices"), api.get<Sensor[]>("/telemetry/sensors")])
       .then(([d, s]) => setSensors({ status: "ok", data: { d, s } }))
