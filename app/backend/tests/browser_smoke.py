@@ -8,6 +8,18 @@ import time
 from pathlib import Path
 import httpx
 
+def ensure_no_overflow(page, context):
+    if page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"):
+        return
+    page.screenshot(path="qa/overflow-failure.png", full_page=True)
+    offending = page.evaluate("""() => [...document.querySelectorAll('body *')].map(e => {
+        const r=e.getBoundingClientRect();
+        return {tag:e.tagName, cls:e.className?.baseVal ?? e.className,
+                left:Math.round(r.left), right:Math.round(r.right), width:Math.round(r.width)};
+    }).filter(e => e.width>0 && (e.right>innerWidth+1 || e.left < -1)).slice(0,20)""")
+    raise AssertionError((context, offending))
+
+
 def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
@@ -186,7 +198,7 @@ def main():
                     expect(page.locator(".ag-automation h1")).to_have_text(title)
                     for width in (390,768,1440):
                         page.set_viewport_size({"width":width,"height":1000})
-                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("automation",locale,width)
+                        ensure_no_overflow(page, ("automation",locale,width))
                 page.screenshot(path=str(out / "automation-desktop.png"), full_page=True)
                 page.set_viewport_size({"width":390,"height":844})
                 page.screenshot(path=str(out / "automation-mobile.png"), full_page=True)
@@ -207,7 +219,7 @@ def main():
                         expect(page.locator("html")).to_have_attribute("data-theme", theme)
                         for width in (390, 768, 1440):
                             page.set_viewport_size({"width":width,"height":1000})
-                            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("analytics",locale,theme,width)
+                            ensure_no_overflow(page, ("analytics",locale,theme,width))
                         page.screenshot(path=str(out / f"analytics-{locale}-{theme}.png"), full_page=True)
                 page.locator(".an-records summary").click()
                 expect(page.locator(".an-records tbody tr")).to_have_count(4)

@@ -118,6 +118,12 @@ html[data-theme="dark"] body .fp-presentation { --paper: var(--canvas); --panel:
 .an-empty h3 { font-size: 18px; color: var(--ink); }
 .an-empty p { font-size: 14px; max-width: 580px; }
 @media(max-width: 800px) { .an-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } .an-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .an-actions .os-secondary { padding: 9px 10px; } .os-header-controls { gap: 9px; } }
+@media(max-width: 650px) {
+  .os-header .os-breadcrumb { min-width: 0; flex: 1; overflow: hidden; }
+  .os-header .os-breadcrumb strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .os-header .os-header-controls { flex: none; gap: 6px; }
+  .os-theme-toggle { width: 34px; height: 34px; }
+}
 @media print {
   html,html[data-theme="dark"] { color-scheme: light; --canvas: #fff; --surface: #fff; --surface-muted: #f1f5eb; --ink: #203c36; --ink-soft: #345945; --ink-muted: #536a60; --line: #b8c8bb; --chart-verified: #1e766b; --chart-observed: #946619; --chart-demo: #7353b7; --warning: #91681a; }
   body:has(.an-page) :is(.os-header,.os-sidebar,.os-mobile-nav,.an-no-print,.os-skip-link) { display: none !important; }
