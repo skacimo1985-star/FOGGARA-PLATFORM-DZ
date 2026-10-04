@@ -36,6 +36,7 @@ def main():
         project_id = project.id
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
+    os.environ["OPERATIONS_AUTOMATION_ENABLED"] = "true"
     with (out / "server.log").open("w") as log:
         process = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
                                    stdout=log, stderr=log)
@@ -58,8 +59,8 @@ def main():
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
-                expect(page.locator(".cinematic-canvas")).to_be_visible()
-                expect(page.locator(".cinematic-node")).to_have_count(5)
+                expect(page.locator(".wefeh-links")).to_be_visible()
+                expect(page.locator(".wefeh-node")).to_have_count(5)
                 for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     expect(page.locator("#foggara-title")).to_contain_text(title)
@@ -71,11 +72,8 @@ def main():
                     for width in (390, 768, 1440):
                         page.set_viewport_size({"width": width, "height": 1000})
                         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), (locale, width)
-                        page.wait_for_function("""() => {
-                            const canvas = document.querySelector('.cinematic-canvas');
-                            const pixel = canvas.getContext('2d').getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
-                            return pixel[0] + pixel[1] + pixel[2] > 0;
-                        }""")
+                        expect(page.locator(".wefeh-node")).to_have_count(5)
+                        assert page.locator(".os-brand-symbol").evaluate("e => e.complete && e.naturalWidth > 0")
                     page.screenshot(path=str(out / f"landing-{locale}.png"), full_page=True)
                 page.screenshot(path=str(out / "landing-desktop.png"), full_page=True)
                 for index, path in ((0, "/app/agriculture"), (1, "/app/metrology"), (2, "/app/projects")):
@@ -168,8 +166,26 @@ def main():
                 expect(page.locator("tbody")).to_contain_text("CI-Bechar")
                 expect(page.locator("tbody")).not_to_contain_text("CI-Algiers")
 
+                authenticated_visit("/app/automation")
+                expect(page.locator(".ag-runtime")).to_contain_text("المعالجة الذاتية تعمل")
+                page.get_by_role("button", name="إعادة بناء النتائج", exact=True).click()
+                expect(page.get_by_role("status")).to_contain_text("أُضيفت المهام")
+                expect(page.locator(".ag-job-status.completed")).to_be_visible(timeout=45000)
+                expect(page.locator(".ag-matrix td button")).to_have_count(25)
+                page.locator(".ag-matrix td button").nth(1).click()
+                expect(page.locator(".ag-matrix-detail")).to_contain_text("مشاريع مشتركة")
+                for locale,title in (("fr","Centre d’automatisation et de liens"),("en","Automation and connections"),("ar","مركز الأتمتة والترابط")):
+                    page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+                    expect(page.locator(".ag-automation h1")).to_have_text(title)
+                    for width in (390,768,1440):
+                        page.set_viewport_size({"width":width,"height":1000})
+                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("automation",locale,width)
+                page.screenshot(path=str(out / "automation-desktop.png"), full_page=True)
+                page.set_viewport_size({"width":390,"height":844})
+                page.screenshot(path=str(out / "automation-mobile.png"), full_page=True)
+                page.set_viewport_size({"width":1440,"height":1000})
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
-                for path in ("/app", "/app/projects", "/app/org", "/app/account", "/app/nexus",
+                for path in ("/app", "/app/automation", "/app/projects", "/app/org", "/app/account", "/app/nexus",
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
                              "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis",
                              "/app/decisions", "/app/services", "/app/metrology", "/app/water",
@@ -192,8 +208,8 @@ def main():
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
-                    "checks":["public routes","interactive Kasria","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
-                              "authenticated operations","lot creation and reload","API 404","23 protected routes including project details","no page errors"]
+                    "checks":["public routes","interactive resource network and original logo", "automatic queue completion and connection matrix","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
+                              "authenticated operations","lot creation and reload","API 404","24 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()
         except Exception:

@@ -1,6 +1,8 @@
 import logging
 import time
 import uuid
+import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +27,20 @@ logging.basicConfig(
 )
 log = logging.getLogger("foggara")
 
+@asynccontextmanager
+async def lifespan(_app):
+    from .automation_runtime import run_queue
+    stop = asyncio.Event()
+    task = asyncio.create_task(run_queue(stop)) if config.OPERATIONS_AUTOMATION_ENABLED else None
+    try:
+        yield
+    finally:
+        stop.set()
+        if task is not None:
+            await task  # Finish the current atomic transaction before shutdown.
+
 app = FastAPI(
+    lifespan=lifespan,
     title="FOGGARA-DZ API",
     version=config.APP_VERSION,
     docs_url="/api/docs",

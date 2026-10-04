@@ -34,7 +34,7 @@ def evaluate(db, org_id, project_id, now=None):
     )).scalar_one_or_none()
     if not policy:
         return None
-    scores, references, missing = {}, {}, []
+    scores, references, provenance, missing = {}, {}, {}, []
     for domain in DOMAINS:
         rule = policy.rules[domain]
         # Filter by metric and unit BEFORE choosing latest; unmatched units are never converted silently.
@@ -55,9 +55,16 @@ def evaluate(db, org_id, project_id, now=None):
             scaled = 1 - scaled
         scores[domain] = round(max(0, min(1, scaled)) * 100, 2)
         references[domain] = row.id
+        provenance[domain] = {
+            "observation_id": row.id, "source": row.source,
+            "measured_at": utc(row.measured_at).isoformat(), "unit": row.unit,
+            "metric": row.metric, "value": str(row.value),
+            "submitted_by": row.submitted_by, "reviewed_by": row.reviewed_by,
+            "review_status": row.status,
+        }
     score = None if missing else round(sum(scores[d] * policy.rules[d]["weight"] for d in DOMAINS), 2)
     fingerprint = hashlib.sha256(json.dumps(
-        [org_id, project_id, policy.id, references, missing], sort_keys=True
+        ["wefeh-reviewed-provenance-v2", org_id, project_id, policy.id, references, missing], sort_keys=True
     ).encode()).hexdigest()
     existing = db.execute(select(MatrixEvaluation).where(
         MatrixEvaluation.org_id == org_id, MatrixEvaluation.fingerprint == fingerprint
@@ -65,6 +72,8 @@ def evaluate(db, org_id, project_id, now=None):
     if existing:
         return existing
     result = {
+        "algorithm": "wefeh-reviewed-provenance-v2", "data_class": "COMPUTED",
+        "provenance": provenance, "field_execution": False,
         "score": score, "coverage": len(scores) / 5, "scores": scores,
         "observations": references, "missing": missing,
         "policy_version": policy.version, "rules": policy.rules,

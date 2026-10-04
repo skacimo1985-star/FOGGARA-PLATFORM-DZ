@@ -1563,5 +1563,69 @@
     "tryTitle": "Try the decision logic now",
     "tryBody": "Change values, bounds and weights and watch the result update. This local scenario creates no record or field command.",
     "tryAction": "Open interactive experience"
+  },
+  "automation": {
+    "title": "Automation and connections",
+    "subtitle": "From reviewed evidence to traceable results, refreshed with your organization’s data.",
+    "schedule": "Rebuild results",
+    "scheduled": "Jobs are queued. Their results will appear here after processing.",
+    "networkTitle": "Five-resource network",
+    "source": "Data and sources",
+    "core": "Evidence and decision",
+    "networkNotice": "An interactive view of connected domains; no field measurements are shown.",
+    "networkDataNotice": "Counts show organization projects with reviewed measurements in each domain.",
+    "reviewedProjects": "reviewed projects",
+    "runtime": {
+      "running": "Automatic processing is running",
+      "degraded": "Processing needs attention",
+      "stopped": "Processor stopped",
+      "disabled": "Embedded processor is disabled"
+    },
+    "runtimeNotice": "Queue checked every 15 seconds; freshness reviewed hourly while the service is running.",
+    "lastPoll": "Last queue check",
+    "notYet": "Not recorded yet",
+    "metrics": {
+      "pending": "Pending jobs",
+      "completed": "Completed jobs",
+      "failed": "Failed jobs",
+      "approved": "Reviewed measurements",
+      "evaluations": "Computed results"
+    },
+    "pipeline": "Data enrichment cycle",
+    "steps": {
+      "capture": "Capture data",
+      "review": "Review sources",
+      "calculate": "Calculate the matrix",
+      "approve": "Approve the decision",
+      "enrich": "Enrich evidence"
+    },
+    "stepCopy": {
+      "capture": "Measurements linked to project, source, unit and time.",
+      "review": "An independent reviewer checks inputs before use.",
+      "calculate": "Weights, bounds and freshness under versioned rules.",
+      "approve": "Proposed results reach the authorized decision maker.",
+      "enrich": "Results and references preserved and refreshed with new data."
+    },
+    "matrixTitle": "Connections from actual data",
+    "matrixNotice": "Each cell counts projects with reviewed measurements in both domains. This is shared project context, not a causal coefficient.",
+    "sharedProjects": "shared projects",
+    "selectRelation": "Select a cell to explore the connection.",
+    "policy": "Active calculation rules",
+    "configure": "Manage rules",
+    "hours": "hours",
+    "noPolicy": "No active organization matrix. Define metrics, units, weights and bounds before calculating.",
+    "policyNotice": "Missing values are never invented; missing or stale data stays visible in results.",
+    "recentJobs": "Recent execution log",
+    "noJobs": "No organization jobs recorded yet.",
+    "allJobs": "Open job history",
+    "attempts": "Attempts",
+    "kinds": {
+      "wefeh": "WEFEH calculation",
+      "matching": "Supply and demand matching"
+    },
+    "method": "Traceable computed results, with no equipment actuation or automatic contracting.",
+    "publicTitle": "Data that grows with your system.",
+    "publicBody": "Versioned rules, independent review, reproducible calculations and source-linked enrichment.",
+    "open": "Open automation center"
   }
 }
