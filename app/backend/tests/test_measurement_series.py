@@ -95,7 +95,7 @@ def test_unreviewed_and_demo_are_explicit_opt_ins(client, world, db):
 
 @pytest.mark.parametrize("filters", [dict(limit=0), dict(limit=1001), dict(days=0), dict(days=367),
     dict(unit="kg"), dict(quality="rejected"), dict(parameter="'; DROP TABLE measurements;--"),
-    dict(window_to="2026-10-04T12:00:00")])
+    dict(window_to="2026-10-04T12:00:00"), dict(window_to="0001-01-01T00:00:00Z")])
 def test_invalid_or_unbounded_filters_rejected(client, world, filters):
     h = login(client, "o1m@t.dz")
     p = make_project(client, h)

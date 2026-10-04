@@ -56,7 +56,11 @@ def options(
         api_error(422, "INVALID_UNIT", "Unit is not valid for the selected parameter")
     if window_to is not None and window_to.utcoffset() is None:
         api_error(422, "VALIDATION_ERROR", "window_to must include a timezone")
-    end = (window_to or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    try:
+        end = (window_to or datetime.now(timezone.utc)).astimezone(timezone.utc)
+        end - timedelta(days=days)
+    except (OverflowError, ValueError):
+        api_error(422, "VALIDATION_ERROR", "Date window is outside supported datetime bounds")
     return dict(parameter=parameter, unit=canonical_unit(parameter, unit), days=days,
                 quality=quality, include_demo=include_demo, limit=limit, window_to=end)
 

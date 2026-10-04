@@ -21,7 +21,7 @@ Tailwind CSS 4.3.3 removes the vulnerable v3 glob chain; both npm audits now run
 
 ## Verification
 
-Local: 193 backend tests passed, 1 real Rust integration test skipped because no Rust binary was available; 9 frontend tests passed; build, typecheck and lint passed; both npm audits reported zero vulnerabilities. SQLite fresh migration, index downgrade and re-upgrade succeeded. Browser access to the local preview was blocked by the session browser, so no local visual approval is claimed.
+Local: 193 backend tests passed, 1 real Rust integration test skipped because no Rust binary was available; 9 frontend tests passed; build, typecheck and lint passed; both npm audits reported zero vulnerabilities. SQLite fresh migration, index downgrade and re-upgrade succeeded. A follow-up boundary check rejects datetime underflow with HTTP 422; all 20 analytics tests passed after this fix. Browser access to the local preview was blocked by the session browser, so no local visual approval is claimed.
 
 GitHub CI is configured to verify PostgreSQL migration paths/RLS, all backend tests with the real Rust engine, Rust tests/clippy, dependency and source scanning, an isolated production container, and Chromium workflows. The browser fixture additionally covers analytics in three languages/two themes at 390/768/1440px, demo/quality filters, source rows, actual CSV download and an A4 PDF artifact. CI results must be checked before merge; screenshots are review evidence, not proof of accessibility or global security.
 
