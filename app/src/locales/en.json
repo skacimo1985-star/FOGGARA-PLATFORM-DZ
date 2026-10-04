@@ -1499,5 +1499,69 @@
     "rights": "Rights and sources",
     "scope": "Records labelled DEMO are illustrative. The scene is symbolic; external sources, field connectivity and accreditations require verification and actual configuration.",
     "top": "Back to top"
+  },
+  "interaction": {
+    "search": "Search workspace",
+    "searchPlaceholder": "Search for a page or project…",
+    "pages": "Workspace pages",
+    "searchError": "Projects could not load. Workspace pages remain available.",
+    "noProjects": "No matching projects.",
+    "noResults": "No matching results.",
+    "searchScope": "Search pages and the first 100 authorized projects in your organization. Up to 20 project results are shown.",
+    "close": "Close search",
+    "personalWorkflow": "Your workflow",
+    "chooseRole": "Choose your area of work",
+    "guideTitle": "One workspace, workflows for your needs.",
+    "roles": {
+      "producer": "Producer or cooperative",
+      "engineering": "Engineer or laboratory",
+      "institution": "Institution or project partner"
+    },
+    "roleCopy": {
+      "producer": "Start with parcels and water resources, then track measurements, scenarios and production lots.",
+      "engineering": "Organize instruments, calibration, service requests and evidence references, then share information with appropriate permissions.",
+      "institution": "Organize projects, analyze alternatives and constraints, and track decisions and reviews within your institution."
+    },
+    "modules": {
+      "agriculture": {
+        "title": "Agricultural workspace",
+        "body": "Parcels, water and soil measurements, irrigation scenarios and task tracking."
+      },
+      "water": {
+        "title": "Water resources",
+        "body": "Wells, tanks, pumps, valves, irrigation zones and documented allocations."
+      },
+      "operations": {
+        "title": "Production and monitoring",
+        "body": "Production lots, measurement review, WEFEH policies and matching internal needs."
+      },
+      "metrology": {
+        "title": "Metrology and calibration",
+        "body": "Organize measuring instruments, calibration records, certificates and inspections."
+      },
+      "services": {
+        "title": "Service requests",
+        "body": "Record technical needs and track service requests and execution references."
+      },
+      "rooms": {
+        "title": "Controlled disclosure",
+        "body": "Access requests, evidence references and Q&A within data rooms."
+      },
+      "projects": {
+        "title": "Projects and evidence",
+        "body": "Record projects, resources, measurements, actions and audit history."
+      },
+      "studio": {
+        "title": "Decision studio",
+        "body": "Compare alternatives using weights and hard or soft constraints, with result sources."
+      },
+      "decisions": {
+        "title": "Approval and follow-up",
+        "body": "Track decisions, rationale, evidence, execution and verification."
+      }
+    },
+    "tryTitle": "Try the decision logic now",
+    "tryBody": "Change values, bounds and weights and watch the result update. This local scenario creates no record or field command.",
+    "tryAction": "Open interactive experience"
   }
 }

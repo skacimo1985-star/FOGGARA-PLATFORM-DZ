@@ -1,11 +1,7 @@
 name: Verify hosted Render deployment
 on:
   push:
-    branches: [codex/reviewed-integration-2026-10-03]
-    paths:
-      - 'app/Dockerfile.production'
-      - 'app/docker-entrypoint.prod.sh'
-      - '.github/workflows/verify-render.yml'
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,13 +11,21 @@ concurrency:
 jobs:
   hosted:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
       - name: Verify hosted database, pages, assets and denied login
         run: |
           python - <<'PY'
           import json, re, time, urllib.request, urllib.error
-          base = "https://foggara-platform-dz-4.onrender.com"
+          base = "https://foggara-dz.onrender.com"
           for attempt in range(90):
               try:
                   with urllib.request.urlopen(base + "/api/health", timeout=10) as response:
@@ -63,3 +67,5 @@ jobs:
               assert "no-store" in exc.headers["Cache-Control"]
           print("Protected API and invalid login correctly rejected; no live account or business record created.")
           PY
+      - name: Verify public interactive release in Chromium
+        run: python app/backend/tests/hosted_public_smoke.py

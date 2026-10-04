@@ -12,7 +12,7 @@ def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
-    from app.models import Organization, User, Project
+    from app.models import Organization, User, Project, Site
     from app.security import hash_password
     from playwright.sync_api import sync_playwright, expect
     out = Path("qa")
@@ -22,6 +22,10 @@ def main():
         org = Organization(code="CI-BROWSER", name_ar="مؤسسة اختبار", name_fr="Test", name_en="Test", is_demo=True)
         db.add(org)
         db.flush()
+        db.add_all([
+            Site(org_id=org.id, name="CI-Bechar", wilaya="08", lat=31.6, lon=-2.2, is_demo=True),
+            Site(org_id=org.id, name="CI-Algiers", wilaya="16", lat=36.7, lon=3.0, is_demo=True),
+        ])
         user = User(org_id=org.id, email="browser@example.invalid", password_hash=hash_password(password),
                     full_name="Browser QA", role="admin", locale="ar")
         db.add(user)
@@ -74,6 +78,27 @@ def main():
                         }""")
                     page.screenshot(path=str(out / f"landing-{locale}.png"), full_page=True)
                 page.screenshot(path=str(out / "landing-desktop.png"), full_page=True)
+                for index, path in ((0, "/app/agriculture"), (1, "/app/metrology"), (2, "/app/projects")):
+                    page.locator(".fg-role-switch button").nth(index).click()
+                    expect(page.locator(".fg-role-switch button").nth(index)).to_have_attribute("aria-pressed", "true")
+                    expect(page.locator(".fg-guide-card").first).to_have_attribute("href", path)
+                page.locator(".fg-guide-preview a").click()
+                expect(page.locator("#matrix")).to_be_in_viewport()
+                for index in range(5):
+                    axis = page.locator(".fp-axis").nth(index)
+                    if index > 0:
+                        axis.locator("summary").click()
+                    axis.locator('input[type="range"]').fill("20")
+                    for field, value in enumerate(("50", "0", "100")):
+                        axis.locator('input[type="number"]').nth(field).fill(value)
+                expect(page.locator(".fp-score-orbit.ready strong")).to_have_text("50.0")
+                page.locator(".fp-axis").first.locator('input[type="number"]').first.fill("150")
+                page.locator(".fp-axis").first.locator('input[type="checkbox"]').check()
+                expect(page.locator(".fp-score-orbit.blocked strong")).to_have_text("—")
+                # SPA navigation retains lazy styles: the landing must remain isolated.
+                page.locator('.os-brand').click()
+                expect(page.locator("#foggara-title")).to_be_visible()
+                assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
 
                 for width in (390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
@@ -129,6 +154,19 @@ def main():
                 page.screenshot(path=str(out / "operations-mobile.png"), full_page=True)
                 page.set_viewport_size({"width":1440,"height":1000})
                 page.screenshot(path=str(out / "operations-desktop.png"), full_page=True)
+                page.get_by_role("button", name="البحث في المنصة", exact=True).click()
+                expect(page.locator(".os-search-dialog")).to_be_visible()
+                page.locator(".os-search-dialog input").fill("واحة الاختبار")
+                page.locator(".os-search-dialog-results button").filter(has_text="واحة الاختبار").click()
+                expect(page).to_have_url(f"http://127.0.0.1:8000/app/projects/{project_id}")
+                page.keyboard.press("Control+k")
+                expect(page.locator(".os-search-dialog")).to_be_visible()
+                page.keyboard.press("Escape")
+                expect(page.locator(".os-search-dialog")).not_to_be_visible()
+                page.locator('select[aria-label="اختر الولاية"]').select_option("08")
+                expect(page).to_have_url("http://127.0.0.1:8000/app/gis?wilaya=08")
+                expect(page.locator("tbody")).to_contain_text("CI-Bechar")
+                expect(page.locator("tbody")).not_to_contain_text("CI-Algiers")
 
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
                 for path in ("/app", "/app/projects", "/app/org", "/app/account", "/app/nexus",
@@ -154,7 +192,7 @@ def main():
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
-                    "checks":["public routes","interactive Kasria","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
+                    "checks":["public routes","interactive Kasria","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
                               "authenticated operations","lot creation and reload","API 404","23 protected routes including project details","no page errors"]
                 }, indent=2))
                 browser.close()
