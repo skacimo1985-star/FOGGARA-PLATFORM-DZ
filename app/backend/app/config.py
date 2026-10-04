@@ -41,6 +41,13 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
 
 APP_VERSION = "0.1.0"
 
+# The existing database-backed queue runs inside the web lifespan by default in
+# production; operators can disable it when using a dedicated worker instead.
+_AUTOMATION_FLAG = os.environ.get("OPERATIONS_AUTOMATION_ENABLED", "").strip().lower()
+if _AUTOMATION_FLAG not in ("", "true", "false"):
+    raise RuntimeError("OPERATIONS_AUTOMATION_ENABLED must be true or false")
+OPERATIONS_AUTOMATION_ENABLED = _AUTOMATION_FLAG == "true" if _AUTOMATION_FLAG else ENV == "prod"
+
 if ENV == "prod":
     if not DATABASE_URL.startswith(("postgresql+psycopg://", "postgresql://")):
         raise RuntimeError("ENV=prod requires PostgreSQL DATABASE_URL.")

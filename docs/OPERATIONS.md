@@ -55,7 +55,9 @@ For a bounded queue drain (at most 100 attempts):
 
     python -m app.operations_worker --once
 
-Hourly freshness refresh is part of the long-running worker, not --once.
+Production now starts a lifespan-managed queue consumer inside the web process by default. It drains up to 20 jobs per 15-second cycle and refreshes freshness hourly while the service runs. Set OPERATIONS_AUTOMATION_ENABLED=false when using a dedicated consumer instead. The /app/automation page reports this instance’s actual runtime state and organization-scoped queue counts.
+
+Hourly freshness refresh is part of the long-running consumer, not --once.
 Failed jobs remain visible; the worker does not silently retry forever.
 Investigate before enqueueing another evaluation. Pending jobs do not prove a
 worker is online. UI manual evaluation and matching remain available.
@@ -138,7 +140,7 @@ The foggara-operational-package artifact contains the built app/dist and backend
 runtime under their normal paths. It is not a public hosting URL. With a supported
 Python environment and a configured PostgreSQL DATABASE_URL, JWT_SECRET and
 SETUP_KEY, install app/backend/requirements.lock, apply migrations from app/backend,
-then run uvicorn app.main:app and the separate operations worker.
+then run uvicorn app.main:app; production enables the embedded consumer by default. A separate worker can be used with OPERATIONS_AUTOMATION_ENABLED=false in the web process.
 For source builds and Docker, use the complete repository branch, not the reduced
 runtime artifact.
 
@@ -152,4 +154,4 @@ Integrated migration head: int20261003s1. Credentials use release scoped, passwo
 
 ## Render worker requirement
 
-The preserved render.yaml web service does not provision a worker. A persistent worker using the same database and revision must run `cd app/backend && python -m app.operations_worker` for queued jobs and hourly freshness refresh. Its hosting plan, credentials and lifecycle require deployment configuration; successful web health alone does not verify it. Compose includes this separate worker and CI verifies that stack. The current free web plan has no production availability guarantee.
+The Render web service now uses the embedded consumer by default in ENV=prod. It requires no extra paid service. Processing pauses when the web service is stopped or suspended; queued work remains durable in PostgreSQL and resumes on startup. For continuous operation independent of web traffic, provision a dedicated worker running `cd app/backend && python -m app.operations_worker` against the same database/revision, and disable the embedded web consumer. The automation page runtime state covers the serving instance, not an independently deployed worker fleet. The free web plan has no production availability guarantee.

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { KasriaNexus } from "@/components/KasriaNexus";
+import { NexusKasria } from "@/components/NexusKasria";
 
 const STEPS = ["discover", "understand", "analyze", "act", "monitor"] as const;
 
@@ -123,7 +123,7 @@ export default function Home() {
       </section>
 
       {/* هوية القصريّة: خمسة روافد WEFEH في نظام واحد */}
-      <KasriaNexus />
+      <NexusKasria />
 
       <ErrorText error={error} />
 

@@ -14,8 +14,10 @@ from ..operations_models import (MatrixPolicy, MatrixObservation, MatrixEvaluati
     ValueMatch, ProductionLot, MatrixJob, ContactTicket, PrivacyRequest)
 from ..operations_schemas import (PolicyIn, ObservationIn, ReviewIn, ListingIn, LotIn,
     TransitionIn, ContactIn, PrivacyIn, ResolutionIn, TeamIn, PasswordIn)
-from ..operations_engine import lock_org, enqueue, evaluate, match_listings
-from ..ratelimit import check_rate_limit
+from ..operations_engine import lock_org, enqueue, evaluate, match_listings, DOMAINS
+from ..automation_runtime import runtime
+from .. import config
+from ..ratelimit import check_rate_limit, limiter
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 POLICY_VERSION = "2026-10-02"
@@ -48,6 +50,47 @@ def rows(db, model, user, pg, extra=None):
     page, size = pg
     items, total, pages = paginate(db, stmt.order_by(model.id.desc()), page, size)
     return {"items": [record(r) for r in items], "total": total, "pages": pages, "page": page, "page_size": size}
+
+@router.get("/automation")
+def automation(user=Depends(get_current_user), db=Depends(get_db)):
+    policy = db.scalar(select(MatrixPolicy).where(MatrixPolicy.org_id == user.org_id, MatrixPolicy.active.is_(True)))
+    # Co-occurrence is a structural relationship, never a causal or learned coefficient.
+    domains = select(MatrixObservation.project_id, MatrixObservation.domain).where(
+        MatrixObservation.org_id == user.org_id, MatrixObservation.status == "approved"
+    ).distinct().subquery()
+    other = domains.alias()
+    pairs = db.execute(select(domains.c.domain, other.c.domain, func.count()).select_from(
+        domains.join(other, domains.c.project_id == other.c.project_id)
+    ).group_by(domains.c.domain, other.c.domain)).all()
+    counts = {(a, b): count for a, b, count in pairs}
+    job_counts = dict(db.execute(select(MatrixJob.status, func.count()).where(
+        MatrixJob.org_id == user.org_id).group_by(MatrixJob.status)).all())
+    observation_counts = dict(db.execute(select(MatrixObservation.status, func.count()).where(
+        MatrixObservation.org_id == user.org_id).group_by(MatrixObservation.status)).all())
+    return {"policy": record(policy) if policy else None, "domains": DOMAINS,
+            "matrix": [[counts.get((a, b), 0) for b in DOMAINS] for a in DOMAINS],
+            "matrix_semantics": "shared_projects_with_reviewed_observations_not_causation",
+            "jobs": job_counts, "observations": observation_counts,
+            "evaluations": db.scalar(select(func.count()).select_from(MatrixEvaluation).where(MatrixEvaluation.org_id == user.org_id)),
+            "runtime": {"enabled": config.OPERATIONS_AUTOMATION_ENABLED, **runtime},
+            "algorithm": "wefeh-reviewed-provenance-v2", "field_execution": False,
+            "refresh_seconds": 3600, "poll_seconds": 15}
+
+@router.post("/automation/enqueue", status_code=202)
+def automation_enqueue(user=Depends(get_current_user), db=Depends(get_db)):
+    if not limiter.allow("automation", str(user.org_id), 10, 60):
+        api_error(429, "RATE_LIMITED", "Too many refresh requests")
+    lock_org(db, user.org_id)
+    policy = db.scalar(select(MatrixPolicy.id).where(MatrixPolicy.org_id == user.org_id, MatrixPolicy.active.is_(True)))
+    ids = db.scalars(select(Project.id).where(Project.org_id == user.org_id).order_by(Project.id).limit(501)).all() if policy else []
+    if len(ids) > 500:
+        api_error(409, "CAPACITY_REACHED", "Use the dedicated worker for more than 500 projects")
+    for project_id in ids:
+        enqueue(db, user.org_id, "wefeh", project_id)
+    enqueue(db, user.org_id, "matching")
+    audit(db, user, "automation_enqueue", "matrix_jobs", meta={"projects": len(ids), "matching": True})
+    db.commit()
+    return {"projects": len(ids), "matching": True, "field_execution": False}
 
 @router.get("/policies")
 def policies(pg=Depends(pagination), user=Depends(get_current_user), db=Depends(get_db)):

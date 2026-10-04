@@ -1563,5 +1563,69 @@
     "tryTitle": "Essayez la logique de décision",
     "tryBody": "Modifiez valeurs, limites et poids pour voir le résultat évoluer. Ce scénario local ne crée aucun enregistrement ni commande de terrain.",
     "tryAction": "Ouvrir l’expérience interactive"
+  },
+  "automation": {
+    "title": "Centre d’automatisation et de liens",
+    "subtitle": "Des preuves revues aux résultats traçables, renouvelés avec vos données.",
+    "schedule": "Recalculer les résultats",
+    "scheduled": "Les tâches sont en file. Les résultats apparaîtront après traitement.",
+    "networkTitle": "Réseau des cinq ressources",
+    "source": "Données et sources",
+    "core": "Preuve et décision",
+    "networkNotice": "Schéma interactif des domaines ; aucune mesure de terrain n’est représentée.",
+    "networkDataNotice": "Projets de l’organisation avec des mesures revues par domaine.",
+    "reviewedProjects": "projets revus",
+    "runtime": {
+      "running": "Traitement automatique actif",
+      "degraded": "Traitement à surveiller",
+      "stopped": "Traitement arrêté",
+      "disabled": "Traitement intégré désactivé"
+    },
+    "runtimeNotice": "File vérifiée toutes les 15 secondes ; fraîcheur revue chaque heure pendant l’activité du service.",
+    "lastPoll": "Dernière vérification",
+    "notYet": "Pas encore enregistré",
+    "metrics": {
+      "pending": "Tâches en attente",
+      "completed": "Tâches terminées",
+      "failed": "Tâches en échec",
+      "approved": "Mesures revues",
+      "evaluations": "Résultats calculés"
+    },
+    "pipeline": "Cycle d’enrichissement des données",
+    "steps": {
+      "capture": "Collecter",
+      "review": "Revoir la source",
+      "calculate": "Calculer la matrice",
+      "approve": "Valider la décision",
+      "enrich": "Enrichir les preuves"
+    },
+    "stepCopy": {
+      "capture": "Mesures liées au projet, à la source, à l’unité et à la date.",
+      "review": "Un réviseur indépendant vérifie les entrées.",
+      "calculate": "Poids, bornes et fraîcheur dans des règles versionnées.",
+      "approve": "Le résultat proposé revient au responsable autorisé.",
+      "enrich": "Résultats et références conservés puis réévalués."
+    },
+    "matrixTitle": "Matrice de liens issue des données",
+    "matrixNotice": "Chaque cellule compte les projets avec des mesures revues pour les deux domaines. C’est un lien de projet, pas un effet causal.",
+    "sharedProjects": "projets communs",
+    "selectRelation": "Sélectionnez une cellule pour explorer le lien.",
+    "policy": "Règles de calcul actives",
+    "configure": "Gérer les règles",
+    "hours": "heures",
+    "noPolicy": "Aucune matrice active. Définissez métriques, unités, poids et bornes.",
+    "policyNotice": "Les valeurs manquantes ne sont pas inventées ; manque et ancienneté restent visibles.",
+    "recentJobs": "Exécutions récentes",
+    "noJobs": "Aucune tâche enregistrée pour l’organisation.",
+    "allJobs": "Ouvrir le journal",
+    "attempts": "Tentatives",
+    "kinds": {
+      "wefeh": "Calcul WEFEH",
+      "matching": "Rapprochement offre-demande"
+    },
+    "method": "Résultats calculés et traçables ; aucune commande d’équipement ni contrat automatique.",
+    "publicTitle": "Des données qui font évoluer votre système.",
+    "publicBody": "Règles versionnées, revue indépendante, calculs reproductibles et enrichissement sourcé.",
+    "open": "Ouvrir l’automatisation"
   }
 }

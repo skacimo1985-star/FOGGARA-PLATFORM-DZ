@@ -12,12 +12,17 @@ def main():
         for attempt in range(36):
             page.goto(BASE + "/", wait_until="networkidle", timeout=60000)
             try:
-                expect(page.locator(".fg-role-switch button")).to_have_count(3, timeout=5000)
+                expect(page.locator(".wefeh-node")).to_have_count(5, timeout=5000)
                 break
             except AssertionError:
                 if attempt == 35:
                     raise
                 time.sleep(5)
+        assert page.locator(".os-brand-symbol").evaluate("e => e.complete && e.naturalWidth > 0")
+        page.locator(".wefeh-node").first.click()
+        expect(page.locator(".wefeh-node").first).to_have_attribute("aria-pressed", "true")
+        expect(page.locator(".wefeh-link.is-active")).to_have_count(1)
+        page.locator(".wefeh-node").first.click()
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         for locale in ("ar", "fr", "en"):

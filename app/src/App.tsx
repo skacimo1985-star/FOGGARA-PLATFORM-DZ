@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/useAuth";
 import { Layout } from "@/components/Layout";
 const NexusWorkspace = lazy(() => import("@/pages/NexusWorkspace"));
+const Automation = lazy(() => import("@/pages/Automation"));
 const Operations = lazy(() => import("@/pages/Operations"));
 const Account = lazy(() => import("@/pages/Account"));
 const Legal = lazy(() => import("@/pages/Legal"));
@@ -35,6 +36,7 @@ const Iot = lazy(() => import("@/pages/Iot"));
 const Vde = lazy(() => import("@/pages/Vde"));
 const OrganizationPage = lazy(() => import("@/pages/Organization"));
 import "@/lib/i18n";
+import "@/agriculture-glass.css";
 import { useTranslation } from "react-i18next";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
@@ -80,6 +82,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             {["about","privacy","terms","rights","contact"].map(path => <Route key={path} path={`/${path}`} element={<Legal />} />)}
+            <Route path="/app/automation" element={<Protected><Automation /></Protected>} />
             <Route path="/app/operations" element={<Protected><Operations /></Protected>} />
             <Route path="/app/account" element={<Protected><Account /></Protected>} />
             <Route path="/app/agriculture" element={<Protected><Agriculture /></Protected>} />
