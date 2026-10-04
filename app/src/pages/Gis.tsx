@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import type { GisSite, WilayaMeta } from "@/types";
@@ -11,7 +12,8 @@ export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
-  const [wilayaFilter, setWilayaFilter] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const wilayaFilter = searchParams.get("wilaya") || "";
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
@@ -27,8 +29,8 @@ export default function Gis() {
     if (!data) return null;
     if (!wilayaFilter) return data;
     const w = wilayas.find((x) => x.code === wilayaFilter);
-    const names = w ? [w.ar, w.fr, w.en] : [];
-    return data.filter((g) => names.includes(g.site.wilaya));
+    const names = [wilayaFilter, ...(w ? [w.ar, w.fr, w.en] : [])].map(name => name.trim().toLocaleLowerCase());
+    return data.filter((g) => names.includes(g.site.wilaya.trim().toLocaleLowerCase()));
   }, [data, wilayaFilter, wilayas]);
 
   const locale = i18n.language;
@@ -41,7 +43,7 @@ export default function Gis() {
           aria-label={t("gis.filterWilaya")}
           className="rounded-md border bg-background px-3 py-2 text-sm"
           value={wilayaFilter}
-          onChange={(e) => setWilayaFilter(e.target.value)}
+          onChange={(e) => { const next = new URLSearchParams(searchParams); if (e.target.value) next.set("wilaya", e.target.value); else next.delete("wilaya"); setSearchParams(next); }}
         >
           <option value="">{t("gis.allWilayas")}</option>
           {wilayas.map((w) => (

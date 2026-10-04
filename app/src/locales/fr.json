@@ -1499,5 +1499,69 @@
     "rights": "Droits et sources",
     "scope": "Les enregistrements DEMO sont illustratifs. La scène est symbolique ; sources externes, équipements de terrain et accréditations nécessitent vérification et configuration effective.",
     "top": "Retour en haut"
+  },
+  "interaction": {
+    "search": "Rechercher dans la plateforme",
+    "searchPlaceholder": "Rechercher une page ou un projet…",
+    "pages": "Pages de la plateforme",
+    "searchError": "Impossible de charger les projets. Les pages restent accessibles.",
+    "noProjects": "Aucun projet correspondant.",
+    "noResults": "Aucun résultat correspondant.",
+    "searchScope": "Recherche dans les pages et les 100 premiers projets autorisés de votre organisation. Jusqu’à 20 résultats projet.",
+    "close": "Fermer la recherche",
+    "personalWorkflow": "Votre parcours de travail",
+    "chooseRole": "Choisir votre domaine d’activité",
+    "guideTitle": "Un espace, des parcours adaptés à vos besoins.",
+    "roles": {
+      "producer": "Producteur ou coopérative",
+      "engineering": "Ingénieur ou laboratoire",
+      "institution": "Organisation ou partenaire"
+    },
+    "roleCopy": {
+      "producer": "Commencez par les parcelles et l’eau, puis suivez les mesures, scénarios et lots de production.",
+      "engineering": "Organisez instruments, étalonnage, demandes de service et références de preuve, puis partagez selon les permissions.",
+      "institution": "Organisez les projets, analysez alternatives et contraintes, puis suivez décisions et revues dans votre organisation."
+    },
+    "modules": {
+      "agriculture": {
+        "title": "Espace agricole",
+        "body": "Parcelles, mesures eau et sol, scénarios d’irrigation et suivi des tâches."
+      },
+      "water": {
+        "title": "Ressources en eau",
+        "body": "Puits, réservoirs, pompes, vannes, zones d’irrigation et allocations documentées."
+      },
+      "operations": {
+        "title": "Production et suivi",
+        "body": "Lots de production, revue des mesures, règles WEFEH et mise en relation des besoins internes."
+      },
+      "metrology": {
+        "title": "Métrologie et étalonnage",
+        "body": "Organiser les instruments, étalonnages, certificats et inspections."
+      },
+      "services": {
+        "title": "Demandes de service",
+        "body": "Enregistrer les besoins techniques et suivre demandes et références d’exécution."
+      },
+      "rooms": {
+        "title": "Partage contrôlé",
+        "body": "Demandes d’accès, références de preuve et questions-réponses dans les espaces de données."
+      },
+      "projects": {
+        "title": "Projets et preuves",
+        "body": "Enregistrer projets, ressources, mesures, actions et journal d’audit."
+      },
+      "studio": {
+        "title": "Studio de décision",
+        "body": "Comparer les alternatives selon les poids et contraintes strictes ou souples, avec les sources des résultats."
+      },
+      "decisions": {
+        "title": "Validation et suivi",
+        "body": "Suivre décisions, justifications, preuves, exécution et vérification."
+      }
+    },
+    "tryTitle": "Essayez la logique de décision",
+    "tryBody": "Modifiez valeurs, limites et poids pour voir le résultat évoluer. Ce scénario local ne crée aucun enregistrement ni commande de terrain.",
+    "tryAction": "Ouvrir l’expérience interactive"
   }
 }
