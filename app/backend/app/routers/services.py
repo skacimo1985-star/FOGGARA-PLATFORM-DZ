@@ -1,5 +1,5 @@
 """Services catalog + service requests (org-isolated, audited)."""
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ from ..deps import api_error, get_current_user, require_reviewer
 from ..models import Project, Service, ServiceRequest, Site, User
 from ..schemas import (ServiceOut, ServiceRequestIn, ServiceRequestOut,
                        ServiceRequestStatusUpdate)
+from ..services.catalog import CATALOG_PROVIDER
 
 router = APIRouter(prefix="/api", tags=["services"])
 
@@ -27,6 +28,13 @@ ALLOWED_TRANSITIONS: dict[str, set[str]] = {
 
 
 # ---------- Catalog (عام داخل الجلسة) ----------
+@router.get("/public/services", response_model=list[ServiceOut])
+def public_services(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=300"
+    return db.scalars(select(Service).where(Service.provider == CATALOG_PROVIDER,
+                                            Service.is_demo.is_(False)).order_by(Service.id).limit(100)).all()
+
+
 @router.get("/services", response_model=list[ServiceOut])
 def list_services(type: str | None = Query(default=None),
                   domain: str | None = Query(default=None),

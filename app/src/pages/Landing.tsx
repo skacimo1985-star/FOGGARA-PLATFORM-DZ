@@ -5,6 +5,8 @@ import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPul
 import { useAuth } from "@/context/useAuth";
 import { NexusKasria } from "@/components/NexusKasria";
 import { WorkflowGuide } from "@/components/WorkflowGuide";
+import { AgroCapabilities } from "@/components/AgroCapabilities";
+import { ServiceOfferings } from "@/components/ServiceOfferings";
 import "./operations.css";
 import "./landing.css";
 const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
@@ -17,20 +19,27 @@ export default function Landing() {
       <Link to="/presentation">{t("publicExperience.presentation")}</Link><Link to="/contact">{t("publicExperience.contact")}</Link>
     </nav>
     <section className="fg-landing-hero" aria-labelledby="foggara-title">
+      <picture className="fg-oasis-image"><source media="(max-width: 650px)" srcSet="/images/oasis-hero-mobile.webp"/><img src="/images/oasis-hero.webp" alt="" width="1891" height="831" fetchPriority="high" decoding="async"/></picture>
       <div className="fg-landing-copy"><p className="fg-eyebrow" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</p>
         <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
         <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
         <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
         <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app/operations":"/login"}>{t("publicExperience.enter")}<ArrowUpRight size={18}/></Link>
-          <Link className="fg-button fg-secondary" to={user?"/app/projects":"/register"}>{t(user?"publicExperience.projectsTitle":"publicExperience.register")}</Link></div>
+          <Link className="fg-button fg-secondary" to="/demo">{t("demo.try")}</Link></div>
         <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
+        <p className="fg-oasis-caption">{t("demo.imageNotice")}</p>
       </div>
+    </section>
+    <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
+    <section className="fg-landing-network">
+      <div><p className="fg-eyebrow">WEFEH / NEXUS</p><h2 className="fg-section-title">{t("publicExperience.network")}</h2><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/presentation">{t("publicExperience.presentation")}<ArrowUpRight size={16}/></Link></div>
       <div className="fg-landing-scene"><NexusKasria active={active} onSelect={setActive}/>
         <div className="fg-landing-selection" aria-live="polite" aria-atomic="true"><span>{t(active==="all"?"publicExperience.network":`landing.${active}`)}</span>
           <p>{t(`publicExperience.domainCopy.${active}`)}</p><Link to={active==="all"?"/app/nexus":`/app/explore/${active}`}>{t("publicExperience.explore")}<ArrowUpRight size={14}/></Link></div>
       </div>
     </section>
-    <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
+    <ServiceOfferings/>
+    <AgroCapabilities compact/>
     <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / WEFEH</p><h2>{t("publicExperience.ecosystemTitle")}</h2></div>
       <div><p>{t("publicExperience.ecosystemBody")}</p><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/about">{t("publicExperience.about")}<ArrowUpRight size={16}/></Link></div></section>
     <WorkflowGuide/>

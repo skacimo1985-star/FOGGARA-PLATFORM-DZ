@@ -12,6 +12,8 @@ def main():
         for attempt in range(36):
             page.goto(BASE + "/", wait_until="networkidle", timeout=60000)
             try:
+                expect(page.locator(".fg-oasis-image img")).to_have_count(1, timeout=5000)
+                expect(page.locator(".fg-offerings-grid article")).to_have_count(7, timeout=5000)
                 expect(page.locator(".wefeh-node")).to_have_count(5, timeout=5000)
                 break
             except AssertionError:
@@ -51,6 +53,22 @@ def main():
         page.locator(".os-brand").click()
         expect(page.locator("#foggara-title")).to_be_visible()
         assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
+        page.goto(BASE + "/demo", wait_until="networkidle")
+        page.get_by_role("combobox", name="Language", exact=True).select_option("en")
+        expect(page.get_by_test_id("demo-demand")).to_contain_text("100")
+        page.locator(".fg-demo-scenarios button").nth(1).click()
+        expect(page.get_by_test_id("demo-decision")).to_have_class("fg-demo-decision blocked")
+        expect(page.locator(".fg-offerings-grid article")).to_have_count(7)
+        for width in (390, 768, 1440):
+            page.set_viewport_size({"width": width, "height": 1000})
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("demo", width)
+        page.goto(BASE + "/agriculture-services", wait_until="networkidle")
+        expect(page.get_by_test_id("agro-capability")).to_have_count(8)
+        for locale in ("ar", "fr", "en"):
+            page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
+            page.set_viewport_size({"width":390,"height":1000})
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
+        page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
         assert not errors, errors
         print("Hosted release passed: AR/FR/EN, responsive layout, role workflows, matrix, hard constraints and SPA stylesheet isolation.")
         browser.close()

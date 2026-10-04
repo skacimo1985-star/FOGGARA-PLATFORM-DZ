@@ -11,6 +11,8 @@ const Legal = lazy(() => import("@/pages/Legal"));
 const Agriculture = lazy(() => import("@/features/agriculture/Agriculture"));
 const Presentation = lazy(() => import("@/pages/Presentation"));
 const Landing = lazy(() => import("@/pages/Landing"));
+const AgricultureServices = lazy(() => import("@/pages/AgricultureServices"));
+const Demo = lazy(() => import("@/pages/Demo"));
 const Login = lazy(() => import("@/pages/Login"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const DataRoom = lazy(() => import("@/pages/DataRoom"));
@@ -82,6 +84,8 @@ export default function App() {
         <RouteBoundary>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/agriculture-services" element={<AgricultureServices />} />
             {["about","privacy","terms","rights","contact"].map(path => <Route key={path} path={`/${path}`} element={<Legal />} />)}
             <Route path="/app/automation" element={<Protected><Automation /></Protected>} />
             <Route path="/app/operations" element={<Protected><Operations /></Protected>} />

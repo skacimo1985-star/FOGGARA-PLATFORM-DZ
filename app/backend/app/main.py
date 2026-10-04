@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 
 from . import config
+from .auth_admission import AuthAdmissionMiddleware
 from .db import engine
 from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         metrology, services, simulator, telemetry, water,
@@ -46,6 +47,7 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+app.add_middleware(AuthAdmissionMiddleware)
 
 # CORS: من CORS_ORIGINS فقط. قائمة فارغة = نفس الأصل فقط، ولا تُضاف الوسيطة أصلًا.
 if config.CORS_ORIGINS:

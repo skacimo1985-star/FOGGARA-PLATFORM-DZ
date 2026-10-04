@@ -155,3 +155,10 @@ Integrated migration head: an20261004m1 (tenant-scoped measurement series index)
 ## Render worker requirement
 
 The Render web service now uses the embedded consumer by default in ENV=prod. It requires no extra paid service. Processing pauses when the web service is stopped or suspended; queued work remains durable in PostgreSQL and resumes on startup. For continuous operation independent of web traffic, provision a dedicated worker running `cd app/backend && python -m app.operations_worker` against the same database/revision, and disable the embedded web consumer. The automation page runtime state covers the serving instance, not an independently deployed worker fleet. The free web plan has no production availability guarantee.
+# Credential admission and public catalog
+
+Credential POST endpoints enforce a 16 KiB body cap and a 10-second body-read deadline. `AUTH_MAX_CONCURRENT` defaults to 2 per worker with a maximum of 16. Overload returns 503 with Retry-After: 5. Keep password-hash work bounded when changing this value. Early limits use `RATE_LIMIT_LOGIN_MAX`/`RATE_LIMIT_LOGIN_WINDOW` and `RATE_LIMIT_AUTH_MAX`/`RATE_LIMIT_AUTH_WINDOW` (default 10/60 seconds). Durable counters remain shared and return remaining-window cooldowns; cleanup runs at most once per minute per process.
+
+Enable forwarded-address trust only for verified, sanitizing proxy peers; shared peers may otherwise share attempt limits. These controls do not replace edge protection or high availability. See `AUTH-DEMO-SERVICES-2026-10-04.md` for behavior and limitations.
+
+Production seed now creates seven non-demo SIREP offerings idempotently. `/api/public/services` is read-only; requests remain authenticated and organization-scoped. `/demo` processes synthetic scenario inputs locally, with no account or saved business records.

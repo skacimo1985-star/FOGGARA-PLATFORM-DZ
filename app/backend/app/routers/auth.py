@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..ratelimit import check_login_rate
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
@@ -21,12 +20,18 @@ _DUMMY_PASSWORD_HASH = hash_password("unusable-dummy-password-verifier")
 
 @router.post("/login", response_model=TokenOut, dependencies=[Depends(limit_auth)])
 def login(request: Request, payload: LoginIn, db: Session = Depends(get_db)):
-    check_login_rate(request)
     if len(payload.password.encode("utf-8")) > 4096:
         api_error(401, "BAD_CREDENTIALS", "Invalid email or password")
-    user = db.execute(select(User).where(User.email == payload.email.lower()).with_for_update()).scalar_one_or_none()
+    user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     valid = verify_password(payload.password, user.password_hash if user else _DUMMY_PASSWORD_HASH)
     if user is None or not valid or user.role not in ("member", "reviewer", "admin"):
+        api_error(401, "BAD_CREDENTIALS", "Invalid email or password")
+    # Hash outside the row lock; refresh under lock before issuing a token so a
+    # concurrent credential change cannot be overwritten or revive the old password.
+    verified_hash = user.password_hash
+    user = db.execute(select(User).where(User.id == user.id).with_for_update()
+                      .execution_options(populate_existing=True)).scalar_one_or_none()
+    if user is None or user.password_hash != verified_hash or user.role not in ("member", "reviewer", "admin"):
         api_error(401, "BAD_CREDENTIALS", "Invalid email or password")
     if password_needs_upgrade(user.password_hash):
         user.password_hash = hash_password(payload.password)
