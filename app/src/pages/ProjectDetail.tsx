@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, type Paged } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Action, Asset, AuditEntry, Evidence, HumanDecision, Measurement, Project, Recommendation, Review, Site, WaterResource } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,9 +59,9 @@ export default function ProjectDetail() {
     } finally {
       setLoading(false);
     }
-    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
-    api.get<Paged<WaterResource>>("/resources?page_size=500").then((r) => setResources(r.items)).catch(() => {});
-    api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
+    api.getAll<Site>("/sites").then(setSites).catch(setError);
+    api.getAll<WaterResource>("/resources").then(setResources).catch(setError);
+    api.getAll<Asset>("/assets").then(setAssets).catch(setError);
   }, [pid]);
 
   // Reload performs asynchronous API reads and commits the resulting records.

@@ -29,10 +29,10 @@ export default function Projects() {
     api.get<Paged<Project>>(`/projects?page=${p}&page_size=12`)
       .then((r) => { setProjects(r.items); setPages(r.pages); })
       .catch(setError);
-    // قوائم مرجعية للنماذج: صفحة واحدة بالسقف الأعلى تكفي للاختيارات
-    api.get<Paged<Site>>("/sites?page_size=500").then((r) => setSites(r.items)).catch(() => {});
-    api.get<Paged<WaterResource>>("/resources?page_size=500").then((r) => setResources(r.items)).catch(() => {});
-    api.get<Paged<Asset>>("/assets?page_size=500").then((r) => setAssets(r.items)).catch(() => {});
+    // Reference selectors traverse every server page; failures stay visible.
+    api.getAll<Site>("/sites").then(setSites).catch(setError);
+    api.getAll<WaterResource>("/resources").then(setResources).catch(setError);
+    api.getAll<Asset>("/assets").then(setAssets).catch(setError);
   }, []);
   useEffect(() => load(page), [page, load]);
 

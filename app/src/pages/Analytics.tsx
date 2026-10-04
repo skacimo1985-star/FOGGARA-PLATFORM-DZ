@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, ApiError, type Paged } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
+import { MeasurementTrends } from "@/components/MeasurementTrends";
 import type { Indicator, IndicatorValue, Project } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ function IndicatorCard({ indicator, projectId }: { indicator: Indicator; project
     }
   }
 
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString() : t("analytics.unbounded"));
+  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(i18n.language, { timeZone: "Africa/Algiers" }) : t("analytics.unbounded"));
 
   return (
     <Card>
@@ -88,7 +89,7 @@ function IndicatorCard({ indicator, projectId }: { indicator: Indicator; project
             <div>
               <dt className="text-muted-foreground">{t("analytics.window")}</dt>
               <dd className="tabular-nums" dir="ltr">
-                {new Date(value.window_from).toLocaleDateString()} → {new Date(value.window_to).toLocaleDateString()}
+                {new Date(value.window_from).toLocaleDateString(i18n.language, { timeZone: "Africa/Algiers" })} → {new Date(value.window_to).toLocaleDateString(i18n.language, { timeZone: "Africa/Algiers" })}
               </dd>
             </div>
             <div>
@@ -127,16 +128,16 @@ export default function Analytics() {
 
   useEffect(() => {
     api.get<Indicator[]>("/indicators").then(setIndicators).catch(setError);
-    api.get<Paged<Project>>("/projects?page_size=500")
+    api.getAll<Project>("/projects")
       .then((ps) => {
-        setProjects(ps.items);
-        if (ps.items.length > 0) setProjectId((cur) => cur ?? ps.items[0].id);
+        setProjects(ps);
+        if (ps.length > 0) setProjectId((cur) => cur ?? ps[0].id);
       })
-      .catch(() => setProjects([]));
+      .catch(setError);
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 an-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="t-section text-ink">{t("analytics.title")}</h1>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -156,6 +157,8 @@ export default function Analytics() {
 
       <ErrorText error={error} />
 
+      {projectId !== null && <MeasurementTrends key={projectId} projectId={projectId} projectTitle={projects?.find(p => p.id === projectId)?.title ?? `#${projectId}`} />}
+
       {projects !== null && projects.length === 0 ? (
         <p className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
           {t("analytics.noProjects")}
@@ -170,7 +173,7 @@ export default function Analytics() {
       ) : (
         <div className="space-y-4">
           {indicators.map((ind) => (
-            <IndicatorCard key={ind.id} indicator={ind} projectId={projectId} />
+            <IndicatorCard key={`${projectId}-${ind.id}`} indicator={ind} projectId={projectId} />
           ))}
         </div>
       )}

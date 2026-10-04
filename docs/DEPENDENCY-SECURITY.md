@@ -1,14 +1,9 @@
-# Dependency security review — 2026-10-03
+# Dependency security review — 2026-10-04
 
-Backend lock auditing and application Bandit checks are mandatory. Frontend runtime dependencies use `npm audit --omit=dev --audit-level=high` without exceptions.
+Runtime and full frontend dependency audits reject high/critical findings without exceptions. The build-only Tailwind 3 advisory chain (GHSA-vfj7-8cjw-p6xm) was removed from the lock by migrating to pinned Tailwind CSS and Vite plugin **4.3.3**, removing tailwindcss-animate/autoprefixer, and using the existing tw-animate-css package. No advisory suppression remains in the audit script.
 
-The full frontend audit currently identifies GHSA-vfj7-8cjw-p6xm (CVE-2026-93687): stack exhaustion in braces <=3.0.3. The authoritative advisory, updated 2026-10-02, states no patched version is available:
-https://github.com/advisories/GHSA-vfj7-8cjw-p6xm
+The Vite plugin generates CSS from the existing JavaScript theme configuration. Custom colors now reference semantic CSS variables so dark theme applies to utility-based components. Existing radius values, small shadows and blur scales are preserved. Browser integration checks exercise existing public/protected workflows, AR/FR/EN, 390/768/1440px widths and analytics in both themes. CI retains backend pip-audit, Bandit and secret scanning.
 
-A temporary exception expires **2026-10-17 00:00 UTC**. The audited chain is braces → chokidar/micromatch/fast-glob → Tailwind CSS 3 / tailwindcss-animate. All six entries are development dependencies in the committed lockfile. They process repository-owned source patterns during build; the deployed application serves prebuilt assets, never user-supplied Tailwind/glob patterns, and ships no frontend node_modules or Node build server. CI must build only reviewed repository source; untrusted patterns can still crash a build.
+Compatibility: Tailwind 4 supports Chrome 111+, Safari 16.4+, Firefox 128+. Older browsers are outside this release baseline. Sources: https://tailwindcss.com/docs/upgrade-guide and https://github.com/advisories/GHSA-vfj7-8cjw-p6xm .
 
-`app/scripts/audit-dependencies.mjs` rejects runtime high/critical findings, unknown advisories, affected runtime lock entries, a reported available upstream fix (apart from the reviewed propagated fast-glob flag), malformed/error audit responses, or an expired exception. No npm advisory is globally ignored. Low/moderate findings remain visible in npm output and require normal maintenance.
-
-GitHub's isolated compatible-fix run `37121688048` executed `npm audit fix --package-lock-only --ignore-scripts`; its candidate lock was identical to the committed lock. npm still flags fast-glob 3.3.3 as fixAvailable:true for its micromatch → braces propagation while the root advisory remains unpatched. The exception accepts that exact propagated flag/version only; other fix flags fail the check.
-
-This is a documented residual build risk, not a claim of zero vulnerabilities. Replace the exception when a patch is available, or perform a separately reviewed Tailwind 4 migration with visual regressions checked. Tailwind 4 changes browser support, CSS directives and utility scales, so an automatic major update is inappropriate during this integration.
+Local npm audits reported zero vulnerabilities at verification time. This is a dated dependency result; it does not certify the whole platform or future dependency versions. Main bundle remains about 503 kB minified and emits Vite's 500 kB advisory warning.

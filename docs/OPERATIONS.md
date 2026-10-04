@@ -149,7 +149,7 @@ migration, API and worker Compose stack, verifies the database/schema health
 response and worker process, then removes only that disposable CI stack.
 
 
-Integrated migration head: int20261003s1. Credentials use release scoped, password-bound JWTs; old sessions require login.
+Integrated migration head: an20261004m1 (tenant-scoped measurement series index). Credentials use release scoped, password-bound JWTs; old sessions require login.
 
 
 ## Render worker requirement

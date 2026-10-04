@@ -31,7 +31,7 @@ jobs:
                   with urllib.request.urlopen(base + "/api/health", timeout=10) as response:
                       health = json.load(response)
                   assert health["db"] == "up"
-                  assert health["alembic"] == "int20261003s1", health
+                  assert health["alembic"] == "an20261004m1", health
                   print("Hosted health:", health)
                   break
               except Exception as exc:

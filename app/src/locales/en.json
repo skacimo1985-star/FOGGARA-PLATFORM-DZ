@@ -1627,5 +1627,34 @@
     "publicTitle": "Data that grows with your system.",
     "publicBody": "Versioned rules, independent review, reproducible calculations and source-linked enrichment.",
     "open": "Open automation center"
+  },
+  "trends": {
+    "title": "Measurement and evidence trends",
+    "refresh": "Refresh",
+    "csv": "Export CSV",
+    "print": "Print / PDF",
+    "days": "Last {{count}} days",
+    "reviewedOnly": "Validated only",
+    "pendingOnly": "Awaiting review",
+    "allAccepted": "Validated and pending",
+    "includeDemo": "Include DEMO data",
+    "chartTitle": "Recorded measurement trend",
+    "timezone": "Algeria time · UTC+01:00",
+    "count": "Measurement count",
+    "average": "Arithmetic mean",
+    "minimum": "Minimum",
+    "maximum": "Maximum",
+    "basis": "The summary covers all matching measurements in a single unit. Rejected measurements are excluded. This descriptive analysis does not establish resource safety or authorize equipment control.",
+    "demoWarning": "These results include synthetic DEMO data; they are not field evidence.",
+    "truncated": "Showing and exporting the latest {{shown}} of {{total}} measurements. The summary covers the full total. Select a shorter period to show the complete series.",
+    "records": "Measurement details and sources ({{count}})",
+    "emptyTitle": "No matching measurements yet",
+    "emptyBody": "Record project measurements and their sources, then request review, or change the period and review status. DEMO data is hidden by default.",
+    "generatedAt": "Report generated at"
+  },
+  "theme": {
+    "toggle": "Toggle light/dark theme",
+    "light": "Light theme",
+    "dark": "Dark theme"
   }
 }

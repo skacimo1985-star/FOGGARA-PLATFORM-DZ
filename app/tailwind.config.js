@@ -8,20 +8,20 @@ module.exports = {
         sans: ["Tajawal", "Hanken Grotesk", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
       },
       colors: {
-        /* لوحة «مخطوطات صحراوية» — مطابقة لمتغيرات index.css (hex لدعم معدّلات الشفافية) */
-        ink: "#264653",
+        /* Semantic variables preserve the Oasis palette across both themes. */
+        ink: "var(--ink)",
         oasis: {
-          DEFAULT: "#2A9D8F",
-          strong: "#1E766B",
+          DEFAULT: "var(--oasis)",
+          strong: "var(--oasis-strong)",
         },
-        sand: "#E9C46A",
-        clay: "#F4A261",
+        sand: "var(--sand)",
+        clay: "var(--clay)",
         signal: {
-          DEFAULT: "#E76F51",
-          strong: "#C24C31",
+          DEFAULT: "var(--signal)",
+          strong: "var(--signal-strong)",
         },
-        paper: "#FCFCFC",
-        parchment: "#F7F3EA",
+        paper: "var(--paper)",
+        parchment: "var(--parchment)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -73,7 +73,10 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
         xs: "calc(var(--radius) - 6px)",
       },
+      blur: { sm: "4px", DEFAULT: "8px" },
       boxShadow: {
+        sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        DEFAULT: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
       },
       keyframes: {
@@ -97,5 +100,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [],
 }

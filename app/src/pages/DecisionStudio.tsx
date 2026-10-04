@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {useSearchParams,Link} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {Plus,Trash2,SlidersHorizontal,CheckCircle2,ShieldAlert,ArrowUpRight,Save} from 'lucide-react';
-import {api,type Paged} from '@/lib/api';
+import {api} from '@/lib/api';
 import type {Project,Evidence} from '@/types';
 import {ErrorText,DemoBadge} from '@/components/common';
 import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
@@ -14,7 +14,7 @@ export default function DecisionStudio(){
  const {t,i18n}=useTranslation();const [search]=useSearchParams();const [projects,setProjects]=useState<Project[]>([]);const [project,setProject]=useState(search.get('project')??'');const [runs,setRuns]=useState<Run[]>([]);const [evidence,setEvidence]=useState<Evidence[]>([]);const [selectedEvidence,setSelectedEvidence]=useState<number[]>([]);const [error,setError]=useState<unknown>(null);const [busy,setBusy]=useState(false);const seq=useRef(2);
  const [criteria,setCriteria]=useState<Criterion[]>([{key:'c0',label:'',domain:'water',unit:'',direction:'minimize',weight:'50',minimum:'',maximum:''},{key:'c1',label:'',domain:'energy',unit:'',direction:'minimize',weight:'50',minimum:'',maximum:''}]);
  const [alternatives,setAlternatives]=useState<Alternative[]>([{name:'',values:{}},{name:'',values:{}}]);
- useEffect(()=>{let active=true;api.get<Paged<Project>>("/projects?page_size=500").then(r=>r.items).then(ps=>{if(active)setProjects(ps);}).catch(setError);return()=>{active=false;};},[]);
+ useEffect(()=>{let active=true;api.getAll<Project>("/projects").then(ps=>{if(active)setProjects(ps);}).catch(setError);return()=>{active=false;};},[]);
  useEffect(()=>{let active=true;if(project)Promise.all([api.get<Run[]>(`/projects/${project}/decision-matrices`),api.get<Evidence[]>(`/projects/${project}/evidences`)]).then(([rs,es])=>{if(active){setRuns(rs);setEvidence(es.filter(e=>e.status==='verified'));}}).catch(setError);return()=>{active=false;};},[project]);
  const update=(index:number,field:keyof Criterion,value:string)=>setCriteria(cs=>cs.map((c,i)=>i===index?{...c,[field]:value}:c));
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError(null);const fd=new FormData(e.currentTarget);try{const run=await api.post<Run>(`/projects/${project}/decision-matrices`,{title:fd.get('title'),context:fd.get('context'),criteria:criteria.map(c=>({...c,weight:Number(c.weight),minimum:c.minimum===''?null:Number(c.minimum),maximum:c.maximum===''?null:Number(c.maximum)})),alternatives:alternatives.map(a=>({name:a.name,values:Object.fromEntries(criteria.map(c=>[c.key,Number(a.values[c.key])]))})),evidence_ids:selectedEvidence});setRuns(rs=>[run,...rs]);}catch(err){setError(err);}finally{setBusy(false);}}

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, DateTime,
-                        ForeignKey, Integer, JSON, Numeric, String, Text,
+                        ForeignKey, Index, Integer, JSON, Numeric, String, Text,
                         UniqueConstraint, func)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -108,6 +108,7 @@ class Project(Base):
 
 class Measurement(Base):
     __tablename__ = "measurements"
+    __table_args__ = (Index("ix_measurements_series", "org_id", "project_id", "parameter", "unit", "measured_at", "id"),)
 
     id: Mapped[int] = mapped_column(BigId, primary_key=True)
     org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)

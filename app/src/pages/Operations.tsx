@@ -94,11 +94,11 @@ export default function Operations() {
     let alive=true;
     setLoading(true); setError("");
     Promise.all([
-      api.get<Paged<Project>>("/projects?page_size=500"),
+      api.getAll<Project>("/projects"),
       ...resources.map(r=>api.get<Paged<Item>>("/operations/"+r+"?page="+(r===tab?page:1)+"&page_size=20"))
     ]).then(([p,...result])=>{
       if(!alive)return;
-      setProjects((p as Paged<Project>).items);
+      setProjects(p as Project[]);
       setData(Object.fromEntries(resources.map((r,i)=>[r,result[i]])));
     }).catch((e:unknown)=>{if(alive)setError(e instanceof Error?e.message:t("productionCopy.unableToConnect"));})
       .finally(()=>{if(alive)setLoading(false);});

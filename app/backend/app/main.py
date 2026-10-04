@@ -18,7 +18,7 @@ from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         workflow)
 from .routers.setup import router as setup_router
 from .routers.operations import router as operations_router
-from .routers import agriculture, agriculture_operations, collaboration, intelligence
+from .routers import agriculture, agriculture_operations, collaboration, intelligence, analytics
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -143,6 +143,7 @@ def health():
 app.include_router(auth.router)
 app.include_router(core.router)
 app.include_router(workflow.router)
+app.include_router(analytics.router)
 app.include_router(insight.router)
 app.include_router(audit.router)
 app.include_router(metrology.router)
