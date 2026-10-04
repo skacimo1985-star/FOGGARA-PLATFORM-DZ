@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Handshake, ArrowUpRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { WILAYAS } from "@/lib/wilayas";
 import type { RoomSummary } from "@/types/platform";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ interface Match { opportunity: Opportunity; score: number; basis: string[]; }
 const domains = ["water", "energy", "food", "ecosystem", "health"];
 const categories = ["equipment", "engineering", "laboratory", "investment", "research", "production", "training"];
 export default function Opportunities() {
-  const { t } = useTranslation(); const [rows, setRows] = useState<Opportunity[]>([]); const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const { t, i18n } = useTranslation(); const [rows, setRows] = useState<Opportunity[]>([]); const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [matches, setMatches] = useState<Match[] | null>(null); const [selected, setSelected] = useState<string>("");
   const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
   const reload = useCallback(async () => { const [r, dr] = await Promise.all([api.get<Opportunity[]>("/opportunities"), api.get<RoomSummary[]>("/data-rooms")]); setRows(r); setRooms(dr.filter(r => r.can_manage)); }, []);
@@ -40,7 +41,7 @@ export default function Opportunities() {
       <div className="space-y-1"><Label htmlFor="opp-kind">{t("opportunities.kind")}</Label><select id="opp-kind" name="kind" className={selectClass}>{["need", "offer"].map(k => <option value={k} key={k}>{t(`opportunities.kinds.${k}`)}</option>)}</select></div>
       <div className="space-y-1"><Label htmlFor="opp-domain">{t("project.domain")}</Label><select id="opp-domain" name="domain" className={selectClass}>{domains.map(d => <option value={d} key={d}>{t(`domains.${d}`)}</option>)}</select></div>
       <div className="space-y-1"><Label htmlFor="opp-category">{t("opportunities.category")}</Label><select id="opp-category" name="category" className={selectClass}>{categories.map(c => <option value={c} key={c}>{t(`opportunities.categories.${c}`)}</option>)}</select></div>
-      <div className="space-y-1"><Label htmlFor="opp-wilaya">{t("topbar.selectWilaya")}</Label><Input id="opp-wilaya" name="wilaya" maxLength={100} /></div>
+      <div className="space-y-1"><Label htmlFor="opp-wilaya">{t("topbar.selectWilaya")}</Label><select id="opp-wilaya" name="wilaya" className={selectClass}><option value="">{t("common.none")}</option>{WILAYAS.map(w=><option key={w.code} value={w.code}>{w.code} — {w[(i18n.language||"ar") as "ar"|"fr"|"en"]}</option>)}</select></div>
       <div className="space-y-1"><Label htmlFor="opp-room">{t("rooms.title")}</Label><select id="opp-room" name="room_id" className={selectClass}><option value="">{t("common.none")}</option>{rooms.map(r => <option value={r.id} key={r.id}>{r.title}</option>)}</select></div>
       <div className="space-y-1 sm:col-span-2"><Label htmlFor="opp-description">{t("opportunities.description")}</Label><Textarea id="opp-description" name="description" required minLength={10} maxLength={3000} /></div>
       <label className="flex items-start gap-2 text-sm sm:col-span-2"><input type="checkbox" name="consent" className="mt-1" />{t("opportunities.consent")}</label><p className="text-xs text-muted-foreground sm:col-span-2">{t("opportunities.privacy")}</p><Button disabled={busy}>{t("opportunities.create")}</Button>

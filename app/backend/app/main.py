@@ -19,6 +19,7 @@ from .routers import (audit, auth, core, decisions, energy, explore, insight,
 from .routers.setup import router as setup_router
 from .routers.operations import router as operations_router
 from .routers import agriculture, agriculture_operations, collaboration, intelligence
+from .routers import reference, economics, ai
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -30,14 +31,18 @@ log = logging.getLogger("foggara")
 @asynccontextmanager
 async def lifespan(_app):
     from .automation_runtime import run_queue
+    from .services.llm_ensemble import configuration, run_ai_queue
     stop = asyncio.Event()
     task = asyncio.create_task(run_queue(stop)) if config.OPERATIONS_AUTOMATION_ENABLED else None
+    ai_task = asyncio.create_task(run_ai_queue(stop)) if configuration()[0] else None
     try:
         yield
     finally:
         stop.set()
         if task is not None:
             await task  # Finish the current atomic transaction before shutdown.
+        if ai_task is not None:
+            await ai_task
 
 app = FastAPI(
     lifespan=lifespan,
@@ -141,6 +146,9 @@ def health():
 
 
 app.include_router(auth.router)
+app.include_router(reference.router)
+app.include_router(economics.router)
+app.include_router(ai.router)
 app.include_router(core.router)
 app.include_router(workflow.router)
 app.include_router(insight.router)

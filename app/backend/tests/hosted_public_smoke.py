@@ -51,8 +51,21 @@ def main():
         page.locator(".os-brand").click()
         expect(page.locator("#foggara-title")).to_be_visible()
         assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
+        directory=page.request.get(BASE+'/api/reference/wilayas').json()
+        assert directory['count']==69 and directory['version']=='DZ-26-06-26-206-v1'
+        for locale in ('ar','fr','en'):
+            page.get_by_role('combobox',name='Language',exact=True).select_option(locale)
+            for path in ('/references','/privacy','/terms','/rights','/contact'):
+                page.goto(BASE+path,wait_until='networkidle')
+                expect(page.locator('h1')).to_be_visible()
+                assert page.locator('html').get_attribute('dir')==('rtl' if locale=='ar' else 'ltr')
+                if path=='/references':
+                    expect(page.locator('section').filter(has=page.locator('a[target="_blank"]'))).to_have_count(14)
+                    expect(page.locator('a[href="/app/gis?wilaya=69"]')).to_be_visible()
+                page.set_viewport_size({'width':390,'height':1000})
+                assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'),(locale,path)
         assert not errors, errors
-        print("Hosted release passed: AR/FR/EN, responsive layout, role workflows, matrix, hard constraints and SPA stylesheet isolation.")
+        print("Hosted release passed: AR/FR/EN, responsive layout, role workflows, matrix, hard constraints, SPA stylesheet isolation, 69-wilaya catalog and localized reference/privacy/terms/contact pages.")
         browser.close()
 
 if __name__ == "__main__":

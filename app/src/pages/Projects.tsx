@@ -18,6 +18,9 @@ export default function Projects() {
   const [sites, setSites] = useState<Site[]>([]);
   const [resources, setResources] = useState<WaterResource[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedSite, setSelectedSite] = useState("");
+  const [selectedResource, setSelectedResource] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -52,6 +55,7 @@ export default function Projects() {
         asset_id: num("asset_id"),
       });
       setShowForm(false);
+      setSelectedSite(""); setSelectedResource(""); setSelectedAsset("");
       load(page);
     } catch (err) {
       setError(err);
@@ -67,6 +71,7 @@ export default function Projects() {
         <Button onClick={() => setShowForm((v) => !v)}>{t("project.new")}</Button>
       </div>
 
+      <Link to="/app/registry" className="text-sm text-oasis-strong underline">{t("registry.title")}</Link>
       {showForm && (
         <Card>
           <CardHeader><CardTitle className="text-base">{t("project.new")}</CardTitle></CardHeader>
@@ -90,23 +95,23 @@ export default function Projects() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="site_id">{t("project.site")}</Label>
-                <select id="site_id" name="site_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
+                <select value={selectedSite} onChange={e=>{setSelectedSite(e.target.value);setSelectedResource("");setSelectedAsset("");}} id="site_id" name="site_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
                   <option value="">{t("common.none")}</option>
                   {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="resource_id">{t("project.resource")}</Label>
-                <select id="resource_id" name="resource_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
+                <select value={selectedResource} onChange={e=>{setSelectedResource(e.target.value);setSelectedAsset("");}} id="resource_id" name="resource_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
                   <option value="">{t("common.none")}</option>
-                  {resources.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  {resources.filter(r=>!selectedSite||String(r.site_id)===selectedSite).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="asset_id">{t("project.asset")}</Label>
-                <select id="asset_id" name="asset_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
+                <select value={selectedAsset} onChange={e=>setSelectedAsset(e.target.value)} id="asset_id" name="asset_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm">
                   <option value="">{t("common.none")}</option>
-                  {assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  {assets.filter(a=>selectedResource?String(a.resource_id)===selectedResource:!selectedSite||resources.some(r=>r.id===a.resource_id&&String(r.site_id)===selectedSite)).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
               <div className="flex items-end gap-2 sm:col-span-2">

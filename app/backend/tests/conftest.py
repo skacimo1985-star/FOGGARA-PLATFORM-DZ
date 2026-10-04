@@ -15,6 +15,7 @@ from app.main import app
 from app.models import Organization, User
 from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
+from app.services.reference_catalog import ensure_reference_catalog
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -64,6 +65,7 @@ def world(db):
     db.add_all(users.values())
     db.flush()
     ensure_default_indicator(db)
+    ensure_reference_catalog(db)
     db.commit()
     return {"org1": org1, "org2": org2, **users}
 

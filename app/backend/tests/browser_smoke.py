@@ -12,13 +12,17 @@ def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
-    from app.models import Organization, User, Project, Site
+    from app.models import Organization, User, Project, Site, Evidence
     from app.security import hash_password
+    from app.platform_models import AuthThrottle
+    from sqlalchemy import delete
+    from app.services.reference_catalog import ensure_reference_catalog
     from playwright.sync_api import sync_playwright, expect
     out = Path("qa")
     out.mkdir(exist_ok=True)
     password = secrets.token_urlsafe(24)
     with SessionLocal() as db:
+        ensure_reference_catalog(db)
         org = Organization(code="CI-BROWSER", name_ar="مؤسسة اختبار", name_fr="Test", name_en="Test", is_demo=True)
         db.add(org)
         db.flush()
@@ -30,10 +34,12 @@ def main():
                     full_name="Browser QA", role="admin", locale="ar")
         db.add(user)
         db.flush()
-        project = Project(org_id=org.id, title="واحة الاختبار", domain="water", created_by=user.id, is_demo=True)
+        project = Project(org_id=org.id, title="واحة الاختبار", domain="water", created_by=user.id, site_id=db.scalar(__import__("sqlalchemy").select(Site.id).where(Site.org_id==org.id).order_by(Site.id)), is_demo=True)
         db.add(project)
         db.flush()
         project_id = project.id
+        evidence = Evidence(org_id=org.id, project_id=project.id, title="CI-reviewed-lab", doc_type="lab_result", license="internal", status="verified", submitted_by=user.id, is_demo=True)
+        db.add(evidence); db.flush(); evidence_id=evidence.id
         db.commit()
     os.environ["RATE_LIMIT_LOGIN_MAX"] = "100"
     os.environ["OPERATIONS_AUTOMATION_ENABLED"] = "true"
@@ -111,7 +117,7 @@ def main():
                 page.locator('[name="subject"]').fill("طلب اختبار")
                 page.locator('[name="message"]').fill("رسالة اختبار للتأكد من الحفظ في قاعدة البيانات")
                 page.locator('[name="consent"]').check()
-                page.get_by_role("button", name="تسجيل الرسالة").click()
+                page.get_by_role("button", name="إرسال الرسالة").click()
                 expect(page.get_by_role("status")).to_contain_text("FG-")
                 page.reload()
                 def authenticated_visit(path):
@@ -166,6 +172,72 @@ def main():
                 expect(page.locator("tbody")).to_contain_text("CI-Bechar")
                 expect(page.locator("tbody")).not_to_contain_text("CI-Algiers")
 
+                labels = json.loads((Path(__file__).resolve().parents[2] / "src/locales/ar.json").read_text())
+                authenticated_visit("/app/registry")
+                page.locator('#registry-name').fill("CI-registered-oasis")
+                page.locator('#registry-wilaya').select_option("69")
+                page.locator('#registry-lat').fill("33.7")
+                page.locator('#registry-lon').fill("1.0")
+                with page.expect_response(lambda r: r.url.endswith('/api/sites') and r.request.method=='POST') as saved_site:
+                    page.get_by_role('button',name=labels['registry']['save'],exact=True).click()
+                assert saved_site.value.status==201, saved_site.value.text()
+                site_id=saved_site.value.json()['id']
+                expect(page.locator('article').filter(has_text="CI-registered-oasis")).to_be_visible()
+                authenticated_visit("/app/registry")
+                record=page.locator('article').filter(has_text="CI-registered-oasis")
+                expect(record).to_be_visible()
+                record.get_by_role('button',name=labels['registry']['edit'],exact=True).click()
+                page.locator('#registry-name').fill("CI-updated-oasis")
+                page.get_by_role('button',name=labels['registry']['save'],exact=True).click()
+                expect(page.locator('article').filter(has_text="CI-updated-oasis")).to_be_visible()
+                page.locator('button[aria-pressed]').filter(has_text=labels['registry']['resources']).click()
+                page.locator('#registry-name').fill('CI-Foggara')
+                page.locator('#registry-parent').select_option(str(site_id))
+                page.get_by_role('button',name=labels['registry']['save'],exact=True).click()
+                expect(page.locator('article').filter(has_text='CI-Foggara')).to_be_visible()
+                authenticated_visit('/app/economics')
+                page.locator('#economics-project').select_option(str(project_id))
+                for field,value in (('title','CI-economic-scenario'),('initial_investment','1000'),('discount_percent','10')):
+                    page.locator('#economics-'+field).fill(value)
+                page.locator('#economics-source').fill('Explicit isolated test assumptions')
+                page.locator('#cash-0-revenue').fill('800')
+                page.locator('#cash-0-cost').fill('200')
+                page.get_by_role('button',name=labels['economics']['computeSave'],exact=True).click()
+                expect(page.get_by_role('heading',name='CI-economic-scenario COMPUTED')).to_be_visible()
+                authenticated_visit('/app/economics')
+                page.locator('#economics-project').select_option(str(project_id))
+                expect(page.get_by_role('heading',name='CI-economic-scenario COMPUTED')).to_be_visible()
+                authenticated_visit('/app/intelligence')
+                page.locator('#ai-project').select_option(str(project_id))
+                page.locator('#ai-question').fill('CI-source-packet: analyse the recorded location')
+                page.get_by_role('button',name=labels['intelligence']['prepare'],exact=True).click()
+                expect(page.locator('#main-content')).to_contain_text('CI-source-packet')
+                expect(page.locator('#main-content')).to_contain_text(labels['intelligence']['missing']['private_model_connection'])
+                authenticated_visit('/app/intelligence')
+                page.locator('#ai-project').select_option(str(project_id))
+                expect(page.locator('#main-content')).to_contain_text('CI-source-packet')
+                for path in ('/app/registry','/app/economics','/app/intelligence','/app/references'):
+                    authenticated_visit(path)
+                    for locale in ('ar','fr','en'):
+                        page.get_by_role('combobox',name='Language',exact=True).select_option(locale)
+                        for width in (390,768,1440):
+                            page.set_viewport_size({'width':width,'height':1000})
+                            assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'),(path,locale,width)
+                    page.get_by_role('combobox',name='Language',exact=True).select_option('ar')
+                    page.screenshot(path=str(out / (path.split('/')[-1]+'-desktop.png')),full_page=True)
+                authenticated_visit(f"/app/projects/{project_id}")
+                page.get_by_role('tab',name=labels['agri']['title'],exact=True).click()
+                page.locator('#agri-kind').select_option('water')
+                page.locator('#agri-evidence').select_option(str(evidence_id))
+                page.locator('[name="source"]').fill('CI-reviewed-laboratory')
+                page.locator('[name="observed_at"]').fill('2026-10-01T10:00')
+                for field,value in (('sample_id','CI-WATER-01'),('method','Laboratory report'),('sodium_meq_l','4'),('calcium_meq_l','4'),('magnesium_meq_l','4')):
+                    page.locator('#agri-'+field).fill(value)
+                with page.expect_response(lambda r:'/agriculture/water' in r.url and r.request.method=='POST') as water:
+                    page.get_by_role('button',name=labels['agri']['record'],exact=True).click()
+                assert water.value.status==201, water.value.text()
+                expect(page.locator('[role="tabpanel"][data-state="active"]')).to_contain_text('CI-WATER-01')
+                expect(page.locator('[role="tabpanel"][data-state="active"]')).to_contain_text('COMPUTED')
                 authenticated_visit("/app/automation")
                 expect(page.locator(".ag-runtime")).to_contain_text("المعالجة الذاتية تعمل")
                 page.get_by_role("button", name="إعادة بناء النتائج", exact=True).click()
@@ -185,7 +257,11 @@ def main():
                 page.screenshot(path=str(out / "automation-mobile.png"), full_page=True)
                 page.set_viewport_size({"width":1440,"height":1000})
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
-                for path in ("/app", "/app/automation", "/app/projects", "/app/org", "/app/account", "/app/nexus",
+                # Reset only the disposable fixture window before the route inventory.
+                # Production throttling is verified independently by API security tests.
+                with SessionLocal() as db:
+                    db.execute(delete(AuthThrottle)); db.commit()
+                for path in ("/app", "/app/registry", "/app/references", "/app/economics", "/app/intelligence", "/app/automation", "/app/projects", "/app/org", "/app/account", "/app/nexus",
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
                              "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis",
                              "/app/decisions", "/app/services", "/app/metrology", "/app/water",
@@ -209,7 +285,7 @@ def main():
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
                     "checks":["public routes","interactive resource network and original logo", "automatic queue completion and connection matrix","role workflows","public matrix calculation and hard constraints","SPA stylesheet isolation","workspace search and keyboard shortcuts","wilaya context filters real sites","AR/FR/EN landing and account","language switching preserves production form inputs","mobile overflow","contact persistence",
-                              "authenticated operations","lot creation and reload","API 404","24 protected routes including project details","no page errors"]
+                              "authenticated operations","lot creation and reload","API 404","28 protected routes including project details", "registry create/edit/reload", "economic scenarios save/reload", "AI source packets save/reload and honest connection state", "AR/FR/EN new workspaces","no page errors"]
                 }, indent=2))
                 browser.close()
         except Exception:

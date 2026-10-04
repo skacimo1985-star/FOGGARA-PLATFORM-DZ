@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { Activity, ArrowUpLeft, Check, Layers3, Plus, RefreshCw, ShieldCheck, Sprout } from "lucide-react";
 import { api, type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
+import { WILAYAS } from "@/lib/wilayas";
 import type { Project } from "@/types";
 import "./operations.css";
 
@@ -198,7 +199,7 @@ export default function Operations() {
           <SelectField label={t("productionCopy.sector")} name="sector" values={["agriculture","livestock","aquaculture","processing","logistics","equipment","services"]}/>
           <TextField label={t("productionCopy.sharedProductCode")} name="product_code" minLength={2} maxLength={80}/>
           <TextField label={t("productionCopy.quantity")} name="quantity" type="number" min={0.0001} step="0.0001"/><SelectField label={t("productionCopy.unit")} name="unit" values={units}/>
-          <TextField label={t("productionCopy.wilayaCode")} name="wilaya" minLength={2} maxLength={80}/><button className="fg-button" disabled={actionsDisabled}>{t("productionCopy.saveRecord")}</button></form>}
+          <Field label={t("productionCopy.wilayaCode")}><select className={inputClass} name="wilaya" required><option value="">{t("registry.choose")}</option>{WILAYAS.map(w=><option key={w.code} value={w.code}>{w.code} — {w[(i18n.language||"ar") as "ar"|"fr"|"en"]}</option>)}</select></Field><button className="fg-button" disabled={actionsDisabled}>{t("productionCopy.saveRecord")}</button></form>}
         {tab==="matches"&&<><p className="fg-note">{t("productionCopy.matchingReturnsUpTo20AlternativesPer")}</p><button className="fg-button" disabled={actionsDisabled} onClick={()=>void run("/match")}>{t("productionCopy.refreshMatching")}</button></>}
         {tab==="policies"&&(canAdmin?<form onSubmit={submit(f=>["/policies",{name:s(f,"name"),rules}])}>
           <p className="fg-note">{t("productionCopy.theseEditableExamplesAreNotScientificOr")}</p>

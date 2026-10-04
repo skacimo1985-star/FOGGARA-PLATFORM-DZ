@@ -536,7 +536,11 @@
     "PASSWORD_UNCHANGED": "Choose a different password.",
     "MATRIX_ENGINE_UNAVAILABLE": "The selected calculation engine is unavailable.",
     "MATRIX_TOO_LARGE": "The scenario exceeds the engine size limit.",
-    "INVALID_REFERENCE": "A valid internal object ID is required."
+    "INVALID_REFERENCE": "A valid internal object ID is required.",
+    "INVALID_WILAYA": "Choose a wilaya from the national directory.",
+    "COORDINATE_PAIR_REQUIRED": "Supply both latitude and longitude, or leave both blank.",
+    "PARENT_IMMUTABLE": "The registered resource or asset parent cannot be reassigned.",
+    "INCONSISTENT_LINK": "The resource and asset must belong to the selected site."
   },
   "solar": {
     "title": "Preliminary solar calculator (computed)",
@@ -1112,7 +1116,8 @@
       "diagnosis": "Image-based expert observation",
       "irrigation": "Irrigation scenario",
       "calendar": "Crop and location calendar",
-      "lswi": "Land Surface Water Index"
+      "lswi": "Land Surface Water Index",
+      "water": "Water analysis"
     },
     "kinds": {
       "soil": "Soil sample",
@@ -1121,7 +1126,8 @@
       "calendar": "Crop calendar",
       "diagnosis": "Reviewer image observation",
       "forewarning": "Source bulletin forewarning",
-      "irrigation": "Daily irrigation scenario"
+      "irrigation": "Daily irrigation scenario",
+      "water": "Water analysis"
     },
     "fields": {
       "product_id": "Satellite product identifier",
@@ -1156,7 +1162,18 @@
       "etc_mm_day": "Crop evapotranspiration (mm/day)",
       "net_mm_day": "Net daily depth (mm)",
       "gross_mm_day": "Gross daily depth (mm)",
-      "volume_m3_day": "Scenario volume (m³/day)"
+      "volume_m3_day": "Scenario volume (m³/day)",
+      "ec_ds_m": "Electrical conductivity (dS/m)",
+      "organic_matter_percent": "Organic matter (%)",
+      "temperature_c": "Temperature (°C)",
+      "texture": "Soil texture",
+      "tds_mg_l": "Total dissolved solids (mg/L)",
+      "turbidity_ntu": "Turbidity (NTU)",
+      "dissolved_oxygen_mg_l": "Dissolved oxygen (mg/L)",
+      "sodium_meq_l": "Sodium (meq/L)",
+      "calcium_meq_l": "Calcium (meq/L)",
+      "magnesium_meq_l": "Magnesium (meq/L)",
+      "sar": "Sodium adsorption ratio (COMPUTED)"
     }
   },
   "os": {
@@ -1627,5 +1644,237 @@
     "publicTitle": "Data that grows with your system.",
     "publicBody": "Versioned rules, independent review, reproducible calculations and source-linked enrichment.",
     "open": "Open automation center"
+  },
+  "registry": {
+    "title": "Sites, resources and assets",
+    "subtitle": "Create sites, resources and assets, then link projects. Records are saved within your organisation with audit.",
+    "sites": "Sites",
+    "resources": "Water resources",
+    "assets": "Water assets",
+    "create": "Create record",
+    "edit": "Edit",
+    "save": "Save to database",
+    "saved": "Saved to the database.",
+    "cancel": "Cancel edit",
+    "name": "Name",
+    "wilaya": "Wilaya",
+    "commune": "Municipality",
+    "lat": "Latitude",
+    "lon": "Longitude",
+    "site": "Linked site",
+    "resource": "Linked resource",
+    "choose": "Choose",
+    "type": "Type",
+    "status": "Status",
+    "search": "Search by name",
+    "empty": "Create the first record using the form above.",
+    "parentFirst": "Create the parent record first:",
+    "projectFirst": "Create a project first",
+    "coordinatesNotice": "Manual WGS84 coordinates: provide latitude and longitude together. An administrative code does not establish polygon containment.",
+    "limit": "Showing {{count}} of {{total}} records.",
+    "values": {
+      "foggara": "Foggara",
+      "borehole": "Borehole",
+      "spring": "Spring",
+      "well": "Well",
+      "dam": "Dam",
+      "gallery": "Gallery",
+      "mother_well": "Mother well",
+      "pump": "Pump",
+      "channel": "Channel",
+      "sensor": "Sensor",
+      "active": "Active",
+      "degraded": "Degraded",
+      "dry": "Dry",
+      "abandoned": "Abandoned",
+      "operational": "Operational",
+      "maintenance": "Maintenance",
+      "out_of_service": "Out of service"
+    }
+  },
+  "reference": {
+    "title": "National, scientific and legal references",
+    "subtitle": "Versioned, dated sources linked to methods and calculations.",
+    "search": "Search laws, methods or sources",
+    "domain": "Domain",
+    "category": "Category",
+    "all": "All",
+    "checked": "Checked on",
+    "directory": "National wilaya directory",
+    "coverageNotice": "69 wilayas under Law 26-06 and Decree 26-206. The directory lists names and codes; actual sites appear after organisation registration.",
+    "categories": {
+      "law": "Laws",
+      "method": "Methods",
+      "dataset": "Data sources"
+    }
+  },
+  "economics": {
+    "title": "Technical and economic scenarios",
+    "subtitle": "Project assumptions, annual cash flows, net present value and sensitivity saved with input fingerprints.",
+    "titleField": "Scenario title",
+    "initial_investment": "Initial investment (DZD)",
+    "discount_percent": "Discount rate (%)",
+    "stress_percent": "Revenue and cost variation (%)",
+    "source_note": "Assumption sources and limits",
+    "flows": "Annual cash flows",
+    "year": "Year",
+    "revenue": "Revenue",
+    "cost": "Costs",
+    "removeYear": "Remove year",
+    "addYear": "Add year",
+    "computeSave": "Calculate and save",
+    "notice": "Your declared assumptions in DZD. Calculations exclude taxes, financing, inflation and terminal value; economic review is required.",
+    "npv": "Net present value",
+    "payback": "Payback in years",
+    "noPayback": "Not reached within the period",
+    "details": "Cash flows and calculation fingerprint",
+    "net": "Net cash flow",
+    "discounted": "Discounted cash flow",
+    "cumulative": "Cumulative net",
+    "cases": {
+      "base": "Base",
+      "stress": "Stress: lower revenue, higher cost",
+      "upside": "Upside: higher revenue, lower cost"
+    }
+  },
+  "intelligence": {
+    "title": "Source-grounded intelligence",
+    "subtitle": "Project analysis packets and a local model ensemble when the inference server is connected.",
+    "connection": "Model server connection",
+    "connectionNotice": "Deterministic functions perform calculations. Models draft source-based proposals through an operator-configured private connection.",
+    "installed": "Installed",
+    "missingModel": "Missing from server",
+    "checkConnection": "Check connection",
+    "question": "Analysis question",
+    "prepare": "Prepare and save analysis",
+    "projectData": "Open project data",
+    "reviewNotice": "Reviewed organisation records are combined with versioned references. Model outputs remain drafts for human review; soil and water chemistry requires measurements.",
+    "sourceCount": "{{count}} field records in the analysis packet",
+    "sourceSnapshot": "Packet sources and fingerprint",
+    "status": {
+      "unconfigured": "Unconfigured",
+      "ready": "Connected",
+      "models_missing": "Models missing",
+      "unavailable": "Unavailable",
+      "prepared": "Packet prepared",
+      "insufficient_data": "Insufficient data",
+      "queued": "Queued",
+      "completed": "Draft completed",
+      "partial": "Partial results",
+      "failed": "Failed"
+    },
+    "specialists": {
+      "water": "Water",
+      "soil": "Soil",
+      "food": "Crops and food",
+      "energy": "Energy",
+      "ecosystem": "Ecosystems",
+      "health": "One Health",
+      "gis": "Location and coordinates",
+      "regulatory": "Regulatory references",
+      "economics": "Economic assessment"
+    },
+    "missing": {
+      "private_model_connection": "Sources saved. Connect a private model server to generate drafts.",
+      "reviewed_project_data": "Add project data and review its evidence first."
+    }
+  },
+  "legal": {
+    "titles": {
+      "about": "Connecting resources, evidence and decisions",
+      "privacy": "Privacy policy",
+      "terms": "Terms of use",
+      "rights": "Rights and sources",
+      "contact": "Let’s build value together."
+    },
+    "version": "2026-10-04-v2",
+    "pages": {
+      "about": [
+        {
+          "heading": "Decision and operations platform",
+          "body": "FOGGARA-DZ connects organisations, projects, sites, resources, measurements, evidence, review, decisions, actions and monitoring across Water, Energy, Food, Ecosystem and One Health. Operated by EURL SIREP OASES NEXUS WEFEH-DZ, Laghouat, Algeria."
+        },
+        {
+          "heading": "Working cycle",
+          "body": "Resource → data → structure → analysis → rules → intelligence → decision → action → monitoring → evidence → learning. Results retain sources, methods and review states. The directory covers 69 wilayas; field operations depend on registered sites and projects."
+        }
+      ],
+      "privacy": [
+        {
+          "heading": "Controller and contact",
+          "body": "Operator: EURL SIREP OASES NEXUS WEFEH-DZ. Privacy enquiries and rights: kacimo2000@gmail.com or the contact form. This policy does not claim an unverified ANPDP filing, authorisation or appointed data protection delegate."
+        },
+        {
+          "heading": "Data and purposes",
+          "body": "Account and organisation data support access; sites, coordinates, projects, assets, analyses and documents support services; audit records support traceability and security. Contact submissions retain name, email, subject, message and reply consent. Enter only necessary personal data you are authorised to process."
+        },
+        {
+          "heading": "Access and disclosure",
+          "body": "Server access checks enforce identity and organisation permissions. Published opportunities require explicit consent; data rooms use requests, access decisions and selected document disclosure. Curated references are public; organisation projects remain protected."
+        },
+        {
+          "heading": "Current hosting and transfers",
+          "body": "This temporary release uses Render in Frankfurt and Supabase eu-central-1 outside Algeria. Transfers require assessment of lawfulness and applicable formalities under amended Law 18-07. Prepare required local hosting before entering sensitive data that requires local placement."
+        },
+        {
+          "heading": "Sessions and technical resources",
+          "body": "The access token stays in memory and is removed on reload or logout. Language and wilaya preferences are stored locally. Fonts are served with the platform. This interface contains no advertising or marketing analytics tools."
+        },
+        {
+          "heading": "Artificial intelligence",
+          "body": "Model connections are not enabled automatically. A configured private inference server receives selected organisation-scoped packets limited to needed data and references. Inputs, outputs and fingerprints are retained for review. Drafts grant no administrative access or equipment control."
+        },
+        {
+          "heading": "Retention and rights",
+          "body": "Account and project records remain while their purpose or a legitimate retention obligation exists. This release has no automatic erasure; reviewed retention/erasure decisions must cover backups. Access, correction, erasure and objection requests can be recorded in the rights workspace or through contact, subject to identity and applicable obligations."
+        },
+        {
+          "heading": "Legal framework and complaints",
+          "body": "Law 18-07 of 10 June 2018, amended by Law 25-11 of 24 July 2025. Complaints may be submitted to ANPDP. Original texts are linked in the reference centre; compliance depends on review of actual operator practices."
+        }
+      ],
+      "terms": [
+        {
+          "heading": "Access and use",
+          "body": "Use authorised accounts, protect credentials and enter data you have permission to use. Bypassing tenant isolation, misleading information and malicious content are prohibited. The organisation administrator manages members and roles."
+        },
+        {
+          "heading": "Calculation and approval",
+          "body": "Calculations use declared inputs, units, methods and rules, retaining sources and limits. Specialists review decisions; equipment operation requires separate safety procedures. Economic scenarios do not guarantee funding or returns, and health indicators are not medical diagnoses."
+        },
+        {
+          "heading": "Collaboration and contracts",
+          "body": "Matching connects needs and capabilities without automatically creating contracts, invoices or payments. Assurance records document actual business evidence; verify applicable signatures, contracts and taxation before binding transactions."
+        },
+        {
+          "heading": "Availability and disputes",
+          "body": "Maintenance and hosting limits may interrupt service. Applicable professional agreements and mandatory rights prevail. Direct complaints to the operator; applicable laws and mandatory jurisdiction rules apply."
+        }
+      ],
+      "rights": [
+        {
+          "heading": "Data and content rights",
+          "body": "Owners retain their rights. Entering data permits processing needed for the service within purpose and permissions, without transferring ownership or allowing resale. Open-source components retain their licence terms."
+        },
+        {
+          "heading": "Identity and references",
+          "body": "The SIREP OASES NEXUS WEFEH-DZ identity and crescent/star use the project’s supplied design. No unverified trademark registration or accreditation is claimed. References identify their publishers without implying platform endorsement."
+        },
+        {
+          "heading": "Reporting",
+          "body": "Report content through contact with its link, the affected right and evidence of your standing. Reports are reviewed with protection of parties’ rights and data."
+        }
+      ]
+    },
+    "back": "Back to FOGGARA",
+    "contactIntro": "Your message is saved to respond to your enquiry.",
+    "name": "Name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "consent": "I agree to processing my message to respond to my enquiry under the privacy policy.",
+    "send": "Send message",
+    "saved": "Message saved. Reference:",
+    "rightsWorkspace": "Open data rights workspace"
   }
 }

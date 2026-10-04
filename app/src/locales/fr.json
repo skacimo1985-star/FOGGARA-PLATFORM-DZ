@@ -536,7 +536,11 @@
     "PASSWORD_UNCHANGED": "Choisissez un mot de passe différent.",
     "MATRIX_ENGINE_UNAVAILABLE": "Le moteur de calcul sélectionné est indisponible.",
     "MATRIX_TOO_LARGE": "Le scénario dépasse la limite du moteur.",
-    "INVALID_REFERENCE": "Un identifiant valide est requis pour la référence interne."
+    "INVALID_REFERENCE": "Un identifiant valide est requis pour la référence interne.",
+    "INVALID_WILAYA": "Choisissez une wilaya du répertoire national.",
+    "COORDINATE_PAIR_REQUIRED": "Indiquez latitude et longitude ensemble, ou laissez les deux vides.",
+    "PARENT_IMMUTABLE": "Le rattachement du bien ou de la ressource ne peut être réaffecté.",
+    "INCONSISTENT_LINK": "La ressource et le bien doivent appartenir au site sélectionné."
   },
   "solar": {
     "title": "Calculateur solaire préliminaire (calculé)",
@@ -1112,7 +1116,8 @@
       "diagnosis": "Observation experte par image",
       "irrigation": "Scénario d’irrigation",
       "calendar": "Calendrier cultural localisé",
-      "lswi": "Indice d’eau de surface LSWI"
+      "lswi": "Indice d’eau de surface LSWI",
+      "water": "Analyse de l’eau"
     },
     "kinds": {
       "soil": "Échantillon de sol",
@@ -1121,7 +1126,8 @@
       "calendar": "Calendrier cultural",
       "diagnosis": "Observation d’image par réviseur",
       "forewarning": "Alerte issue d’un bulletin",
-      "irrigation": "Scénario journalier d’irrigation"
+      "irrigation": "Scénario journalier d’irrigation",
+      "water": "Analyse de l’eau"
     },
     "fields": {
       "product_id": "Identifiant du produit satellite",
@@ -1156,7 +1162,18 @@
       "etc_mm_day": "Évapotranspiration culturale (mm/jour)",
       "net_mm_day": "Lame nette journalière (mm)",
       "gross_mm_day": "Lame brute journalière (mm)",
-      "volume_m3_day": "Volume du scénario (m³/jour)"
+      "volume_m3_day": "Volume du scénario (m³/jour)",
+      "ec_ds_m": "Conductivité électrique (dS/m)",
+      "organic_matter_percent": "Matière organique (%)",
+      "temperature_c": "Température (°C)",
+      "texture": "Texture du sol",
+      "tds_mg_l": "Solides dissous (mg/L)",
+      "turbidity_ntu": "Turbidité (NTU)",
+      "dissolved_oxygen_mg_l": "Oxygène dissous (mg/L)",
+      "sodium_meq_l": "Sodium (meq/L)",
+      "calcium_meq_l": "Calcium (meq/L)",
+      "magnesium_meq_l": "Magnésium (meq/L)",
+      "sar": "Rapport d’adsorption du sodium (COMPUTED)"
     }
   },
   "os": {
@@ -1627,5 +1644,237 @@
     "publicTitle": "Des données qui font évoluer votre système.",
     "publicBody": "Règles versionnées, revue indépendante, calculs reproductibles et enrichissement sourcé.",
     "open": "Ouvrir l’automatisation"
+  },
+  "registry": {
+    "title": "Registre des sites, ressources et actifs",
+    "subtitle": "Créez le site, ses ressources et actifs, puis reliez le projet. Enregistrement dans votre organisation avec audit.",
+    "sites": "Sites",
+    "resources": "Ressources en eau",
+    "assets": "Actifs hydrauliques",
+    "create": "Créer un enregistrement",
+    "edit": "Modifier",
+    "save": "Enregistrer en base",
+    "saved": "Enregistré en base de données.",
+    "cancel": "Annuler",
+    "name": "Nom",
+    "wilaya": "Wilaya",
+    "commune": "Commune",
+    "lat": "Latitude",
+    "lon": "Longitude",
+    "site": "Site associé",
+    "resource": "Ressource associée",
+    "choose": "Choisir",
+    "type": "Type",
+    "status": "État",
+    "search": "Rechercher par nom",
+    "empty": "Créez le premier enregistrement avec le formulaire ci-dessus.",
+    "parentFirst": "Créez d’abord le parent :",
+    "projectFirst": "Créer un projet d’abord",
+    "coordinatesNotice": "Coordonnées WGS84 saisies : fournir latitude et longitude ensemble. Le code administratif ne prouve pas l’appartenance à un polygone.",
+    "limit": "Affichage de {{count}} sur {{total}} enregistrements.",
+    "values": {
+      "foggara": "Foggara",
+      "borehole": "Forage",
+      "spring": "Source",
+      "well": "Puits",
+      "dam": "Barrage",
+      "gallery": "Galerie",
+      "mother_well": "Puits mère",
+      "pump": "Pompe",
+      "channel": "Canal",
+      "sensor": "Capteur",
+      "active": "Actif",
+      "degraded": "Dégradé",
+      "dry": "Sec",
+      "abandoned": "Abandonné",
+      "operational": "Opérationnel",
+      "maintenance": "Maintenance",
+      "out_of_service": "Hors service"
+    }
+  },
+  "reference": {
+    "title": "Références nationales, scientifiques et juridiques",
+    "subtitle": "Sources versionnées et datées, reliées aux méthodes et calculs.",
+    "search": "Rechercher une loi, méthode ou source",
+    "domain": "Domaine",
+    "category": "Catégorie",
+    "all": "Tous",
+    "checked": "Vérifié le",
+    "directory": "Répertoire national des wilayas",
+    "coverageNotice": "69 wilayas selon la loi 26-06 et le décret 26-206. Le répertoire présente noms et codes ; les sites opérationnels apparaissent après enregistrement.",
+    "categories": {
+      "law": "Lois",
+      "method": "Méthodes",
+      "dataset": "Sources de données"
+    }
+  },
+  "economics": {
+    "title": "Scénarios technico-économiques",
+    "subtitle": "Hypothèses, flux annuels, valeur actuelle nette et sensibilité, enregistrés avec empreinte des entrées.",
+    "titleField": "Titre du scénario",
+    "initial_investment": "Investissement initial (DZD)",
+    "discount_percent": "Taux d’actualisation (%)",
+    "stress_percent": "Variation des revenus et coûts (%)",
+    "source_note": "Sources et limites des hypothèses",
+    "flows": "Flux annuels",
+    "year": "Année",
+    "revenue": "Revenus",
+    "cost": "Coûts",
+    "removeYear": "Retirer l’année",
+    "addYear": "Ajouter une année",
+    "computeSave": "Calculer et enregistrer",
+    "notice": "Hypothèses déclarées en DZD. Calcul hors fiscalité, financement, inflation et valeur terminale ; examen économique requis.",
+    "npv": "Valeur actuelle nette",
+    "payback": "Délai de retour en années",
+    "noPayback": "Non atteint sur la période",
+    "details": "Flux et empreinte du calcul",
+    "net": "Flux net",
+    "discounted": "Flux actualisé",
+    "cumulative": "Net cumulé",
+    "cases": {
+      "base": "Base",
+      "stress": "Stress : revenu réduit, coût accru",
+      "upside": "Amélioration : revenu accru, coût réduit"
+    }
+  },
+  "intelligence": {
+    "title": "Intelligence appuyée sur les sources",
+    "subtitle": "Dossiers d’analyse du projet et ensemble de modèles locaux lorsque le serveur est connecté.",
+    "connection": "Connexion aux modèles",
+    "connectionNotice": "Les fonctions déterministes réalisent les calculs. Les modèles rédigent des propositions sourcées via une connexion privée configurée.",
+    "installed": "Installé",
+    "missingModel": "Absent du serveur",
+    "checkConnection": "Vérifier la connexion",
+    "question": "Question d’analyse",
+    "prepare": "Préparer et enregistrer l’analyse",
+    "projectData": "Ouvrir les données du projet",
+    "reviewNotice": "Les données validées de votre organisation sont réunies avec les références versionnées. Les sorties restent des propositions à examiner ; la chimie de l’eau et du sol nécessite des mesures.",
+    "sourceCount": "{{count}} sources de terrain dans le dossier",
+    "sourceSnapshot": "Sources et empreinte du dossier",
+    "status": {
+      "unconfigured": "Non configuré",
+      "ready": "Connecté",
+      "models_missing": "Modèles manquants",
+      "unavailable": "Indisponible",
+      "prepared": "Dossier préparé",
+      "insufficient_data": "Données insuffisantes",
+      "queued": "En attente",
+      "completed": "Proposition terminée",
+      "partial": "Résultats partiels",
+      "failed": "Échec"
+    },
+    "specialists": {
+      "water": "Eau",
+      "soil": "Sol",
+      "food": "Cultures et alimentation",
+      "energy": "Énergie",
+      "ecosystem": "Écosystèmes",
+      "health": "Une seule santé",
+      "gis": "Localisation et coordonnées",
+      "regulatory": "Références réglementaires",
+      "economics": "Étude économique"
+    },
+    "missing": {
+      "private_model_connection": "Sources enregistrées. Connectez le serveur privé pour générer les propositions.",
+      "reviewed_project_data": "Ajoutez les données du projet et examinez leurs preuves."
+    }
+  },
+  "legal": {
+    "titles": {
+      "about": "Relier la ressource à la preuve et à la décision",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d’utilisation",
+      "rights": "Droits et sources",
+      "contact": "Construisons la valeur ensemble."
+    },
+    "version": "2026-10-04-v2",
+    "pages": {
+      "about": [
+        {
+          "heading": "Plateforme de décision et d’exploitation",
+          "body": "FOGGARA-DZ relie organisations, projets, sites, ressources, mesures, preuves, examen, décisions, actions et suivi dans les domaines eau, énergie, alimentation, écosystèmes et Une seule santé. Projet porté par EURL SIREP OASES NEXUS WEFEH-DZ, Laghouat, Algérie."
+        },
+        {
+          "heading": "Cycle de travail",
+          "body": "Ressource → données → structure → analyse → règles → intelligence → décision → action → suivi → preuve → apprentissage. Les résultats restent liés aux sources, méthodes et examens. Le répertoire couvre 69 wilayas ; l’exploitation dépend des sites et projets enregistrés."
+        }
+      ],
+      "privacy": [
+        {
+          "heading": "Responsable et contact",
+          "body": "Exploitant : EURL SIREP OASES NEXUS WEFEH-DZ. Questions et droits : kacimo2000@gmail.com ou formulaire de contact. Cette politique ne revendique ni déclaration/autorisation ANPDP ni désignation d’un délégué non vérifiée."
+        },
+        {
+          "heading": "Données et finalités",
+          "body": "Données du compte et de l’organisation pour l’accès ; sites, coordonnées, projets, actifs, analyses et documents pour le service ; audit pour la traçabilité et la sécurité. Le contact enregistre nom, email, sujet, message et accord pour répondre. Limitez les données personnelles aux informations nécessaires et autorisées."
+        },
+        {
+          "heading": "Accès et divulgation",
+          "body": "Le serveur contrôle identité et autorisations par organisation. Une opportunité publiée exige un accord explicite ; une salle de données nécessite demande, décision d’accès et divulgation des documents sélectionnés. Les références sont publiques ; les projets restent protégés."
+        },
+        {
+          "heading": "Hébergement actuel et transfert",
+          "body": "Version temporaire hébergée sur Render à Francfort et base Supabase en eu-central-1, hors Algérie. Les transferts nécessitent l’examen de leur licéité et des formalités applicables selon la loi 18-07 modifiée. L’hébergement local requis pour des données sensibles doit être préparé avant leur saisie."
+        },
+        {
+          "heading": "Session et ressources techniques",
+          "body": "Le jeton d’accès est conservé en mémoire et disparaît au rechargement ou à la déconnexion. Langue et wilaya sont mémorisées localement. Les polices sont servies par la plateforme. Cette interface n’inclut pas d’outils publicitaires ou d’analytique marketing."
+        },
+        {
+          "heading": "Intelligence artificielle",
+          "body": "Aucune connexion aux modèles n’est activée automatiquement. Un serveur privé configuré reçoit des dossiers sélectionnés dans le périmètre de l’organisation, limités aux données nécessaires et références. Entrées, sorties et empreintes sont conservées pour examen. Les propositions n’accordent ni accès administratif ni commande d’équipements."
+        },
+        {
+          "heading": "Conservation et droits",
+          "body": "Les comptes et projets sont conservés tant que la finalité ou une obligation légitime subsiste. Pas d’effacement automatique dans cette version ; appliquer les décisions de conservation/effacement après examen, sauvegardes comprises. Les demandes d’accès, correction, effacement ou opposition sont enregistrables dans l’espace droits ou par contact, après vérification d’identité et obligations."
+        },
+        {
+          "heading": "Cadre juridique et plaintes",
+          "body": "Loi 18-07 du 10 juin 2018, modifiée et complétée par la loi 25-11 du 24 juillet 2025. Réclamation possible auprès de l’ANPDP. Les textes originaux sont liés dans le centre des références ; la conformité nécessite l’examen des pratiques effectives de l’exploitant."
+        }
+      ],
+      "terms": [
+        {
+          "heading": "Accès et usage",
+          "body": "Utilisez un compte autorisé, protégez les identifiants et saisissez des données dont l’usage est permis. Contournement de l’isolation, informations trompeuses et contenu malveillant sont interdits. L’administrateur gère les membres et rôles."
+        },
+        {
+          "heading": "Calcul et validation",
+          "body": "Les calculs utilisent les entrées, unités, méthodes et règles déclarées avec sources et limites. Un spécialiste examine les décisions ; la commande d’équipement nécessite des procédures de sécurité distinctes. Un scénario ne garantit ni financement ni rendement ; les indicateurs ne constituent pas un diagnostic médical."
+        },
+        {
+          "heading": "Collaboration et contrats",
+          "body": "La mise en relation rapproche besoins et capacités sans créer automatiquement contrat, facture ou paiement. La chaîne d’assurance documente les pièces effectives ; vérifier signatures, contrats et fiscalité applicables avant engagement."
+        },
+        {
+          "heading": "Disponibilité et litiges",
+          "body": "La maintenance ou les limites d’hébergement peuvent interrompre le service. Les conventions professionnelles et droits impératifs applicables prévalent. Adresser les réclamations à l’exploitant ; règles et juridictions obligatoires s’appliquent."
+        }
+      ],
+      "rights": [
+        {
+          "heading": "Droits sur les données",
+          "body": "Les propriétaires conservent leurs droits. La saisie permet le traitement nécessaire au service selon sa finalité et les autorisations, sans transfert de propriété ni revente. Les composants libres conservent leurs licences."
+        },
+        {
+          "heading": "Identité et références",
+          "body": "L’identité SIREP OASES NEXUS WEFEH-DZ et le croissant/étoile reprennent le design fourni au projet. Aucun enregistrement de marque ou agrément non vérifié n’est revendiqué. Les références mentionnent leur éditeur sans impliquer d’approbation de la plateforme."
+        },
+        {
+          "heading": "Signalement",
+          "body": "Signalez un contenu avec son lien, le droit concerné et une preuve de votre qualité via le contact. Examen dans le respect des droits et données des parties."
+        }
+      ]
+    },
+    "back": "Retour à FOGGARA",
+    "contactIntro": "Votre message est enregistré pour répondre à votre demande.",
+    "name": "Nom",
+    "email": "Email",
+    "subject": "Sujet",
+    "message": "Message",
+    "consent": "J’accepte le traitement de mon message pour répondre à ma demande selon la politique de confidentialité.",
+    "send": "Envoyer",
+    "saved": "Message enregistré. Référence :",
+    "rightsWorkspace": "Ouvrir l’espace droits des données"
   }
 }

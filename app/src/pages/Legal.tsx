@@ -1,76 +1,17 @@
-import { useState, type FormEvent } from "react";
-import { Link, useLocation } from "react-router";
-import { ArrowUpLeft, Mail, MapPin, Phone, Send } from "lucide-react";
-import { api } from "@/lib/api";
-import "./operations.css";
-
-export default function Legal() {
-  const {pathname} = useLocation();
-  const [busy,setBusy] = useState(false);
-  const [reference,setReference] = useState("");
-  const [error,setError] = useState("");
-  async function contact(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault();const form=e.currentTarget;const f=new FormData(form);setBusy(true);setError("");setReference("");
-    try {
-      const result=await api.post<{reference:string}>("/operations/contact",{
-        name:f.get("name"),email:f.get("email"),subject:f.get("subject"),message:f.get("message"),
-        consent:f.get("consent")==="on",website:f.get("website")||""
-      });
-      setReference(result.reference);form.reset();
-    } catch(err) {setError(err instanceof Error?err.message:"تعذر حفظ الرسالة");}
-    finally {setBusy(false);}
-  }
-  const title=({"/about":"من الأرض… إلى مستقبل مترابط.","/privacy":"سياسة الخصوصية","/terms":"شروط الاستخدام","/rights":"الحقوق والملكية الفكرية","/contact":"لنبنِ القيمة معًا."} as Record<string,string>)[pathname];
-  return <article className="fg-public fg-legal" dir="rtl" lang="ar">
-    <Link to="/" className="fg-link">العودة إلى فقارة <ArrowUpLeft size={15}/></Link>
-    <p className="fg-eyebrow">FOGGARA / SIREP OASIS NEXUS WEFEH</p><h1>{title}</h1>
-    {pathname==="/about"&&<>
-      <section><h2>بنية رقمية تربط منظومة الإنتاج</h2><p>فقارة هي المنصة الرقمية لمشروع SIREP OASIS NEXUS TECH DZ، تطورها EURL SIREP OASIS NEXUS WEFEH في الأغواط، الجزائر. تجمع المعلومات والعمليات والخدمات لتربط الموارد والمنتجين والمورّدين والخبراء والمؤسسات والأسواق.</p>
-      <p>تعتمد مقاربة WEFEH التي تنظر إلى المياه والطاقة والغذاء والنظم البيئية والصحة باعتبارها مجالات مترابطة. وتخدم الزراعة والواحات والإنتاج الحيواني والصيد وتربية الأحياء المائية والتحويل والتثمين والخدمات والمعدات والتتبّع واللوجستيك.</p></section>
-      <section><h2>من القياس إلى قرار يمكن تتبّعه</h2><p>تبدأ دورة العمل بمشروع وقياسات ومراجع، ثم مراجعة البيانات وتحليلها وتقييم مؤشرات الأداء، وصولًا إلى القرار البشري والإجراء والمتابعة والتدقيق. تساعد المصفوفات على تقييم المؤشرات واقتراح توافقات العرض والطلب؛ ولا يُعد اقتراحها اعتمادًا أو أمرًا ميدانيًا.</p></section>
-      <section><h2>ثلاث طبقات متكاملة</h2><ul><li>خدمات هندسية وخبرة متخصصة.</li><li>منتجات برمجية وتنظيم المعلومات والعمليات.</li><li>أنظمة ميدانية وأجهزة ومراقبة، بحسب الربط المتاح لكل مشروع.</li></ul>
-      <p>السجلات الموسومة DEMO بيانات توضيحية. الربط بأجهزة فعلية والاعتمادات المهنية والتغطية الجغرافية لا يُفترض وجودها لمجرد ظهور وحدة في الواجهة.</p></section>
-      <section><h2>الجهة الناشرة</h2><p>EURL SIREP OASIS NEXUS WEFEH · السجل التجاري: 0924154-26 · الرقم الجبائي: 002603092415466، وفق وثيقة التعريف المقدمة للمشروع.</p><p>المؤسس والمسير: MAHROUG ERRAS BELKACEM. العنوان: Cité 65 Villa El-Maamoura, 03000 Laghouat, Algérie.</p></section>
-    </>}
-    {pathname==="/privacy"&&<>
-      <p className="fg-note">نسخة السياسة: 2026-10-02. يلزم أن تحدد الجهة المشغلة ترتيبات الاستضافة، مدة الاحتفاظ، والمتعهدين ومندوب حماية البيانات قبل استقبال بيانات أشخاص في تشغيل عام. هذه الصفحة لا تشهد باستكمال الإجراءات التنظيمية.</p>
-      <section><h2>المسؤول والغرض من المعالجة</h2><p>الجهة الناشرة هي EURL SIREP OASIS NEXUS WEFEH. تستخدم بيانات الحساب والمؤسسة لإدارة الوصول والصلاحيات؛ وبيانات المشاريع والقياسات والأدلة لتقديم الخدمات والتقييم والتتبّع؛ وسجلات العمليات لتأمين الاستخدام ومراجعة القرارات. يستخدم نموذج التواصل بيانات الاسم والبريد والموضوع والرسالة للرد على طلبك.</p></section>
-      <section><h2>ما الذي يُجمع؟</h2><p>تشمل البيانات المدخلة اسم المستخدم وبريده ومؤسسته ودوره، وبيانات المشاريع والمواقع والقياسات والمراجع والطلبات. يحفظ النظام سجلات عمليات تتضمن الحساب والعملية ووقتها، ويسجل الخادم مسار الطلب وحالته ومدته. لا تُسجل كلمات المرور في سجل الطلبات.</p><p>الحقول الموسومة بأنها مطلوبة ضرورية لإنجاز العملية المقصودة. لا تضع معلومات صحية شخصية أو أسرارًا غير لازمة في حقول القياسات أو الرسائل. مجال الصحة في المصفوفة مخصص لمؤشرات المشروع، ولا يقدم تشخيصًا طبيًا.</p></section>
-      <section><h2>الوصول والمشاركة</h2><p>تُقيد سجلات التشغيل بالمؤسسة وصلاحيات المستخدمين. لا تُنشر عروضك وطلباتك تلقائيًا على سوق عام. تقتصر قراءة رسائل التواصل على مسؤول الجهة المعيّنة لإدارة التواصل. يحتاج أي نشر خارجي أو مشاركة مع متعهد إلى تحديد الغرض والأساس والضمانات المناسبة.</p></section>
-      <section><h2>الاستضافة والنقل خارج الجزائر</h2><p>مكان الاستضافة الفعلي يعتمد على إعداد النشر، ولا يعني اسم «منصة سيادية» أن البيانات مستضافة تلقائيًا في الجزائر. يجب فحص مشروعية النقل إلى الخارج والإجراءات لدى السلطة المختصة حسب قانون 18-07 وتعديلاته قبل استخدام استضافة خارجية مع بيانات شخصية. لا تعرض هذه النسخة تصريحًا أو ترخيصًا غير متحقق منه.</p></section>
-      <section><h2>التخزين المحلي والخدمات الخارجية</h2><p>تستخدم الواجهة التخزين المحلي لحفظ رمز جلسة الدخول وتفضيلات الواجهة. تسجيل الخروج يزيل الرمز من المتصفح؛ رمز الوصول السابق يبقى خاضعًا لمدة صلاحيته في الخادم، وتغيير كلمة المرور يُبطل رموز الوصول السابقة. لا توجد في هذه الإضافة أدوات إعلانية أو تحليلات تسويقية.</p><p>قد تُحمّل الخطوط من Google Fonts، وتُحمّل صورة واجهة الموقع من Wikimedia، فيتلقى المزود طلب اتصال تقنيًا يتضمن عنوان الشبكة. ينبغي استضافة هذه الموارد محليًا إذا كانت سياسة النشر تستلزم منع الاتصالات الخارجية.</p></section>
-      <section><h2>الاحتفاظ وحقوقك</h2><p>لا تنفذ هذه النسخة حذفًا تلقائيًا للسجلات. على المشغل اعتماد مدد احتفاظ محددة بحسب الغرض والالتزامات القانونية، وتنفيذ المحو أو إخفاء الهوية عند زوال الحاجة، مع مراعاة النسخ الاحتياطية. لا يُفترض جواز الاحتفاظ غير المحدود.</p><p>يمكنك تقديم طلب وصول أو تصحيح أو محو أو اعتراض أو تقييد عبر <Link to="/app/operations">حقوق البيانات في مساحة العمل</Link> أو <Link to="/contact">التواصل</Link>. تُراجع الهوية والطلب والالتزامات المعمول بها؛ تسجيل الطلب لا يعني قبوله أو إنجاز المحو تلقائيًا. يمكن تقديم شكوى إلى السلطة الوطنية المختصة بحماية المعطيات ذات الطابع الشخصي.</p></section>
-      <section><h2>المراجع</h2><p><a href="https://www.joradp.dz/FTP/JO-FRANCAIS/2018/F2018034.pdf" target="_blank" rel="noreferrer">القانون 18-07</a>، المعدل والمتمم بـ <a href="https://www.joradp.dz/FTP/jo-francais/2025/F2025048.pdf" target="_blank" rel="noreferrer">القانون 25-11 المؤرخ في 24 يوليو 2025</a>. تستلزم الصيغة النهائية مواءمة قانونية مع ممارسات المشغل الفعلية.</p></section>
-    </>}
-    {pathname==="/terms"&&<>
-      <p className="fg-note">نسخة الشروط: 2026-10-02 · تخضع العقود المهنية الخاصة وأحكام القانون الإلزامية للأولوية عند انطباقها.</p>
-      <section><h2>نطاق الخدمة</h2><p>توفر فقارة مساحة لتنظيم المشاريع والقياسات والمراجعات والدفعات ومؤشرات WEFEH واقتراحات العرض والطلب. تعتمد النتائج على البيانات والقواعد المعتمدة من المؤسسة. تختلف الوحدات الموصولة بأنظمة فعلية عن النماذج والمحاكاة والبيانات التجريبية.</p></section>
-      <section><h2>الحسابات والاستخدام المسموح</h2><p>يجب استخدام حساب مصرح به، وحماية بيانات الدخول، وإدخال بيانات لديك حق استخدامها. تمنع محاولة تجاوز عزل المؤسسات أو تحميل برمجيات ضارة أو انتحال صفة أو تقديم بيانات مضللة. يتولى مسؤول المؤسسة توزيع الأدوار ومراجعة الوصول.</p></section>
-      <section><h2>المراجعة والمسؤولية</h2><p>المؤشرات والتوصيات أدوات دعم للقرار وليست ضمانًا للنتائج الإنتاجية أو شهادة جودة أو توصية طبية أو مالية. يجب مراجعة مصادر القياسات وحداثتها ووحداتها وقواعد التقييم قبل اعتماد القرار. يبقى تشغيل التجهيزات الميدانية خاضعًا لصلاحيات وإجراءات السلامة المناسبة.</p></section>
-      <section><h2>العرض والطلب</h2><p>المطابقة الحالية داخل المؤسسة تقترح بدائل بناء على رمز المنتج والقطاع والوحدة والولاية. لا تنشئ عقد بيع أو فاتورة أو دفعًا، ولا تحجز مخزونًا أو تؤكد التسليم. تُتفق الأسعار والشروط والالتزامات التجارية خارج الاقتراح وقبل أي معاملة ملزمة.</p><p>إذا فُعّلت التجارة الإلكترونية، يلزم تطبيق المتطلبات التي تنطبق على النشاط، بما فيها <a href="https://www.joradp.dz/FTP/JO-FRANCAIS/2018/F2018028.pdf" target="_blank" rel="noreferrer">القانون 18-05</a> ومتطلبات المعلومات السابقة للتعاقد والحقوق الواجبة والاستضافة والتسجيل بحسب الحالة.</p></section>
-      <section><h2>التوفر والتغييرات والنزاعات</h2><p>قد يتوقف الوصول للصيانة أو لأسباب أمنية أو تقنية. لا تعد الواجهة باتفاقية مستوى خدمة غير موقعة. يجب إبلاغ المستخدمين بالتغييرات الجوهرية في الشروط. تُوجّه الاعتراضات أولًا إلى الجهة المشغلة، وتطبق القوانين والاختصاصات القضائية الواجبة دون إسقاط حقوق إلزامية.</p></section>
-    </>}
-    {pathname==="/rights"&&<>
-      <section><h2>المحتوى والبيانات</h2><p>يحتفظ أصحاب البيانات والمحتوى بحقوقهم. إدخال المحتوى يمنح الجهة المشغلة حق معالجته بالقدر اللازم لتقديم الخدمة وفق الغرض والصلاحيات المعتمدة، ولا يعني نقل الملكية أو إباحة إعادة البيع.</p></section>
-      <section><h2>الاسم والبرمجيات</h2><p>يُستخدم اسم FOGGARA وهوية SIREP OASIS NEXUS WEFEH للتعريف بالمشروع والجهة الناشرة. لا تتضمن هذه الصفحة ادعاءً بتسجيل علامة أو براءة أو اعتماد غير موثق. يخضع استخدام الشيفرة والمكونات لتراخيص المستودع والمكونات المعنية، ولا يلغي النص حقوق البرمجيات مفتوحة المصدر.</p></section>
-      <section><h2>الصور والمصادر</h2><p>صورة فقارة تالا في الواجهة: Bernard Gagnon، <a href="https://commons.wikimedia.org/wiki/File:Foggara_in_Tala.jpg" target="_blank" rel="noreferrer">Wikimedia Commons</a>، بترخيص <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. عُدّل العرض بالاقتصاص وتعتيم الألوان. لا يشير الاستخدام إلى تأييد المصور للمنصة.</p></section>
-      <section><h2>الإبلاغ عن انتهاك</h2><p>للتبليغ، أرسل رابط المحتوى ووصف الحق ودليل صفتك ووسيلة التواصل عبر <Link to="/contact">اتصل بنا</Link>. تُراجع البلاغات مع حفظ حقوق الأطراف وعدم الكشف غير الضروري عن بياناتهم.</p></section>
-    </>}
-    {pathname==="/contact"&&<>
-      <p>مشروع ميداني، شراكة تقنية، خدمة هندسية أو طلب متعلق ببياناتك. تصل رسالتك إلى سجل التواصل الخاص بالمنصة.</p>
-      <div className="fg-contact-grid"><section>
-        <h2>الجزائر · الأغواط</h2><p><MapPin size={17}/>Cité 65 Villa El-Maamoura<br/>03000 Laghouat, Algérie</p>
-        <h2>تواصل مباشر</h2><p><Mail size={17}/><a href="mailto:kacimo2000@gmail.com">kacimo2000@gmail.com</a><br/><a href="mailto:skacimo1985@gmail.com">skacimo1985@gmail.com</a></p>
-        <p><Phone size={17}/><a dir="ltr" href="tel:+213674005940">+213 674 005 940</a><br/>WhatsApp: <a dir="ltr" href="https://wa.me/213556640211" target="_blank" rel="noreferrer">+213 556 640 211</a></p>
-      </section><form className="fg-panel" onSubmit={e=>void contact(e)}>
-        {[["name","الاسم","text",120],["email","البريد الإلكتروني","email",254],["subject","الموضوع","text",180]].map(([name,label,type,max])=><label key={name} className="fg-field"><span>{label}</span><input className="fg-input" name={String(name)} type={String(type)} required minLength={name==="name"?2:3} maxLength={Number(max)}/></label>)}
-        <label className="fg-field"><span>الرسالة</span><textarea className="fg-input" name="message" required minLength={10} maxLength={5000}/></label>
-        <div hidden aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div>
-        <label className="fg-checkbox"><input name="consent" type="checkbox" required/><span>أوافق على معالجة معلومات الرسالة للرد على طلبي وفق <Link to="/privacy">سياسة الخصوصية</Link>.</span></label>
-        <button className="fg-button" disabled={busy}><Send size={16}/>{busy?"جارٍ الحفظ…":"تسجيل الرسالة"}</button>
-        {reference&&<p role="status" className="fg-success">حُفظت الرسالة. مرجعك: {reference}. لم تُرسل رسالة بريد تلقائية.</p>}
-        {error&&<p role="alert" className="fg-alert">{error}</p>}
-      </form></div>
-    </>}
-  </article>;
-}
+import { useState, type FormEvent } from 'react';
+import { Link, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { api } from '@/lib/api';
+import { ErrorText } from '@/components/common';
+import './operations.css';
+interface Section{heading:string;body:string;}
+export default function Legal(){const {pathname}=useLocation();const {t,i18n}=useTranslation();const page=pathname.slice(1);const [busy,setBusy]=useState(false);const [reference,setReference]=useState('');const [error,setError]=useState<unknown>(null);
+async function contact(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget;const f=new FormData(form);setBusy(true);setError(null);setReference('');try{const result=await api.post<{reference:string}>('/operations/contact',{name:f.get('name'),email:f.get('email'),subject:f.get('subject'),message:f.get('message'),consent:f.get('consent')==='on',website:f.get('website')||''});setReference(result.reference);form.reset();}catch(err){setError(err);}finally{setBusy(false);}}
+const sections=page==='contact'?[]:t(`legal.pages.${page}`,{returnObjects:true}) as Section[];
+return <article className="fg-public fg-legal" dir={i18n.language==='ar'?'rtl':'ltr'} lang={i18n.language}><Link to="/" className="fg-link">{t('legal.back')}</Link><p className="fg-eyebrow">FOGGARA / SIREP OASES NEXUS WEFEH-DZ</p><h1>{t(`legal.titles.${page}`)}</h1><p className="text-xs text-muted-foreground">{t('legal.version')}</p>
+{Array.isArray(sections)&&sections.map(s=><section key={s.heading}><h2>{s.heading}</h2><p>{s.body}</p></section>)}
+{page==='privacy'&&<Link to="/app/operations" className="fg-link">{t('legal.rightsWorkspace')}</Link>}
+{page==='contact'&&<><p>{t('legal.contactIntro')}</p><div className="fg-contact-grid"><section><h2>EURL SIREP OASES NEXUS WEFEH-DZ</h2><p>Laghouat · Algérie</p><p><a href="mailto:kacimo2000@gmail.com">kacimo2000@gmail.com</a></p></section><form className="fg-panel" onSubmit={e=>void contact(e)}>
+{['name','email','subject'].map(k=><label key={k} className="fg-field"><span>{t(`legal.${k}`)}</span><input className="fg-input" name={k} type={k==='email'?'email':'text'} required minLength={k==='name'?2:3} maxLength={k==='name'?120:k==='email'?254:180}/></label>)}
+<label className="fg-field"><span>{t('legal.message')}</span><textarea className="fg-input" name="message" required minLength={10} maxLength={5000}/></label><div hidden aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div><label className="fg-checkbox"><input name="consent" type="checkbox" required/><span>{t('legal.consent')} <Link to="/privacy">{t('legal.titles.privacy')}</Link></span></label><ErrorText error={error}/>{reference&&<p role="status">{t('legal.saved')} <strong dir="ltr">{reference}</strong></p>}<button className="fg-button" disabled={busy}>{busy?t('common.loading'):t('legal.send')}</button></form></div></>}
+<nav className="flex flex-wrap gap-4 mt-8 border-t pt-5" aria-label={t('reference.title')}>{['privacy','terms','rights','contact'].filter(k=>k!==page).map(k=><Link key={k} to={'/'+k}>{t(`legal.titles.${k}`)}</Link>)}<Link to="/references">{t('reference.title')}</Link></nav></article>;}
