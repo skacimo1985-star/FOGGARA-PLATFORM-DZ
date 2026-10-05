@@ -54,7 +54,7 @@ export default function CommandCenter() {
     open: "Ouvrir", domains: "Espaces opérationnels", flow: "Chaîne de décision FOGGARA",
     activity: "État opérationnel", noData: "Aucune donnée", unavailable: "Indisponible",
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
-    decisionsLabel: "Décisions", automation: "Automatisation", ai: "IA souveraine", evidenceLabel: "Preuves",
+    decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
     updated: "Actualisé", review: "File de revue", national: "Couverture nationale",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
@@ -65,7 +65,7 @@ export default function CommandCenter() {
     open: "Open", domains: "Operational workspaces", flow: "FOGGARA decision chain",
     activity: "Operational state", noData: "No data", unavailable: "Unavailable",
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
-    decisionsLabel: "Decisions", automation: "Automation", ai: "Sovereign AI", evidenceLabel: "Evidence",
+    decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
     updated: "Updated", review: "Review queue", national: "National coverage",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
@@ -76,7 +76,7 @@ export default function CommandCenter() {
     open: "فتح", domains: "مساحات العمل التشغيلية", flow: "سلسلة القرار في FOGGARA",
     activity: "الحالة التشغيلية", noData: "لا توجد بيانات", unavailable: "غير متاح",
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
-    decisionsLabel: "القرارات", automation: "الأتمتة", ai: "الذكاء السيادي", evidenceLabel: "الأدلة",
+    decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
     updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية",
   };
 
@@ -144,7 +144,7 @@ export default function CommandCenter() {
     { label: copy.decisionsLabel, body: "Evidence → review → action", to: "/app/decisions", icon: ClipboardCheck },
     { label: copy.automation, body: "Jobs · rules · monitoring", to: "/app/automation", icon: Workflow },
     { label: copy.evidenceLabel, body: "Observed · verified · computed", to: "/app/review", icon: ShieldCheck },
-    { label: copy.ai, body: "Local-first intelligence layer", to: "/app/studio", icon: Bot },
+    { label: copy.ai, body: "Portfolio · evidence · risks · next actions", to: "/app/insights", icon: Bot },
   ];
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
