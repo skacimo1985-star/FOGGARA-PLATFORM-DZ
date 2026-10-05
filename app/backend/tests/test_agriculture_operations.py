@@ -214,3 +214,25 @@ def test_ec_measurement_rejects_wrong_unit(client, world):
     })
     assert r.status_code == 422
     assert r.json()['detail']['code'] == 'INVALID_UNIT'
+
+
+@pytest.mark.parametrize('parameter,value,unit', [
+    ('tds', 750, 'mg/L'), ('salinity', 1.1, 'ppt'), ('sar', 3.2, 'index'),
+    ('sodium', 120, 'mg/L'), ('calcium', 80, 'mg/L'), ('magnesium', 35, 'mg/L'),
+    ('chloride', 160, 'mg/L'), ('bicarbonate', 180, 'mg/L'),
+    ('soil_nitrogen', 45, 'mg/kg'), ('soil_phosphorus', 18, 'mg/kg'), ('soil_potassium', 210, 'mg/kg'),
+    ('soil_soc', 2.1, '%'), ('soil_organic_matter', 3.6, '%'), ('soil_ec', 1.4, 'dS/m'),
+    ('soil_temperature', 24, '°C'), ('air_temperature', 31, '°C'), ('wind_speed', 4.2, 'm/s'),
+    ('solar_radiation', 650, 'W/m2'), ('reference_et', 5.4, 'mm/day'),
+    ('current', 12, 'A'), ('energy', 42, 'kWh'),
+])
+def test_expanded_measurement_catalog_accepts_valid_units(client, world, parameter, value, unit):
+    h = login(client, 'o1m@t.dz')
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+    r = client.post('/api/measurements', headers=h, json={
+        'project_id':project['id'], 'parameter':parameter, 'value':value, 'unit':unit,
+        'measured_at':datetime.now(timezone.utc).isoformat(), 'source':'test-source', 'method':'test-method'
+    })
+    assert r.status_code == 201, r.text
+    assert r.json()['parameter'] == parameter
