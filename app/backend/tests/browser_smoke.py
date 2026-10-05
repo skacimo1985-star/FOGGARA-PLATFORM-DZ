@@ -180,7 +180,9 @@ def main():
                 page.locator('[name="consent"]').check()
                 page.get_by_role("button", name="تسجيل الرسالة").click()
                 expect(page.get_by_role("status")).to_contain_text("FG-")
-                page.reload()
+                page.reload(wait_until="networkidle")
+                # Public-page navigation must not destroy a valid persisted session.
+                assert page.evaluate("sessionStorage.getItem('fg_session') !== null")
                 def authenticated_visit(path):
                     page.goto("http://127.0.0.1:8000" + path, wait_until="networkidle")
                     expect(page).to_have_url("http://127.0.0.1:8000" + path)
