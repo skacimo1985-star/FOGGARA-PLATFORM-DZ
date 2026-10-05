@@ -152,7 +152,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, time, urllib.request, subprocess
-          expected_head = subprocess.check_output(["docker", "compose", "-f", "compose.production.yml", "exec", "-T", "api", "python", "-m", "alembic", "heads"], text=True).split()[0]
+          expected_head = subprocess.check_output(["docker", "compose", "-f", "compose.production.yml", "exec", "-T", "web", "python", "-m", "alembic", "heads"], text=True).split()[0]
           for attempt in range(40):
               try:
                   with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
