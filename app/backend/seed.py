@@ -99,6 +99,157 @@ def main():
                                                lat=27.67, lon=-8.15, is_demo=True))
         created["sites"] += c
 
+        # ---- Additional wilayas (national coverage expansion) ----
+        # 13 wilayas beyond Adrar(01) and Tindouf(37).
+        # Sahara/oasis wilayas get foggaras; northern wilayas get boreholes.
+        # Each wilaya receives 1 organization, 1 member user, 1 site,
+        # 1 water resource, and 1 project — all flagged is_demo=True.
+        extra_wilayas = [
+            dict(code="02", wilaya_ar="الشلف", wilaya_fr="Chlef", wilaya_en="Chlef",
+                 lat=36.16, lon=1.33, commune_ar="تنس",
+                 org_code="DEMO-CHLEF-AGRI", org_kind="agri",
+                 resource_type="borehole", resource_status="active",
+                 resource_name="بئر تنس 1 (تجريبي)",
+                 site_name="منطقة تنس — الشلف (تجريبي)",
+                 project_domain="food",
+                 project_title="مشروع تنمية فلاحية — الشلف (تجريبي)"),
+            dict(code="08", wilaya_ar="بشار", wilaya_fr="Béchar", wilaya_en="Bechar",
+                 lat=31.62, lon=-2.22, commune_ar="تاغيت",
+                 org_code="DEMO-BSHR-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة تاغيت (تجريبية)",
+                 site_name="واحة تاغيت — بشار (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة تاغيت (تجريبي)"),
+            dict(code="11", wilaya_ar="تمنراست", wilaya_fr="Tamanrasset", wilaya_en="Tamanrasset",
+                 lat=22.79, lon=5.47, commune_ar="أبلسة",
+                 org_code="DEMO-TMRST-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة أبلسة (تجريبية)",
+                 site_name="واحة أبلسة — تمنراست (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة أبلسة (تجريبي)"),
+            dict(code="16", wilaya_ar="الجزائر", wilaya_fr="Alger", wilaya_en="Alger",
+                 lat=36.75, lon=3.06, commune_ar="الحراش",
+                 org_code="DEMO-ALGER-ADE", org_kind="water",
+                 resource_type="borehole", resource_status="active",
+                 resource_name="بئر الحراش 1 (تجريبي)",
+                 site_name="منطقة الحراش — الجزائر (تجريبي)",
+                 project_domain="water",
+                 project_title="مشروع إدارة الموارد المائية — الجزائر (تجريبي)"),
+            dict(code="30", wilaya_ar="ورقلة", wilaya_fr="Ouargla", wilaya_en="Ouargla",
+                 lat=31.95, lon=5.33, commune_ar="رويسات",
+                 org_code="DEMO-OUARG-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة رويسات (تجريبية)",
+                 site_name="واحة رويسات — ورقلة (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة رويسات (تجريبي)"),
+            dict(code="31", wilaya_ar="وهران", wilaya_fr="Oran", wilaya_en="Oran",
+                 lat=35.69, lon=-0.64, commune_ar="السانية",
+                 org_code="DEMO-ORAN-AGRI", org_kind="agri",
+                 resource_type="borehole", resource_status="active",
+                 resource_name="بئر السانية 1 (تجريبي)",
+                 site_name="منطقة السانية — وهران (تجريبي)",
+                 project_domain="food",
+                 project_title="مشروع تنمية فلاحية — وهران (تجريبي)"),
+            dict(code="39", wilaya_ar="الوادي", wilaya_fr="El Oued", wilaya_en="El Oued",
+                 lat=33.50, lon=6.78, commune_ar="قمار",
+                 org_code="DEMO-ELWED-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة قمار (تجريبية)",
+                 site_name="واحة قمار — الوادي (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة قمار (تجريبي)"),
+            dict(code="47", wilaya_ar="غرداية", wilaya_fr="Ghardaïa", wilaya_en="Ghardaia",
+                 lat=32.49, lon=3.67, commune_ar="بني يسجن",
+                 org_code="DEMO-GHRDA-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة بني يسجن (تجريبية)",
+                 site_name="واحة بني يسجن — غرداية (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة بني يسجن (تجريبي)"),
+            dict(code="49", wilaya_ar="تيميمون", wilaya_fr="Timimoun", wilaya_en="Timimoun",
+                 lat=29.26, lon=0.24, commune_ar="تيميمون",
+                 org_code="DEMO-TIMIM-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة تيميمون (تجريبية)",
+                 site_name="واحة تيميمون — تيميمون (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة تيميمون (تجريبي)"),
+            dict(code="51", wilaya_ar="أولاد جلال", wilaya_fr="Ouled Djellal", wilaya_en="Ouled Djellal",
+                 lat=34.68, lon=5.07, commune_ar="سيدي خالد",
+                 org_code="DEMO-OLDJL-AGRI", org_kind="agri",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة سيدي خالد (تجريبية)",
+                 site_name="واحة سيدي خالد — أولاد جلال (تجريبي)",
+                 project_domain="food",
+                 project_title="مشروع تنمية الواحات — أولاد جلال (تجريبي)"),
+            dict(code="52", wilaya_ar="بني عباس", wilaya_fr="Béni Abbès", wilaya_en="Beni Abbes",
+                 lat=30.13, lon=-2.20, commune_ar="إقلي",
+                 org_code="DEMO-BNIAB-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة إقلي (تجريبية)",
+                 site_name="واحة إقلي — بني عباس (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة إقلي (تجريبي)"),
+            dict(code="54", wilaya_ar="إن صالح", wilaya_fr="In Salah", wilaya_en="In Salah",
+                 lat=27.19, lon=2.47, commune_ar="إن صالح",
+                 org_code="DEMO-INSLH-ADE", org_kind="water",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة إن صالح (تجريبية)",
+                 site_name="واحة إن صالح — إن صالح (تجريبي)",
+                 project_domain="water",
+                 project_title="إعادة تأهيل فڨارة إن صالح (تجريبي)"),
+            dict(code="57", wilaya_ar="المغير", wilaya_fr="El M'Ghair", wilaya_en="El M'Ghair",
+                 lat=33.14, lon=6.28, commune_ar="الجامعة",
+                 org_code="DEMO-ELMGR-AGRI", org_kind="agri",
+                 resource_type="foggara", resource_status="degraded",
+                 resource_name="فڨارة الجامعة (تجريبية)",
+                 site_name="واحة الجامعة — المغير (تجريبي)",
+                 project_domain="food",
+                 project_title="مشروع تنمية فلاحية — المغير (تجريبي)"),
+        ]
+
+        for w in extra_wilayas:
+            if w["org_kind"] == "water":
+                org_defaults = dict(
+                    name_ar=f"مديرية الموارد المائية — {w['wilaya_ar']} (تجريبي)",
+                    name_fr=f"Direction des ressources en eau — {w['wilaya_fr']} (démo)",
+                    name_en=f"Water Resources Directorate — {w['wilaya_en']} (demo)",
+                    is_demo=True)
+            else:
+                org_defaults = dict(
+                    name_ar=f"مديرية المصالح الفلاحية — {w['wilaya_ar']} (تجريبي)",
+                    name_fr=f"Direction des services agricoles — {w['wilaya_fr']} (démo)",
+                    name_en=f"Agricultural Services Directorate — {w['wilaya_en']} (demo)",
+                    is_demo=True)
+            org_x, c = get_or_create(db, Organization, code=w["org_code"], defaults=org_defaults)
+            created["orgs"] += c
+
+            usr_x, c = get_or_create(db, User,
+                email=f"member@{w['org_code'].lower()}.dz",
+                defaults=dict(org_id=org_x.id, password_hash=hash_password(DEMO_PASSWORD),
+                              full_name=f"عضو تجريبي — {w['wilaya_ar']}", role="member"))
+            created["users"] += c
+
+            site_x, c = get_or_create(db, Site, org_id=org_x.id, name=w["site_name"],
+                defaults=dict(wilaya=w["wilaya_ar"], commune=w["commune_ar"],
+                              lat=w["lat"], lon=w["lon"], is_demo=True))
+            created["sites"] += c
+
+            res_x, c = get_or_create(db, WaterResource, org_id=org_x.id, name=w["resource_name"],
+                defaults=dict(site_id=site_x.id, type=w["resource_type"],
+                              status=w["resource_status"], is_demo=True))
+            created["resources"] += c
+
+            _, c = get_or_create(db, Project, org_id=org_x.id, title=w["project_title"],
+                defaults=dict(description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
+                              domain=w["project_domain"], status="active",
+                              site_id=site_x.id, resource_id=res_x.id, is_demo=True,
+                              created_by=usr_x.id))
+            created["projects"] += c
+
         res1, c = get_or_create(db, WaterResource, org_id=org1.id, name="فڨارة أولف الشرقية (تجريبية)",
                                 defaults=dict(site_id=site1.id, type="foggara",
                                               status="degraded", is_demo=True))
@@ -145,12 +296,10 @@ def main():
         created["evidences"] += c
 
         # ---- Metrology DEMO ----
-        # أداة 1: عداد تصريف بمعايرة سارية وشهادة active
         inst_ok, c = get_or_create(db, Instrument, org_id=org1.id, serial_number="FM-DEMO-001",
                                    defaults=dict(type="flow_meter", site_id=site1.id,
                                                  asset_id=asset1.id, status="active", is_demo=True))
         created["instruments"] += c
-        # أداة 2: مقياس pH بمعايرة منتهية وشهادة expired
         inst_bad, c = get_or_create(db, Instrument, org_id=org1.id, serial_number="PH-DEMO-002",
                                     defaults=dict(type="ph_meter", site_id=site1.id,
                                                   status="active", is_demo=True))
@@ -194,7 +343,6 @@ def main():
                                            is_demo=True))
         created["inspections"] += c
 
-        # قياسان من أدوات: واحد من أداة معايرة (قابل للاعتماد) وآخر من أداة بمعايرة منتهية
         m, c = get_or_create(
             db, Measurement, org_id=org1.id, project_id=proj.id, parameter="flow_rate",
             value=0.44, unit="L/s", instrument_id=inst_ok.id,
@@ -261,7 +409,7 @@ def main():
                                            is_demo=True, created_by=member1.id))
         created["service_requests"] += c
 
-        # ---- Water domain DEMO (Contract §4) — مصدر → ضخ → توزيع → سقي → تخصيص ----
+        # ---- Water domain DEMO (Contract §4) ----
         well1, c = get_or_create(db, Well, org_id=org1.id, name="بئر أم — فڨارة أولف (تجريبي)",
                                  defaults=dict(site_id=site1.id, depth_m=38.5, status="active", is_demo=True))
         created["water"] += c
@@ -291,8 +439,7 @@ def main():
                                            status="proposed", created_by=member1.id, is_demo=True))
         created["water"] += c
 
-
-        # ---- Demo decisions (Contract §25 — المرحلة 2، بيانات تجريبية موسومة) ----
+        # ---- Demo decisions ----
         dec1, c = get_or_create(db, GovDecision, org_id=org1.id,
                                 title="اعتماد تخصيص مياه النخيل الشرقية (تجريبي)",
                                 defaults=dict(
@@ -332,8 +479,7 @@ def main():
                 actor_id=reviewer1.id, actor_role="reviewer",
                 created_at=datetime(2026, 9, 28, 9, 0, tzinfo=timezone.utc)))
 
-
-        # ---- Demo IoT/simulator (Phase 03 §33 — محاكاة موسومة DEMO) ----
+        # ---- Demo IoT/simulator ----
         dev1, c = get_or_create(db, Device, org_id=org1.id,
                                 name="وحدة تحكم البئر الأول (محاكاة)",
                                 defaults=dict(
