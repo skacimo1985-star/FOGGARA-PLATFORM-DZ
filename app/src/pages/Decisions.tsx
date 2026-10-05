@@ -235,7 +235,7 @@ export default function Decisions() {
           subtitle: "الحالات مصدرها محرك القرار وتبقى مرتبطة بالأدلة والتنفيذ والتحقق.",
         };
 
-  const lifecycleIcons: Record<(typeof LIFECYCLE)[number], typeof Send> = {
+  const lifecycleIcons: Partial<Record<DecisionStatus, typeof Send>> = {
     PROPOSED: Send,
     REVIEW_REQUIRED: FileCheck2,
     APPROVED: Gavel,
@@ -263,7 +263,7 @@ export default function Decisions() {
         </div>
         <div className="fg-decision-lifecycle">
           {LIFECYCLE.map((status, index) => {
-            const Icon = lifecycleIcons[status];
+            const Icon = lifecycleIcons[status] ?? Activity;
             return (
               <button
                 type="button"
