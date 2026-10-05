@@ -128,6 +128,8 @@ def main():
                 page.goto("http://127.0.0.1:8000/demo", wait_until="networkidle")
                 page.get_by_role("combobox", name="Language", exact=True).select_option("en")
                 expect(page.get_by_test_id("demo-demand")).to_contain_text("100")
+                expect(page.locator(".fg-demo-journey article")).to_have_count(11)
+                expect(page.locator(".fg-demo-proof-strip")).to_be_visible()
                 page.locator(".fg-demo-scenarios button").nth(1).click()
                 expect(page.get_by_test_id("demo-decision")).to_have_class("fg-demo-decision blocked")
                 page.locator(".fg-demo-inputs input").first.fill("")
