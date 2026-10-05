@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Activity, CheckCircle2, FileCheck2, Gavel, PlayCircle, Send, ShieldCheck } from "lucide-react";
 import { api, type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type {
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorText, DemoBadge, Pager } from "@/components/common";
 import { ProvenanceBadge } from "@/components/ProvenanceBadge";
+import "./decision-intelligence.css";
 
 // محرك القرارات العام (Contract §5..§22) — المرحلة 2
 const DOMAINS: DecisionDomain[] = ["water", "energy", "food", "ecosystem", "health", "cross_domain"];
@@ -45,7 +47,7 @@ const statusVariant = (s: string) =>
     : s === "CANCELLED" ? "destructive" : "outline") as "default" | "destructive" | "outline";
 
 export default function Decisions() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [list, setList] = useState<GovDecision[] | null>(null);
   const [selected, setSelected] = useState<GovDecision | null>(null);
@@ -59,6 +61,7 @@ export default function Decisions() {
 
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const [statusTotals, setStatusTotals] = useState<Partial<Record<DecisionStatus, number>>>({});
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -71,6 +74,18 @@ export default function Decisions() {
     setList(r.items);
     setPages(r.pages);
   }, [filters, page]);
+
+  const loadStatusTotals = useCallback(async () => {
+    const rows = await Promise.all(
+      LIFECYCLE.map(async (status) => {
+        const r = await api.get<Paged<GovDecision>>(
+          `/decisions?status=${status}&page=1&page_size=1`,
+        );
+        return [status, r.total] as const;
+      }),
+    );
+    setStatusTotals(Object.fromEntries(rows) as Partial<Record<DecisionStatus, number>>);
+  }, []);
 
   const loadDetail = useCallback(async (d: GovDecision) => {
     const [full, tr, ev, ex, vf] = await Promise.all([
@@ -87,9 +102,9 @@ export default function Decisions() {
   // The request helper commits state after its asynchronous API response.
   useEffect(() => {
     (async () => {
-      try { await load(); } catch (e) { setError(e); }
+      try { await Promise.all([load(), loadStatusTotals()]); } catch (e) { setError(e); }
     })();
-  }, [load]);
+  }, [load, loadStatusTotals]);
 
   const role = user?.role ?? "member";
   const isReviewer = role === "reviewer" || role === "admin";
@@ -116,7 +131,7 @@ export default function Decisions() {
     try {
       const updated = await api.post<GovDecision>(`/decisions/${selected.id}/transition`, { to });
       await loadDetail(updated);
-      load();
+      await Promise.all([load(), loadStatusTotals()]);
     } catch (e) { setError(e); }
   };
 
@@ -135,7 +150,7 @@ export default function Decisions() {
         expected_result: f.get("expected_result") || null,
       });
       (e.target as HTMLFormElement).reset();
-      await load();
+      await Promise.all([load(), loadStatusTotals()]);
       await loadDetail(d);
     } catch (err) { setError(err); }
   };
@@ -201,6 +216,34 @@ export default function Decisions() {
     </select>
   );
 
+  const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const lifecycleCopy = language === "fr"
+    ? {
+        eyebrow: "FOGGARA / DECISION INTELLIGENCE",
+        title: "Cycle de décision traçable",
+        subtitle: "Les états proviennent du moteur de décision et restent liés aux preuves, à l’exécution et à la vérification.",
+      }
+    : language === "en"
+      ? {
+          eyebrow: "FOGGARA / DECISION INTELLIGENCE",
+          title: "Traceable decision lifecycle",
+          subtitle: "States come from the decision engine and remain linked to evidence, execution and verification.",
+        }
+      : {
+          eyebrow: "FOGGARA / ذكاء القرار",
+          title: "دورة قرار قابلة للتتبع",
+          subtitle: "الحالات مصدرها محرك القرار وتبقى مرتبطة بالأدلة والتنفيذ والتحقق.",
+        };
+
+  const lifecycleIcons: Record<(typeof LIFECYCLE)[number], typeof Send> = {
+    PROPOSED: Send,
+    REVIEW_REQUIRED: FileCheck2,
+    APPROVED: Gavel,
+    EXECUTION_AUTHORIZED: ShieldCheck,
+    EXECUTED: PlayCircle,
+    VERIFIED: CheckCircle2,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -208,6 +251,41 @@ export default function Decisions() {
         {selected?.is_demo && <DemoBadge show />}
       </div>
       <ErrorText error={error} />
+
+      <section className="fg-decision-intelligence" aria-label={lifecycleCopy.title}>
+        <div className="fg-decision-intelligence-head">
+          <div>
+            <p>{lifecycleCopy.eyebrow}</p>
+            <h2>{lifecycleCopy.title}</h2>
+            <span>{lifecycleCopy.subtitle}</span>
+          </div>
+          <Activity size={26} />
+        </div>
+        <div className="fg-decision-lifecycle">
+          {LIFECYCLE.map((status, index) => {
+            const Icon = lifecycleIcons[status];
+            return (
+              <button
+                type="button"
+                key={status}
+                aria-pressed={filters.status === status}
+                onClick={() => {
+                  setPage(1);
+                  setFilters((current) => ({
+                    ...current,
+                    status: current.status === status ? "" : status,
+                  }));
+                }}
+              >
+                <small>{String(index + 1).padStart(2, "0")}</small>
+                <Icon size={18} />
+                <strong>{t(`decisions.statuses.${status}`)}</strong>
+                <b>{statusTotals[status] ?? "—"}</b>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* الفلاتر (§21) */}
       <div className="flex flex-wrap gap-2 items-center">
