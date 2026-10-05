@@ -156,7 +156,12 @@ def main():
                 page.locator('button[type="submit"]').click()
                 expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
                 expect(page.locator('[name="service_id"]')).not_to_have_value("")
-                page.reload()  # Memory-only session; subsequent protected visits authenticate normally.
+                # Session persistence is intentional: the JWT is restored from sessionStorage via /auth/me.
+                assert page.evaluate("sessionStorage.getItem('fg_session') !== null")
+                page.reload(wait_until="networkidle")
+                expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
+                expect(page.locator("#email")).to_have_count(0)
+                expect(page.locator("#main-content")).to_be_visible()
                 page.goto("http://127.0.0.1:8000/agriculture-services", wait_until="networkidle")
                 expect(page.get_by_test_id("agro-capability")).to_have_count(8)
                 for locale in ("ar", "fr", "en"):
@@ -177,13 +182,10 @@ def main():
                 expect(page.get_by_role("status")).to_contain_text("FG-")
                 page.reload()
                 def authenticated_visit(path):
-                    page.goto("http://127.0.0.1:8000" + path)
-                    expect(page.locator("#email")).to_be_visible()
-                    page.locator("#email").fill("browser@example.invalid")
-                    page.locator("#password").fill(password)
-                    page.locator('button[type="submit"]').click()
+                    page.goto("http://127.0.0.1:8000" + path, wait_until="networkidle")
                     expect(page).to_have_url("http://127.0.0.1:8000" + path)
-                    page.wait_for_load_state("networkidle")
+                    expect(page.locator("#email")).to_have_count(0)
+                    expect(page.locator("#main-content")).to_be_visible()
                 authenticated_visit("/app/operations")
                 expect(page.locator(".fg-console h1")).to_be_visible()
                 expect(page.locator(".fg-empty")).to_be_visible()
