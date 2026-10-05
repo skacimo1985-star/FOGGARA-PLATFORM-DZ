@@ -55,9 +55,22 @@ jobs:
           import psycopg
           from psycopg import sql
 
-          with psycopg.connect(os.environ["POSTGRES_ADMIN_URL"], autocommit=True) as conn:
+          import re
+          from urllib.parse import urlparse
+
+          admin_url = os.environ["POSTGRES_ADMIN_URL"]
+          db_name = os.environ["TEST_DATABASE_NAME"]
+          parsed = urlparse(admin_url)
+
+          if parsed.hostname not in {"localhost", "127.0.0.1"}:
+              raise SystemExit(f"Refusing non-local PostgreSQL host: {parsed.hostname!r}")
+          if not re.fullmatch(r"foggara_test(?:_[a-z0-9_]+)?", db_name):
+              raise SystemExit(f"Refusing unsafe pytest database name: {db_name!r}")
+          if parsed.path.rstrip("/") != "/postgres":
+              raise SystemExit("Administrative connection must target the postgres database")
+
+          with psycopg.connect(admin_url, autocommit=True) as conn:
               with conn.cursor() as cur:
-                  db_name = os.environ["TEST_DATABASE_NAME"]
                   cur.execute(
                       """
                       SELECT pg_terminate_backend(pid)
@@ -89,7 +102,7 @@ jobs:
           name: foggara-backend-test-diagnostics
           path: app/backend/test-results
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22.18.0'
