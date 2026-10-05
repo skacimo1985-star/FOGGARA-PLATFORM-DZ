@@ -144,7 +144,7 @@ class ProjectOut(ORM):
 # ---- Measurements ----
 MEASUREMENT_PARAMETERS = Literal[
     # water
-    "flow_rate", "water_level", "ph", "temperature", "turbidity", "pressure",
+    "flow_rate", "water_level", "ph", "ec", "temperature", "turbidity", "pressure",
     "dissolved_oxygen", "rainfall",
     # energy
     "electrical_power", "voltage",
