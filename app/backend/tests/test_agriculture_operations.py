@@ -243,3 +243,41 @@ def test_expanded_measurement_catalog_accepts_valid_units(client, world, paramet
     })
     assert r.status_code == 201, r.text
     assert r.json()['parameter'] == parameter
+
+
+def test_georeferenced_parcel_requires_coordinate_pair_and_owned_site(client, world):
+    h1 = login(client, 'o1m@t.dz')
+    h2 = login(client, 'o2m@t.dz')
+    site1 = client.post('/api/sites', headers=h1, json={'name':'GIS site','wilaya':'Laghouat','lat':33.8,'lon':2.9}).json()
+    site2 = client.post('/api/sites', headers=h2, json={'name':'Other site','wilaya':'Oran','lat':35.7,'lon':-0.6}).json()
+
+    missing_lon = client.post('/api/agriculture/parcels', headers=h1, json={
+        'name':'Parcel GIS','crop':'date_palm','area_ha':2.5,'location':'Laghouat',
+        'site_id':site1['id'],'lat':33.8
+    })
+    assert missing_lon.status_code == 422
+
+    foreign_site = client.post('/api/agriculture/parcels', headers=h1, json={
+        'name':'Parcel GIS','crop':'date_palm','area_ha':2.5,'location':'Laghouat',
+        'site_id':site2['id'],'lat':33.8,'lon':2.9
+    })
+    assert foreign_site.status_code == 404
+
+    created = client.post('/api/agriculture/parcels', headers=h1, json={
+        'name':'Parcel GIS','crop':'date_palm','area_ha':2.5,'location':'Laghouat',
+        'site_id':site1['id'],'lat':33.812345,'lon':2.912345
+    })
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert body['site_id'] == site1['id']
+    assert float(body['lat']) == 33.812345
+    assert float(body['lon']) == 2.912345
+
+
+def test_georeferenced_parcel_rejects_invalid_coordinates(client, world):
+    h = login(client, 'o1m@t.dz')
+    response = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'Invalid GIS','crop':'wheat','area_ha':1.0,'location':'Laghouat',
+        'lat':91,'lon':2.9
+    })
+    assert response.status_code == 422
