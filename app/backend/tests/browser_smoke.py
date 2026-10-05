@@ -307,6 +307,8 @@ def main():
                     if path == "/app/agriculture":
                         expect(page.locator(".fg-intelligence-band")).to_be_visible()
                         expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
+                        expect(page.locator(".fg-remote-sensing-state")).to_be_visible()
+                        expect(page.locator(".fg-remote-sensing-grid > div")).to_have_count(4)
                     if path == "/app/water":
                         expect(page.locator(".fg-water-intelligence")).to_be_visible()
                         expect(page.locator(".fg-water-chain article")).to_have_count(7)
