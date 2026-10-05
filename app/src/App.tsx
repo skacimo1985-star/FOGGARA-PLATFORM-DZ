@@ -19,7 +19,7 @@ const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
 const Opportunities = lazy(() => import("@/pages/Opportunities"));
 const DecisionStudio = lazy(() => import("@/pages/DecisionStudio"));
-const Home = lazy(() => import("@/pages/Home"));\nconst CommandCenter = lazy(() => import("@/pages/CommandCenter"));
+const CommandCenter = lazy(() => import("@/pages/CommandCenter"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
 const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"));
