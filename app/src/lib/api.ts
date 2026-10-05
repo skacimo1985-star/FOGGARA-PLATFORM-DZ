@@ -20,12 +20,24 @@ export class ApiError extends Error {
   }
 }
 
+const TOKEN_KEY = "fg_session";
+
 let sessionToken: string | null = null;
-// Remove legacy tokens; authentication is held in memory only.
+// Remove legacy localStorage tokens; session is now in sessionStorage.
 try { localStorage.removeItem("token"); } catch { /* Storage may be blocked. */ }
+// Restore token from sessionStorage so a page reload preserves the session.
+try { sessionToken = sessionStorage.getItem(TOKEN_KEY); } catch { /* Storage may be blocked. */ }
 
 export function setToken(token: string | null) {
   sessionToken = token;
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch { /* Storage may be blocked. */ }
+}
+
+export function getToken(): string | null {
+  return sessionToken;
 }
 
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -37,7 +49,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   const token = sessionToken;
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  // مهلة افتراضية لكل طلب — تمنع تعليق الواجهة عند شبكة بطيئة (معرض/ميدان)
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), path.startsWith("/auth/") || path === "/org/invitations/accept" ? 60_000 : DEFAULT_TIMEOUT_MS);
   let res: Response;
@@ -58,7 +69,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     if (res.status === 401 && body?.detail?.code !== "BAD_CREDENTIALS") {
-      // جلسة منتهية/غير صالحة: إسقاط الرمز وإعادة التوجيه لتسجيل الدخول من الصفحات المحمية
       setToken(null);
       if (window.location.pathname.startsWith("/app")) {
         window.location.assign("/login");
