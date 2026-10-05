@@ -81,7 +81,7 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
     if project is None or project.resource_id is None:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
-                'measurement_ids': [], 'resource_id': None,
+                'measurement_ids': [], 'measurement_sources': [], 'resource_id': None,
                 'limitations': ['PROJECT_WATER_RESOURCE_REQUIRED', 'VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
     rows = list(db.scalars(select(Measurement).where(
         Measurement.org_id == user.org_id,
@@ -93,18 +93,21 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
     ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(100)))
     latest = {}
     ids = []
+    sources = []
     for row in rows:
         if row.parameter not in latest:
             latest[row.parameter] = float(row.value)
             ids.append(row.id)
+            sources.append({'measurement_id': row.id, 'parameter': row.parameter, 'source': row.source, 'method': row.method})
     if not latest:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
-                'measurement_ids': [], 'resource_id': project.resource_id,
+                'measurement_ids': [], 'measurement_sources': [], 'resource_id': project.resource_id,
                 'limitations': ['VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
     result = irrigation_water_assessment(latest)
     result['evidence_status'] = 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
     result['measurement_ids'] = ids
+    result['measurement_sources'] = sources
     result['resource_id'] = project.resource_id
     return result
 
@@ -223,13 +226,15 @@ def save_service_summary_evidence(identity: int, payload: ServiceEvidenceIn,
     water = verified_water_assessment(db, user, project)
     if not soil['coverage'] and not water['coverage']:
         api_error(409, 'INSUFFICIENT_EVIDENCE', 'Recorded observations are required before saving a service result')
-    source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage']) | set(water['coverage'])})
+    source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage'])})
     summary = {
         'kind': 'FOGGARA_AGRICULTURE_SERVICE_SUMMARY',
         'parcel_id': parcel.id,
         'parcel_name': parcel.name,
         'provenance': 'RECORDED_AND_COMPUTED',
         'source_refs': source_refs,
+        'measurement_ids': water['measurement_ids'],
+        'measurement_sources': water['measurement_sources'],
         'soil_assessment': soil,
         'irrigation_water_assessment': water,
     }
