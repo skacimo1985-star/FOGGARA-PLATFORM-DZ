@@ -1,16 +1,9 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Droplets, Zap, Wheat, Leaf, HeartPulse, ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-export const WEFEH_DOMAINS = [
-  { key: "water", icon: Droplets, operational: true },
-  { key: "energy", icon: Zap, operational: false },
-  { key: "food", icon: Wheat, operational: false },
-  { key: "ecosystem", icon: Leaf, operational: false },
-  { key: "health", icon: HeartPulse, operational: false },
-] as const;
+import { WEFEH_DOMAINS } from "./Explore.constants";
 
 export default function Explore() {
   const { t, i18n } = useTranslation();
