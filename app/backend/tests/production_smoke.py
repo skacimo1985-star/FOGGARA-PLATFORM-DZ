@@ -42,10 +42,24 @@ def main():
                  "/operations/team", "/gis/sites"):
         call(path, headers=headers)
     project = call("/projects", 201, body={"title": "Production HTTP QA", "domain": "water"}, headers=headers)
+    parcel = call("/agriculture/parcels", 201, body={
+        "name": "Production Satellite QA", "crop": "wheat", "area_ha": 1.5,
+        "location": "CI", "stage": "development"
+    }, headers=headers)
+    remote = call(f"/agriculture/parcels/{parcel['id']}/remote-sensing/ingest", 201, body={
+        "provider": "ci_adapter", "scene_id": "CI-SCENE-001",
+        "acquired_at": "2026-10-01T12:00:00Z",
+        "ndvi": 0.61, "lswi": 0.14, "cloud_cover_pct": 6.0, "confidence": 0.9
+    }, headers=headers)
+    assert remote["provenance"] == "INFERRED" and remote["live_provider_connected"] is False
+    assert len(remote["created"]) == 2
+    history = call(f"/agriculture/parcels/{parcel['id']}/remote-sensing", headers=headers)
+    assert history["adapter_contract"] == "provider_neutral"
+    assert all(row["evidence_status"] == "INFERRED" for row in history["observations"])
     page = call("/projects?page_size=12", headers=headers)
     assert any(item["id"] == project["id"] for item in page["items"])
     call("/projects/" + str(project["id"]), headers=headers)
-    print("Production HTTP checks passed: concurrent bootstrap and closure, login, authorization, 14 modules, persisted project")
+    print("Production HTTP checks passed: auth, modules, provider-neutral remote sensing, persisted project")
 
 if __name__ == "__main__":
     main()
