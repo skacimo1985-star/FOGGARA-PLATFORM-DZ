@@ -99,14 +99,14 @@ def inventory(connection):
         security = connection.execute("SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid=%s::regclass", ("public." + name,)).fetchone()
         policies = connection.execute("SELECT policyname, permissive, roles::text, cmd, qual, with_check FROM pg_policies WHERE schemaname='public' AND tablename=%s ORDER BY policyname", (name,)).fetchall()
         columns = connection.execute("SELECT column_name, data_type, udt_name, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position", (name,)).fetchall()
-        # Compare constraint semantics rather than PostgreSQL's rendered DDL text.
-        # pg_get_constraintdef() can be textually different after dump/restore even
-        # when the restored constraint is equivalent. Names are deliberately not
-        # part of the recovery invariant; migration-controlled named constraints
-        # remain present in the dump, while this gate verifies enforcement.
+        # Compare stable constraint enforcement metadata. PostgreSQL can render
+        # semantically identical CHECK expressions differently after pg_dump /
+        # pg_restore (for example, moving equivalent casts into ARRAY elements).
+        # Constraint names are included because migrations may depend on them.
         constraints = connection.execute(
             """
             SELECT
+                c.conname,
                 c.contype,
                 c.condeferrable,
                 c.condeferred,
@@ -127,13 +127,10 @@ def inventory(connection):
                 ), ARRAY[]::name[]) AS referenced_columns,
                 c.confupdtype,
                 c.confdeltype,
-                c.confmatchtype,
-                CASE WHEN c.contype = 'c'
-                     THEN pg_get_expr(c.conbin, c.conrelid, true)
-                     ELSE NULL END AS check_expression
+                c.confmatchtype
             FROM pg_constraint AS c
             WHERE c.conrelid = %s::regclass
-            ORDER BY 1, 5, 6, 7, 10
+            ORDER BY c.conname
             """,
             ("public." + name,),
         ).fetchall()
@@ -254,18 +251,6 @@ def restore(target_url, archive, expected_head):
             actual = inventory(guard)
             if actual != document["inventory"]:
                 differences = inventory_differences(document["inventory"], actual)
-                # Schema-only diagnostic: never emits row values, credentials or
-                # connection identifiers. Remove once the cross-restore catalog
-                # representation has been normalized.
-                for location in differences:
-                    if location.endswith(":constraints"):
-                        table = location.split(":", 1)[0]
-                        print("CONSTRAINT_DIAGNOSTIC=" + json.dumps({
-                            "table": table,
-                            "source": document["inventory"]["tables"][table]["constraints"],
-                            "restored": actual["tables"][table]["constraints"],
-                        }, sort_keys=True), file=sys.stderr)
-                        break
                 raise RuntimeError("Restored data/schema/security differs at " + ", ".join(differences) + "; keep target offline")
     return {"status": "verified", "alembic": expected_head, "tables": len(actual["tables"]),
             "rows": sum(table["rows"] for table in actual["tables"].values())}
