@@ -191,6 +191,12 @@ def test_irrigation_water_screening_requires_verified_resource_measurements(clie
     assert water['decision_status'] == 'PROPOSED'
     assert water['resource_id'] == resource['id']
     assert water['measurement_ids'] == [pending.json()['id']]
+    assert water['measurement_sources'] == [{'measurement_id': pending.json()['id'], 'parameter': 'ec', 'source': 'LAB-WATER-EC', 'method': 'conductivity'}]
+    saved = client.post(f'/api/agriculture/parcels/{pid}/service-summary/evidence', headers=h, json={'project_id': project['id']})
+    assert saved.status_code == 201, saved.text
+    evidence = client.get(f"/api/evidences/{saved.json()['evidence_id']}", headers=h).json()
+    assert f'"measurement_ids": [{pending.json()["id"]}]' in evidence['content_note']
+    assert 'LAB-WATER-EC' in evidence['content_note']
     assert water['inputs']['ec'] == 1.2
 
 
