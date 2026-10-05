@@ -13,7 +13,9 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # This job intentionally covers migrations, Rust build, full pytest,
+    # frontend build, Chromium installation and browser smoke in one isolated DB run.
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
