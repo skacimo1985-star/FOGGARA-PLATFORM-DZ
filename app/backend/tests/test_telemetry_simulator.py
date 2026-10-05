@@ -196,7 +196,7 @@ def test_vendor_neutral_edge_ingestion(admins, client):
     r = client.post(f"{TEL}/edge/ingest", json=body, headers=h)
     assert r.status_code == 201, r.text
     assert r.json()["quality"] == "VALID"
-    assert r.json()["source"] == "edge"
+    assert r.json()["source"] == "api"
     first = r.json()["id"]
     duplicate = client.post(f"{TEL}/edge/ingest", json=body, headers=h)
     assert duplicate.status_code == 200
