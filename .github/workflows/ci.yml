@@ -44,16 +44,65 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
         run: python -m tests.migration_smoke
-      - run: >-
-          python -c "import psycopg; c = psycopg.connect('postgresql://postgres:postgres@localhost:5432/postgres', autocommit=True); c.execute('CREATE DATABASE foggara_test'); c.close()"
+      - name: Recreate isolated pytest database
+        working-directory: app/backend
+        env:
+          POSTGRES_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          TEST_DATABASE_NAME: foggara_test
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg
+          from psycopg import sql
+
+          import re
+          from urllib.parse import urlparse
+
+          admin_url = os.environ["POSTGRES_ADMIN_URL"]
+          db_name = os.environ["TEST_DATABASE_NAME"]
+          parsed = urlparse(admin_url)
+
+          if parsed.hostname not in {"localhost", "127.0.0.1"}:
+              raise SystemExit(f"Refusing non-local PostgreSQL host: {parsed.hostname!r}")
+          if not re.fullmatch(r"foggara_test(?:_[a-z0-9_]+)?", db_name):
+              raise SystemExit(f"Refusing unsafe pytest database name: {db_name!r}")
+          if parsed.path.rstrip("/") != "/postgres":
+              raise SystemExit("Administrative connection must target the postgres database")
+
+          with psycopg.connect(admin_url, autocommit=True) as conn:
+              with conn.cursor() as cur:
+                  cur.execute(
+                      """
+                      SELECT pg_terminate_backend(pid)
+                      FROM pg_stat_activity
+                      WHERE datname = %s AND pid <> pg_backend_pid()
+                      """,
+                      (db_name,),
+                  )
+                  cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(db_name)))
+                  cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
+          PY
       - name: Build real Rust comparison engine
         working-directory: app/engines/nexus-core
         run: cargo build --release --locked
-      - run: python -m pytest tests/ -q
+      - name: Run backend tests with diagnostics
         working-directory: app/backend
         env:
           NEXUS_RUST_TEST_BINARY: ${{ github.workspace }}/app/engines/nexus-core/target/release/foggara-nexus-core
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_test
+        run: |
+          set -o pipefail
+          mkdir -p test-results
+          python -m pytest tests/ -q -ra --tb=short --junitxml=test-results/junit.xml \
+            2>&1 | tee test-results/pytest.log
+      - name: Upload backend test diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: foggara-backend-test-diagnostics
+          path: app/backend/test-results
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22.18.0'
