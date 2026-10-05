@@ -1,12 +1,23 @@
-import { useCallback, useState, type ReactNode } from "react";
-import { api, setToken } from "@/lib/api";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { api, getToken, setToken } from "@/lib/api";
 import type { User } from "@/types";
 
 import { AuthContext } from "@/context/useAuth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const loading = false;
+  const [loading, setLoading] = useState(() => !!getToken());
+
+  // Restore session on mount if a token was persisted in sessionStorage.
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setLoading(false); return; }
+    setLoading(true);
+    api.get<User>("/auth/me")
+      .then((u) => { setUser(u); })
+      .catch(() => { setToken(null); })
+      .finally(() => { setLoading(false); });
+  }, []);
 
   const startSession = useCallback((result: { token: string; user: User }) => {
     setToken(result.token); setUser(result.user);
@@ -26,4 +37,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
