@@ -107,6 +107,22 @@ def inventory(connection):
     return {"alembic": heads[0], "tables": tables}
 
 
+def inventory_differences(expected, actual):
+    """Return mismatch locations only, never values or database records."""
+    locations = []
+    if expected.get("alembic") != actual.get("alembic"):
+        locations.append("alembic")
+    left, right = expected.get("tables", {}), actual.get("tables", {})
+    for name in sorted(set(left) | set(right)):
+        if name not in left or name not in right:
+            locations.append(name + ":presence")
+            continue
+        for field in ("rows", "sha256", "rls", "policies", "columns", "constraints", "indexes"):
+            if left[name].get(field) != right[name].get(field):
+                locations.append(name + ":" + field)
+    return locations
+
+
 def backup(database_url, output_dir):
     settings = connection_settings(database_url)
     directory = Path(output_dir)
@@ -200,7 +216,7 @@ def restore(target_url, archive, expected_head):
             guard.execute("SET LOCAL TIME ZONE 'UTC'")
             actual = inventory(guard)
             if actual != document["inventory"]:
-                raise RuntimeError("Restored data/schema/security differs from the source snapshot; keep target offline")
+                raise RuntimeError("Restored data/schema/security differs at " + ", ".join(inventory_differences(document["inventory"], actual)) + "; keep target offline")
     return {"status": "verified", "alembic": expected_head, "tables": len(actual["tables"]),
             "rows": sum(table["rows"] for table in actual["tables"].values())}
 
