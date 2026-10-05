@@ -13,8 +13,10 @@ def farm(client, world):
     return h, r.json()['id']
 
 def observation(pid, **kw):
-    return dict(parcel_id=pid, metric='ph', value=7.2, source_type='lab', source_ref='LAB-REF-1',
-                observed_at=(datetime.now(timezone.utc)-timedelta(days=1)).isoformat(), **kw)
+    data = dict(parcel_id=pid, metric='ph', value=7.2, source_type='lab', source_ref='LAB-REF-1',
+                observed_at=(datetime.now(timezone.utc)-timedelta(days=1)).isoformat())
+    data.update(kw)
+    return data
 
 def test_no_anonymous(client):
     assert client.get('/api/agriculture/parcels').status_code == 401
