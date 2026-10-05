@@ -174,11 +174,26 @@ def test_service_request_flow(client, world, db):
                      json={"status": "triaged"}, headers=member)
     assert r.status_code == 403
 
-    # سير كامل: submitted→triaged→assigned→in_progress→completed
-    for st in ("triaged", "assigned", "in_progress", "completed"):
+    # سير العمل حتى التنفيذ
+    for st in ("triaged", "assigned", "in_progress"):
         r = client.patch(f"/api/service-requests/{sr['id']}/status",
                          json={"status": st}, headers=reviewer)
         assert r.status_code == 200 and r.json()["status"] == st
+
+    # لا إغلاق بلا مخرج موثق
+    r = client.patch(f"/api/service-requests/{sr['id']}/status",
+                     json={"status": "completed"}, headers=reviewer)
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "DELIVERABLE_REQUIRED"
+
+    # تقرير خدمة موثق ومراجع يسمح بالإكمال
+    ev = client.post("/api/evidences", headers=member, json={
+        "project_id": p["id"], "title": "Service delivery report",
+        "doc_type": "report", "license": "internal"}).json()
+    from app.models import Evidence
+    db.get(Evidence, ev["id"]).status = "verified"; db.commit()
+    r = client.patch(f"/api/service-requests/{sr['id']}/status",
+                     json={"status": "completed"}, headers=reviewer)
+    assert r.status_code == 200 and r.json()["status"] == "completed"
 
     # انتقال غير مسموح من حالة نهائية
     r = client.patch(f"/api/service-requests/{sr['id']}/status",
