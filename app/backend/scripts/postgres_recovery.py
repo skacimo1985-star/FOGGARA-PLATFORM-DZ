@@ -146,15 +146,22 @@ def restrict_data_api(connection):
         if role in roles:
             connection.execute(sql.SQL("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {}").format(sql.Identifier(role)))
             connection.execute(sql.SQL("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {}").format(sql.Identifier(role)))
+            connection.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM {}").format(sql.Identifier(role)))
+            connection.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM {}").format(sql.Identifier(role)))
     # PUBLIC grants would also be inherited by every API role.
     connection.execute("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC")
     connection.execute("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC")
+    connection.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC")
+    connection.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC")
     for role in EXPOSED_ROLES:
         if role in roles:
             for (table,) in connection.execute("SELECT tablename FROM pg_tables WHERE schemaname='public'"):
                 denied = connection.execute("SELECT has_table_privilege(%s,%s,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')", (role, "public." + table)).fetchone()[0]
                 if denied:
                     raise RuntimeError("Restored Data API privileges are not denied")
+            for (sequence,) in connection.execute("SELECT sequencename FROM pg_sequences WHERE schemaname='public'"):
+                if connection.execute("SELECT has_sequence_privilege(%s,%s,'USAGE,SELECT,UPDATE')", (role, "public." + sequence)).fetchone()[0]:
+                    raise RuntimeError("Restored Data API sequence privileges are not denied")
 
 
 def restore(target_url, archive, expected_head):

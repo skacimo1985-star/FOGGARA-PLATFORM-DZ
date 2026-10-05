@@ -15,12 +15,13 @@ import subprocess
 import sys
 import tempfile
 import time
+from unittest.mock import patch
 
 import httpx
 import psycopg
 from psycopg import sql
 
-from scripts.postgres_recovery import backup, connection_settings, restore
+from scripts.postgres_recovery import backup, connection_settings, inventory, restore
 
 QA_JWT_SECRET = secrets.token_urlsafe(48)
 
@@ -161,7 +162,16 @@ def main():
                 subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"],
                                env=dict(os.environ, DATABASE_URL=url), check=True)
             credentials, ids = populate_and_check(urls[0], private)
-            archive = backup(urls[0], private)
+            def capture_then_write(connection):
+                captured = inventory(connection)
+                # A committed concurrent insert must not change the exported
+                # snapshot used by pg_dump or the previously captured manifest.
+                with psycopg.connect(**connection_settings(urls[0])) as writer:
+                    owner = writer.execute("SELECT org_id,created_by FROM projects WHERE id=%s", (ids[0],)).fetchone()
+                    writer.execute("INSERT INTO projects(org_id,created_by,title,domain,status,is_demo) VALUES(%s,%s,%s,'water','draft',true)", (*owner, "source-only-after-snapshot"))
+                return captured
+            with patch("scripts.postgres_recovery.inventory", capture_then_write):
+                archive = backup(urls[0], private)
             # Simulate a provider database whose defaults expose new tables.
             target_settings = connection_settings(urls[1])
             with psycopg.connect(**target_settings) as target:
@@ -170,7 +180,11 @@ def main():
                     target.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO {}").format(sql.Identifier(role)))
                     target.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO {}").format(sql.Identifier(role)))
                 target.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO PUBLIC")
+                target.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO PUBLIC")
             result["recovery"] = restore(urls[1], archive, "an20261004m1")
+            with psycopg.connect(**target_settings) as target:
+                assert target.execute("SELECT count(*) FROM projects WHERE title='source-only-after-snapshot'").fetchone()[0] == 0
+            result["recovery"]["concurrent_write_excluded_from_snapshot"] = True
             populate_and_check(urls[1], private, credentials, ids)
             result["recovery"]["http_login_write_tenant_isolation"] = True
             try:
