@@ -11,6 +11,7 @@ Verifies:
 """
 import os
 import sys
+
 import pytest
 
 from app.wilayas import WILAYAS
@@ -97,12 +98,9 @@ class TestSeedIdempotency:
         finally:
             s2.close()
 
-        assert orgs_after_first == orgs_after_second, \
-            f"Organizations duplicated: {orgs_after_first} -> {orgs_after_second}"
-        assert sites_after_first == sites_after_second, \
-            f"Sites duplicated: {sites_after_first} -> {sites_after_second}"
-        assert projects_after_first == projects_after_second, \
-            f"Projects duplicated: {projects_after_first} -> {projects_after_second}"
+        assert orgs_after_first == orgs_after_second
+        assert sites_after_first == sites_after_second
+        assert projects_after_first == projects_after_second
 
     def test_seed_covers_all_58_wilayas(self, db):
         """After seeding, all 58 wilaya names should appear in sites."""
@@ -159,8 +157,7 @@ class TestSeedIdempotency:
                     select(Site).where(Site.org_id == org.id)
                 ).scalars().all()
                 for site in org_sites:
-                    assert site.org_id == org.id, \
-                        f"Site {site.name} belongs to org {site.org_id} but expected {org.id}"
+                    assert site.org_id == org.id
         finally:
             s.close()
 
@@ -175,12 +172,12 @@ class TestSeedIdempotency:
             non_demo_orgs = s.execute(
                 select(func.count(Organization.id)).where(Organization.is_demo == False)
             ).scalar()
-            assert non_demo_orgs == 0, f"{non_demo_orgs} non-demo organizations found in seed"
+            assert non_demo_orgs == 0
 
             non_demo_sites = s.execute(
                 select(func.count(Site.id)).where(Site.is_demo == False)
             ).scalar()
-            assert non_demo_sites == 0, f"{non_demo_sites} non-demo sites found in seed"
+            assert non_demo_sites == 0
         finally:
             s.close()
 
@@ -195,6 +192,6 @@ class TestSeedIdempotency:
             duplicates = s.execute(text(
                 "SELECT code, COUNT(*) FROM organizations GROUP BY code HAVING COUNT(*) > 1"
             )).fetchall()
-            assert len(duplicates) == 0, f"Duplicate org codes: {duplicates}"
+            assert len(duplicates) == 0
         finally:
             s.close()
