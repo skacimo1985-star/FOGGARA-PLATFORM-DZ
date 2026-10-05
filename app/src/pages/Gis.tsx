@@ -10,12 +10,40 @@ import { ErrorText, DemoBadge } from "@/components/common";
 import { NationalMap } from "@/components/NationalMap";
 import "./command-center.css";
 
+type SpatialFeature = {
+  type: "Feature";
+  id: number;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    id: number;
+    name: string;
+    wilaya: string;
+    commune: string | null;
+    is_demo: boolean;
+    distance_m?: number;
+  };
+};
+
+type SitesGeoJSON = {
+  type: "FeatureCollection";
+  features: SpatialFeature[];
+  metadata: {
+    organization_scoped: boolean;
+    count: number;
+    crs: string;
+    spatial_engine: string;
+  };
+};
+
 export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [nearest, setNearest] = useState<SpatialFeature[]>([]);
+  const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
@@ -25,6 +53,9 @@ export default function Gis() {
     api.get<{ count: number; wilayas: WilayaMeta[] }>("/meta/wilayas")
       .then((r) => setWilayas(r.wilayas))
       .catch(() => setWilayas([]));
+    api.get<SitesGeoJSON>("/gis/sites.geojson")
+      .then((r) => setSpatialEngine(r.metadata.spatial_engine))
+      .catch(setError);
   }, []);
 
   const filtered = useMemo(() => {
@@ -38,10 +69,10 @@ export default function Gis() {
   const locale = i18n.language;
   const lang = locale === "fr" ? "fr" : locale === "en" ? "en" : "ar";
   const copy = lang === "fr"
-    ? { eyebrow: "SIG NATIONAL · FOGGARA-DZ", title: "Territoire, ressources et projets dans une vue opérationnelle.", sites: "Sites visibles", projects: "Projets", resources: "Ressources", layers: "Couches opérationnelles", table: "Registre spatial", all: "Toute l’Algérie" }
+    ? { eyebrow: "SIG NATIONAL · FOGGARA-DZ", title: "Territoire, ressources et projets dans une vue opérationnelle.", sites: "Sites visibles", projects: "Projets", resources: "Ressources", layers: "Couches opérationnelles", table: "Registre spatial", all: "Toute l’Algérie", selected: "Site sélectionné", nearest: "Sites les plus proches", distance: "Distance", engine: "Moteur spatial", noNearby: "Aucun autre site à proximité" }
     : lang === "en"
-      ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria" }
-      : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر" };
+      ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria", selected: "Selected site", nearest: "Nearest sites", distance: "Distance", engine: "Spatial engine", noNearby: "No other nearby sites" }
+      : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
 
   const summary = useMemo(() => {
     const rows = filtered ?? [];
@@ -58,6 +89,29 @@ export default function Gis() {
     if (code) next.set("wilaya", code);
     else next.delete("wilaya");
     setSearchParams(next);
+  };
+
+  const selectedSite = useMemo(
+    () => (data ?? []).find((entry) => entry.site.id === selectedSiteId) ?? null,
+    [data, selectedSiteId],
+  );
+
+  const selectSite = async (siteId: number) => {
+    setSelectedSiteId(siteId);
+    const entry = (data ?? []).find((row) => row.site.id === siteId);
+    if (!entry) {
+      setNearest([]);
+      return;
+    }
+    try {
+      const result = await api.get<{ count: number; items: SpatialFeature[] }>(
+        `/gis/sites/nearest?lon=${entry.site.lon}&lat=${entry.site.lat}&limit=6`,
+      );
+      setNearest(result.items.filter((item) => item.properties.id !== siteId).slice(0, 5));
+    } catch (err) {
+      setNearest([]);
+      setError(err);
+    }
   };
 
   return (
@@ -98,10 +152,42 @@ export default function Gis() {
           sites={data ?? []}
           wilayas={wilayas}
           selectedWilaya={wilayaFilter}
+          selectedSiteId={selectedSiteId}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
+          onSelectSite={(siteId) => void selectSite(siteId)}
           locale={lang}
         />
       )}
+
+      <section className="fg-gis-spatial-panel" aria-label={copy.selected}>
+        <div className="fg-gis-spatial-summary">
+          <span>EPSG:4326 · {copy.engine}: <b>{spatialEngine}</b></span>
+          {selectedSite ? (
+            <>
+              <h2>{copy.selected}: {selectedSite.site.name}</h2>
+              <p>{selectedSite.site.wilaya}{selectedSite.site.commune ? ` · ${selectedSite.site.commune}` : ""}</p>
+              <strong dir="ltr">{selectedSite.site.lat.toFixed(5)}, {selectedSite.site.lon.toFixed(5)}</strong>
+            </>
+          ) : (
+            <p>{lang === "fr" ? "Sélectionnez un point sur la carte pour lancer une requête spatiale." : lang === "en" ? "Select a point on the map to run a spatial query." : "اختر نقطة على الخريطة لتشغيل استعلام مكاني."}</p>
+          )}
+        </div>
+        <div className="fg-gis-nearest">
+          <h3>{copy.nearest}</h3>
+          {selectedSite && nearest.length === 0 ? <p>{copy.noNearby}</p> : (
+            <ol>
+              {nearest.map((item) => (
+                <li key={item.properties.id}>
+                  <button type="button" onClick={() => void selectSite(item.properties.id)}>
+                    <span>{item.properties.name}<small>{item.properties.wilaya}</small></span>
+                    <strong dir="ltr">{((item.properties.distance_m ?? 0) / 1000).toFixed(1)} km</strong>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </section>
 
       <section className="fg-gis-register">
         <div className="fg-command-section-title">
@@ -131,7 +217,7 @@ export default function Gis() {
               </TableHeader>
               <TableBody>
                 {(filtered ?? []).map((g) => (
-                  <TableRow key={g.site.id}>
+                  <TableRow key={g.site.id} className={selectedSiteId === g.site.id ? "bg-accent/50" : undefined} onClick={() => void selectSite(g.site.id)}>
                     <TableCell className="font-medium">
                       {g.site.name}<DemoBadge show={g.site.is_demo} />
                     </TableCell>
