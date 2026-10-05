@@ -4,6 +4,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/useAuth";
 import { Layout } from "@/components/Layout";
 const NexusWorkspace = lazy(() => import("@/pages/NexusWorkspace"));
+const Registry = lazy(() => import("@/pages/Registry"));
+const References = lazy(() => import("@/pages/References"));
+const Economics = lazy(() => import("@/pages/Economics"));
+const Intelligence = lazy(() => import("@/pages/Intelligence"));
 const Automation = lazy(() => import("@/pages/Automation"));
 const Operations = lazy(() => import("@/pages/Operations"));
 const Account = lazy(() => import("@/pages/Account"));
@@ -92,6 +96,11 @@ export default function App() {
             <Route path="/app/account" element={<Protected><Account /></Protected>} />
             <Route path="/app/agriculture" element={<Protected><Agriculture /></Protected>} />
             <Route path="/app/nexus" element={<Protected><NexusWorkspace /></Protected>} />
+            <Route path="/references" element={<References />} />
+            <Route path="/app/registry" element={<Protected><Registry /></Protected>} />
+            <Route path="/app/references" element={<Protected><References /></Protected>} />
+            <Route path="/app/economics" element={<Protected><Economics /></Protected>} />
+            <Route path="/app/intelligence" element={<Protected><Intelligence /></Protected>} />
             <Route path="/presentation" element={<Presentation />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Onboarding />} />

@@ -13,19 +13,20 @@ import { AgroCapabilities } from "@/components/AgroCapabilities";
 import { ProvenanceBadge, type ProvenanceClass } from "@/components/ProvenanceBadge";
 
 interface AgriRecord { id: number; kind: string; source: string; observed_at: string; evidence_id: number; content: Record<string, unknown>; provenance: string; }
-const services = ["soil", "moisture", "crop", "weather", "forewarning", "diagnosis", "irrigation", "calendar", "lswi"];
+const services = ["water", "soil", "moisture", "crop", "weather", "forewarning", "diagnosis", "irrigation", "calendar", "lswi"];
 const fields: Record<string, string[]> = {
   satellite: ["product_id", "red", "nir", "swir1", "common_resolution_m"],
-  soil: ["sample_id", "method", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent"],
+  water: ["sample_id", "method", "ph", "ec_ds_m", "tds_mg_l", "temperature_c", "turbidity_ntu", "dissolved_oxygen_mg_l", "sodium_meq_l", "calcium_meq_l", "magnesium_meq_l"],
+  soil: ["ec_ds_m", "organic_matter_percent", "temperature_c", "texture", "sample_id", "method", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent"],
   weather: ["model_name", "latitude", "longitude"],
   irrigation: ["crop", "eto_mm_day", "kc", "effective_rain_mm", "area_ha", "efficiency", "kc_source"],
   calendar: ["crop", "location"],
   diagnosis: ["crop", "observation", "conclusion"],
   forewarning: ["crop", "observation", "conclusion"],
 };
-const numeric = new Set(["red", "nir", "swir1", "common_resolution_m", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "latitude", "longitude", "eto_mm_day", "kc", "effective_rain_mm", "area_ha", "efficiency"]);
-const soilOptional = new Set(["nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent"]);
-const displayKeys = ["report_ref", "source_resolution_m", "update_interval_days","ndvi", "lswi", "quality", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "sample_id", "method", "crop", "location", "conclusion", "etc_mm_day", "net_mm_day", "gross_mm_day", "volume_m3_day", "product_id", "common_resolution_m"];
+const numeric = new Set(["ec_ds_m", "organic_matter_percent", "temperature_c", "tds_mg_l", "turbidity_ntu", "dissolved_oxygen_mg_l", "sodium_meq_l", "calcium_meq_l", "magnesium_meq_l", "red", "nir", "swir1", "common_resolution_m", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "latitude", "longitude", "eto_mm_day", "kc", "effective_rain_mm", "area_ha", "efficiency"]);
+const soilOptional = new Set(["texture", "ec_ds_m", "organic_matter_percent", "temperature_c", "tds_mg_l", "turbidity_ntu", "dissolved_oxygen_mg_l", "sodium_meq_l", "calcium_meq_l", "magnesium_meq_l", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent"]);
+const displayKeys = ["report_ref", "source_resolution_m", "update_interval_days", "sar", "ec_ds_m", "organic_matter_percent", "temperature_c", "texture", "tds_mg_l", "turbidity_ntu", "dissolved_oxygen_mg_l", "sodium_meq_l", "calcium_meq_l", "magnesium_meq_l", "ndvi", "lswi", "quality", "nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "sample_id", "method", "crop", "location", "conclusion", "etc_mm_day", "net_mm_day", "gross_mm_day", "volume_m3_day", "product_id", "common_resolution_m"];
 
 export function AgricultureSection({ projectId, evidences }: { projectId: number; evidences: Evidence[] }) {
   const { t, i18n } = useTranslation(); const { user } = useAuth(); const [records, setRecords] = useState<AgriRecord[]>([]);
@@ -34,6 +35,7 @@ export function AgricultureSection({ projectId, evidences }: { projectId: number
   useEffect(() => { reload().catch(setError); }, [reload]);
   const types = user?.role === "reviewer" || user?.role === "admin" ? Object.keys(fields) : Object.keys(fields).filter(k => k !== "diagnosis" && k !== "forewarning");
   function serviceAvailable(service: string) {
+    if (service === "water") return records.some(r => r.kind === "water");
     if (service === "soil") return records.some(r => r.kind === "soil");
     if (service === "moisture") return records.some(r => r.kind === "soil" && r.content.moisture_percent != null);
     if (service === "crop" || service === "lswi") return records.some(r => r.kind === "satellite" && r.content[service === "crop" ? "ndvi" : "lswi"] != null);
@@ -46,7 +48,7 @@ export function AgricultureSection({ projectId, evidences }: { projectId: number
     <ErrorText error={error} />
     <form className="grid gap-4 rounded-2xl border p-5 sm:grid-cols-2" onSubmit={async event => { event.preventDefault(); const form = event.currentTarget; const fd = new FormData(form); setBusy(true); setError(null);
       const body: Record<string, unknown> = { evidence_id: Number(fd.get("evidence_id")), source: fd.get("source"), observed_at: new Date(String(fd.get("observed_at"))).toISOString() };
-      for (const field of fields[kind]) body[field] = numeric.has(field) ? fd.get(field) === "" ? null : Number(fd.get(field)) : fd.get(field);
+      for (const field of fields[kind]) body[field] = numeric.has(field) ? fd.get(field) === "" ? null : Number(fd.get(field)) : fd.get(field)||null;
       if (kind === "satellite") { body.cloud_free = fd.get("cloud_free") === "on"; body.same_grid = fd.get("same_grid") === "on"; }
       if (kind === "weather") body.days = Array.from({ length: dayCount }, (_, i) => ({ day: fd.get(`day-${i}`), min_c: Number(fd.get(`min-${i}`)), max_c: Number(fd.get(`max-${i}`)), rain_mm: Number(fd.get(`rain-${i}`)) }));
       if (kind === "calendar") body.events = Array.from({ length: dayCount }, (_, i) => ({ day: fd.get(`day-${i}`), activity: fd.get(`activity-${i}`) }));
@@ -65,7 +67,7 @@ export function AgricultureSection({ projectId, evidences }: { projectId: number
       {(kind === "diagnosis" || kind === "forewarning") && <p className="text-xs text-muted-foreground sm:col-span-2">{t("agri.diagnosisNotice")}</p>}
       <Button disabled={busy || !evidences.some(e => e.status === "verified")}>{t("agri.record")}</Button>
     </form>
-    <div className="space-y-4">{records.map(record => <article key={record.id} className="rounded-2xl border p-5 space-y-3"><h3 className="font-semibold">{t(`agri.kinds.${record.kind}`)} <ProvenanceBadge value={record.provenance as ProvenanceClass} /></h3><p className="text-xs text-muted-foreground">{record.source} · {new Date(record.observed_at).toLocaleString(i18n.language)} · {t("agri.sourceEvidence")} #{record.evidence_id}</p><dl className="grid gap-2 sm:grid-cols-2">{displayKeys.filter(key => record.content[key] !== undefined).map(key => <div key={key} className="rounded-md bg-muted/40 p-3"><dt className="text-xs text-muted-foreground">{t(`agri.fields.${key}`)}</dt><dd className="mt-1 text-sm font-medium">{record.content[key] == null ? t("agri.unavailable") : key === "quality" ? t(`agri.quality.${String(record.content[key])}`) : String(record.content[key])}</dd></div>)}</dl>
+    <div className="space-y-4">{records.map(record => <article key={`${record.kind}:${record.id}`} className="rounded-2xl border p-5 space-y-3"><h3 className="font-semibold">{t(`agri.kinds.${record.kind}`)} <ProvenanceBadge value={record.provenance as ProvenanceClass} /></h3><p className="text-xs text-muted-foreground">{record.source} · {new Date(record.observed_at).toLocaleString(i18n.language)} · {t("agri.sourceEvidence")} #{record.evidence_id}</p><dl className="grid gap-2 sm:grid-cols-2">{displayKeys.filter(key => record.content[key] !== undefined).map(key => <div key={key} className="rounded-md bg-muted/40 p-3"><dt className="text-xs text-muted-foreground">{t(`agri.fields.${key}`)} {key === "sar" && <ProvenanceBadge value="COMPUTED"/>}</dt><dd className="mt-1 text-sm font-medium">{record.content[key] == null ? t("agri.unavailable") : key === "quality" ? t(`agri.quality.${String(record.content[key])}`) : String(record.content[key])}</dd></div>)}</dl>
       {record.kind === "weather" && <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="p-2 text-start">{t("agri.day")}</th><th>{t("agri.minTemp")}</th><th>{t("agri.maxTemp")}</th><th>{t("agri.rain")}</th></tr></thead><tbody>{(record.content.days as { day: string; min_c: number; max_c: number; rain_mm: number }[]).map(day => <tr key={day.day} className="border-t"><td className="p-2">{day.day}</td><td className="text-center">{day.min_c}</td><td className="text-center">{day.max_c}</td><td className="text-center">{day.rain_mm}</td></tr>)}</tbody></table></div>}
       {record.kind === "calendar" && <ul className="space-y-2">{(record.content.events as { day: string; activity: string }[]).map((event, i) => <li key={i} className="text-sm">{event.day} · {event.activity}</li>)}</ul>}
     </article>)}</div>

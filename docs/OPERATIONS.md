@@ -1,5 +1,8 @@
 # FOGGARA operational extension
 
+Current recovery and capacity verification: [Recovery and capacity gates](RECOVERY-LOAD-GATES-2026-10-05.md).
+Use the snapshot/manifest recovery tool for new verified backups; it refuses populated restore targets.
+
 This extends the React 19 / FastAPI / SQLAlchemy / Alembic baseline. It does not
 replace existing water, metrology, evidence, decisions, telemetry or simulation
 modules. New public and operations screens are Arabic-first; existing modules
@@ -8,7 +11,7 @@ screens remains a release task.
 
 ## Implemented
 
-- Public presentation of FOGGARA and SIREP OASIS NEXUS WEFEH, based on the supplied
+- Public presentation of FOGGARA and SIREP OASES NEXUS WEFEH, based on the supplied
   company deck and narration. Professional services, software and field systems
   are distinguished; experimental data is not described as national measurements.
 - Versioned organization-owned WEFEH rules and independently reviewed observations.
@@ -113,7 +116,7 @@ CC BY 4.0. Its presentation is cropped and darkened. Attribution and license
 links appear in /rights. It is not one of the user's local attachments.
 The supplied local files could be read during source research, but their asset
 copying could not be completed after the local execution environment failed.
-The photograph loads from Wikimedia; fonts may load from Google. Self-host
+Legacy photographs can load from Wikimedia; current fonts are self-hosted. Review
 licensed assets for a deployment that prohibits external browser requests.
 
 Design reference: https://dribbble.com/tags/agriculture-dashboard (inspiration;
@@ -149,7 +152,7 @@ migration, API and worker Compose stack, verifies the database/schema health
 response and worker process, then removes only that disposable CI stack.
 
 
-Integrated migration head: an20261004m1 (tenant-scoped measurement series index). Credentials use release scoped, password-bound JWTs; old sessions require login.
+Integrated migration head: nat20261005m1 (tenant-scoped measurement series index). Credentials use release scoped, password-bound JWTs; old sessions require login.
 
 
 ## Render worker requirement

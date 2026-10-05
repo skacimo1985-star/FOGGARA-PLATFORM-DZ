@@ -59,9 +59,9 @@ class OrgOut(ORM):
 class SiteIn(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     wilaya: str = Field(min_length=1, max_length=100)
-    commune: Optional[str] = None
-    lat: Optional[float] = Field(default=None, ge=-90, le=90)
-    lon: Optional[float] = Field(default=None, ge=-180, le=180)
+    commune: Optional[str] = Field(default=None, max_length=100)
+    lat: Optional[float] = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    lon: Optional[float] = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
 
 
 class SiteOut(ORM):

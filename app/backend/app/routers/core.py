@@ -7,6 +7,7 @@ from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, paginate, pagination
 from ..models import Asset, AuditLog, Organization, Project, Site, User, WaterResource
+from ..wilayas import WILAYAS
 from ..schemas import (AssetIn, AssetOut, AuditOut, OrgOut, Page, ProjectIn,
                        ProjectOut, ProjectUpdate, ResourceIn, ResourceOut,
                        SiteIn, SiteOut)
@@ -32,12 +33,36 @@ def list_sites(pg: tuple[int, int] = Depends(pagination),
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
 def create_site(payload: SiteIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    site = Site(org_id=user.org_id, **payload.model_dump())
+    site = Site(org_id=user.org_id, **site_values(payload))
     db.add(site)
     db.flush()
     audit(db, user, "create", "site", entity_id=site.id)
     db.commit()
     return site
+
+
+def site_values(payload):
+    data = payload.model_dump()
+    match = next((w for w in WILAYAS if data["wilaya"].strip().casefold() in
+                  {str(v).casefold() for v in w.values()}), None)
+    if match is None:
+        api_error(422, "INVALID_WILAYA", "Choose a wilaya from the national directory")
+    if (data["lat"] is None) != (data["lon"] is None):
+        api_error(422, "COORDINATE_PAIR_REQUIRED", "Supply both WGS84 coordinates or neither")
+    data["wilaya"] = match["code"]
+    return data
+
+
+@router.patch("/sites/{site_id}", response_model=SiteOut)
+def edit_site(site_id: int, payload: SiteIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.get(Site, site_id)
+    if row is None or row.org_id != user.org_id:
+        api_error(404, "NOT_FOUND", "Site not found")
+    for key, value in site_values(payload).items():
+        setattr(row, key, value)
+    audit(db, user, "update", "site", entity_id=row.id)
+    db.commit()
+    return row
 
 
 # ---------- Water resources ----------
@@ -63,6 +88,20 @@ def create_resource(payload: ResourceIn, user: User = Depends(get_current_user),
     return res
 
 
+@router.patch("/resources/{resource_id}", response_model=ResourceOut)
+def edit_resource(resource_id: int, payload: ResourceIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.get(WaterResource, resource_id)
+    if row is None or row.org_id != user.org_id:
+        api_error(404, "NOT_FOUND", "Resource not found")
+    if row.site_id != payload.site_id:
+        api_error(409, "PARENT_IMMUTABLE", "The registered site link cannot be reassigned")
+    for key, value in payload.model_dump().items():
+        setattr(row, key, value)
+    audit(db, user, "update", "water_resource", entity_id=row.id)
+    db.commit()
+    return row
+
+
 # ---------- Assets ----------
 @router.get("/assets", response_model=Page[AssetOut])
 def list_assets(pg: tuple[int, int] = Depends(pagination),
@@ -86,6 +125,20 @@ def create_asset(payload: AssetIn, user: User = Depends(get_current_user), db: S
     return asset
 
 
+@router.patch("/assets/{asset_id}", response_model=AssetOut)
+def edit_asset(asset_id: int, payload: AssetIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.get(Asset, asset_id)
+    if row is None or row.org_id != user.org_id:
+        api_error(404, "NOT_FOUND", "Asset not found")
+    if row.resource_id != payload.resource_id:
+        api_error(409, "PARENT_IMMUTABLE", "The registered resource link cannot be reassigned")
+    for key, value in payload.model_dump().items():
+        setattr(row, key, value)
+    audit(db, user, "update", "asset", entity_id=row.id)
+    db.commit()
+    return row
+
+
 # ---------- Projects ----------
 def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
     if site_id is not None:
@@ -100,6 +153,14 @@ def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
         a = db.get(Asset, asset_id)
         if a is None or a.org_id != org_id:
             api_error(404, "NOT_FOUND", "Asset not found")
+    if resource_id is not None and site_id is not None and r.site_id != site_id:
+        api_error(422, "INCONSISTENT_LINK", "Resource must belong to the selected site")
+    if asset_id is not None:
+        parent = db.get(WaterResource, a.resource_id)
+        if parent is None or parent.org_id != org_id:
+            api_error(404, "NOT_FOUND", "Resource not found")
+        if (resource_id is not None and a.resource_id != resource_id) or (site_id is not None and parent.site_id != site_id):
+            api_error(422, "INCONSISTENT_LINK", "Asset must belong to the selected resource and site")
 
 
 @router.get("/projects", response_model=Page[ProjectOut])

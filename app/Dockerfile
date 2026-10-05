@@ -10,6 +10,7 @@ RUN npm ci
 COPY index.html vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json ./
 COPY tailwind.config.js postcss.config.js components.json ./
 COPY src ./src
+COPY reference ./reference
 COPY public ./public
 RUN npm run build
 
@@ -19,6 +20,7 @@ WORKDIR /app
 COPY backend/requirements.lock backend/requirements.lock
 RUN pip install --no-cache-dir pip==26.2.1 && pip install --no-cache-dir -r backend/requirements.lock pgserver
 COPY backend ./backend
+COPY reference ./reference
 COPY --from=nexus /engine/target/release/foggara-nexus-core /usr/local/bin/foggara-nexus-core
 ENV NEXUS_MATRIX_ENGINE=rust
 COPY --from=web /app/dist ./dist

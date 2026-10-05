@@ -70,6 +70,8 @@ function SectionItems({ section, data }: { section: SectionKey; data: Item[] }) 
     );
   }
 
+  if (section === "risks") return <ul className="space-y-2">{data.map(it=><li key={Number(it.id)} className="rounded-md border p-3 text-sm"><Link className="underline" to={`/app/projects/${it.project_id}`}>{String(it.title)}</Link><p>{String(it.score)}/25 · PROPOSED</p><p>{String(it.mitigation)}</p></li>)}</ul>;
+
   if (section === "projects") {
     return (
       <ul className="space-y-2">
@@ -143,6 +145,7 @@ export default function ExploreDomain() {
           {t(`landing.${domain}`, domain)} — {t("explore.title")}
         </h1>
       </div>
+      <div className="flex flex-wrap gap-3 text-sm"><Link className="underline" to="/app/registry">{t("registry.title")}</Link><Link className="underline" to="/app/resources">{t("nexus.title")}</Link><Link className="underline" to="/app/projects">{t("nav.projects")}</Link><Link className="underline" to="/references">{t("reference.title")}</Link></div>
       <ErrorText error={error} />
       {/* بطاقة الحاسبة الشمسية المحسوبة — بُعد الطاقة فقط */}
       {domain === "energy" && <SolarCard />}
