@@ -97,3 +97,32 @@ def test_ndvi():
 
 def test_unknown_api_is_not_spa(client):
     assert client.get('/api/not-a-real-route').status_code==404
+
+
+def test_service_summary_turns_recorded_data_into_actionable_service(client, world, farm):
+    h, pid = farm
+    client.post('/api/agriculture/observations', headers=h, json=observation(pid, value=8.4))
+    data = observation(pid)
+    data.update(metric='ec', value=5.1, source_ref='LAB-EC-1')
+    client.post('/api/agriculture/observations', headers=h, json=data)
+    r = client.get(f'/api/agriculture/parcels/{pid}/service-summary', headers=h)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body['available_services']['soil_screening'] is True
+    assert body['available_services']['irrigation_planning'] is True
+    assert body['available_services']['irrigation_water_screening'] is True
+    assert body['irrigation_water_assessment']['evidence_status'] == 'COMPUTED'
+    assert body['irrigation_water_assessment']['decision_status'] == 'PROPOSED'
+    assert body['available_services']['satellite_live'] is False
+    assert body['available_services']['weather_live'] is False
+    assert body['soil_assessment']['evidence_status'] == 'COMPUTED'
+    assert body['soil_assessment']['decision_status'] == 'PROPOSED'
+    assert {'ph', 'ec'} <= set(body['soil_assessment']['coverage'])
+    assert any(x['message'] == 'salinity_risk' for x in body['soil_assessment']['findings'])
+    assert body['soil_assessment']['actions']
+
+
+def test_service_summary_is_org_isolated(client, world, farm):
+    _, pid = farm
+    h2 = login(client, 'o2m@t.dz')
+    assert client.get(f'/api/agriculture/parcels/{pid}/service-summary', headers=h2).status_code == 404

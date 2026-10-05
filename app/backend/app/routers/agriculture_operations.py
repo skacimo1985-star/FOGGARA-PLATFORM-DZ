@@ -10,6 +10,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, User
 from ..services.agriculture_operations import irrigation_scenario
+from ..services.service_delivery import soil_assessment, irrigation_water_assessment
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -131,6 +132,39 @@ def verify_observation(identity: int, user: User = Depends(require_reviewer), db
     row.evidence_status, row.verified_by = 'VERIFIED', user.id
     row.verified_at = datetime.now(timezone.utc)
     return record(db, user, row, 'verify')
+
+@operations_router.get('/parcels/{identity}/service-summary')
+def service_summary(identity: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    parcel = own(db, AgriParcel, identity, user)
+    observations = list(db.scalars(select(AgriObservation).where(
+        AgriObservation.org_id == user.org_id,
+        AgriObservation.parcel_id == parcel.id,
+    ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
+    soil = soil_assessment(observations)
+    water = irrigation_water_assessment({row.metric: row.value for row in observations if row.metric in ('ph', 'ec')})
+    latest = {}
+    for row in observations:
+        if row.metric not in latest:
+            latest[row.metric] = {
+                'value': float(row.value), 'unit': row.unit, 'source_type': row.source_type,
+                'source_ref': row.source_ref, 'observed_at': row.observed_at,
+                'evidence_status': row.evidence_status,
+            }
+    return {
+        'parcel': out(parcel),
+        'latest_observations': latest,
+        'soil_assessment': soil,
+        'irrigation_water_assessment': water,
+        'available_services': {
+            'soil_screening': bool(soil['coverage']),
+            'irrigation_water_screening': bool(water['coverage']),
+            'irrigation_planning': True,
+            'vegetation_monitoring': 'ndvi' in latest or 'lswi' in latest,
+            'satellite_live': False,
+            'weather_live': False,
+        },
+        'provenance': 'RECORDED_AND_COMPUTED',
+    }
 
 @operations_router.get('/plans')
 def plans(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
