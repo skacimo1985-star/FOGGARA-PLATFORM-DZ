@@ -88,7 +88,7 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  const empty=<div className="fg-empty"><Sprout size={32}/><h3>{t('noRecords')}</h3><p>{t('startParcel')}</p><button className="fg-primary" onClick={()=>setModal('parcel')}><Plus size={17}/>{t('addParcel')}</button></div>;
  const latestMetric=(name:TextKey)=>observations.filter(o=>o.metric===name).sort((a,b)=>new Date(b.observed_at).getTime()-new Date(a.observed_at).getTime())[0];
  const satelliteRows=observations.filter(o=>o.source_type==='satellite');
- const satelliteProviders=[...new Set(satelliteRows.map(o=>o.source_ref.split(':')[0]).filter(Boolean))];
+ const satelliteProviders=[...new Set(satelliteRows.map(o=>o.source_ref.includes(':')?o.source_ref.split(':')[0]:'').filter(Boolean))];
  const remoteCopy=lang==='fr'
   ?{title:'Télédétection',records:'observations inférées',adapter:'Contrat fournisseur neutre',live:'Fournisseur live non connecté',provenance:'Les indices satellite restent INFERRED jusqu’à validation par une preuve terrain/laboratoire distincte.'}
   :lang==='en'
