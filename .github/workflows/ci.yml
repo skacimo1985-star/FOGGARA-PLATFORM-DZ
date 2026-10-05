@@ -85,6 +85,7 @@ jobs:
           name: foggara-operational-package
           path: |
             app/dist
+            app/reference
             app/backend/app
             app/backend/alembic
             app/backend/alembic.ini
@@ -166,7 +167,7 @@ jobs:
                   with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
                       body = json.load(response)
                       assert body["db"] == "up"
-                      assert body["alembic"] == "an20261004m1"
+                      assert body["alembic"] == "nat20261005m1"
                       break
               except Exception:
                   if attempt == 39:

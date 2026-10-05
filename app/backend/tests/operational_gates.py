@@ -181,14 +181,14 @@ def main():
                     target.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO {}").format(sql.Identifier(role)))
                 target.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO PUBLIC")
                 target.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO PUBLIC")
-            result["recovery"] = restore(urls[1], archive, "an20261004m1")
+            result["recovery"] = restore(urls[1], archive, "nat20261005m1")
             with psycopg.connect(**target_settings) as target:
                 assert target.execute("SELECT count(*) FROM projects WHERE title='source-only-after-snapshot'").fetchone()[0] == 0
             result["recovery"]["concurrent_write_excluded_from_snapshot"] = True
             populate_and_check(urls[1], private, credentials, ids)
             result["recovery"]["http_login_write_tenant_isolation"] = True
             try:
-                restore(urls[1], archive, "an20261004m1")
+                restore(urls[1], archive, "nat20261005m1")
             except RuntimeError:
                 result["recovery"]["nonempty_target_refused"] = True
             else:

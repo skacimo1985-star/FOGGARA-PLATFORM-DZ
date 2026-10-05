@@ -329,7 +329,7 @@ def test_gis_meta_iot_vde(client, world, db):
     assert "projects" in body["sites"][0] and "resources" in body["sites"][0]
 
     r = client.get("/api/meta/wilayas", headers=member)
-    assert r.status_code == 200 and r.json()["count"] == 15
+    assert r.status_code == 200 and r.json()["count"] == 69
     assert any(w["ar"] == "أدرار" for w in r.json()["wilayas"])
 
     for path in ("/api/iot/status", "/api/vde/status"):

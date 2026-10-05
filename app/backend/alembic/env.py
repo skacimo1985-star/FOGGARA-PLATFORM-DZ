@@ -12,6 +12,7 @@ from app.db import Base  # noqa: E402
 from app import models  # noqa: E402,F401
 from app import operations_models  # noqa: E402,F401
 from app import platform_models  # noqa: E402,F401
+from app import reference_models  # noqa: E402,F401
 
 alembic_cfg = context.config
 alembic_cfg.set_main_option("sqlalchemy.url", app_config.DATABASE_URL.replace("%", "%%"))

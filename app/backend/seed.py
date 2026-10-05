@@ -20,6 +20,7 @@ from app.models import (VFD, Asset, Calibration, Certificate, Evidence,
                         WaterResource, Well)
 from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
+from app.services.reference_catalog import ensure_reference_catalog
 from app.services.catalog import ensure_service_catalog
 
 DEMO_PASSWORD = "Demo#2026"
@@ -49,6 +50,7 @@ def main():
                "calibrations": 0, "certificates": 0, "inspections": 0,
                "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0}
     try:
+        ensure_reference_catalog(db)
         created["services"] += ensure_service_catalog(db)
         if not seed_demo:
             ensure_default_indicator(db)

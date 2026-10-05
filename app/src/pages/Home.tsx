@@ -106,6 +106,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      <section className="rounded-2xl border bg-oasis/10 p-5 space-y-3"><h2 className="font-semibold">{t("registry.title")}</h2><p className="text-sm text-muted-foreground">{t("registry.subtitle")}</p><div className="flex flex-wrap gap-4 text-sm">{[["registry","registry.title"],["projects","nav.projects"],["intelligence","intelligence.title"],["economics","economics.title"],["references","reference.title"]].map(([route,key])=><Link key={route} className="underline" to={`/app/${route}`}>{t(key)}</Link>)}</div></section>
       {/* شريط المسار فوق زخرفة هندسية خافتة */}
       <section className="pattern-moorish rounded-2xl border border-ink/10 bg-parchment/70 p-4">
         <ol className="flex flex-wrap items-center gap-2" aria-label={t("path.title")}>

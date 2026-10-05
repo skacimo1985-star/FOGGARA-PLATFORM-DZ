@@ -1,5 +1,6 @@
 """Agricultural intelligence from supplied, reviewed sources; no live-feed claims."""
 from datetime import date, datetime, timezone
+import math
 from typing import Literal
 from fastapi import APIRouter, Depends
 from pydantic import Field, model_validator
@@ -10,6 +11,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user
 from ..models import Evidence, User
 from ..platform_models import AgriculturalRecord, EvidenceFile
+from ..reference_models import LabWaterAnalysis
 from .collaboration import Payload, commit, evidence_for_user
 from .core import get_project_or_404
 
@@ -47,11 +49,36 @@ class SoilIn(SourceIn):
     soc_g_kg: float | None = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
     ph: float | None = Field(default=None, ge=0, le=14, allow_inf_nan=False)
     moisture_percent: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    ec_ds_m: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    organic_matter_percent: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    temperature_c: float | None = Field(default=None, ge=-50, le=80, allow_inf_nan=False)
+    texture: str | None = Field(default=None, min_length=2, max_length=100)
 
     @model_validator(mode="after")
     def has_measurement(self):
-        if not any(getattr(self, k) is not None for k in ("nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent")):
+        if not any(getattr(self, k) is not None for k in ("nitrogen_mg_kg", "phosphorus_mg_kg", "potassium_mg_kg", "soc_g_kg", "ph", "moisture_percent", "ec_ds_m", "organic_matter_percent", "temperature_c")):
             raise ValueError("At least one measured soil parameter is required")
+        return self
+
+
+class WaterIn(SourceIn):
+    sample_id: str = Field(min_length=2, max_length=100)
+    method: str = Field(min_length=3, max_length=255)
+    ph: float | None = Field(default=None, ge=0, le=14, allow_inf_nan=False)
+    ec_ds_m: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    tds_mg_l: float | None = Field(default=None, ge=0, le=100000, allow_inf_nan=False)
+    temperature_c: float | None = Field(default=None, ge=-10, le=100, allow_inf_nan=False)
+    turbidity_ntu: float | None = Field(default=None, ge=0, le=10000, allow_inf_nan=False)
+    dissolved_oxygen_mg_l: float | None = Field(default=None, ge=0, le=30, allow_inf_nan=False)
+    sodium_meq_l: float | None = Field(default=None, ge=0, le=10000, allow_inf_nan=False)
+    calcium_meq_l: float | None = Field(default=None, ge=0, le=10000, allow_inf_nan=False)
+    magnesium_meq_l: float | None = Field(default=None, ge=0, le=10000, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def at_least_one(self):
+        if not any(value is not None for key, value in self.model_dump().items()
+                   if key not in ("sample_id", "method", "source", "evidence_id", "observed_at")):
+            raise ValueError("At least one water measurement is required")
         return self
 
 
@@ -161,10 +188,37 @@ def records(project_id: int, user=Depends(get_current_user), db: Session = Depen
     p = get_project_or_404(db, user, project_id)
     rows = db.scalars(select(AgriculturalRecord).join(Evidence, Evidence.id == AgriculturalRecord.evidence_id).where(
         AgriculturalRecord.project_id == p.id, Evidence.status == "verified").order_by(AgriculturalRecord.observed_at.desc(), AgriculturalRecord.id.desc()))
-    return {"project_id": p.id, "is_demo": p.is_demo, "live_feed": False,
-            "records": [{"id": r.id, "kind": r.kind, "source": r.source, "observed_at": r.observed_at,
+    items = [{"id": r.id, "kind": r.kind, "source": r.source, "observed_at": r.observed_at,
                          "evidence_id": r.evidence_id, "content": r.content,
-                         "provenance": r.content["provenance"] if r.content.get("provenance") in ("INFERRED", "COMPUTED", "PROPOSED") else "COMPUTED" if r.kind in ("satellite", "irrigation") else "PROPOSED" if r.kind in ("diagnosis", "forewarning", "calendar") else "OBSERVED" if r.kind == "soil" else "INFERRED"} for r in rows]}
+                         "provenance": r.content["provenance"] if r.content.get("provenance") in ("INFERRED", "COMPUTED", "PROPOSED") else "COMPUTED" if r.kind in ("satellite", "irrigation") else "PROPOSED" if r.kind in ("diagnosis", "forewarning", "calendar") else "OBSERVED" if r.kind == "soil" else "INFERRED"} for r in rows]
+    items += [{"id": r.id, "kind": "water", "source": r.source, "observed_at": r.observed_at,
+               "evidence_id": r.evidence_id, "content": r.content, "provenance": "OBSERVED"}
+              for r in db.scalars(select(LabWaterAnalysis).join(Evidence, Evidence.id == LabWaterAnalysis.evidence_id)
+                                 .where(LabWaterAnalysis.project_id == p.id, LabWaterAnalysis.org_id == user.org_id,
+                                        Evidence.status == "verified").order_by(LabWaterAnalysis.observed_at.desc()))]
+    return {"project_id": p.id, "is_demo": p.is_demo, "live_feed": False, "records": items}
+
+
+@router.post("/projects/{project_id}/agriculture/water", status_code=201)
+def water_analysis(project_id: int, payload: WaterIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    get_project_or_404(db, user, project_id)
+    ev = evidence_for_user(payload.evidence_id, user, db)
+    if ev.project_id != project_id or ev.status != "verified":
+        api_error(409, "DISCLOSURE_INVALID", "Reviewed project evidence required")
+    data = payload.model_dump(mode="json", exclude={"evidence_id", "source", "observed_at"})
+    cations = (payload.sodium_meq_l, payload.calcium_meq_l, payload.magnesium_meq_l)
+    sar = None
+    if all(x is not None for x in cations) and cations[1] + cations[2] > 0:
+        sar = round(cations[0] / (math.sqrt(cations[1] + cations[2]) / math.sqrt(2)), 6)
+    data.update({"sar": sar, "sar_provenance": "COMPUTED", "sar_formula": "Na/sqrt((Ca+Mg)/2); ions in meq/L",
+                 "method_version": "water-lab-v1", "suitability_assessed": False, "field_execution": False})
+    row = LabWaterAnalysis(org_id=user.org_id, project_id=project_id, evidence_id=ev.id,
+                           source=payload.source, observed_at=payload.observed_at, content=data, created_by=user.id)
+    db.add(row)
+    db.flush()
+    audit(db, user, "record", "lab_water_analysis", entity_id=row.id, project_id=project_id, meta={"evidence_id": ev.id})
+    commit(db)
+    return {"id": row.id, "kind": "water", "content": data, "live_feed": False}
 
 
 @router.post("/projects/{project_id}/agriculture/satellite", status_code=201)

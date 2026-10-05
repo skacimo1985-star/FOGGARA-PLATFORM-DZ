@@ -11,8 +11,9 @@ from ..db import get_db
 from ..deps import api_error, get_current_user
 from ..models import (Asset, Indicator, Project, Service, ServiceRequest, Site,
                       User, WaterResource)
-from ..wilayas import WILAYAS
-from ..platform_models import NexusResource
+from ..wilayas import VERSION, SOURCES
+from ..services.reference_catalog import wilaya_rows
+from ..platform_models import NexusResource, RiskRecord
 
 router = APIRouter(prefix="/api", tags=["explore"])
 
@@ -115,7 +116,10 @@ def explore_domain(domain: str, user: User = Depends(get_current_user), db: Sess
         "resources": _section(resources, "resources"),
         "assets": _section(assets, "assets"),
         "indicators": _section(indicators, "indicators"),
-        "risks": _section([], "risks"),  # لا نموذج مخاطر بعد — مخطط دائمًا
+        "risks": _section([{"id": r.id, "title": r.title, "score": r.likelihood * r.severity,
+                            "mitigation": r.mitigation, "project_id": r.project_id, "provenance": "PROPOSED"}
+                           for r in db.scalars(select(RiskRecord).join(Project, Project.id == RiskRecord.project_id)
+                                               .where(RiskRecord.org_id == user.org_id, Project.domain == domain))], "risks"),
         "services": _section(services, "services"),
         "projects": _section(projects, "projects"),
         "terminology": _section(terminology, "terminology"),
@@ -149,8 +153,9 @@ def gis_sites(user: User = Depends(get_current_user), db: Session = Depends(get_
 
 # ---------- Admin directory ----------
 @router.get("/meta/wilayas")
-def list_wilayas(user: User = Depends(get_current_user)):
-    return {"count": len(WILAYAS), "wilayas": WILAYAS}
+def list_wilayas(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = wilaya_rows(db)
+    return {"count": len(rows), "wilayas": rows, "version": VERSION, "sources": SOURCES}
 
 
 # ---------- IoT / VDE — وصفي فقط، بلا محاكاة ----------
