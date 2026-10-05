@@ -253,7 +253,20 @@ def restore(target_url, archive, expected_head):
             guard.execute("SET LOCAL TIME ZONE 'UTC'")
             actual = inventory(guard)
             if actual != document["inventory"]:
-                raise RuntimeError("Restored data/schema/security differs at " + ", ".join(inventory_differences(document["inventory"], actual)) + "; keep target offline")
+                differences = inventory_differences(document["inventory"], actual)
+                # Schema-only diagnostic: never emits row values, credentials or
+                # connection identifiers. Remove once the cross-restore catalog
+                # representation has been normalized.
+                for location in differences:
+                    if location.endswith(":constraints"):
+                        table = location.split(":", 1)[0]
+                        print("CONSTRAINT_DIAGNOSTIC=" + json.dumps({
+                            "table": table,
+                            "source": document["inventory"]["tables"][table]["constraints"],
+                            "restored": actual["tables"][table]["constraints"],
+                        }, sort_keys=True), file=sys.stderr)
+                        break
+                raise RuntimeError("Restored data/schema/security differs at " + ", ".join(differences) + "; keep target offline")
     return {"status": "verified", "alembic": expected_head, "tables": len(actual["tables"]),
             "rows": sum(table["rows"] for table in actual["tables"].values())}
 
