@@ -90,3 +90,11 @@ def test_legacy_backup_does_not_publish_success_when_dump_fails(tmp_path):
     assert "backup written" not in result.stdout
     assert not list(destination.iterdir())
     assert "secret" not in result.stdout + result.stderr
+
+
+def test_restore_preserves_existing_public_schema_and_other_entries():
+    contents = b'; Archive metadata\n5; 2615 2200 SCHEMA - public owner\n6; 1259 900 TABLE public organizations owner\n7; 0 0 COMMENT - SCHEMA public owner\n'
+    filtered = recovery.restore_entries(contents)
+    assert '5; 2615 2200 SCHEMA - public owner' not in filtered
+    assert 'TABLE public organizations owner' in filtered
+    assert 'COMMENT - SCHEMA public owner' in filtered

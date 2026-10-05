@@ -10,8 +10,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
+import tempfile
 import uuid
 
 import psycopg
@@ -51,12 +53,20 @@ def command_environment(settings):
     return env
 
 
-def run_tool(arguments, settings):
+def run_tool(arguments, settings, capture=False):
     # Do not echo stderr: connection failures may expose connection identifiers.
     result = subprocess.run(arguments, env=command_environment(settings),
-                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
+                            stdout=subprocess.PIPE if capture else subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
     if result.returncode:
         raise RuntimeError(f"{Path(arguments[0]).name} failed (exit {result.returncode}); operation incomplete")
+    return result.stdout if capture else None
+
+
+def restore_entries(contents):
+    # Every freshly created database already has public. Keep that schema and
+    # its owner instead of dropping it or accepting a duplicate-schema error.
+    return "\n".join(line for line in contents.decode("utf-8").splitlines()
+                     if not re.match(r"^\d+;\s+\d+\s+\d+\s+SCHEMA - public(?:\s|$)", line)) + "\n"
 
 
 def file_digest(path):
@@ -172,12 +182,16 @@ def restore(target_url, archive, expected_head):
         raise RuntimeError("Manifest format or expected Alembic head does not match")
     if file_digest(archive) != document["archive_sha256"]:
         raise RuntimeError("Archive checksum does not match; restore refused")
-    run_tool(["pg_restore", "--list", str(archive)], settings)
+    contents = run_tool(["pg_restore", "--list", str(archive)], settings, capture=True)
     with psycopg.connect(**settings, autocommit=True) as guard:
         guard.execute("SELECT pg_advisory_lock(70620261005)")
         require_empty(guard)
-        run_tool(["pg_restore", "--dbname=" + settings["dbname"], "--single-transaction",
-                  "--exit-on-error", "--no-owner", "--no-privileges", str(archive)], settings)
+        with tempfile.TemporaryDirectory(prefix="foggara-restore-") as temporary:
+            entries = Path(temporary) / "entries.list"
+            entries.write_text(restore_entries(contents), encoding="utf-8")
+            entries.chmod(0o600)
+            run_tool(["pg_restore", "--dbname=" + settings["dbname"], "--single-transaction",
+                      "--exit-on-error", "--no-owner", "--no-privileges", "--use-list=" + str(entries), str(archive)], settings)
         # Commit access restrictions before verification: a mismatch must never
         # roll back the denial of inherited managed-provider API grants.
         restrict_data_api(guard)
