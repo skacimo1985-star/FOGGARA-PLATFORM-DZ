@@ -1,0 +1,59 @@
+# FOGGARA-DZ local secrets and generated state
+# Never commit real credentials. Keep only sanitized *.example templates.
+
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.env
+*.env.*
+!*.env.example
+
+# Private keys, certificates and credential exports
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+credentials.json
+service-account*.json
+secrets.*
+!secrets.example.*
+
+# Local databases, dumps and backups
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node/frontend
+node_modules/
+app/dist/
+dist/
+.next/
+coverage/
+
+# Test/browser artifacts
+test-results/
+playwright-report/
+blob-report/
+app/backend/qa/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
