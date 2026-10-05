@@ -133,12 +133,7 @@ def inventory(connection):
                      ELSE NULL END AS check_expression
             FROM pg_constraint AS c
             WHERE c.conrelid = %s::regclass
-            ORDER BY
-                c.contype,
-                local_columns::text,
-                referenced_table,
-                referenced_columns::text,
-                check_expression
+            ORDER BY 1, 5, 6, 7, 10
             """,
             ("public." + name,),
         ).fetchall()
