@@ -9,8 +9,9 @@ Verifies:
 - Existing Adrar/Tindouf demo records remain compatible
 - Organization isolation remains intact
 """
-import pytest
 import os
+import sys
+import pytest
 
 from app.wilayas import WILAYAS
 from app.models import Organization, Site, Project
@@ -48,27 +49,53 @@ class TestWilayaDirectory:
         for w in WILAYAS:
             assert len(w["code"]) == 2, f"Code {w['code']} is not 2 digits"
 
+    def test_wilaya_names_have_all_three_languages(self):
+        for w in WILAYAS:
+            assert w.get("ar"), f"Wilaya {w['code']} missing Arabic name"
+            assert w.get("fr"), f"Wilaya {w['code']} missing French name"
+            assert w.get("en"), f"Wilaya {w['code']} missing English name"
+
+    def test_adrar_and_tindouf_present(self):
+        codes = {w["code"] for w in WILAYAS}
+        assert "01" in codes, "Adrar (01) missing"
+        assert "37" in codes, "Tindouf (37) missing"
+
 
 class TestSeedIdempotency:
     """Validate that seed.py is idempotent and covers all 58 wilayas."""
 
-    def test_seed_creates_no_duplicates_on_rerun(self, db):
-        """Run seed twice; second run should create 0 new rows."""
+    @pytest.fixture(autouse=True)
+    def _setup_env(self):
         os.environ["SEED_DEMO"] = "true"
         os.environ["ENV"] = "dev"
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if backend_dir not in sys.path:
+            sys.path.insert(0, backend_dir)
+        yield
 
+    def test_seed_creates_no_duplicates_on_rerun(self, db):
+        """Run seed twice; second run should create 0 new rows."""
         import seed as seed_module
         seed_module.main()
 
-        orgs_after_first = db.execute(select(func.count(Organization.id))).scalar()
-        sites_after_first = db.execute(select(func.count(Site.id))).scalar()
-        projects_after_first = db.execute(select(func.count(Project.id))).scalar()
+        from app.db import SessionLocal
+        s1 = SessionLocal()
+        try:
+            orgs_after_first = s1.execute(select(func.count(Organization.id))).scalar()
+            sites_after_first = s1.execute(select(func.count(Site.id))).scalar()
+            projects_after_first = s1.execute(select(func.count(Project.id))).scalar()
+        finally:
+            s1.close()
 
         seed_module.main()
 
-        orgs_after_second = db.execute(select(func.count(Organization.id))).scalar()
-        sites_after_second = db.execute(select(func.count(Site.id))).scalar()
-        projects_after_second = db.execute(select(func.count(Project.id))).scalar()
+        s2 = SessionLocal()
+        try:
+            orgs_after_second = s2.execute(select(func.count(Organization.id))).scalar()
+            sites_after_second = s2.execute(select(func.count(Site.id))).scalar()
+            projects_after_second = s2.execute(select(func.count(Project.id))).scalar()
+        finally:
+            s2.close()
 
         assert orgs_after_first == orgs_after_second, \
             f"Organizations duplicated: {orgs_after_first} -> {orgs_after_second}"
@@ -79,15 +106,17 @@ class TestSeedIdempotency:
 
     def test_seed_covers_all_58_wilayas(self, db):
         """After seeding, all 58 wilaya names should appear in sites."""
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
-
         import seed as seed_module
         seed_module.main()
 
-        wilaya_names_in_sites = db.execute(
-            select(Site.wilaya).distinct()
-        ).scalars().all()
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            wilaya_names_in_sites = s.execute(
+                select(Site.wilaya).distinct()
+            ).scalars().all()
+        finally:
+            s.close()
 
         for w in WILAYAS:
             assert w["ar"] in wilaya_names_in_sites, \
@@ -95,69 +124,77 @@ class TestSeedIdempotency:
 
     def test_adrar_tindouf_demo_records_preserved(self, db):
         """Original Adrar and Tindouf demo orgs/sites remain after re-seed."""
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
-
         import seed as seed_module
         seed_module.main()
 
-        adrar_org = db.execute(
-            select(Organization).where(Organization.code == "DEMO-ADRAR-ADE")
-        ).scalar_one_or_none()
-        assert adrar_org is not None, "Original Adrar demo org missing"
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            adrar_org = s.execute(
+                select(Organization).where(Organization.code == "DEMO-ADRAR-ADE")
+            ).scalar_one_or_none()
+            assert adrar_org is not None, "Original Adrar demo org missing"
 
-        tindouf_org = db.execute(
-            select(Organization).where(Organization.code == "DEMO-TND-AGRI")
-        ).scalar_one_or_none()
-        assert tindouf_org is not None, "Original Tindouf demo org missing"
+            tindouf_org = s.execute(
+                select(Organization).where(Organization.code == "DEMO-TND-AGRI")
+            ).scalar_one_or_none()
+            assert tindouf_org is not None, "Original Tindouf demo org missing"
+        finally:
+            s.close()
 
     def test_organization_isolation(self, db):
         """Each demo org has its own sites; no cross-org site sharing."""
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
-
         import seed as seed_module
         seed_module.main()
 
-        orgs = db.execute(
-            select(Organization).where(Organization.is_demo == True)
-        ).scalars().all()
-
-        for org in orgs:
-            org_sites = db.execute(
-                select(Site).where(Site.org_id == org.id)
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            orgs = s.execute(
+                select(Organization).where(Organization.is_demo == True)
             ).scalars().all()
-            for site in org_sites:
-                assert site.org_id == org.id, \
-                    f"Site {site.name} belongs to org {site.org_id} but expected {org.id}"
+
+            for org in orgs:
+                org_sites = s.execute(
+                    select(Site).where(Site.org_id == org.id)
+                ).scalars().all()
+                for site in org_sites:
+                    assert site.org_id == org.id, \
+                        f"Site {site.name} belongs to org {site.org_id} but expected {org.id}"
+        finally:
+            s.close()
 
     def test_all_demo_data_is_flagged(self, db):
         """All seeded rows must have is_demo=True."""
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
-
         import seed as seed_module
         seed_module.main()
 
-        non_demo_orgs = db.execute(
-            select(func.count(Organization.id)).where(Organization.is_demo == False)
-        ).scalar()
-        assert non_demo_orgs == 0, f"{non_demo_orgs} non-demo organizations found in seed"
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            non_demo_orgs = s.execute(
+                select(func.count(Organization.id)).where(Organization.is_demo == False)
+            ).scalar()
+            assert non_demo_orgs == 0, f"{non_demo_orgs} non-demo organizations found in seed"
 
-        non_demo_sites = db.execute(
-            select(func.count(Site.id)).where(Site.is_demo == False)
-        ).scalar()
-        assert non_demo_sites == 0, f"{non_demo_sites} non-demo sites found in seed"
+            non_demo_sites = s.execute(
+                select(func.count(Site.id)).where(Site.is_demo == False)
+            ).scalar()
+            assert non_demo_sites == 0, f"{non_demo_sites} non-demo sites found in seed"
+        finally:
+            s.close()
 
     def test_no_duplicate_org_codes(self, db):
         """No two organizations share the same code."""
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
-
         import seed as seed_module
         seed_module.main()
 
-        duplicates = db.execute(text(
-            "SELECT code, COUNT(*) FROM organizations GROUP BY code HAVING COUNT(*) > 1"
-        )).fetchall()
-        assert len(duplicates) == 0, f"Duplicate org codes: {duplicates}"
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            duplicates = s.execute(text(
+                "SELECT code, COUNT(*) FROM organizations GROUP BY code HAVING COUNT(*) > 1"
+            )).fetchall()
+            assert len(duplicates) == 0, f"Duplicate org codes: {duplicates}"
+        finally:
+            s.close()
