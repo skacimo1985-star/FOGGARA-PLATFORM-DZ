@@ -64,3 +64,6 @@ WILAYAS: list[dict] = [
     {"code": "57", "ar": "المغير", "fr": "El M'Ghair", "en": "El M'Ghair"},
     {"code": "58", "ar": "المنيعة", "fr": "El Meniaa", "en": "El Meniaa"},
 ]
+
+WILAYA_CODES = frozenset(w["code"] for w in WILAYAS)
+WILAYA_NAMES_AR = frozenset(w["ar"] for w in WILAYAS)
