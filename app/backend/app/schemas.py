@@ -144,12 +144,15 @@ class ProjectOut(ORM):
 # ---- Measurements ----
 MEASUREMENT_PARAMETERS = Literal[
     # water
-    "flow_rate", "water_level", "ph", "ec", "temperature", "turbidity", "pressure",
-    "dissolved_oxygen", "rainfall",
+    "flow_rate", "water_level", "ph", "ec", "tds", "salinity", "temperature", "turbidity", "pressure",
+    "dissolved_oxygen", "sar", "sodium", "calcium", "magnesium", "chloride", "bicarbonate",
+    # weather / climate
+    "rainfall", "humidity", "air_temperature", "wind_speed", "solar_radiation", "reference_et",
     # energy
-    "electrical_power", "voltage",
-    # food / ecosystem
-    "humidity", "soil_moisture",
+    "electrical_power", "voltage", "current", "energy",
+    # soil / food / ecosystem
+    "soil_moisture", "soil_temperature", "soil_nitrogen", "soil_phosphorus", "soil_potassium",
+    "soil_soc", "soil_organic_matter", "soil_ec",
 ]
 
 
