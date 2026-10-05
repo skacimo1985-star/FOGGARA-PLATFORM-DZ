@@ -112,9 +112,10 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     body = r.json()
     assert body['available_services']['soil_screening'] is True
     assert body['available_services']['irrigation_planning'] is True
-    assert body['available_services']['irrigation_water_screening'] is True
-    assert body['irrigation_water_assessment']['evidence_status'] == 'COMPUTED'
-    assert body['irrigation_water_assessment']['decision_status'] == 'PROPOSED'
+    assert body['available_services']['irrigation_water_screening'] is False
+    assert body['irrigation_water_assessment']['evidence_status'] == 'MISSING'
+    assert body['irrigation_water_assessment']['decision_status'] == 'UNAVAILABLE'
+    assert 'EXPLICIT_WATER_SAMPLE_REQUIRED' in body['irrigation_water_assessment']['limitations']
     assert body['available_services']['satellite_live'] is False
     assert body['available_services']['weather_live'] is False
     assert body['soil_assessment']['evidence_status'] == 'COMPUTED'
