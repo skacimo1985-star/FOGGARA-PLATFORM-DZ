@@ -115,7 +115,8 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     assert body['available_services']['irrigation_water_screening'] is False
     assert body['irrigation_water_assessment']['evidence_status'] == 'MISSING'
     assert body['irrigation_water_assessment']['decision_status'] == 'UNAVAILABLE'
-    assert 'EXPLICIT_WATER_SAMPLE_REQUIRED' in body['irrigation_water_assessment']['limitations']
+    assert 'PROJECT_WATER_RESOURCE_REQUIRED' in body['irrigation_water_assessment']['limitations']
+    assert 'VERIFIED_WATER_MEASUREMENTS_REQUIRED' in body['irrigation_water_assessment']['limitations']
     assert body['available_services']['satellite_live'] is False
     assert body['available_services']['weather_live'] is False
     assert body['soil_assessment']['evidence_status'] == 'COMPUTED'

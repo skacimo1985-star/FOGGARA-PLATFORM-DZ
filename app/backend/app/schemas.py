@@ -876,6 +876,16 @@ class TelemetryIngestIn(BaseModel):
     observed_at: datetime
 
 
+class EdgeTelemetryIn(BaseModel):
+    """Vendor-neutral edge envelope for MQTT/Modbus/OPC-UA gateways."""
+    sensor_id: int
+    value: Optional[float] = None
+    observed_at: datetime
+    gateway: Literal["mqtt", "modbus", "opcua", "rest", "thingsboard_gateway", "custom"]
+    external_device_id: Optional[str] = Field(default=None, max_length=255)
+    external_message_id: Optional[str] = Field(default=None, max_length=255)
+
+
 class TelemetryOut(ORM):
     id: int
     org_id: int

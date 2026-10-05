@@ -186,6 +186,34 @@ def test_ingestion_validation_and_duplicates(admins, client):
                        "observed_at": "2026-01-01T10:00:00Z"}, headers=h).status_code == 404
 
 
+def test_vendor_neutral_edge_ingestion(admins, client):
+    h = login(client, "o1m@t.dz")
+    dev = _device(client, h)
+    s = _sensor(client, h, dev["id"], min_value=0, max_value=10)
+    body = {"sensor_id": s["id"], "value": 4.6, "observed_at": "2026-01-02T10:00:00Z",
+            "gateway": "thingsboard_gateway", "external_device_id": "agri-node-01",
+            "external_message_id": "msg-001"}
+    r = client.post(f"{TEL}/edge/ingest", json=body, headers=h)
+    assert r.status_code == 201, r.text
+    assert r.json()["quality"] == "VALID"
+    assert r.json()["source"] == "api"
+    first = r.json()["id"]
+    duplicate = client.post(f"{TEL}/edge/ingest", json=body, headers=h)
+    assert duplicate.status_code == 200
+    assert duplicate.json()["id"] == first
+
+
+def test_edge_ingestion_is_tenant_isolated_and_gateway_is_allowlisted(admins, client):
+    h1 = login(client, "o1m@t.dz")
+    h2 = login(client, "o2m@t.dz")
+    dev = _device(client, h1)
+    s = _sensor(client, h1, dev["id"])
+    body = {"sensor_id": s["id"], "value": 4.0, "observed_at": "2026-01-03T10:00:00Z", "gateway": "mqtt"}
+    assert client.post(f"{TEL}/edge/ingest", json=body, headers=h2).status_code == 404
+    bad = dict(body, gateway="untrusted-vendor")
+    assert client.post(f"{TEL}/edge/ingest", json=bad, headers=h1).status_code == 422
+
+
 def test_unit_enforcement(admins, client):
     h = login(client, "o1m@t.dz")
     dev = _device(client, h)
