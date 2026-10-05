@@ -19,7 +19,7 @@ const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
 const Opportunities = lazy(() => import("@/pages/Opportunities"));
 const DecisionStudio = lazy(() => import("@/pages/DecisionStudio"));
-const Home = lazy(() => import("@/pages/Home"));
+const CommandCenter = lazy(() => import("@/pages/CommandCenter"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
 const ReviewQueue = lazy(() => import("@/pages/ReviewQueue"));
@@ -96,7 +96,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Onboarding />} />
             <Route path="/join" element={<Onboarding />} />
-            <Route path="/app" element={<Protected><Home /></Protected>} />
+            <Route path="/app" element={<Protected><CommandCenter /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
             <Route path="/app/explore/:domain" element={<Protected><ExploreDomain /></Protected>} />
             <Route path="/app/studio" element={<Protected><DecisionStudio /></Protected>} />
