@@ -10,7 +10,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, User
 from ..services.agriculture_operations import irrigation_scenario
-from ..services.service_delivery import soil_assessment
+from ..services.service_delivery import soil_assessment, irrigation_water_assessment
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -141,6 +141,7 @@ def service_summary(identity: int, user: User = Depends(get_current_user), db: S
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
     soil = soil_assessment(observations)
+    water = irrigation_water_assessment({row.metric: row.value for row in observations if row.metric in ('ph', 'ec')})
     latest = {}
     for row in observations:
         if row.metric not in latest:
@@ -153,8 +154,10 @@ def service_summary(identity: int, user: User = Depends(get_current_user), db: S
         'parcel': out(parcel),
         'latest_observations': latest,
         'soil_assessment': soil,
+        'irrigation_water_assessment': water,
         'available_services': {
             'soil_screening': bool(soil['coverage']),
+            'irrigation_water_screening': bool(water['coverage']),
             'irrigation_planning': True,
             'vegetation_monitoring': 'ndvi' in latest or 'lswi' in latest,
             'satellite_live': False,
