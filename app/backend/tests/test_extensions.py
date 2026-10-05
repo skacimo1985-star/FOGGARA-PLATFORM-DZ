@@ -180,6 +180,12 @@ def test_service_request_flow(client, world, db):
                          json={"status": st}, headers=reviewer)
         assert r.status_code == 200 and r.json()["status"] == st
 
+    # جاهزية التسليم تشرح المانع قبل محاولة الإغلاق
+    ready = client.get(f"/api/service-requests/{sr['id']}/delivery-readiness", headers=member)
+    assert ready.status_code == 200
+    assert ready.json()["ready_to_complete"] is False
+    assert "VERIFIED_REPORT_REQUIRED" in ready.json()["blockers"]
+
     # لا إغلاق بلا مخرج موثق
     r = client.patch(f"/api/service-requests/{sr['id']}/status",
                      json={"status": "completed"}, headers=reviewer)
@@ -194,6 +200,10 @@ def test_service_request_flow(client, world, db):
     r = client.patch(f"/api/service-requests/{sr['id']}/status",
                      json={"status": "completed"}, headers=reviewer)
     assert r.status_code == 200 and r.json()["status"] == "completed"
+    ready = client.get(f"/api/service-requests/{sr['id']}/delivery-readiness", headers=member)
+    assert ready.json()["ready_to_complete"] is True
+    assert ready.json()["verified_report_count"] == 1
+    assert ready.json()["latest_verified_report_id"] == ev["id"]
 
     # انتقال غير مسموح من حالة نهائية
     r = client.patch(f"/api/service-requests/{sr['id']}/status",
