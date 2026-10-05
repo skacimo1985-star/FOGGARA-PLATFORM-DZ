@@ -99,7 +99,49 @@ def inventory(connection):
         security = connection.execute("SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid=%s::regclass", ("public." + name,)).fetchone()
         policies = connection.execute("SELECT policyname, permissive, roles::text, cmd, qual, with_check FROM pg_policies WHERE schemaname='public' AND tablename=%s ORDER BY policyname", (name,)).fetchall()
         columns = connection.execute("SELECT column_name, data_type, udt_name, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position", (name,)).fetchall()
-        constraints = connection.execute("SELECT conname, pg_get_constraintdef(oid), convalidated FROM pg_constraint WHERE conrelid=%s::regclass ORDER BY conname", ("public." + name,)).fetchall()
+        # Compare constraint semantics rather than PostgreSQL's rendered DDL text.
+        # pg_get_constraintdef() can be textually different after dump/restore even
+        # when the restored constraint is equivalent. Names are deliberately not
+        # part of the recovery invariant; migration-controlled named constraints
+        # remain present in the dump, while this gate verifies enforcement.
+        constraints = connection.execute(
+            """
+            SELECT
+                c.contype,
+                c.condeferrable,
+                c.condeferred,
+                c.convalidated,
+                COALESCE((
+                    SELECT array_agg(a.attname ORDER BY k.ord)
+                    FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)
+                    JOIN pg_attribute a
+                      ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+                ), ARRAY[]::name[]) AS local_columns,
+                CASE WHEN c.confrelid = 0 THEN NULL
+                     ELSE c.confrelid::regclass::text END AS referenced_table,
+                COALESCE((
+                    SELECT array_agg(a.attname ORDER BY k.ord)
+                    FROM unnest(c.confkey) WITH ORDINALITY AS k(attnum, ord)
+                    JOIN pg_attribute a
+                      ON a.attrelid = c.confrelid AND a.attnum = k.attnum
+                ), ARRAY[]::name[]) AS referenced_columns,
+                c.confupdtype,
+                c.confdeltype,
+                c.confmatchtype,
+                CASE WHEN c.contype = 'c'
+                     THEN pg_get_expr(c.conbin, c.conrelid, true)
+                     ELSE NULL END AS check_expression
+            FROM pg_constraint AS c
+            WHERE c.conrelid = %s::regclass
+            ORDER BY
+                c.contype,
+                local_columns::text,
+                referenced_table,
+                referenced_columns::text,
+                check_expression
+            """,
+            ("public." + name,),
+        ).fetchall()
         indexes = connection.execute("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=%s ORDER BY indexname", (name,)).fetchall()
         tables[name] = {"rows": count, "sha256": digest.hexdigest(), "rls": list(security),
                         "policies": [list(row) for row in policies], "columns": [list(row) for row in columns],
