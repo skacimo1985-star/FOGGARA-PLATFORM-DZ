@@ -24,8 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
-        setToken(null);
-
+        // api.request already clears the persisted token for an actual 401.
+        // Preserve sessionStorage on transient/network/navigation failures so
+        // a public-page navigation cannot silently destroy a valid session.
         if (!cancelled) {
           setUser(null);
         }
