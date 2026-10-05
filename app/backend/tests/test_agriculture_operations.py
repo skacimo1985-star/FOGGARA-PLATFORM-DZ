@@ -126,3 +126,38 @@ def test_service_summary_is_org_isolated(client, world, farm):
     _, pid = farm
     h2 = login(client, 'o2m@t.dz')
     assert client.get(f'/api/agriculture/parcels/{pid}/service-summary', headers=h2).status_code == 404
+
+
+def test_service_summary_can_be_saved_as_submitted_evidence(client, world, farm):
+    h, pid = farm
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+    client.post('/api/agriculture/observations', headers=h, json=observation(pid, value=7.2))
+    data = observation(pid)
+    data.update(metric='ec', value=1.4, source_ref='LAB-EC-SAVE')
+    client.post('/api/agriculture/observations', headers=h, json=data)
+    r = client.post(f'/api/agriculture/parcels/{pid}/service-summary/evidence',
+                    headers=h, json={'project_id': project['id']})
+    assert r.status_code == 201, r.text
+    saved = r.json()
+    assert saved['status'] == 'submitted'
+    ev = client.get(f"/api/evidences/{saved['evidence_id']}", headers=h)
+    assert ev.status_code == 200
+    body = ev.json()
+    assert body['doc_type'] == 'report'
+    assert body['status'] == 'submitted'
+    assert 'RECORDED_AND_COMPUTED' in body['content_note']
+    assert 'LAB-EC-SAVE' in body['content_note']
+
+
+def test_service_summary_evidence_requires_data_and_org_project(client, world, farm):
+    h, pid = farm
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+    r = client.post(f'/api/agriculture/parcels/{pid}/service-summary/evidence',
+                    headers=h, json={'project_id': project['id']})
+    assert r.status_code == 409 and r.json()['detail']['code'] == 'INSUFFICIENT_EVIDENCE'
+    h2 = login(client, 'o2m@t.dz')
+    project2 = make_project(client, h2)
+    assert client.post(f'/api/agriculture/parcels/{pid}/service-summary/evidence',
+                       headers=h2, json={'project_id': project2['id']}).status_code == 404
