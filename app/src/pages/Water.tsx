@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { CircleGauge, Droplets, Gauge, Network, Waves, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type {
@@ -14,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorText, DemoBadge } from "@/components/common";
+import "./water-intelligence.css";
 
 // سلسلة المياه: مصدر → تخزين → ضخ → توزيع → سقي → تخصيص (Contract §4)
 const ALLOC_NEXT: Record<string, string[]> = {
@@ -34,7 +36,7 @@ interface WaterData {
 }
 
 export default function Water() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [d, setD] = useState<WaterData | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
@@ -96,6 +98,28 @@ export default function Water() {
 
   const num = (fd: FormData, k: string) => (fd.get(k) ? Number(fd.get(k)) : null);
 
+  const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const summaryCopy = language === "fr"
+    ? { title: "Chaîne hydrique opérationnelle", active: "Infrastructure active", pending: "Allocations à examiner", capacity: "Capacité de stockage", irrigated: "Surface irriguée", sites: "Sites reliés" }
+    : language === "en"
+      ? { title: "Operational water chain", active: "Active infrastructure", pending: "Allocations to review", capacity: "Storage capacity", irrigated: "Irrigated area", sites: "Linked sites" }
+      : { title: "سلسلة المياه التشغيلية", active: "البنية النشطة", pending: "تخصيصات تنتظر المراجعة", capacity: "سعة التخزين", irrigated: "المساحة المسقية", sites: "المواقع المرتبطة" };
+
+  const waterSummary = d ? {
+    active: [...d.wells, ...d.reservoirs, ...d.pumps, ...d.vfds, ...d.valves]
+      .filter((item) => item.status === "active").length,
+    pending: d.allocations.filter((a) => a.status === "proposed").length,
+    capacity: d.reservoirs.reduce((sum, r) => sum + Number(r.capacity_m3 || 0), 0),
+    irrigated: d.zones.reduce((sum, z) => sum + Number(z.area_ha || 0), 0),
+    sites: new Set([
+      ...d.wells.map((x) => x.site_id),
+      ...d.reservoirs.map((x) => x.site_id),
+      ...d.pumps.map((x) => x.site_id),
+      ...d.zones.map((x) => x.site_id),
+      ...d.valves.map((x) => x.site_id),
+    ]).size,
+  } : null;
+
   return (
     <div className="space-y-4">
       <div>
@@ -103,6 +127,43 @@ export default function Water() {
         <p className="mt-1 text-sm text-muted-foreground">{t("water.subtitle")}</p>
       </div>
       <ErrorText error={error} />
+
+      {d && waterSummary && (
+        <section className="fg-water-intelligence" aria-label={summaryCopy.title}>
+          <div className="fg-water-intelligence-head">
+            <div>
+              <p>FOGGARA / WATER INTELLIGENCE</p>
+              <h2>{summaryCopy.title}</h2>
+            </div>
+            <Droplets size={28} />
+          </div>
+          <div className="fg-water-chain">
+            {[
+              { label: t("water.wells"), value: d.wells.length, icon: Waves },
+              { label: t("water.reservoirs"), value: d.reservoirs.length, icon: Droplets },
+              { label: t("water.pumps"), value: d.pumps.length, icon: CircleGauge },
+              { label: t("water.vfds"), value: d.vfds.length, icon: Gauge },
+              { label: t("water.valves"), value: d.valves.length, icon: Network },
+              { label: t("water.zones"), value: d.zones.length, icon: Workflow },
+              { label: t("water.allocations"), value: d.allocations.length, icon: Droplets },
+            ].map(({ label, value, icon: Icon }, index) => (
+              <article key={label}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <Icon size={18} />
+                <strong>{label}</strong>
+                <b>{value}</b>
+              </article>
+            ))}
+          </div>
+          <div className="fg-water-kpis">
+            <div><span>{summaryCopy.active}</span><strong>{waterSummary.active}</strong></div>
+            <div><span>{summaryCopy.pending}</span><strong>{waterSummary.pending}</strong></div>
+            <div><span>{summaryCopy.capacity}</span><strong dir="ltr">{waterSummary.capacity.toLocaleString(i18n.language)} m³</strong></div>
+            <div><span>{summaryCopy.irrigated}</span><strong dir="ltr">{waterSummary.irrigated.toLocaleString(i18n.language)} ha</strong></div>
+            <div><span>{summaryCopy.sites}</span><strong>{waterSummary.sites}</strong></div>
+          </div>
+        </section>
+      )}
 
       {d && (
         <Tabs defaultValue="wells">

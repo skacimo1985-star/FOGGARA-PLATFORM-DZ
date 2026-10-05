@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { BrainCircuit, Database, Droplets, Gavel, ListChecks, MapPinned, Network, ScrollText, ShieldCheck, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Action, Asset, AuditEntry, Evidence, HumanDecision, Measurement, Project, Recommendation, Review, Site, WaterResource } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +17,12 @@ import { ReviewsSection } from "./project/ReviewsSection";
 import { HumanDecisionsSection } from "./project/HumanDecisionsSection";
 import { AssuranceSection } from "./project/AssuranceSection";
 import { AgricultureSection } from "./project/AgricultureSection";
+import "./project-operational.css";
 
 const STATUSES = ["draft", "active", "suspended", "closed"] as const;
 
 export default function ProjectDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const pid = Number(id);
 
@@ -96,6 +98,38 @@ export default function ProjectDetail() {
   const linkLabel = (name: string | undefined | null, id: number | null) =>
     id == null ? t("common.none") : (name ?? `#${id}`);
 
+  const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const operationalCopy = language === "fr"
+    ? {
+        title: "Chaîne opérationnelle du projet",
+        context: "Contexte", data: "Données", evidence: "Preuves", intelligence: "Intelligence",
+        decision: "Décisions", action: "Actions", audit: "Audit",
+        connected: "Espaces connectés", gis: "SIG", water: "Eau", decisions: "Décisions", automation: "Automatisation",
+      }
+    : language === "en"
+      ? {
+          title: "Project operational chain",
+          context: "Context", data: "Data", evidence: "Evidence", intelligence: "Intelligence",
+          decision: "Decisions", action: "Actions", audit: "Audit",
+          connected: "Connected workspaces", gis: "GIS", water: "Water", decisions: "Decisions", automation: "Automation",
+        }
+      : {
+          title: "السلسلة التشغيلية للمشروع",
+          context: "السياق", data: "البيانات", evidence: "الأدلة", intelligence: "الذكاء",
+          decision: "القرارات", action: "الإجراءات", audit: "التدقيق",
+          connected: "مساحات مترابطة", gis: "GIS", water: "المياه", decisions: "القرارات", automation: "الأتمتة",
+        };
+
+  const operationalStages = [
+    { label: operationalCopy.context, value: Number(project.site_id != null) + Number(project.resource_id != null) + Number(project.asset_id != null), icon: Network },
+    { label: operationalCopy.data, value: measurements.length, icon: Database },
+    { label: operationalCopy.evidence, value: evidences.length, icon: ShieldCheck },
+    { label: operationalCopy.intelligence, value: recommendations.length, icon: BrainCircuit },
+    { label: operationalCopy.decision, value: humanDecisions.length, icon: Gavel },
+    { label: operationalCopy.action, value: actions.length, icon: ListChecks },
+    { label: operationalCopy.audit, value: history.length, icon: ScrollText },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -121,6 +155,35 @@ export default function ProjectDetail() {
       </div>
 
       <ErrorText error={error} />
+
+      <section className="fg-project-spine" aria-label={operationalCopy.title}>
+        <div className="fg-project-spine-head">
+          <div>
+            <p>FOGGARA / PROJECT INTELLIGENCE</p>
+            <h2>{operationalCopy.title}</h2>
+          </div>
+          <Workflow size={24} />
+        </div>
+        <div className="fg-project-spine-flow">
+          {operationalStages.map(({ label, value, icon: Icon }, index) => (
+            <article key={label}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <Icon size={18} />
+              <strong>{label}</strong>
+              <b>{value}</b>
+            </article>
+          ))}
+        </div>
+        <div className="fg-project-connected">
+          <span>{operationalCopy.connected}</span>
+          <nav>
+            <Link to={project.site_id ? `/app/gis` : "/app/gis"}><MapPinned size={15} />{operationalCopy.gis}</Link>
+            <Link to="/app/water"><Droplets size={15} />{operationalCopy.water}</Link>
+            <Link to="/app/decisions"><Gavel size={15} />{operationalCopy.decisions}</Link>
+            <Link to="/app/automation"><Workflow size={15} />{operationalCopy.automation}</Link>
+          </nav>
+        </div>
+      </section>
 
       <Tabs defaultValue="overview">
         <TabsList className="h-auto max-w-full flex-wrap gap-1 [&>button]:h-auto">
