@@ -39,13 +39,15 @@ def main():
     for path in ("/projects", "/org", "/sites", "/resources", "/assets", "/decisions",
                  "/telemetry/devices", "/simulator/runs", "/nexus/resources",
                  "/data-rooms", "/opportunities", "/agriculture/parcels",
-                 "/operations/team", "/gis/sites"):
+                 "/operations/team", "/gis/sites", "/gis/sites.geojson",
+                 "/gis/sites/nearest?lon=2.6&lat=28.2&limit=3",
+                 "/gis/sites/intersects?min_lon=-8&min_lat=20&max_lon=10&max_lat=37&limit=10"):
         call(path, headers=headers)
     project = call("/projects", 201, body={"title": "Production HTTP QA", "domain": "water"}, headers=headers)
     page = call("/projects?page_size=12", headers=headers)
     assert any(item["id"] == project["id"] for item in page["items"])
     call("/projects/" + str(project["id"]), headers=headers)
-    print("Production HTTP checks passed: concurrent bootstrap and closure, login, authorization, 14 modules, persisted project")
+    print("Production HTTP checks passed: bootstrap, auth, modules, GIS spatial API, persisted project")
 
 if __name__ == "__main__":
     main()

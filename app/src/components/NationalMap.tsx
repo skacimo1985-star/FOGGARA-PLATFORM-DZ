@@ -5,7 +5,9 @@ type Props = {
   sites: GisSite[];
   wilayas: WilayaMeta[];
   selectedWilaya?: string;
+  selectedSiteId?: number | null;
   onSelectWilaya?: (code: string) => void;
+  onSelectSite?: (siteId: number) => void;
   locale?: string;
   compact?: boolean;
 };
@@ -39,7 +41,9 @@ export function NationalMap({
   sites,
   wilayas,
   selectedWilaya = "",
+  selectedSiteId = null,
   onSelectWilaya,
+  onSelectSite,
   locale = "ar",
   compact = false,
 }: Props) {
@@ -95,20 +99,24 @@ export function NationalMap({
             {[25, 45, 65, 85].map((n) => <line key={`h-${n}`} x1="8" y1={n} x2="94" y2={n} />)}
           </g>
           {plotted.map((g) => {
-            const selected = !!selectedWilaya && g.code === selectedWilaya;
+            const selected = selectedSiteId === g.site.id || (!!selectedWilaya && g.code === selectedWilaya);
             const intensity = Math.min(4, g.projects.length + g.resources.length + g.assets.length);
             return (
               <g
                 key={g.site.id}
                 className={`fg-map-site ${selected ? "selected" : ""}`}
                 transform={`translate(${g.point.x} ${g.point.y})`}
-                onClick={() => g.code && onSelectWilaya?.(g.code)}
-                role={onSelectWilaya ? "button" : undefined}
-                tabIndex={onSelectWilaya ? 0 : undefined}
+                onClick={() => {
+                  if (onSelectSite) onSelectSite(g.site.id);
+                  else if (g.code) onSelectWilaya?.(g.code);
+                }}
+                role={onSelectSite || onSelectWilaya ? "button" : undefined}
+                tabIndex={onSelectSite || onSelectWilaya ? 0 : undefined}
                 onKeyDown={(e) => {
-                  if (onSelectWilaya && g.code && (e.key === "Enter" || e.key === " ")) {
+                  if ((onSelectSite || onSelectWilaya) && (e.key === "Enter" || e.key === " ")) {
                     e.preventDefault();
-                    onSelectWilaya(g.code);
+                    if (onSelectSite) onSelectSite(g.site.id);
+                    else if (g.code) onSelectWilaya?.(g.code);
                   }
                 }}
               >

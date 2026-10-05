@@ -313,6 +313,11 @@ def main():
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
+                    if path == "/app/gis":
+                        expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
+                        expect(page.locator(".fg-map-site")).to_have_count(2)
+                        page.locator(".fg-map-site").first.click()
+                        expect(page.locator(".fg-gis-nearest li")).to_have_count(1)
                     if path == "/app/review":
                         expect(page.locator(".fg-evidence-assurance")).to_be_visible()
                         expect(page.locator(".fg-evidence-kpis article")).to_have_count(3)

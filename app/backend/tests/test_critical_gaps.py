@@ -68,6 +68,63 @@ def test_explore_and_gis_do_not_leak_other_org_data(client, world, db):
     assert all(s["site"]["id"] != site1["id"] for s in gis2["sites"])
 
 
+def test_gis_geojson_nearest_radius_and_bbox_are_tenant_scoped(client, world, db):
+    member1 = login(client, "o1m@t.dz")
+    member2 = login(client, "o2m@t.dz")
+
+    near = client.post("/api/sites", json={
+        "name": "GIS Near", "wilaya": "بشار", "lat": 31.6167, "lon": -2.2167
+    }, headers=member1)
+    far = client.post("/api/sites", json={
+        "name": "GIS Far", "wilaya": "الجزائر", "lat": 36.7538, "lon": 3.0588
+    }, headers=member1)
+    other = client.post("/api/sites", json={
+        "name": "Other Org", "wilaya": "وهران", "lat": 35.6971, "lon": -0.6308
+    }, headers=member2)
+    assert near.status_code == far.status_code == other.status_code == 201
+
+    geo = client.get("/api/gis/sites.geojson", headers=member1)
+    assert geo.status_code == 200
+    body = geo.json()
+    ids = {feature["properties"]["id"] for feature in body["features"]}
+    assert near.json()["id"] in ids and far.json()["id"] in ids
+    assert other.json()["id"] not in ids
+    assert body["metadata"]["organization_scoped"] is True
+    assert body["metadata"]["crs"] == "EPSG:4326"
+
+    nearest = client.get("/api/gis/sites/nearest", params={
+        "lon": -2.20, "lat": 31.62, "limit": 2
+    }, headers=member1)
+    assert nearest.status_code == 200
+    nearest_body = nearest.json()
+    assert nearest_body["items"][0]["properties"]["id"] == near.json()["id"]
+    assert nearest_body["items"][0]["properties"]["distance_m"] >= 0
+
+    within = client.get("/api/gis/sites/within", params={
+        "lon": -2.20, "lat": 31.62, "radius_m": 10_000
+    }, headers=member1)
+    assert within.status_code == 200
+    within_ids = {item["properties"]["id"] for item in within.json()["items"]}
+    assert near.json()["id"] in within_ids
+    assert far.json()["id"] not in within_ids
+    assert other.json()["id"] not in within_ids
+
+    bbox = client.get("/api/gis/sites/intersects", params={
+        "min_lon": -3.0, "min_lat": 31.0, "max_lon": -1.0, "max_lat": 32.0
+    }, headers=member1)
+    assert bbox.status_code == 200
+    bbox_ids = {feature["properties"]["id"] for feature in bbox.json()["features"]}
+    assert near.json()["id"] in bbox_ids
+    assert far.json()["id"] not in bbox_ids
+    assert other.json()["id"] not in bbox_ids
+
+    too_large = client.get("/api/gis/sites/intersects", params={
+        "min_lon": -10, "min_lat": 15, "max_lon": 20, "max_lat": 38
+    }, headers=member1)
+    assert too_large.status_code == 422
+    assert too_large.json()["detail"]["code"] == "BBOX_TOO_LARGE"
+
+
 # 3) مصفوفة انتقالات ServiceRequest: لا قفزات ولا رجوع ولا خروج من cancelled
 def test_service_request_rejects_skip_backward_and_cancelled_transitions(client, world, db):
     from app.models import Service
