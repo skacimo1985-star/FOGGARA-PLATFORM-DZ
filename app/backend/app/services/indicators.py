@@ -17,6 +17,7 @@ PARAMETERS: dict[str, tuple[set[str], float, float]] = {
     "flow_rate": ({"L/s", "l/s", "m3/h"}, 0.0, 100_000.0),
     "water_level": ({"m"}, -500.0, 10_000.0),
     "ph": ({"pH"}, 0.0, 14.0),
+    "ec": ({"dS/m"}, 0.0, 100.0),
     "temperature": ({"°C", "C"}, -10.0, 80.0),
     "turbidity": ({"NTU"}, 0.0, 10_000.0),
     "pressure": ({"bar", "kPa"}, 0.0, 1_000.0),
