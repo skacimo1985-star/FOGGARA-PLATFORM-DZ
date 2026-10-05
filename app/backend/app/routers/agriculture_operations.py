@@ -55,6 +55,26 @@ class ObservationIn(Input):
             raise ValueError('Satellite soil chemistry requires a separately validated model')
         return self
 
+class RemoteSensingIn(Input):
+    provider: str = Field(min_length=2, max_length=40, pattern=r'^[A-Za-z0-9][A-Za-z0-9_-]*$')
+    scene_id: str = Field(min_length=3, max_length=120)
+    acquired_at: AwareDatetime
+    ndvi: float | None = Field(default=None, ge=-1, le=1)
+    lswi: float | None = Field(default=None, ge=-1, le=1)
+    moisture: float | None = Field(default=None, ge=0, le=100)
+    cloud_cover_pct: float | None = Field(default=None, ge=0, le=100)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    source_uri: str | None = Field(default=None, min_length=3, max_length=500)
+
+    @model_validator(mode='after')
+    def validate_scene(self):
+        if self.acquired_at > datetime.now(timezone.utc):
+            raise ValueError('Satellite acquisition cannot be in the future')
+        if self.ndvi is None and self.lswi is None and self.moisture is None:
+            raise ValueError('At least one satellite-derived metric is required')
+        return self
+
+
 class PlanIn(Input):
     parcel_id: int = Field(gt=0)
     eto_mm_day: float = Field(ge=0, le=30)
@@ -159,6 +179,97 @@ def create_observation(payload: ObservationIn, user: User = Depends(get_current_
     own(db, AgriParcel, payload.parcel_id, user)
     return record(db, user, AgriObservation(org_id=user.org_id, created_by=user.id,
         unit=METRICS[payload.metric][0], evidence_status='INFERRED' if payload.source_type == 'satellite' else 'OBSERVED', **payload.model_dump()))
+
+@operations_router.post('/parcels/{identity}/remote-sensing/ingest', status_code=201)
+def ingest_remote_sensing(identity: int, payload: RemoteSensingIn,
+                          user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, 'PARCEL_ARCHIVED', 'Parcel is archived')
+
+    source_ref = f'{payload.provider}:{payload.scene_id}'
+    values = {'ndvi': payload.ndvi, 'lswi': payload.lswi, 'moisture': payload.moisture}
+    created = []
+    skipped = []
+    for metric, value in values.items():
+        if value is None:
+            continue
+        existing = db.scalar(select(AgriObservation).where(
+            AgriObservation.org_id == user.org_id,
+            AgriObservation.parcel_id == parcel.id,
+            AgriObservation.metric == metric,
+            AgriObservation.source_type == 'satellite',
+            AgriObservation.source_ref == source_ref,
+        ))
+        if existing is not None:
+            skipped.append(metric)
+            continue
+        row = AgriObservation(
+            org_id=user.org_id,
+            parcel_id=parcel.id,
+            metric=metric,
+            value=value,
+            unit=METRICS[metric][0],
+            source_type='satellite',
+            source_ref=source_ref,
+            observed_at=payload.acquired_at,
+            evidence_status='INFERRED',
+            created_by=user.id,
+        )
+        db.add(row)
+        db.flush()
+        audit(db, user, 'remote_sensing_ingest', 'agri_observations', entity_id=row.id,
+              meta={
+                  'parcel_id': parcel.id,
+                  'provider': payload.provider,
+                  'scene_id': payload.scene_id,
+                  'metric': metric,
+                  'cloud_cover_pct': payload.cloud_cover_pct,
+                  'confidence': payload.confidence,
+                  'source_uri': payload.source_uri,
+                  'evidence_status': 'INFERRED',
+              })
+        created.append(out(row))
+    db.commit()
+    return {
+        'parcel_id': parcel.id,
+        'provider': payload.provider,
+        'scene_id': payload.scene_id,
+        'acquired_at': payload.acquired_at,
+        'created': created,
+        'skipped_metrics': skipped,
+        'provenance': 'INFERRED',
+        'live_provider_connected': False,
+    }
+
+
+@operations_router.get('/parcels/{identity}/remote-sensing')
+def remote_sensing_history(
+    identity: int,
+    metric: str | None = Query(default=None, pattern='^(ndvi|lswi|moisture)$'),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    q = select(AgriObservation).where(
+        AgriObservation.org_id == user.org_id,
+        AgriObservation.parcel_id == parcel.id,
+        AgriObservation.source_type == 'satellite',
+    )
+    if metric is not None:
+        q = q.where(AgriObservation.metric == metric)
+    rows = list(db.scalars(
+        q.order_by(AgriObservation.observed_at.desc(), AgriObservation.id.desc()).limit(1000)
+    ))
+    return {
+        'parcel_id': parcel.id,
+        'supported_metrics': ['ndvi', 'lswi', 'moisture'],
+        'observations': [out(row) for row in rows],
+        'provenance': 'INFERRED',
+        'live_provider_connected': False,
+        'adapter_contract': 'provider_neutral',
+    }
+
 
 @operations_router.post('/observations/{identity}/verify')
 def verify_observation(identity: int, user: User = Depends(require_reviewer), db: Session = Depends(get_db)):
