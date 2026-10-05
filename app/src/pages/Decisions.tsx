@@ -207,14 +207,18 @@ export default function Decisions() {
     } catch (err) { setError(err); }
   };
 
-  const sel = (name: string, options: readonly string[], ns: string, all?: string) => (
+  const sel = (name: string, options: readonly string[], ns: string, all?: string) => {
+    const filterKey = name.startsWith("f_") ? name.slice(2) as keyof typeof filters : null;
+    return (
     <select name={name} className="border rounded-md px-2 py-1.5 text-sm bg-background"
-      onChange={name.startsWith("f_") ? (e) =>
-        setFilters((p) => ({ ...p, [name.slice(2)]: e.target.value })) : undefined}>
+      value={filterKey ? filters[filterKey] : undefined}
+      onChange={filterKey ? (e) =>
+        setFilters((p) => ({ ...p, [filterKey]: e.target.value })) : undefined}>
       {all !== undefined && <option value="">{all}</option>}
       {options.map((o) => <option key={o} value={o}>{t(`${ns}.${o}`)}</option>)}
     </select>
-  );
+    );
+  };
 
   const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const lifecycleCopy = language === "fr"
