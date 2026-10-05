@@ -12,7 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(result.token); setUser(result.user);
   }, []);
   const login = useCallback(async (email: string, password: string) => {
-    startSession(await api.post<{ token: string; user: User }>("/auth/login", { email, password }));
+    startSession(await api.post<{ token: string; user: User }> ("/auth/login", { email, password }));
   }, [startSession]);
 
   const logout = useCallback(() => {
@@ -26,4 +26,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
