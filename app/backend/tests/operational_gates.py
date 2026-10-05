@@ -22,6 +22,8 @@ from psycopg import sql
 
 from scripts.postgres_recovery import backup, connection_settings, restore
 
+QA_JWT_SECRET = secrets.token_urlsafe(48)
+
 
 @contextmanager
 def api_server(database_url, directory):
@@ -29,7 +31,7 @@ def api_server(database_url, directory):
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
     environment = dict(os.environ, DATABASE_URL=database_url,
-                       JWT_SECRET=secrets.token_urlsafe(48), SETUP_KEY=secrets.token_urlsafe(32),
+                       JWT_SECRET=QA_JWT_SECRET, SETUP_KEY=secrets.token_urlsafe(32),
                        OPERATIONS_AUTOMATION_ENABLED="false", SEED_DEMO="false", ENV="prod")
     origin = f"http://127.0.0.1:{port}"
     with (directory / (str(port) + ".log")).open("w") as stream:
@@ -160,6 +162,14 @@ def main():
                                env=dict(os.environ, DATABASE_URL=url), check=True)
             credentials, ids = populate_and_check(urls[0], private)
             archive = backup(urls[0], private)
+            # Simulate a provider database whose defaults expose new tables.
+            target_settings = connection_settings(urls[1])
+            with psycopg.connect(**target_settings) as target:
+                for role in ("anon", "authenticated", "service_role"):
+                    assert admin.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
+                    target.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO {}").format(sql.Identifier(role)))
+                    target.execute(sql.SQL("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO {}").format(sql.Identifier(role)))
+                target.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO PUBLIC")
             result["recovery"] = restore(urls[1], archive, "an20261004m1")
             populate_and_check(urls[1], private, credentials, ids)
             result["recovery"]["http_login_write_tenant_isolation"] = True
