@@ -164,3 +164,53 @@ def test_service_summary_evidence_requires_data_and_org_project(client, world, f
     project2 = make_project(client, h2)
     assert client.post(f'/api/agriculture/parcels/{pid}/service-summary/evidence',
                        headers=h2, json={'project_id': project2['id']}).status_code == 404
+
+
+def test_irrigation_water_screening_requires_verified_resource_measurements(client, world, farm):
+    h, pid = farm
+    reviewer = login(client, 'o1r@t.dz')
+    site = client.post('/api/sites', headers=h, json={'name':'Water site','wilaya':'Laghouat'}).json()
+    resource = client.post('/api/resources', headers=h, json={'site_id':site['id'],'type':'well','name':'Irrigation well','status':'active'}).json()
+    project = client.post('/api/projects', headers=h, json={'title':'Water project','domain':'water','site_id':site['id'],'resource_id':resource['id']}).json()
+    pending = client.post('/api/measurements', headers=h, json={
+        'project_id':project['id'],'resource_id':resource['id'],'parameter':'ec','value':1.2,'unit':'dS/m',
+        'measured_at':(datetime.now(timezone.utc)-timedelta(hours=1)).isoformat(),'source':'LAB-WATER-EC','method':'conductivity'
+    })
+    assert pending.status_code == 201, pending.text
+    before = client.get(f"/api/agriculture/parcels/{pid}/service-summary?project_id={project['id']}", headers=h).json()
+    assert before['available_services']['irrigation_water_screening'] is False
+    assert before['irrigation_water_assessment']['decision_status'] == 'UNAVAILABLE'
+    assert 'VERIFIED_WATER_MEASUREMENTS_REQUIRED' in before['irrigation_water_assessment']['limitations']
+    review = client.post('/api/reviews', headers=reviewer, json={'target_type':'measurement','target_id':pending.json()['id'],'decision':'accepted','note':'checked','reason':'valid lab result'})
+    assert review.status_code == 201, review.text
+    after = client.get(f"/api/agriculture/parcels/{pid}/service-summary?project_id={project['id']}", headers=h).json()
+    water = after['irrigation_water_assessment']
+    assert after['available_services']['irrigation_water_screening'] is True
+    assert water['evidence_status'] == 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
+    assert water['decision_status'] == 'PROPOSED'
+    assert water['resource_id'] == resource['id']
+    assert water['measurement_ids'] == [pending.json()['id']]
+    assert water['inputs']['ec'] == 1.2
+
+
+def test_irrigation_water_screening_requires_project_resource(client, world, farm):
+    h, pid = farm
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+    r = client.get(f"/api/agriculture/parcels/{pid}/service-summary?project_id={project['id']}", headers=h)
+    assert r.status_code == 200
+    water = r.json()['irrigation_water_assessment']
+    assert water['decision_status'] == 'UNAVAILABLE'
+    assert 'PROJECT_WATER_RESOURCE_REQUIRED' in water['limitations']
+
+
+def test_ec_measurement_rejects_wrong_unit(client, world):
+    h = login(client, 'o1m@t.dz')
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+    r = client.post('/api/measurements', headers=h, json={
+        'project_id':project['id'],'parameter':'ec','value':1.0,'unit':'mS/cm',
+        'measured_at':datetime.now(timezone.utc).isoformat(),'source':'lab','method':'conductivity'
+    })
+    assert r.status_code == 422
+    assert r.json()['detail']['code'] == 'INVALID_UNIT'
