@@ -1,5 +1,6 @@
 """Organization-isolated agricultural records. Never substitutes inference for evidence."""
 from datetime import date, datetime, timezone
+import json
 from typing import Literal
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator, model_validator
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
-from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, User
+from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Project, User
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.service_delivery import soil_assessment, irrigation_water_assessment
 
@@ -70,6 +71,10 @@ class TaskIn(Input):
 
 class TaskUpdate(Input):
     completed: bool
+
+class ServiceEvidenceIn(Input):
+    project_id: int = Field(gt=0)
+
 
 
 def own(db, cls, identity, user):
@@ -165,6 +170,46 @@ def service_summary(identity: int, user: User = Depends(get_current_user), db: S
         },
         'provenance': 'RECORDED_AND_COMPUTED',
     }
+
+@operations_router.post('/parcels/{identity}/service-summary/evidence', status_code=201)
+def save_service_summary_evidence(identity: int, payload: ServiceEvidenceIn,
+                                  user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    parcel = own(db, AgriParcel, identity, user)
+    project = db.scalar(select(Project).where(Project.id == payload.project_id, Project.org_id == user.org_id))
+    if project is None:
+        api_error(404, 'NOT_FOUND', 'Project not found')
+    observations = list(db.scalars(select(AgriObservation).where(
+        AgriObservation.org_id == user.org_id,
+        AgriObservation.parcel_id == parcel.id,
+    ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
+    soil = soil_assessment(observations)
+    water = irrigation_water_assessment({row.metric: row.value for row in observations if row.metric in ('ph', 'ec')})
+    if not soil['coverage'] and not water['coverage']:
+        api_error(409, 'INSUFFICIENT_EVIDENCE', 'Recorded observations are required before saving a service result')
+    source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage']) | set(water['coverage'])})
+    summary = {
+        'kind': 'FOGGARA_AGRICULTURE_SERVICE_SUMMARY',
+        'parcel_id': parcel.id,
+        'parcel_name': parcel.name,
+        'provenance': 'RECORDED_AND_COMPUTED',
+        'source_refs': source_refs,
+        'soil_assessment': soil,
+        'irrigation_water_assessment': water,
+    }
+    evidence = Evidence(
+        org_id=user.org_id, project_id=project.id,
+        title=f'FOGGARA service summary - {parcel.name}',
+        doc_type='report', license='FOGGARA internal generated analysis',
+        content_note=json.dumps(summary, ensure_ascii=False, sort_keys=True),
+        status='submitted', submitted_by=user.id,
+    )
+    db.add(evidence)
+    db.flush()
+    audit(db, user, 'create', 'evidence', entity_id=evidence.id, project_id=project.id,
+          meta={'source': 'agriculture_service_summary', 'parcel_id': parcel.id})
+    db.commit()
+    return {'evidence_id': evidence.id, 'status': evidence.status, 'project_id': project.id,
+            'parcel_id': parcel.id, 'provenance': 'RECORDED_AND_COMPUTED'}
 
 @operations_router.get('/plans')
 def plans(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
