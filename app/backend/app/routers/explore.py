@@ -3,7 +3,9 @@
 مبدأ صارم: أي قسم بلا بيانات حقيقية يُعاد كـ {status:"planned", required_data:[...]}
 — ممنوع اختلاق قيم.
 """
-from fastapi import APIRouter, Depends
+from math import asin, cos, isfinite, radians, sin, sqrt
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -123,6 +125,51 @@ def explore_domain(domain: str, user: User = Depends(get_current_user), db: Sess
 
 
 # ---------- GIS ----------
+MAX_GIS_RADIUS_M = 100_000.0
+MAX_GIS_LIMIT = 200
+MAX_GIS_BBOX_SPAN_DEG = 20.0
+
+
+def _site_feature(site: Site, *, distance_m: float | None = None):
+    props = {
+        "id": site.id,
+        "name": site.name,
+        "wilaya": site.wilaya,
+        "commune": site.commune,
+        "is_demo": site.is_demo,
+    }
+    if distance_m is not None:
+        props["distance_m"] = round(distance_m, 2)
+    return {
+        "type": "Feature",
+        "id": site.id,
+        "geometry": {
+            "type": "Point",
+            "coordinates": [float(site.lon), float(site.lat)],
+        },
+        "properties": props,
+    }
+
+
+def _haversine_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    radius = 6_371_008.8
+    p1, p2 = radians(lat1), radians(lat2)
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(p1) * cos(p2) * sin(dlon / 2) ** 2
+    return 2 * radius * asin(sqrt(a))
+
+
+def _candidate_sites(db: Session, org_id: int):
+    return db.execute(
+        select(Site).where(
+            Site.org_id == org_id,
+            Site.lat.isnot(None),
+            Site.lon.isnot(None),
+        ).order_by(Site.id)
+    ).scalars().all()
+
+
 @router.get("/gis/sites")
 def gis_sites(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """تجميع المواقع ذات الإحداثيات اليدوية مع مشاريعها/مواردها/أصولها/طلبات خدماتها."""
@@ -145,6 +192,110 @@ def gis_sites(user: User = Depends(get_current_user), db: Session = Depends(get_
             "service_requests": [{"id": r.id, "service_id": r.service_id, "status": r.status} for r in requests],
         })
     return {"count": len(out), "sites": out}
+
+
+@router.get("/gis/sites.geojson")
+def gis_sites_geojson(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    sites = _candidate_sites(db, user.org_id)
+    return {
+        "type": "FeatureCollection",
+        "features": [_site_feature(site) for site in sites],
+        "metadata": {
+            "organization_scoped": True,
+            "count": len(sites),
+            "crs": "EPSG:4326",
+            "spatial_engine": "portable_latlon",
+        },
+    }
+
+
+@router.get("/gis/sites/nearest")
+def gis_sites_nearest(
+    lon: float = Query(..., ge=-180, le=180),
+    lat: float = Query(..., ge=-90, le=90),
+    limit: int = Query(10, ge=1, le=50),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sites = _candidate_sites(db, user.org_id)
+    ranked = sorted(
+        ((_haversine_m(lon, lat, float(site.lon), float(site.lat)), site) for site in sites),
+        key=lambda item: (item[0], item[1].id),
+    )[:limit]
+    return {
+        "count": len(ranked),
+        "items": [_site_feature(site, distance_m=distance) for distance, site in ranked],
+        "metadata": {"organization_scoped": True, "crs": "EPSG:4326", "spatial_engine": "portable_latlon"},
+    }
+
+
+@router.get("/gis/sites/within")
+def gis_sites_within(
+    lon: float = Query(..., ge=-180, le=180),
+    lat: float = Query(..., ge=-90, le=90),
+    radius_m: float = Query(..., gt=0, le=MAX_GIS_RADIUS_M),
+    limit: int = Query(50, ge=1, le=MAX_GIS_LIMIT),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sites = _candidate_sites(db, user.org_id)
+    matches = []
+    for site in sites:
+        distance = _haversine_m(lon, lat, float(site.lon), float(site.lat))
+        if distance <= radius_m:
+            matches.append((distance, site))
+    matches.sort(key=lambda item: (item[0], item[1].id))
+    matches = matches[:limit]
+    return {
+        "count": len(matches),
+        "items": [_site_feature(site, distance_m=distance) for distance, site in matches],
+        "metadata": {
+            "organization_scoped": True,
+            "radius_m": radius_m,
+            "crs": "EPSG:4326",
+            "spatial_engine": "portable_latlon",
+        },
+    }
+
+
+@router.get("/gis/sites/intersects")
+def gis_sites_intersects(
+    min_lon: float = Query(..., ge=-180, le=180),
+    min_lat: float = Query(..., ge=-90, le=90),
+    max_lon: float = Query(..., ge=-180, le=180),
+    max_lat: float = Query(..., ge=-90, le=90),
+    limit: int = Query(100, ge=1, le=MAX_GIS_LIMIT),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    values = (min_lon, min_lat, max_lon, max_lat)
+    if not all(isfinite(v) for v in values) or min_lon >= max_lon or min_lat >= max_lat:
+        api_error(422, "INVALID_BBOX", "Bounding box is invalid")
+    if (max_lon - min_lon) > MAX_GIS_BBOX_SPAN_DEG or (max_lat - min_lat) > MAX_GIS_BBOX_SPAN_DEG:
+        api_error(422, "BBOX_TOO_LARGE", "Bounding box exceeds safe query span")
+
+    sites = db.execute(
+        select(Site).where(
+            Site.org_id == user.org_id,
+            Site.lat.isnot(None),
+            Site.lon.isnot(None),
+            Site.lon >= min_lon,
+            Site.lon <= max_lon,
+            Site.lat >= min_lat,
+            Site.lat <= max_lat,
+        ).order_by(Site.id).limit(limit)
+    ).scalars().all()
+    return {
+        "type": "FeatureCollection",
+        "features": [_site_feature(site) for site in sites],
+        "metadata": {
+            "organization_scoped": True,
+            "count": len(sites),
+            "bbox": [min_lon, min_lat, max_lon, max_lat],
+            "crs": "EPSG:4326",
+            "spatial_engine": "portable_latlon",
+        },
+    }
 
 
 # ---------- Admin directory ----------
