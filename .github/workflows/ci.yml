@@ -151,13 +151,14 @@ jobs:
       - name: Verify API health and persistent worker
         run: |
           python - <<'PY'
-          import json, time, urllib.request
+          import json, time, urllib.request, subprocess
+          expected_head = subprocess.check_output(["docker", "compose", "-f", "compose.production.yml", "exec", "-T", "api", "python", "-m", "alembic", "heads"], text=True).split()[0]
           for attempt in range(40):
               try:
                   with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3) as response:
                       body = json.load(response)
                       assert body["db"] == "up"
-                      assert body["alembic"] == "an20261004m1"
+                      assert body["alembic"] == expected_head
                       break
               except Exception:
                   if attempt == 39:
