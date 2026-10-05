@@ -98,3 +98,10 @@ def test_restore_preserves_existing_public_schema_and_other_entries():
     assert '5; 2615 2200 SCHEMA - public owner' not in filtered
     assert 'TABLE public organizations owner' in filtered
     assert 'COMMENT - SCHEMA public owner' in filtered
+
+
+def test_inventory_mismatch_diagnostics_exclude_record_values():
+    from scripts.postgres_recovery import inventory_differences
+    expected = {"alembic": "release", "tables": {"projects": {"sha256": "private-source-value", "rows": 3}}}
+    actual = {"alembic": "release", "tables": {"projects": {"sha256": "private-target-value", "rows": 4}}}
+    assert inventory_differences(expected, actual) == ["projects:rows", "projects:sha256"]
