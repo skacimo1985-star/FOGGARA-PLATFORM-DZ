@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
-from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, User
+from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, Site, User
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.service_delivery import irrigation_water_assessment, soil_assessment
 
@@ -23,7 +23,16 @@ class ParcelIn(Input):
     crop: str = Field(min_length=1, max_length=80)
     area_ha: float = Field(gt=0, le=100000)
     location: str = Field(min_length=1, max_length=160)
+    site_id: int | None = Field(default=None, gt=0)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
     stage: Literal['initial', 'development', 'mid', 'late'] = 'initial'
+
+    @model_validator(mode='after')
+    def coordinate_pair(self):
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError('Latitude and longitude must be supplied together')
+        return self
 
 class ParcelUpdate(Input):
     stage: Literal['initial', 'development', 'mid', 'late'] | None = None
@@ -137,6 +146,10 @@ def parcels(user: User = Depends(get_current_user), db: Session = Depends(get_db
 
 @operations_router.post('/parcels', status_code=201)
 def create_parcel(payload: ParcelIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if payload.site_id is not None:
+        site = db.scalar(select(Site).where(Site.id == payload.site_id, Site.org_id == user.org_id))
+        if site is None:
+            api_error(404, 'NOT_FOUND', 'Site not found')
     return record(db, user, AgriParcel(org_id=user.org_id, created_by=user.id, **payload.model_dump()))
 
 @operations_router.patch('/parcels/{identity}')
