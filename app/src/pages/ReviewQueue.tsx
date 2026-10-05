@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { ArrowRight, FileCheck2, FlaskConical, Gavel, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Evidence, Measurement } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText } from "@/components/common";
+import "./evidence-review.css";
 
 interface Pending { measurements: Measurement[]; evidences: Evidence[] }
 
@@ -73,7 +75,7 @@ function ReviewForm({ targetType, targetId, onDone }: {
 }
 
 export default function ReviewQueue() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<Pending | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [openFor, setOpenFor] = useState<string | null>(null);
@@ -85,10 +87,64 @@ export default function ReviewQueue() {
 
   if (!data && !error) return <Skeleton className="h-64 w-full" />;
 
+  const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const copy = language === "fr"
+    ? {
+        eyebrow: "FOGGARA / EVIDENCE ASSURANCE",
+        title: "File de revue et chaîne de confiance",
+        subtitle: "Aucune preuve n’est promue automatiquement : la revue humaine reste explicite.",
+        measurements: "Mesures en attente", evidences: "Preuves en attente", total: "À examiner",
+        flow: ["Donnée", "Contrôle", "Preuve", "Décision"],
+      }
+    : language === "en"
+      ? {
+          eyebrow: "FOGGARA / EVIDENCE ASSURANCE",
+          title: "Review queue and trust chain",
+          subtitle: "No evidence is promoted automatically: human review remains explicit.",
+          measurements: "Pending measurements", evidences: "Pending evidence", total: "To review",
+          flow: ["Data", "Review", "Evidence", "Decision"],
+        }
+      : {
+          eyebrow: "FOGGARA / ضمان الأدلة",
+          title: "طابور المراجعة وسلسلة الثقة",
+          subtitle: "لا تتم ترقية أي دليل تلقائيًا؛ تبقى المراجعة البشرية صريحة وقابلة للتتبع.",
+          measurements: "قياسات تنتظر المراجعة", evidences: "أدلة تنتظر المراجعة", total: "إجمالي المراجعة",
+          flow: ["بيانات", "مراجعة", "دليل", "قرار"],
+        };
+
+  const pendingTotal = (data?.measurements.length ?? 0) + (data?.evidences.length ?? 0);
+
   return (
     <div className="space-y-6">
       <h1 className="t-section text-ink">{t("review.title")}</h1>
       <ErrorText error={error} />
+
+      {data && (
+        <section className="fg-evidence-assurance" aria-label={copy.title}>
+          <div className="fg-evidence-assurance-head">
+            <div>
+              <p>{copy.eyebrow}</p>
+              <h2>{copy.title}</h2>
+              <span>{copy.subtitle}</span>
+            </div>
+            <ShieldCheck size={27} />
+          </div>
+          <div className="fg-evidence-kpis">
+            <article><FlaskConical size={18}/><span>{copy.measurements}</span><strong>{data.measurements.length}</strong></article>
+            <article><FileCheck2 size={18}/><span>{copy.evidences}</span><strong>{data.evidences.length}</strong></article>
+            <article><Gavel size={18}/><span>{copy.total}</span><strong>{pendingTotal}</strong></article>
+          </div>
+          <div className="fg-evidence-flow">
+            {copy.flow.map((label, index) => (
+              <div key={label}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{label}</strong>
+                {index < copy.flow.length - 1 && <ArrowRight size={14}/>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {data && (
         <>
