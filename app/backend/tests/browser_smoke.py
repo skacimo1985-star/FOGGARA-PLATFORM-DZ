@@ -301,6 +301,9 @@ def main():
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
+                    if path == "/app/review":
+                        expect(page.locator(".fg-evidence-assurance")).to_be_visible()
+                        expect(page.locator(".fg-evidence-kpis article")).to_have_count(3)
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
