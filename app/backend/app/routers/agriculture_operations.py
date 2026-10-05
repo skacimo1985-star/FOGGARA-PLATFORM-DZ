@@ -11,7 +11,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Project, User
 from ..services.agriculture_operations import irrigation_scenario
-from ..services.service_delivery import soil_assessment, irrigation_water_assessment
+from ..services.service_delivery import soil_assessment
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -146,7 +146,9 @@ def service_summary(identity: int, user: User = Depends(get_current_user), db: S
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
     soil = soil_assessment(observations)
-    water = irrigation_water_assessment({row.metric: row.value for row in observations if row.metric in ('ph', 'ec')})
+    water = {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
+             'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+             'limitations': ['EXPLICIT_WATER_SAMPLE_REQUIRED']}
     latest = {}
     for row in observations:
         if row.metric not in latest:
@@ -183,7 +185,9 @@ def save_service_summary_evidence(identity: int, payload: ServiceEvidenceIn,
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
     soil = soil_assessment(observations)
-    water = irrigation_water_assessment({row.metric: row.value for row in observations if row.metric in ('ph', 'ec')})
+    water = {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
+             'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+             'limitations': ['EXPLICIT_WATER_SAMPLE_REQUIRED']}
     if not soil['coverage'] and not water['coverage']:
         api_error(409, 'INSUFFICIENT_EVIDENCE', 'Recorded observations are required before saving a service result')
     source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage']) | set(water['coverage'])})
