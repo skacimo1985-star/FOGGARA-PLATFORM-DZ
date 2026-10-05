@@ -44,6 +44,15 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
         run: python -m tests.migration_smoke
+      - name: Install PostgreSQL 16 recovery clients
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: Verify snapshot recovery, tenant isolation and concurrent HTTP admission
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+        run: python -m tests.operational_gates
       - run: >-
           python -c "import psycopg; c = psycopg.connect('postgresql://postgres:postgres@localhost:5432/postgres', autocommit=True); c.execute('CREATE DATABASE foggara_test'); c.close()"
       - name: Build real Rust comparison engine
@@ -65,15 +74,6 @@ jobs:
         working-directory: app/backend
         env:
           DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
-      - name: Install PostgreSQL 16 recovery clients
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y postgresql-client-16
-          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
-      - name: Verify snapshot recovery, tenant isolation and concurrent HTTP admission
-        working-directory: app/backend
-        env:
-          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
-        run: python -m tests.operational_gates
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
