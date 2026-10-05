@@ -1,5 +1,8 @@
 # FOGGARA operational extension
 
+Current recovery and capacity verification: [Recovery and capacity gates](RECOVERY-LOAD-GATES-2026-10-05.md).
+Use the snapshot/manifest recovery tool for new verified backups; it refuses populated restore targets.
+
 This extends the React 19 / FastAPI / SQLAlchemy / Alembic baseline. It does not
 replace existing water, metrology, evidence, decisions, telemetry or simulation
 modules. New public and operations screens are Arabic-first; existing modules
