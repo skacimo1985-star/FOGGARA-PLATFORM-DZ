@@ -294,7 +294,7 @@ def main():
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
                              "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis",
                              "/app/decisions", "/app/services", "/app/metrology", "/app/water",
-                             "/app/review", "/app/audit", "/app/explore", "/app/analytics", "/app/iot",
+                             "/app/review", "/app/audit", "/app/explore", "/app/analytics", "/app/insights", "/app/iot",
                              f"/app/projects/{project_id}"):
                     authenticated_visit(path)
                     expect(page.locator("#main-content")).to_be_visible()
@@ -312,6 +312,9 @@ def main():
                     if path == "/app/water":
                         expect(page.locator(".fg-water-intelligence")).to_be_visible()
                         expect(page.locator(".fg-water-chain article")).to_have_count(7)
+                    if path == "/app/insights":
+                        expect(page.locator('[data-testid="ai-investor-brief"]')).to_be_visible()
+                        expect(page.locator(".ai-brief-section")).to_have_count(3)
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)

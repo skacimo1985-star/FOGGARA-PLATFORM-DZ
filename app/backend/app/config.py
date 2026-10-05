@@ -82,3 +82,24 @@ NEXUS_RUST_BINARY = os.environ.get("NEXUS_RUST_BINARY", "/usr/local/bin/foggara-
 LIST_MAX_LIMIT = int(os.environ.get("LIST_MAX_LIMIT", "500"))
 if not 1 <= LIST_MAX_LIMIT <= 1000:
     raise RuntimeError("LIST_MAX_LIMIT must be between 1 and 1000")
+
+
+# Optional external AI for investor-facing summaries. The UI never calls providers directly.
+_AI_EXTERNAL_FLAG = os.environ.get("AI_EXTERNAL_ENABLED", "false").strip().lower()
+if _AI_EXTERNAL_FLAG not in ("true", "false"):
+    raise RuntimeError("AI_EXTERNAL_ENABLED must be true or false")
+AI_EXTERNAL_ENABLED = _AI_EXTERNAL_FLAG == "true"
+AI_BASE_URL = os.environ.get("AI_BASE_URL", "").strip().rstrip("/")
+AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
+AI_MODEL = os.environ.get("AI_MODEL", "").strip()
+AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
+if not 3 <= AI_TIMEOUT_SECONDS <= 60:
+    raise RuntimeError("AI_TIMEOUT_SECONDS must be between 3 and 60")
+if AI_EXTERNAL_ENABLED:
+    _ai_url = urlsplit(AI_BASE_URL)
+    if not AI_BASE_URL or not AI_API_KEY or not AI_MODEL:
+        raise RuntimeError("External AI requires AI_BASE_URL, AI_API_KEY and AI_MODEL")
+    if not _ai_url.hostname or _ai_url.username or _ai_url.password:
+        raise RuntimeError("AI_BASE_URL must be a provider base URL without embedded credentials")
+    if ENV == "prod" and _ai_url.scheme != "https":
+        raise RuntimeError("ENV=prod requires HTTPS AI_BASE_URL")

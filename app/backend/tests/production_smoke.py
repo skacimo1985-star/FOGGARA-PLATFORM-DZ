@@ -41,7 +41,8 @@ def main():
                  "/data-rooms", "/opportunities", "/agriculture/parcels",
                  "/operations/team", "/gis/sites", "/gis/sites.geojson",
                  "/gis/sites/nearest?lon=2.6&lat=28.2&limit=3",
-                 "/gis/sites/intersects?min_lon=-8&min_lat=20&max_lon=10&max_lat=37&limit=10"):
+                 "/gis/sites/intersects?min_lon=-8&min_lat=20&max_lon=10&max_lat=37&limit=10",
+                 "/ai/status"):
         call(path, headers=headers)
     project = call("/projects", 201, body={"title": "Production HTTP QA", "domain": "water"}, headers=headers)
     parcel = call("/agriculture/parcels", 201, body={
@@ -58,10 +59,14 @@ def main():
     history = call(f"/agriculture/parcels/{parcel['id']}/remote-sensing", headers=headers)
     assert history["adapter_contract"] == "provider_neutral"
     assert all(row["evidence_status"] == "INFERRED" for row in history["observations"])
+    ai_brief = call("/ai/investor-brief", 200, body={"locale": "en"}, headers=headers)
+    assert ai_brief["provenance"] == "PROPOSED"
+    assert ai_brief["external_payload_policy"] == "aggregated_counts_only"
+    assert ai_brief["investment_certification"] is False
     page = call("/projects?page_size=12", headers=headers)
     assert any(item["id"] == project["id"] for item in page["items"])
     call("/projects/" + str(project["id"]), headers=headers)
-    print("Production HTTP checks passed: auth, GIS spatial API, provider-neutral remote sensing, persisted project")
+    print("Production HTTP checks passed: auth, GIS, remote sensing, investor AI brief, persisted project")
 
 if __name__ == "__main__":
     main()

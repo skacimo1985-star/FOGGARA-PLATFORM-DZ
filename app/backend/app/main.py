@@ -19,7 +19,7 @@ from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         workflow)
 from .routers.setup import router as setup_router
 from .routers.operations import router as operations_router
-from .routers import agriculture, agriculture_operations, collaboration, intelligence, analytics
+from .routers import agriculture, agriculture_operations, collaboration, intelligence, analytics, ai_brief
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -163,6 +163,7 @@ app.include_router(collaboration.router)
 app.include_router(intelligence.router)
 app.include_router(agriculture.router)
 app.include_router(agriculture_operations.operations_router)
+app.include_router(ai_brief.router)
 
 
 # تقديم الواجهة المبنية (إن وُجدت) مع دعم SPA — مسارات /api تبقى للـAPI فقط
