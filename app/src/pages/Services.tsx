@@ -43,6 +43,7 @@ export default function Services() {
   const [domainFilter, setDomainFilter] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [readiness, setReadiness] = useState<Record<number, {ready_to_complete:boolean; blockers:string[]; verified_report_count:number}>>({});
 
   const canTriage = user?.role === "reviewer" || user?.role === "admin";
   const serviceName = (s: Service) =>
@@ -83,6 +84,14 @@ export default function Services() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function checkReadiness(id: number) {
+    setError(null);
+    try {
+      const data = await api.get<{ready_to_complete:boolean; blockers:string[]; verified_report_count:number}>(`/service-requests/${id}/delivery-readiness`);
+      setReadiness((all) => ({ ...all, [id]: data }));
+    } catch (err) { setError(err); }
   }
 
   async function changeStatus(id: number, status: string) {
@@ -219,6 +228,14 @@ export default function Services() {
                       )}
                     </p>
                     {r.notes && <p className="rounded bg-parchment/70 p-2 text-xs">{r.notes}</p>}
+                    {r.status === "in_progress" && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => void checkReadiness(r.id)}>Check delivery readiness</Button>
+                        {readiness[r.id] && <Badge variant={readiness[r.id].ready_to_complete ? "default" : "secondary"}>
+                          {readiness[r.id].ready_to_complete ? `Ready · ${readiness[r.id].verified_report_count} verified report` : readiness[r.id].blockers.join(" · ")}
+                        </Badge>}
+                      </div>
+                    )}
                     {canTriage && NEXT_STATUSES[r.status]?.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-muted-foreground">{t("service.changeStatus")}:</span>
