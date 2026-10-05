@@ -296,6 +296,9 @@ def main():
                         expect(page.get_by_role("alert")).to_contain_text("الأوامر الميدانية حساسة وممنوعة")
                     else:
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
+                    if path == f"/app/projects/{project_id}":
+                        expect(page.locator(".fg-project-spine")).to_be_visible()
+                        expect(page.locator(".fg-project-spine-flow article")).to_have_count(7)
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
