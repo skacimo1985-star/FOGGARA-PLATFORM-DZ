@@ -65,6 +65,74 @@ def test_satellite_remains_inferred(client,world,farm):
     assert row['evidence_status']=='INFERRED'
     assert client.post(f"/api/agriculture/observations/{row['id']}/verify",headers=login(client,'o1r@t.dz')).status_code==409
 
+def test_remote_sensing_ingestion_is_inferred_idempotent_and_isolated(client, world, farm, db):
+    h, pid = farm
+    acquired = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+    payload = {
+        'provider': 'provider_demo',
+        'scene_id': 'SCENE-2026-001',
+        'acquired_at': acquired,
+        'ndvi': 0.71,
+        'lswi': 0.18,
+        'moisture': 24.5,
+        'cloud_cover_pct': 8.0,
+        'confidence': 0.86,
+        'source_uri': 'https://example.invalid/scenes/SCENE-2026-001',
+    }
+    url = f'/api/agriculture/parcels/{pid}/remote-sensing/ingest'
+    r = client.post(url, headers=h, json=payload)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body['provenance'] == 'INFERRED'
+    assert body['live_provider_connected'] is False
+    assert {row['metric'] for row in body['created']} == {'ndvi', 'lswi', 'moisture'}
+    assert all(row['source_type'] == 'satellite' for row in body['created'])
+    assert all(row['evidence_status'] == 'INFERRED' for row in body['created'])
+
+    again = client.post(url, headers=h, json=payload)
+    assert again.status_code == 201, again.text
+    assert again.json()['created'] == []
+    assert set(again.json()['skipped_metrics']) == {'ndvi', 'lswi', 'moisture'}
+
+    history = client.get(f'/api/agriculture/parcels/{pid}/remote-sensing', headers=h)
+    assert history.status_code == 200, history.text
+    hist = history.json()
+    assert hist['adapter_contract'] == 'provider_neutral'
+    assert hist['live_provider_connected'] is False
+    assert len(hist['observations']) == 3
+    assert {row['metric'] for row in hist['observations']} == {'ndvi', 'lswi', 'moisture'}
+
+    reviewer = login(client, 'o1r@t.dz')
+    inferred_id = body['created'][0]['id']
+    verify = client.post(f'/api/agriculture/observations/{inferred_id}/verify', headers=reviewer)
+    assert verify.status_code == 409
+    assert verify.json()['detail']['code'] == 'INFERENCE_NOT_MEASUREMENT'
+
+    other = login(client, 'o2m@t.dz')
+    assert client.get(f'/api/agriculture/parcels/{pid}/remote-sensing', headers=other).status_code == 404
+    assert client.post(url, headers=other, json=payload).status_code == 404
+
+    audits = list(db.scalars(select(AuditLog).where(
+        AuditLog.action == 'remote_sensing_ingest',
+        AuditLog.entity_type == 'agri_observations',
+    )))
+    assert len(audits) == 3
+
+
+def test_remote_sensing_ingestion_rejects_empty_future_and_out_of_range(client, world, farm):
+    h, pid = farm
+    url = f'/api/agriculture/parcels/{pid}/remote-sensing/ingest'
+    base = {
+        'provider': 'adapter_1',
+        'scene_id': 'SCENE-X',
+        'acquired_at': (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
+    }
+    assert client.post(url, headers=h, json=base).status_code == 422
+    assert client.post(url, headers=h, json={**base, 'ndvi': 1.2}).status_code == 422
+    future = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    assert client.post(url, headers=h, json={**base, 'acquired_at': future, 'ndvi': 0.3}).status_code == 422
+
+
 def test_irrigation_dimensions_and_rain_floor():
     result=irrigation_scenario(2,5,.8,1,.8,2)
     assert result['volume_m3']==175
