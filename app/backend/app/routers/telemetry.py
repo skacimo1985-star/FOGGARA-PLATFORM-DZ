@@ -18,7 +18,7 @@ from ..models import (Device, Sensor, TELEMETRY_QUERY_MAX_DAYS,
                       TELEMETRY_QUERY_MAX_LIMIT, TELEMETRY_UNITS,
                       TelemetryReading, User)
 from ..schemas import (DeviceIn, DeviceOut, SensorIn, SensorOut,
-                       TelemetryAggregateOut, TelemetryIngestIn, TelemetryOut,
+                       EdgeTelemetryIn, TelemetryAggregateOut, TelemetryIngestIn, TelemetryOut,
                        TelemetryValidateOut)
 from ..services.telemetry_service import validate_reading
 
@@ -133,6 +133,40 @@ def ingest_telemetry(payload: TelemetryIngestIn, response: Response,
         return existing
     audit(db, user, "create", "telemetry_reading", entity_id=reading.id,
           meta={"sensor_id": sensor.id, "quality": quality})
+    db.commit()
+    return reading
+
+
+@router.post("/edge/ingest", response_model=TelemetryOut, status_code=201)
+def ingest_edge_telemetry(payload: EdgeTelemetryIn, response: Response,
+                          user: User = Depends(get_current_user),
+                          db: Session = Depends(get_db)):
+    """Ingest a normalized reading from an edge gateway without trusting gateway ownership metadata."""
+    sensor = _owned_sensor(db, user.org_id, payload.sensor_id)
+    quality, errors = validate_reading(sensor, payload.value, payload.observed_at)
+    reading = TelemetryReading(
+        org_id=user.org_id, device_id=sensor.device_id, sensor_id=sensor.id,
+        subject_type=sensor.subject_type, subject_id=sensor.subject_id,
+        metric=sensor.metric, value=payload.value, unit=sensor.unit,
+        quality=quality, observed_at=payload.observed_at,
+        source=f"edge:{payload.gateway}", is_demo=sensor.is_demo,
+        meta={"validation_errors": errors, "gateway": payload.gateway,
+              "external_device_id": payload.external_device_id,
+              "external_message_id": payload.external_message_id},
+    )
+    db.add(reading)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        existing = db.execute(select(TelemetryReading).where(
+            TelemetryReading.sensor_id == sensor.id,
+            TelemetryReading.observed_at == payload.observed_at,
+            TelemetryReading.metric == sensor.metric)).scalar_one()
+        response.status_code = 200
+        return existing
+    audit(db, user, "create", "telemetry_reading", entity_id=reading.id,
+          meta={"sensor_id": sensor.id, "quality": quality, "source": reading.source})
     db.commit()
     return reading
 
