@@ -87,7 +87,7 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
         Measurement.org_id == user.org_id,
         Measurement.project_id == project.id,
         Measurement.resource_id == project.resource_id,
-        Measurement.parameter.in_(('ph', 'ec')),
+        Measurement.parameter.in_(('ph', 'ec', 'tds', 'salinity', 'sar', 'sodium', 'calcium', 'magnesium', 'chloride', 'bicarbonate', 'temperature', 'turbidity', 'dissolved_oxygen')),
         Measurement.quality_status == 'validated',
         Measurement.verification_status == 'verified',
     ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(100)))
