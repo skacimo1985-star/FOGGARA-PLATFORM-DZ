@@ -91,6 +91,34 @@ def get_service_request(request_id: int, user: User = Depends(get_current_user),
     return get_request_or_404(db, user, request_id)
 
 
+@router.get("/service-requests/{request_id}/delivery-readiness")
+def service_delivery_readiness(request_id: int, user: User = Depends(get_current_user),
+                               db: Session = Depends(get_db)):
+    sr = get_request_or_404(db, user, request_id)
+    reports = []
+    if sr.project_id is not None:
+        reports = list(db.scalars(select(Evidence).where(
+            Evidence.org_id == user.org_id,
+            Evidence.project_id == sr.project_id,
+            Evidence.doc_type == "report",
+        ).order_by(Evidence.id.desc()).limit(20)))
+    verified = [e for e in reports if e.status == "verified"]
+    blockers = []
+    if sr.project_id is None:
+        blockers.append("PROJECT_REQUIRED")
+    if not verified:
+        blockers.append("VERIFIED_REPORT_REQUIRED")
+    return {
+        "request_id": sr.id,
+        "ready_to_complete": not blockers,
+        "blockers": blockers,
+        "report_count": len(reports),
+        "verified_report_count": len(verified),
+        "latest_verified_report_id": verified[0].id if verified else None,
+        "evidence_status": "VERIFIED" if verified else "MISSING",
+    }
+
+
 @router.patch("/service-requests/{request_id}/status", response_model=ServiceRequestOut)
 def update_service_request_status(request_id: int, payload: ServiceRequestStatusUpdate,
                                   user: User = Depends(require_reviewer), db: Session = Depends(get_db)):
