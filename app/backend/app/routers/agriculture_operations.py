@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
-from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Project, User
+from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, User
 from ..services.agriculture_operations import irrigation_scenario
-from ..services.service_delivery import soil_assessment
+from ..services.service_delivery import irrigation_water_assessment, soil_assessment
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -77,6 +77,38 @@ class ServiceEvidenceIn(Input):
 
 
 
+def verified_water_assessment(db: Session, user: User, project: Project | None):
+    if project is None or project.resource_id is None:
+        return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
+                'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'measurement_ids': [], 'resource_id': None,
+                'limitations': ['PROJECT_WATER_RESOURCE_REQUIRED', 'VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
+    rows = list(db.scalars(select(Measurement).where(
+        Measurement.org_id == user.org_id,
+        Measurement.project_id == project.id,
+        Measurement.resource_id == project.resource_id,
+        Measurement.parameter.in_(('ph', 'ec', 'tds', 'salinity', 'sar', 'sodium', 'calcium', 'magnesium', 'chloride', 'bicarbonate', 'temperature', 'turbidity', 'dissolved_oxygen')),
+        Measurement.quality_status == 'validated',
+        Measurement.verification_status == 'verified',
+    ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(100)))
+    latest = {}
+    ids = []
+    for row in rows:
+        if row.parameter not in latest:
+            latest[row.parameter] = float(row.value)
+            ids.append(row.id)
+    if not latest:
+        return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
+                'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'measurement_ids': [], 'resource_id': project.resource_id,
+                'limitations': ['VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
+    result = irrigation_water_assessment(latest)
+    result['evidence_status'] = 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
+    result['measurement_ids'] = ids
+    result['resource_id'] = project.resource_id
+    return result
+
+
 def own(db, cls, identity, user):
     row = db.scalar(select(cls).where(cls.id == identity, cls.org_id == user.org_id))
     if row is None:
@@ -139,16 +171,19 @@ def verify_observation(identity: int, user: User = Depends(require_reviewer), db
     return record(db, user, row, 'verify')
 
 @operations_router.get('/parcels/{identity}/service-summary')
-def service_summary(identity: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def service_summary(identity: int, project_id: int | None = Query(default=None, gt=0), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     parcel = own(db, AgriParcel, identity, user)
     observations = list(db.scalars(select(AgriObservation).where(
         AgriObservation.org_id == user.org_id,
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
     soil = soil_assessment(observations)
-    water = {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
-             'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
-             'limitations': ['EXPLICIT_WATER_SAMPLE_REQUIRED']}
+    project = None
+    if project_id is not None:
+        project = db.scalar(select(Project).where(Project.id == project_id, Project.org_id == user.org_id))
+        if project is None:
+            api_error(404, 'NOT_FOUND', 'Project not found')
+    water = verified_water_assessment(db, user, project)
     latest = {}
     for row in observations:
         if row.metric not in latest:
@@ -185,9 +220,7 @@ def save_service_summary_evidence(identity: int, payload: ServiceEvidenceIn,
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
     soil = soil_assessment(observations)
-    water = {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
-             'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
-             'limitations': ['EXPLICIT_WATER_SAMPLE_REQUIRED']}
+    water = verified_water_assessment(db, user, project)
     if not soil['coverage'] and not water['coverage']:
         api_error(409, 'INSUFFICIENT_EVIDENCE', 'Recorded observations are required before saving a service result')
     source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage']) | set(water['coverage'])})
