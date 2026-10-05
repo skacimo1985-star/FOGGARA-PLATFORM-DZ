@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
-from ..models import Project, Service, ServiceRequest, Site, User
+from ..models import Evidence, Project, Service, ServiceRequest, Site, User
 from ..schemas import (ServiceOut, ServiceRequestIn, ServiceRequestOut,
                        ServiceRequestStatusUpdate)
 from ..services.catalog import CATALOG_PROVIDER
@@ -99,6 +99,17 @@ def update_service_request_status(request_id: int, payload: ServiceRequestStatus
     if payload.status != sr.status and payload.status not in ALLOWED_TRANSITIONS[sr.status]:
         api_error(409, "INVALID_STATUS_TRANSITION",
                   f"Cannot move service request from '{sr.status}' to '{payload.status}'")
+    if payload.status == "completed":
+        if sr.project_id is None:
+            api_error(409, "DELIVERABLE_REQUIRED", "A project-linked evidence deliverable is required before completion")
+        deliverable = db.scalar(select(Evidence).where(
+            Evidence.org_id == user.org_id,
+            Evidence.project_id == sr.project_id,
+            Evidence.doc_type == "report",
+            Evidence.status == "verified",
+        ).order_by(Evidence.id.desc()))
+        if deliverable is None:
+            api_error(409, "DELIVERABLE_REQUIRED", "A verified report evidence is required before completion")
     old = sr.status
     sr.status = payload.status
     if payload.notes is not None:
