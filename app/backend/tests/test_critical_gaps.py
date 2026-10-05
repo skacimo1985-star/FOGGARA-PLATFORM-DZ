@@ -112,11 +112,17 @@ def test_service_request_rejects_skip_backward_and_cancelled_transitions(client,
         r = set_status(sr3["id"], st)
         assert r.status_code == 409 and r.json()["detail"]["code"] == "INVALID_STATUS_TRANSITION", st
 
-    # المسار القانوني الكامل ينجح: submitted→triaged→assigned→in_progress→completed
+    # المسار القانوني حتى in_progress ينجح؛ completion يتطلب تقريرًا موثقًا
     sr4 = make_sr()
-    for st in ("triaged", "assigned", "in_progress", "completed"):
+    for st in ("triaged", "assigned", "in_progress"):
         r = set_status(sr4["id"], st)
         assert r.status_code == 200 and r.json()["status"] == st, (st, r.text)
+    r = set_status(sr4["id"], "completed")
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "DELIVERABLE_REQUIRED"
+    e = add_evidence(client, member, p["id"])
+    assert review_raw(client, reviewer, "evidence", e["id"], "accepted").status_code == 201
+    r = set_status(sr4["id"], "completed")
+    assert r.status_code == 200 and r.json()["status"] == "completed"
 
 
 # 4) النافذة الزمنية للمؤشر: الافتراضية (30 يومًا) والمخصصة (window_from/window_to)

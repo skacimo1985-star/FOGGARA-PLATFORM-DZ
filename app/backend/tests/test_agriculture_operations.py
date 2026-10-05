@@ -13,8 +13,10 @@ def farm(client, world):
     return h, r.json()['id']
 
 def observation(pid, **kw):
-    return dict(parcel_id=pid, metric='ph', value=7.2, source_type='lab', source_ref='LAB-REF-1',
-                observed_at=(datetime.now(timezone.utc)-timedelta(days=1)).isoformat(), **kw)
+    data = dict(parcel_id=pid, metric='ph', value=7.2, source_type='lab', source_ref='LAB-REF-1',
+                observed_at=(datetime.now(timezone.utc)-timedelta(days=1)).isoformat())
+    data.update(kw)
+    return data
 
 def test_no_anonymous(client):
     assert client.get('/api/agriculture/parcels').status_code == 401
@@ -110,9 +112,10 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     body = r.json()
     assert body['available_services']['soil_screening'] is True
     assert body['available_services']['irrigation_planning'] is True
-    assert body['available_services']['irrigation_water_screening'] is True
-    assert body['irrigation_water_assessment']['evidence_status'] == 'COMPUTED'
-    assert body['irrigation_water_assessment']['decision_status'] == 'PROPOSED'
+    assert body['available_services']['irrigation_water_screening'] is False
+    assert body['irrigation_water_assessment']['evidence_status'] == 'MISSING'
+    assert body['irrigation_water_assessment']['decision_status'] == 'UNAVAILABLE'
+    assert 'EXPLICIT_WATER_SAMPLE_REQUIRED' in body['irrigation_water_assessment']['limitations']
     assert body['available_services']['satellite_live'] is False
     assert body['available_services']['weather_live'] is False
     assert body['soil_assessment']['evidence_status'] == 'COMPUTED'
