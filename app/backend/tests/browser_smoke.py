@@ -84,6 +84,7 @@ def main():
                 assert page.locator(".fg-oasis-image img").evaluate("e => e.complete && e.naturalWidth > 0")
                 expect(page.locator(".wefeh-links")).to_be_visible()
                 expect(page.locator(".wefeh-node")).to_have_count(5)
+                expect(page.locator(".fg-platform-spine")).to_be_visible()
                 for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     expect(page.locator("#foggara-title")).to_contain_text(title)
@@ -128,6 +129,8 @@ def main():
                 page.goto("http://127.0.0.1:8000/demo", wait_until="networkidle")
                 page.get_by_role("combobox", name="Language", exact=True).select_option("en")
                 expect(page.get_by_test_id("demo-demand")).to_contain_text("100")
+                expect(page.locator(".fg-demo-journey article")).to_have_count(11)
+                expect(page.locator(".fg-demo-proof-strip")).to_be_visible()
                 page.locator(".fg-demo-scenarios button").nth(1).click()
                 expect(page.get_by_test_id("demo-decision")).to_have_class("fg-demo-decision blocked")
                 page.locator(".fg-demo-inputs input").first.fill("")
@@ -298,12 +301,21 @@ def main():
                         expect(page.get_by_role("alert")).to_contain_text("الأوامر الميدانية حساسة وممنوعة")
                     else:
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
+                    if path == "/app/agriculture":
+                        expect(page.locator(".fg-intelligence-band")).to_be_visible()
+                        expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
+                    if path == "/app/water":
+                        expect(page.locator(".fg-water-intelligence")).to_be_visible()
+                        expect(page.locator(".fg-water-chain article")).to_have_count(7)
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/review":
                         expect(page.locator(".fg-evidence-assurance")).to_be_visible()
                         expect(page.locator(".fg-evidence-kpis article")).to_have_count(3)
+                    if path == f"/app/projects/{project_id}":
+                        expect(page.locator(".fg-project-spine")).to_be_visible()
+                        expect(page.locator(".fg-project-spine-flow article")).to_have_count(7)
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
