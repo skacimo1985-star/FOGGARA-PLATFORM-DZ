@@ -200,7 +200,6 @@ def ingest_remote_sensing(identity: int, payload: RemoteSensingIn,
             AgriObservation.metric == metric,
             AgriObservation.source_type == 'satellite',
             AgriObservation.source_ref == source_ref,
-            AgriObservation.observed_at == payload.acquired_at,
         ))
         if existing is not None:
             skipped.append(metric)
