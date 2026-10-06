@@ -118,7 +118,18 @@ jobs:
         working-directory: app/backend
         shell: powershell
         run: |
-          python -m pytest tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py -q -ra --tb=short
+          @'
+          def pytest_configure(config):
+              import app.security as security
+              # Test-only cost reduction for low-power self-hosted hardware.
+              # Production source remains at 600,000 PBKDF2 iterations.
+              security._PASSWORD_ITERATIONS = 120_000
+          '@ | Set-Content -Path selfhosted_ci_plugin.py -Encoding UTF8
+
+          python -m pytest -p selfhosted_ci_plugin tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py -q -ra --tb=short
+          $testExit = $LASTEXITCODE
+          Remove-Item selfhosted_ci_plugin.py -Force -ErrorAction SilentlyContinue
+          if ($testExit -ne 0) { exit $testExit }
 
       - name: Set up Node 22
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
