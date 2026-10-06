@@ -158,6 +158,7 @@ MEASUREMENT_PARAMETERS = Literal[
 
 class MeasurementIn(BaseModel):
     project_id: int
+    parcel_id: Optional[int] = None
     resource_id: Optional[int] = None
     parameter: MEASUREMENT_PARAMETERS
     value: float
@@ -172,6 +173,7 @@ class MeasurementIn(BaseModel):
 
 class MeasurementImportRow(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    parcel_id: Optional[int] = None
     resource_id: Optional[int] = None
     parameter: MEASUREMENT_PARAMETERS
     value: float
@@ -201,6 +203,7 @@ class MeasurementBatchIn(BaseModel):
 class MeasurementOut(ORM):
     id: int
     project_id: int
+    parcel_id: Optional[int]
     resource_id: Optional[int]
     parameter: str
     value: float
