@@ -35,4 +35,7 @@ uvicorn==0.54.0
 uvloop==0.22.1; sys_platform != "win32"
 watchfiles==1.3.0
 websockets==17.1
-pystac-client==0.9.0\npystac==1.15.2\nrequests==2.34.2\npython-dateutil==2.9.0.post0\n
+pystac-client==0.9.0
+pystac==1.15.2
+requests==2.34.2
+python-dateutil==2.9.0.post0
