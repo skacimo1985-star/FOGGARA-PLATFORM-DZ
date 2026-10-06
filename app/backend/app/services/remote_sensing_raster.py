@@ -8,6 +8,7 @@ FOGGARA index, and returns statistics. It does not persist imagery or products.
 from __future__ import annotations
 
 import math
+import threading
 from typing import Mapping
 
 import numpy as np
@@ -32,6 +33,13 @@ MAX_AXIS_PIXELS = 2_048
 
 class RasterStatisticsError(ValueError):
     pass
+
+
+class RasterCapacityError(RasterStatisticsError):
+    pass
+
+
+_RASTER_ANALYSIS_SEMAPHORE = threading.BoundedSemaphore(value=1)
 
 
 def validate_analysis_bbox(values) -> tuple[float, float, float, float]:
@@ -178,7 +186,7 @@ def _target_grid(
         return source.crs, transform, width, height
 
 
-def compute_index_statistics(
+def _compute_index_statistics_unlocked(
     plan: Mapping,
     bbox,
 ) -> dict:
@@ -311,3 +319,18 @@ def compute_index_statistics(
             "persisted": False,
         },
     }
+
+
+
+def compute_index_statistics(plan: Mapping, bbox) -> dict:
+    """Run one bounded synchronous raster analysis per API instance.
+
+    Heavy raster IO is intentionally fail-fast under contention so authenticated
+    callers cannot queue unbounded GDAL work on the web process.
+    """
+    if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
+        raise RasterCapacityError("raster analysis capacity is busy")
+    try:
+        return _compute_index_statistics_unlocked(plan, bbox)
+    finally:
+        _RASTER_ANALYSIS_SEMAPHORE.release()
