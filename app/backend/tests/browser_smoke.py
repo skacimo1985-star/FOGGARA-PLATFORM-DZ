@@ -357,6 +357,9 @@ def main():
                 expect(page).to_have_url(f"http://127.0.0.1:8000/app/agriculture?parcel={parcel_id}")
                 expect(page.get_by_test_id("selected-parcel-card")).to_contain_text("CI Field")
                 ensure_no_overflow(page, ("parcel-context", parcel_id))
+                page.get_by_test_id("selected-parcel-card").get_by_role("link", name="GIS").click()
+                expect(page).to_have_url(__import__("re").compile(rf"/app/gis\?parcel={parcel_id}(&|$)"))
+                expect(page.get_by_test_id("gis-selected-parcel")).to_contain_text("CI Field")
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
