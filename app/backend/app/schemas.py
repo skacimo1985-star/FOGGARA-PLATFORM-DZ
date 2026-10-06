@@ -209,6 +209,7 @@ class MeasurementOut(ORM):
     source: str
     method: str
     source_type: str
+    import_batch_ref: Optional[str]
     instrument_id: Optional[int]
     asset_id: Optional[int]
     quality_status: str
@@ -253,6 +254,15 @@ class ReviewIn(BaseModel):
     decision: Literal["accepted", "rejected", "request_clarification"]
     note: str = Field(min_length=1)
     reason: str = Field(min_length=1)
+
+
+class MeasurementBatchReviewIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: int = Field(gt=0)
+    batch_reference: str = Field(min_length=1, max_length=120)
+    decision: Literal["accepted", "rejected", "request_clarification"]
+    note: str = Field(min_length=1, max_length=2000)
+    reason: str = Field(min_length=1, max_length=2000)
 
 
 class ReviewOut(ORM):

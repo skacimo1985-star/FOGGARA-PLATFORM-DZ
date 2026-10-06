@@ -8,8 +8,8 @@ from ..deps import api_error, get_current_user, require_reviewer
 from ..models import (Action, Asset, Evidence, HumanDecision, Instrument,
                       Measurement, Recommendation, Review, User, WaterResource)
 from ..schemas import (EvidenceIn, EvidenceOut, HumanDecisionIn,
-                       HumanDecisionOut, MeasurementBatchIn, MeasurementIn, MeasurementOut,
-                       ReviewIn, ReviewOut)
+                       HumanDecisionOut, MeasurementBatchIn, MeasurementBatchReviewIn,
+                       MeasurementIn, MeasurementOut, ReviewIn, ReviewOut)
 from ..services.indicators import canonical_unit, validate_measurement
 from ..services.metrology import instrument_has_valid_calibration
 from .core import get_project_or_404
@@ -119,6 +119,7 @@ def import_measurements(project_id: int, payload: MeasurementBatchIn,
             project_id=project_id,
             submitted_by=user.id,
             source_type="imported",
+            import_batch_ref=payload.batch_reference,
             quality_status="pending",
             verification_status="unverified",
             is_demo=False,
@@ -215,71 +216,176 @@ def get_evidence(evidence_id: int, user: User = Depends(get_current_user), db: S
 @router.get("/reviews/pending")
 def pending_reviews(user: User = Depends(require_reviewer), db: Session = Depends(get_db)):
     ms = db.execute(select(Measurement).where(Measurement.org_id == user.org_id,
-                                              Measurement.quality_status == "pending")).scalars().all()
+                                              Measurement.quality_status == "pending")
+                    .order_by(Measurement.project_id, Measurement.import_batch_ref, Measurement.id)).scalars().all()
     es = db.execute(select(Evidence).where(Evidence.org_id == user.org_id,
                                            Evidence.status == "submitted")).scalars().all()
+    grouped = {}
+    for measurement in ms:
+        if measurement.source_type != "imported" or not measurement.import_batch_ref:
+            continue
+        key = (measurement.project_id, measurement.import_batch_ref)
+        summary = grouped.setdefault(key, {
+            "project_id": measurement.project_id,
+            "batch_reference": measurement.import_batch_ref,
+            "count": 0,
+            "parameters": set(),
+            "submitter_ids": set(),
+            "instrument_ids": set(),
+            "measurement_ids": [],
+        })
+        summary["count"] += 1
+        summary["parameters"].add(measurement.parameter)
+        summary["submitter_ids"].add(measurement.submitted_by)
+        if measurement.instrument_id is not None:
+            summary["instrument_ids"].add(measurement.instrument_id)
+        summary["measurement_ids"].append(measurement.id)
+    batches = [{
+        **summary,
+        "parameters": sorted(summary["parameters"]),
+        "submitter_ids": sorted(summary["submitter_ids"]),
+        "instrument_ids": sorted(summary["instrument_ids"]),
+    } for summary in grouped.values()]
     return {
         "measurements": [MeasurementOut.model_validate(m) for m in ms],
+        "measurement_batches": batches,
         "evidences": [EvidenceOut.model_validate(e) for e in es],
     }
+
+
+def _apply_measurement_review(db: Session, user: User, target: Measurement,
+                              *, decision: str, note: str, reason: str) -> Review:
+    if target.org_id != user.org_id:
+        api_error(404, "NOT_FOUND", "Measurement not found")
+    if target.submitted_by == user.id:
+        api_error(403, "SELF_REVIEW_FORBIDDEN", "You cannot review your own submission")
+    if target.quality_status != "pending":
+        api_error(409, "ALREADY_REVIEWED", "Measurement already reviewed")
+    if decision == "accepted" and target.instrument_id is not None \
+            and not instrument_has_valid_calibration(db, target.instrument_id):
+        api_error(409, "CALIBRATION_REQUIRED",
+                  "Cannot validate measurement: instrument has no currently valid (passed) calibration")
+    review = Review(
+        org_id=user.org_id,
+        reviewer_id=user.id,
+        target_type="measurement",
+        target_id=target.id,
+        decision=decision,
+        note=note,
+        reason=reason,
+    )
+    db.add(review)
+    if decision == "accepted":
+        target.quality_status = "validated"
+        target.verification_status = "verified"
+    elif decision == "rejected":
+        target.quality_status = "rejected"
+        target.verification_status = "rejected"
+    audit(db, user, "review", "measurement", entity_id=target.id,
+          project_id=target.project_id, meta={"decision": decision, "reason": reason})
+    return review
 
 
 @router.post("/reviews", response_model=ReviewOut, status_code=201)
 def create_review(payload: ReviewIn, user: User = Depends(require_reviewer), db: Session = Depends(get_db)):
     if payload.target_type == "measurement":
-        target = db.get(Measurement, payload.target_id)
-        if target is None or target.org_id != user.org_id:
+        target = db.scalar(select(Measurement).where(
+            Measurement.id == payload.target_id,
+            Measurement.org_id == user.org_id,
+        ).with_for_update())
+        if target is None:
             api_error(404, "NOT_FOUND", "Measurement not found")
-    else:
-        target = db.scalar(select(Evidence).where(Evidence.id == payload.target_id).with_for_update())
-        if target is None or target.org_id != user.org_id:
-            api_error(404, "NOT_FOUND", "Evidence not found")
+        review = _apply_measurement_review(
+            db, user, target,
+            decision=payload.decision, note=payload.note, reason=payload.reason,
+        )
+        db.flush()
+        db.commit()
+        return review
 
-    # المراجع لا يراجع ما قدّمه بنفسه
+    target = db.scalar(select(Evidence).where(Evidence.id == payload.target_id).with_for_update())
+    if target is None or target.org_id != user.org_id:
+        api_error(404, "NOT_FOUND", "Evidence not found")
     if target.submitted_by == user.id:
         api_error(403, "SELF_REVIEW_FORBIDDEN", "You cannot review your own submission")
-
-    if payload.target_type == "measurement":
-        if target.quality_status != "pending":
-            api_error(409, "ALREADY_REVIEWED", "Measurement already reviewed")
-    else:
-        if target.status != "submitted":
-            api_error(409, "ALREADY_REVIEWED", "Evidence already reviewed")
-
-    # قاعدة مترولوجية: قياس من أداة بلا معايرة سارية لا يُعتمد validated
-    if payload.target_type == "measurement" and payload.decision == "accepted" \
-            and target.instrument_id is not None \
-            and not instrument_has_valid_calibration(db, target.instrument_id):
-        api_error(409, "CALIBRATION_REQUIRED",
-                  "Cannot validate measurement: instrument has no currently valid (passed) calibration")
+    if target.status != "submitted":
+        api_error(409, "ALREADY_REVIEWED", "Evidence already reviewed")
 
     review = Review(org_id=user.org_id, reviewer_id=user.id, **payload.model_dump())
     db.add(review)
-
-    if payload.target_type == "measurement":
-        if payload.decision == "accepted":
-            target.quality_status = "validated"
-            target.verification_status = "verified"
-        elif payload.decision == "rejected":
-            target.quality_status = "rejected"
-            target.verification_status = "rejected"
-        # request_clarification: يبقى pending ويُعاد تقديمه للمراجعة
+    target.resolution = payload.decision
+    if payload.decision == "accepted":
+        target.status = "verified"
+    elif payload.decision == "rejected":
+        target.status = "rejected"
     else:
-        target.resolution = payload.decision
-        if payload.decision == "accepted":
-            target.status = "verified"
-        elif payload.decision == "rejected":
-            target.status = "rejected"
-        else:  # request_clarification — يبقى submitted ويُعاد فتحه للمراجعة بعد التوضيح
-            target.status = "submitted"
-            target.clarification_note = payload.note
+        target.status = "submitted"
+        target.clarification_note = payload.note
 
     db.flush()
-    audit(db, user, "review", payload.target_type, entity_id=target.id,
+    audit(db, user, "review", "evidence", entity_id=target.id,
           project_id=target.project_id,
           meta={"decision": payload.decision, "reason": payload.reason})
     db.commit()
     return review
+
+
+@router.post("/reviews/measurement-batches", status_code=201)
+def review_measurement_batch(payload: MeasurementBatchReviewIn,
+                             user: User = Depends(require_reviewer),
+                             db: Session = Depends(get_db)):
+    get_project_or_404(db, user, payload.project_id)
+    measurements = list(db.scalars(
+        select(Measurement).where(
+            Measurement.org_id == user.org_id,
+            Measurement.project_id == payload.project_id,
+            Measurement.source_type == "imported",
+            Measurement.import_batch_ref == payload.batch_reference,
+            Measurement.quality_status == "pending",
+        ).order_by(Measurement.id).with_for_update()
+    ))
+    if not measurements:
+        api_error(404, "BATCH_NOT_FOUND", "No pending imported measurements found for this batch")
+    if any(row.submitted_by == user.id for row in measurements):
+        api_error(403, "SELF_REVIEW_FORBIDDEN", "You cannot review a batch containing your own submissions")
+
+    # Validate the entire batch before mutating any row so acceptance is atomic.
+    if payload.decision == "accepted":
+        invalid_instruments = sorted({
+            row.instrument_id for row in measurements
+            if row.instrument_id is not None
+            and not instrument_has_valid_calibration(db, row.instrument_id)
+        })
+        if invalid_instruments:
+            api_error(409, "CALIBRATION_REQUIRED",
+                      "Batch contains measurements from instruments without current passed calibration")
+
+    reviews = [
+        _apply_measurement_review(
+            db, user, row,
+            decision=payload.decision, note=payload.note, reason=payload.reason,
+        )
+        for row in measurements
+    ]
+    db.flush()
+    audit(
+        db, user, "measurement_batch_review", "project",
+        entity_id=payload.project_id, project_id=payload.project_id,
+        meta={
+            "batch_reference": payload.batch_reference,
+            "decision": payload.decision,
+            "measurement_count": len(measurements),
+            "measurement_ids": [row.id for row in measurements],
+        },
+    )
+    db.commit()
+    return {
+        "project_id": payload.project_id,
+        "batch_reference": payload.batch_reference,
+        "decision": payload.decision,
+        "reviewed_count": len(reviews),
+        "measurement_ids": [row.id for row in measurements],
+    }
 
 
 @router.get("/projects/{project_id}/reviews", response_model=list[ReviewOut])
