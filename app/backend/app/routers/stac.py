@@ -9,7 +9,7 @@ from math import isfinite
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select, tuple_
+from sqlalchemy import func, or_, select, tuple_
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -49,8 +49,8 @@ def _parse_bbox(raw: str | None) -> tuple[float, float, float, float] | None:
     if len(values) != 4 or not all(isfinite(value) for value in values):
         api_error(422, "INVALID_BBOX", "bbox must contain four finite coordinates")
     min_lon, min_lat, max_lon, max_lat = values
-    if not (-180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90):
-        api_error(422, "INVALID_BBOX", "bbox is outside WGS84 bounds or has invalid ordering")
+    if not (-180 <= min_lon <= 180 and -180 <= max_lon <= 180 and -90 <= min_lat <= max_lat <= 90):
+        api_error(422, "INVALID_BBOX", "bbox is outside WGS84 bounds or has invalid latitude ordering")
     return min_lon, min_lat, max_lon, max_lat
 
 
@@ -112,11 +112,15 @@ def _scene_query(org_id: int, bbox, time_filter):
     )
     if bbox is not None:
         min_lon, min_lat, max_lon, max_lat = bbox
+        longitude_clause = (
+            AgriParcel.lon.between(min_lon, max_lon)
+            if min_lon <= max_lon
+            else or_(AgriParcel.lon >= min_lon, AgriParcel.lon <= max_lon)
+        )
         stmt = stmt.where(
             AgriParcel.lon.isnot(None),
             AgriParcel.lat.isnot(None),
-            AgriParcel.lon >= min_lon,
-            AgriParcel.lon <= max_lon,
+            longitude_clause,
             AgriParcel.lat >= min_lat,
             AgriParcel.lat <= max_lat,
         )
