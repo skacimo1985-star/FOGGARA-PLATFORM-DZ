@@ -166,7 +166,8 @@ app.include_router(agriculture.router)
 app.include_router(agriculture_operations.operations_router)
 app.include_router(ai_brief.router)
 app.include_router(stac.router)
-app.include_router(ogc_features.router)\napp.include_router(remote_sensing_catalog.router)
+app.include_router(ogc_features.router)
+app.include_router(remote_sensing_catalog.router)
 
 
 # تقديم الواجهة المبنية (إن وُجدت) مع دعم SPA — مسارات /api تبقى للـAPI فقط
