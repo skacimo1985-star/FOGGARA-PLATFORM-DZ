@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit } from "lucide-react";
+import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit, Satellite, Languages } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
 import { NexusKasria } from "@/components/NexusKasria";
@@ -46,8 +46,17 @@ export default function Landing() {
         <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
         <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
         <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
-        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/register"}>{user?t("publicExperience.enter"):expoCopy.operate}<ArrowUpRight size={18}/></Link>
-          {!user&&<Link className="fg-button fg-secondary" to="/login">{expoCopy.enter}</Link>}
+        <div className="fg-hero-proof" aria-label="FOGGARA operational proof">
+          <span><MapPinned size={15}/><b>PostGIS · MapLibre</b></span>
+          <span><Satellite size={15}/><b>Sentinel-2 L2A · STAC</b></span>
+          <span><ShieldCheck size={15}/><b>OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED</b></span>
+          <span><Languages size={15}/><b>AR · FR · EN</b></span>
+        </div>
+        <div className="fg-hero-actions">
+          {user?<Link className="fg-button" to="/app">{t("publicExperience.enter")}<ArrowUpRight size={18}/></Link>:<>
+            <Link className="fg-button" to="/login">{expoCopy.enter}<ArrowUpRight size={18}/></Link>
+            <Link className="fg-button fg-secondary" to="/register">{expoCopy.operate}</Link>
+          </>}
           <Link className="fg-link" to="/demo">{t("demo.try")}<ArrowUpRight size={16}/></Link></div>
         {!user&&<p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p>}
         <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
