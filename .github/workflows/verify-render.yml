@@ -21,71 +21,38 @@ jobs:
           python-version: '3.12'
       - run: pip install playwright==1.55.0
       - run: python -m playwright install --with-deps chromium
+      - name: Resolve current Alembic head
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          from pathlib import Path
+          import re
+
+          revisions = set()
+          referenced = set()
+          for migration in Path("app/backend/alembic/versions").glob("*.py"):
+              text = migration.read_text(encoding="utf-8")
+              rev = re.search(r"^revision\\s*=\\s*['\"]([^'\"]+)['\"]", text, re.M)
+              down = re.search(r"^down_revision\\s*=\\s*(.*)$", text, re.M)
+              if not rev:
+                  continue
+              revisions.add(rev.group(1))
+              if down:
+                  referenced.update(re.findall(r"['\"]([^'\"]+)['\"]", down.group(1)))
+          heads = sorted(revisions - referenced)
+          assert len(heads) == 1, {"heads": heads}
+          print(f"EXPECTED_ALEMBIC_HEAD={heads[0]}")
+          PY
       - name: Verify hosted database, pages, assets and denied login
         run: |
           python - <<'PY'
-          import json, re, time, urllib.request, urllib.error
+          import json, os, re, time, urllib.request, urllib.error
           base = "https://foggara-dz.onrender.com"
           for attempt in range(90):
               try:
                   with urllib.request.urlopen(base + "/api/health", timeout=10) as response:
                       health = json.load(response)
                   assert health["db"] == "up"
-                  from pathlib import Path
-                  import re as _re
-                  revisions = {}
-                  referenced = set()
-                  for migration in Path("app/backend/alembic/versions").glob("*.py"):
-                      text = migration.read_text(encoding="utf-8")
-                      rev = _re.search(r'^revision\\s*=\\s*["\\\']([^"\\\']+)["\\\']', text, _re.M)
-                      down = _re.search(r'^down_revision\\s*=\\s*(.+)
-                  print("Hosted health:", health)
-                  break
-              except Exception as exc:
-                  if attempt == 89:
-                      raise
-                  print("Awaiting healthy deployment:", type(exc).__name__)
-                  time.sleep(5)
-          for path in ("/", "/login", "/register", "/app", "/app/projects"):
-              with urllib.request.urlopen(base + path, timeout=20) as response:
-                  html = response.read().decode()
-                  assert response.status == 200
-                  assert '<div id="root">' in html
-                  assert response.headers["X-Content-Type-Options"] == "nosniff"
-                  assert "max-age" in response.headers["Strict-Transport-Security"]
-                  assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
-                  print("Page served:", path)
-          asset = re.search(r'<script[^>]+src="([^"]+)"', html).group(1)
-          with urllib.request.urlopen(base + asset, timeout=20) as response:
-              assert response.status == 200 and len(response.read()) > 100
-          protected = urllib.request.Request(base + "/api/projects")
-          try:
-              urllib.request.urlopen(protected, timeout=20)
-              raise AssertionError("Unauthenticated project access was accepted")
-          except urllib.error.HTTPError as exc:
-              assert exc.code == 401, exc.code
-          payload = json.dumps({"email": "deployment-probe@example.invalid", "password": "invalid-probe-password"}).encode()
-          request = urllib.request.Request(base + "/api/auth/login", data=payload, headers={"Content-Type": "application/json"})
-          try:
-              urllib.request.urlopen(request, timeout=20)
-              raise AssertionError("Invalid login was accepted")
-          except urllib.error.HTTPError as exc:
-              assert exc.code == 401, exc.code
-              assert "no-store" in exc.headers["Cache-Control"]
-          print("Protected API and invalid login correctly rejected; no live account or business record created.")
-          PY
-      - name: Verify public interactive release in Chromium
-        run: python app/backend/tests/hosted_public_smoke.py
-, text, _re.M)
-                      if not rev:
-                          continue
-                      revision = rev.group(1)
-                      revisions[revision] = migration.name
-                      if down:
-                          referenced.update(_re.findall(r'["\\\']([^"\\\']+)["\\\']', down.group(1)))
-                  heads = sorted(set(revisions) - referenced)
-                  assert len(heads) == 1, {"heads": heads}
-                  assert health["alembic"] == heads[0], {"health": health, "expected_head": heads[0]}
+                  assert health["alembic"] == os.environ["EXPECTED_ALEMBIC_HEAD"], {"health": health, "expected_head": os.environ["EXPECTED_ALEMBIC_HEAD"]}
                   print("Hosted health:", health)
                   break
               except Exception as exc:
