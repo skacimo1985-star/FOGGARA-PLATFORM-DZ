@@ -17,17 +17,17 @@ export default function Landing() {
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
   const narrative=lang==="fr"?{
     real:"FOGGARA RÉELLE",digital:"FOGGARA NUMÉRIQUE",intelligence:"INTELLIGENCE WEFEH",
-    national:"58 wilayas",evidence:"5 états de preuve",cycle:"11 étapes décisionnelles",
+    national:`${WILAYAS.length} wilayas`,evidence:"5 états de preuve",cycle:"11 étapes décisionnelles",
     spine:"Du terrain à la décision, sans casser la traçabilité.",
     spineBody:"FOGGARA relie les sites, mesures, projets, preuves, règles, décisions et suivi dans un même espace opérationnel."
   }:lang==="en"?{
     real:"REAL FOGGARA",digital:"DIGITAL FOGGARA",intelligence:"WEFEH INTELLIGENCE",
-    national:"58 wilayas",evidence:"5 evidence states",cycle:"11 decision stages",
+    national:`${WILAYAS.length} wilayas`,evidence:"5 evidence states",cycle:"11 decision stages",
     spine:"From field reality to decision, without losing provenance.",
     spineBody:"FOGGARA links sites, measurements, projects, evidence, rules, decisions and monitoring in one operational environment."
   }:{
     real:"الفقارة الحقيقية",digital:"الفقارة الرقمية",intelligence:"ذكاء WEFEH",
-    national:"58 ولاية",evidence:"5 حالات للأدلة",cycle:"11 مرحلة للقرار",
+    national:`${WILAYAS.length} ولاية`,evidence:"5 حالات للأدلة",cycle:"11 مرحلة للقرار",
     spine:"من الواقع الميداني إلى القرار دون فقدان سلسلة الإثبات.",
     spineBody:"تربط FOGGARA المواقع والقياسات والمشاريع والأدلة والقواعد والقرارات والمتابعة في بيئة تشغيلية واحدة."
   };

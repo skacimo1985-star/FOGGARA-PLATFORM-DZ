@@ -14,6 +14,7 @@ const Landing = lazy(() => import("@/pages/Landing"));
 const AgricultureServices = lazy(() => import("@/pages/AgricultureServices"));
 const Demo = lazy(() => import("@/pages/Demo"));
 const Login = lazy(() => import("@/pages/Login"));
+const Expo = lazy(() => import("@/pages/Expo"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/app/nexus" element={<Protected><NexusWorkspace /></Protected>} />
             <Route path="/presentation" element={<Presentation />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/expo" element={<Expo />} />
             <Route path="/register" element={<Onboarding />} />
             <Route path="/join" element={<Onboarding />} />
             <Route path="/app" element={<Protected><CommandCenter /></Protected>} />
