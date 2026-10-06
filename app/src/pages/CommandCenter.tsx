@@ -165,6 +165,37 @@ export default function CommandCenter() {
       ? ["Resource", "Data", "Structure", "Analysis", "Rules", "Intelligence", "Decision", "Action", "Monitoring", "Evidence", "Learning"]
       : ["المورد", "البيانات", "الهيكلة", "التحليل", "القواعد", "الذكاء", "القرار", "الإجراء", "المتابعة", "الدليل", "التعلّم"];
 
+  const readinessLabels: Record<string, string> = lang === "fr" ? {
+    healthy: "Sain", degraded: "Dégradé", up: "Connectée", down: "Indisponible",
+    configured: "Configuré", deterministic: "Déterministe", available: "Disponible", disabled: "Désactivé",
+    "web-runtime-enabled": "Runtime web actif", "web-runtime-disabled": "Runtime web désactivé",
+    local: "Local souverain", external: "Externe", optional: "Optionnel",
+  } : lang === "en" ? {
+    healthy: "Healthy", degraded: "Degraded", up: "Up", down: "Down",
+    configured: "Configured", deterministic: "Deterministic", available: "Available", disabled: "Disabled",
+    "web-runtime-enabled": "Web runtime enabled", "web-runtime-disabled": "Web runtime disabled",
+    local: "Sovereign local", external: "External", optional: "Optional",
+  } : {
+    healthy: "سليم", degraded: "متدهور", up: "متصل", down: "غير متاح",
+    configured: "مهيأ", deterministic: "حتمي", available: "متاح", disabled: "معطل",
+    "web-runtime-enabled": "تشغيل الويب مفعل", "web-runtime-disabled": "تشغيل الويب معطل",
+    local: "محلي سيادي", external: "خارجي", optional: "اختياري",
+  };
+  const gateLabels: Record<string, string> = lang === "fr" ? {
+    backup_restore: "Sauvegarde / restauration", hosted_tls_proxy: "TLS / proxy hébergé",
+    load_capacity: "Charge / capacité", incident_response: "Réponse aux incidents",
+    legal_privacy_approval: "Validation juridique / vie privée",
+  } : lang === "en" ? {
+    backup_restore: "Backup / restore", hosted_tls_proxy: "Hosted TLS / proxy",
+    load_capacity: "Load / capacity", incident_response: "Incident response",
+    legal_privacy_approval: "Legal / privacy approval",
+  } : {
+    backup_restore: "النسخ والاستعادة", hosted_tls_proxy: "TLS والبروكسي المستضاف",
+    load_capacity: "الحمولة والسعة", incident_response: "الاستجابة للحوادث",
+    legal_privacy_approval: "الاعتماد القانوني والخصوصية",
+  };
+  const readinessLabel = (value: string) => readinessLabels[value] ?? value;
+
   const workspaceBody = lang === "fr" ? {
     water: "Ressources · pompage · allocation", agriculture: "Sol · culture · irrigation",
     gis: "Sites · projets · couches nationales", telemetry: "Appareils · capteurs · flux",
@@ -244,33 +275,33 @@ export default function CommandCenter() {
         {readiness ? <>
           <div className="fg-readiness-grid">
             <article className={readiness.runtime_status === "healthy" ? "ok" : "warn"}>
-              <span>{copy.runtime}</span><strong>{readiness.runtime_status}</strong>
+              <span>{copy.runtime}</span><strong>{readinessLabel(readiness.runtime_status)}</strong>
               <small>{readiness.deployment_mode.toUpperCase()} · v{readiness.core.environment.app_version}</small>
             </article>
             <article className={readiness.core.database.status === "up" ? "ok" : "warn"}>
-              <span>{copy.database}</span><strong>{readiness.core.database.status}</strong>
+              <span>{copy.database}</span><strong>{readinessLabel(readiness.core.database.status)}</strong>
               <small dir="ltr">{readiness.core.database.engine} · {readiness.core.database.latency_ms} ms · {readiness.core.database.schema_revision}</small>
             </article>
             <article className={readiness.integrations.ai.status === "configured" ? "ok" : ""}>
-              <span>{copy.aiMode}</span><strong>{readiness.integrations.ai.mode}</strong>
+              <span>{copy.aiMode}</span><strong>{readinessLabel(readiness.integrations.ai.mode)}</strong>
               <small>{readiness.integrations.ai.data_boundary}</small>
             </article>
             <article className={readiness.integrations.weather.status === "configured" ? "ok" : ""}>
-              <span>{copy.weather}</span><strong>{readiness.integrations.weather.status}</strong>
-              <small>{readiness.integrations.weather.provider ?? "optional"}</small>
+              <span>{copy.weather}</span><strong>{readinessLabel(readiness.integrations.weather.status)}</strong>
+              <small>{readiness.integrations.weather.provider ?? readinessLabel("optional")}</small>
             </article>
             <article className="ok">
-              <span>{copy.satelliteLabel}</span><strong>{readiness.integrations.satellite.status}</strong>
+              <span>{copy.satelliteLabel}</span><strong>{readinessLabel(readiness.integrations.satellite.status)}</strong>
               <small>{readiness.integrations.satellite.provenance}</small>
             </article>
             <article className={readiness.integrations.automation.web_runtime_enabled ? "ok" : ""}>
-              <span>{copy.automationLabel}</span><strong>{readiness.integrations.automation.status}</strong>
-              <small>{readiness.integrations.automation.external_worker_observed ? "worker observed" : "external worker not observed"}</small>
+              <span>{copy.automationLabel}</span><strong>{readinessLabel(readiness.integrations.automation.status)}</strong>
+              <small>{readiness.integrations.automation.external_worker_observed ? (lang === "fr" ? "worker observé" : lang === "en" ? "worker observed" : "worker مرصود") : (lang === "fr" ? "worker externe non observé" : lang === "en" ? "external worker not observed" : "لم يُرصد worker خارجي")}</small>
             </article>
           </div>
           <div className="fg-readiness-assurance">
             <div><strong>{copy.assurance}</strong><span>{copy.notCertified}</span></div>
-            <ul>{readiness.assurance_gates.map(gate => <li key={gate.key}><span>{gate.key.replaceAll("_", " ")}</span><b>{gate.status}</b></li>)}</ul>
+            <ul>{readiness.assurance_gates.map(gate => <li key={gate.key}><span>{gateLabels[gate.key] ?? gate.key}</span><b>{gate.status}</b></li>)}</ul>
           </div>
         </> : <p className="fg-command-empty">{copy.unavailable}</p>}
       </section>
