@@ -71,6 +71,7 @@ export interface Measurement {
   source: string;
   method: string;
   source_type: "manual" | "instrument" | "imported";
+  import_batch_ref: string | null;
   instrument_id: number | null;
   asset_id: number | null;
   quality_status: "pending" | "validated" | "rejected";
