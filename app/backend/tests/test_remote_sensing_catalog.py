@@ -1,38 +1,6 @@
 from app.routers import remote_sensing_catalog
+from app.services.stac_search import StacSearchError
 from tests.conftest import login
-
-
-class FakeResponse:
-    def __init__(self, payload, status_code=200):
-        self._payload = payload
-        self.status_code = status_code
-
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            import httpx
-            request = httpx.Request("POST", remote_sensing_catalog.EARTH_SEARCH_SEARCH_URL)
-            response = httpx.Response(self.status_code, request=request)
-            raise httpx.HTTPStatusError("provider error", request=request, response=response)
-
-    def json(self):
-        return self._payload
-
-
-class FakeClient:
-    def __init__(self, payload, status_code=200):
-        self.payload = payload
-        self.status_code = status_code
-        self.calls = []
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_args):
-        return False
-
-    def post(self, url, **kwargs):
-        self.calls.append((url, kwargs))
-        return FakeResponse(self.payload, self.status_code)
 
 
 def scene_feature():
@@ -73,9 +41,13 @@ def test_catalog_validates_bounds_and_dates(client, world):
 
 
 def test_catalog_returns_sanitized_live_scene_metadata(client, world, monkeypatch):
-    fake = FakeClient({"type": "FeatureCollection", "features": [scene_feature()]})
-    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    captured = {}
 
+    def fake_search(request):
+        captured["request"] = request
+        return [scene_feature()]
+
+    monkeypatch.setattr(remote_sensing_catalog, "search_sentinel_items", fake_search)
     headers = login(client, "o1m@t.dz")
     response = client.get(
         "/api/remote-sensing/catalog/scenes"
@@ -97,20 +69,19 @@ def test_catalog_returns_sanitized_live_scene_metadata(client, world, monkeypatc
     assert scene["asset_keys"] == ["nir", "red", "visual"]
     assert scene["geometry"]["type"] == "Polygon"
 
-    assert len(fake.calls) == 1
-    url, kwargs = fake.calls[0]
-    assert url == remote_sensing_catalog.EARTH_SEARCH_SEARCH_URL
-    assert kwargs["json"]["collections"] == ["sentinel-2-l2a"]
-    assert kwargs["json"]["bbox"] == [2.0, 33.0, 2.2, 33.2]
-    assert kwargs["json"]["query"]["eo:cloud_cover"]["lte"] == 20
-    assert kwargs["json"]["limit"] == 5
+    request = captured["request"]
+    assert request.bbox == [2.0, 33.0, 2.2, 33.2]
+    assert request.cloud_cover_lte == 20
+    assert request.limit == 5
+    assert request.datetime_range == "2026-10-01T00:00:00Z/2026-10-06T23:59:59Z"
 
 
 def test_catalog_provider_failure_is_bounded_502(client, world, monkeypatch):
-    fake = FakeClient({"detail": "down"}, status_code=503)
-    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
-    headers = login(client, "o1m@t.dz")
+    def fail(_request):
+        raise StacSearchError("down")
 
+    monkeypatch.setattr(remote_sensing_catalog, "search_sentinel_items", fail)
+    headers = login(client, "o1m@t.dz")
     response = client.get(
         "/api/remote-sensing/catalog/scenes?bbox=2,33,2.2,33.2&start=2026-10-01&end=2026-10-06",
         headers=headers,
@@ -126,10 +97,8 @@ def test_catalog_drops_invalid_remote_geometry(client, world, monkeypatch):
         "type": "Polygon",
         "coordinates": [[[999, 999], [2.2, 33.0], [2.2, 33.2], [999, 999]]],
     }
-    fake = FakeClient({"type": "FeatureCollection", "features": [invalid]})
-    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    monkeypatch.setattr(remote_sensing_catalog, "search_sentinel_items", lambda _request: [invalid])
     headers = login(client, "o1m@t.dz")
-
     response = client.get(
         "/api/remote-sensing/catalog/scenes?bbox=2,33,2.2,33.2&start=2026-10-01&end=2026-10-06",
         headers=headers,
