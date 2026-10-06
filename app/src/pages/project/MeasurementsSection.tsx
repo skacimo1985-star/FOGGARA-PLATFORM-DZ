@@ -52,11 +52,13 @@ const PARAM_UNITS: Record<string, string[]> = {
 
 const SOURCE_TYPES = ["manual", "instrument", "imported"] as const;
 const REQUIRED_HEADERS = ["parameter", "value", "unit", "measured_at", "source", "method"] as const;
-const OPTIONAL_HEADERS = ["resource_id", "instrument_id", "asset_id"] as const;
+const OPTIONAL_HEADERS = ["parcel_id", "resource_id", "instrument_id", "asset_id"] as const;
 const ALL_HEADERS = [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS];
 
 type CsvRecord = Record<string, string>;
+type ParcelRef = { id: number; name: string; crop: string; archived: boolean; site_id?: number | null };
 type ImportRow = {
+  parcel_id: number | null;
   parameter: string;
   value: number;
   unit: string;
@@ -130,6 +132,7 @@ function normalizeRows(records: CsvRecord[]): ImportRow[] {
     if (new Date(measuredAt).getTime() > Date.now()) throw new Error(`CSV_ROW_${index + 2}_FUTURE`);
     if (!record.source?.trim() || !record.method?.trim()) throw new Error(`CSV_ROW_${index + 2}_SOURCE`);
     return {
+      parcel_id: optionalId(record.parcel_id),
       parameter,
       value,
       unit,
@@ -146,9 +149,9 @@ function normalizeRows(records: CsvRecord[]): ImportRow[] {
 function downloadTemplate() {
   const lines = [
     ALL_HEADERS.join(","),
-    'ph,7.2,pH,2026-10-06T10:00:00Z,"LAB-001","ISO/lab method",,,',
-    'soil_nitrogen,42,mg/kg,2026-10-06T10:05:00Z,"LAB-001","soil analysis",,,',
-    'ec,1.4,dS/m,2026-10-06T10:10:00Z,"WATER-LAB-01","conductivity meter",,,',
+    ["ph","7.2","pH","2026-10-06T10:00:00Z","LAB-001","soil pH method","1","","",""].join(","),
+    ["soil_nitrogen","42","mg/kg","2026-10-06T10:05:00Z","LAB-001","soil analysis","1","","",""].join(","),
+    ["ec","1.4","dS/m","2026-10-06T10:10:00Z","WATER-LAB-01","conductivity meter","","","",""].join(","),
   ];
   const url = URL.createObjectURL(new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"}));
   const anchor = document.createElement("a");
@@ -167,25 +170,26 @@ export function MeasurementsSection({ projectId, measurements, reload }: {
     importTitle:"Importer des mesures CSV", importNote:"Jusqu’à 500 lignes. Les données restent PENDING / UNVERIFIED jusqu’à revue. Aucun import ne devient VERIFIED automatiquement.",
     choose:"Choisir CSV", template:"Télécharger le modèle", reference:"Référence du lot", preview:"Aperçu", rows:"lignes", submit:"Importer dans PostgreSQL",
     ready:"fichier prêt", imported:"mesures créées", skipped:"doublons ignorés",
-    headers:"Colonnes obligatoires: parameter,value,unit,measured_at,source,method. Horodatage ISO avec Z ou décalage requis.",
+    headers:"Colonnes obligatoires: parameter,value,unit,measured_at,source,method. parcel_id est optionnel et relie les analyses de sol à une parcelle réelle. Horodatage ISO avec Z ou décalage requis.", parcel:"Parcelle",
     parseError:"CSV invalide. Vérifiez les en-têtes, unités, valeurs, fuseaux horaires et la limite de 500 lignes.",
   } : language === "en" ? {
     importTitle:"Import measurement CSV", importNote:"Up to 500 rows. Imported data remains PENDING / UNVERIFIED until review. Import never creates VERIFIED evidence.",
     choose:"Choose CSV", template:"Download template", reference:"Batch reference", preview:"Preview", rows:"rows", submit:"Import into PostgreSQL",
     ready:"file ready", imported:"measurements created", skipped:"duplicates skipped",
-    headers:"Required columns: parameter,value,unit,measured_at,source,method. ISO timestamp with Z or offset is required.",
+    headers:"Required columns: parameter,value,unit,measured_at,source,method. parcel_id is optional and links soil lab data to a real parcel. ISO timestamp with Z or offset is required.", parcel:"Parcel",
     parseError:"Invalid CSV. Check headers, units, values, timezone timestamps and the 500-row limit.",
   } : {
     importTitle:"استيراد القياسات من CSV", importNote:"حتى 500 سجل. تبقى البيانات PENDING / UNVERIFIED إلى أن تتم مراجعتها، ولا يحول الاستيراد أي قياس إلى VERIFIED تلقائيًا.",
     choose:"اختيار ملف CSV", template:"تنزيل القالب", reference:"مرجع الدفعة", preview:"معاينة", rows:"سجل", submit:"استيراد إلى PostgreSQL",
     ready:"الملف جاهز", imported:"قياسات أُنشئت", skipped:"تكرارات تم تجاهلها",
-    headers:"الأعمدة المطلوبة: parameter,value,unit,measured_at,source,method. يجب أن يتضمن الوقت Z أو فرق التوقيت.",
+    headers:"الأعمدة المطلوبة: parameter,value,unit,measured_at,source,method. الحقل parcel_id اختياري ويربط تحليل التربة بقطعة حقيقية. يجب أن يتضمن الوقت Z أو فرق التوقيت.", parcel:"القطعة الزراعية",
     parseError:"ملف CSV غير صالح. تحقق من الأعمدة والوحدات والقيم والمنطقة الزمنية وحد 500 سجل.",
   };
 
   const [parameter, setParameter] = useState("flow_rate");
   const [sourceType, setSourceType] = useState<string>("manual");
   const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [parcels, setParcels] = useState<ParcelRef[]>([]);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [batchReference, setBatchReference] = useState("");
@@ -201,15 +205,22 @@ export function MeasurementsSection({ projectId, measurements, reload }: {
   }), []);
 
   useEffect(() => {
-    api.get<Instrument[]>("/instruments").then(setInstruments).catch(() => setInstruments([]));
+    Promise.all([
+      api.get<Instrument[]>("/instruments").catch(() => [] as Instrument[]),
+      api.get<ParcelRef[]>("/agriculture/parcels").catch(() => [] as ParcelRef[]),
+    ]).then(([instrumentRows, parcelRows]) => {
+      setInstruments(instrumentRows);
+      setParcels(parcelRows.filter(parcel => !parcel.archived));
+    });
   }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setError(null);
-    const fd = new FormData(e.currentTarget); const instId = fd.get("instrument_id");
+    const fd = new FormData(e.currentTarget); const instId = fd.get("instrument_id"); const parcelId = fd.get("parcel_id");
     try {
       await api.post("/measurements", {
-        project_id: projectId, parameter, value: Number(fd.get("value")), unit: String(fd.get("unit")),
+        project_id: projectId, parcel_id: parcelId ? Number(parcelId) : null,
+        parameter, value: Number(fd.get("value")), unit: String(fd.get("unit")),
         measured_at: new Date(String(fd.get("measured_at"))).toISOString(),
         source: String(fd.get("source") || ""), method: String(fd.get("method") || ""),
         source_type: sourceType, instrument_id: instId ? Number(instId) : null,
@@ -256,6 +267,7 @@ export function MeasurementsSection({ projectId, measurements, reload }: {
       <div className="space-y-1"><Label htmlFor="m-source">{t("measurement.source")}</Label><Input id="m-source" name="source" required maxLength={255}/></div>
       <div className="space-y-1"><Label htmlFor="m-method">{t("measurement.method")}</Label><Input id="m-method" name="method" required maxLength={255}/></div>
       <div className="space-y-1"><Label htmlFor="m-stype">{t("measurement.sourceType")}</Label><select id="m-stype" className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={sourceType} onChange={e=>setSourceType(e.target.value)}>{SOURCE_TYPES.map(s=><option key={s} value={s}>{t(`measurement.sourceTypes.${s}`)}</option>)}</select></div>
+      <div className="space-y-1"><Label htmlFor="m-parcel">{copy.parcel}</Label><select id="m-parcel" name="parcel_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm"><option value="">{t("common.none")}</option>{parcels.map(parcel=><option key={parcel.id} value={parcel.id}>#{parcel.id} — {parcel.name}</option>)}</select></div>
       <div className="space-y-1"><Label htmlFor="m-inst">{t("measurement.instrument")}</Label><select id="m-inst" name="instrument_id" className="w-full rounded-md border bg-background px-3 py-2 text-sm"><option value="">{t("common.none")}</option>{instruments.map(i=><option key={i.id} value={i.id}>#{i.id} — {i.type} ({i.serial_number})</option>)}</select></div>
       <div className="sm:col-span-3"><ErrorText error={error}/></div>
       <div className="sm:col-span-3"><Button type="submit" disabled={busy}>{busy?t("common.loading"):t("measurement.submit")}</Button></div>
@@ -273,7 +285,7 @@ export function MeasurementsSection({ projectId, measurements, reload }: {
         <div className="flex items-end"><Button type="button" disabled={!importRows.length||!batchReference.trim()||busy} onClick={()=>void importBatch()}><Upload size={16}/>{copy.submit}</Button></div>
       </div>
       {fileName&&<p className="mt-2 text-xs"><strong>{fileName}</strong> · {importRows.length} {copy.rows} · {copy.ready}</p>}
-      {importRows.length>0&&<div className="mt-3 overflow-x-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>{copy.preview}</TableHead><TableHead>{t("measurement.parameter")}</TableHead><TableHead>{t("measurement.value")}</TableHead><TableHead>{t("measurement.measuredAt")}</TableHead><TableHead>{t("measurement.source")}</TableHead></TableRow></TableHeader><TableBody>{importRows.slice(0,8).map((row,index)=><TableRow key={index}><TableCell>#{index+1}</TableCell><TableCell>{row.parameter}</TableCell><TableCell dir="ltr">{row.value} {row.unit}</TableCell><TableCell dir="ltr">{row.measured_at}</TableCell><TableCell>{row.source}</TableCell></TableRow>)}</TableBody></Table></div>}
+      {importRows.length>0&&<div className="mt-3 overflow-x-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>{copy.preview}</TableHead><TableHead>{copy.parcel}</TableHead><TableHead>{t("measurement.parameter")}</TableHead><TableHead>{t("measurement.value")}</TableHead><TableHead>{t("measurement.measuredAt")}</TableHead><TableHead>{t("measurement.source")}</TableHead></TableRow></TableHeader><TableBody>{importRows.slice(0,8).map((row,index)=><TableRow key={index}><TableCell>#{index+1}</TableCell><TableCell>{row.parcel_id ? `#${row.parcel_id}` : "—"}</TableCell><TableCell>{row.parameter}</TableCell><TableCell dir="ltr">{row.value} {row.unit}</TableCell><TableCell dir="ltr">{row.measured_at}</TableCell><TableCell>{row.source}</TableCell></TableRow>)}</TableBody></Table></div>}
       {importResult&&<div className="mt-3 flex flex-wrap gap-2 text-sm" role="status"><Badge>{importResult.created_count} {copy.imported}</Badge><Badge variant="outline">{importResult.skipped_duplicates} {copy.skipped}</Badge><span className="text-muted-foreground">{importResult.batch_reference}</span></div>}
     </section>
 

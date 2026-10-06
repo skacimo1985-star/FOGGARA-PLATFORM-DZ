@@ -63,6 +63,7 @@ export interface Project {
 export interface Measurement {
   id: number;
   project_id: number;
+  parcel_id: number | null;
   resource_id: number | null;
   parameter: string;
   value: number;
