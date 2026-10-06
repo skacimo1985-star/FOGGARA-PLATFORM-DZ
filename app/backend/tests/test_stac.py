@@ -265,3 +265,7 @@ def test_stac_search_next_link_preserves_search_filters(client, world, db):
     assert "datetime=" in href
     assert "limit=1" in href
     assert "offset=1" in href
+
+
+# Staging-only collection for raster processing contract verification.
+from tests.test_remote_sensing_processing import *  # noqa: F401,F403,E402
