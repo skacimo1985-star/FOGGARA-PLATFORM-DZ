@@ -26,12 +26,44 @@ jobs:
           python - <<'PY'
           import json, re, time, urllib.request, urllib.error
           base = "https://foggara-dz.onrender.com"
+
+          # Resolve the repository's single Alembic head without importing
+          # project dependencies. This keeps hosted verification aligned with
+          # future migrations and fails closed on divergent heads.
+          import ast, pathlib
+          revisions = {}
+          parents = set()
+          for path in pathlib.Path("app/backend/alembic/versions").glob("*.py"):
+              tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+              revision = None
+              down_revision = None
+              for node in tree.body:
+                  if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                      targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                      for target in targets:
+                          if isinstance(target, ast.Name) and target.id in {"revision", "down_revision"}:
+                              value = ast.literal_eval(node.value)
+                              if target.id == "revision":
+                                  revision = value
+                              else:
+                                  down_revision = value
+              if revision:
+                  revisions[revision] = str(path)
+                  if isinstance(down_revision, str):
+                      parents.add(down_revision)
+                  elif isinstance(down_revision, (tuple, list)):
+                      parents.update(x for x in down_revision if isinstance(x, str))
+          heads = sorted(set(revisions) - parents)
+          assert len(heads) == 1, f"Expected one Alembic head, got {heads}"
+          expected_head = heads[0]
+          print("Expected repository Alembic head:", expected_head)
+
           for attempt in range(90):
               try:
                   with urllib.request.urlopen(base + "/api/health", timeout=10) as response:
                       health = json.load(response)
                   assert health["db"] == "up"
-                  assert health["alembic"] == "an20261004m1", health
+                  assert health["alembic"] == expected_head, health
                   print("Hosted health:", health)
                   break
               except Exception as exc:
