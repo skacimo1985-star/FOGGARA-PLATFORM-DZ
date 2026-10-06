@@ -629,3 +629,38 @@ def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):
     other_geo = client.get('/api/gis/parcels.geojson', headers=h2)
     assert other_geo.status_code == 200
     assert other_geo.json()['features'] == []
+
+
+def test_sentinel_parcel_supports_ndmi_and_lswi_as_distinct_history(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = 'S2A_MULTI_INDEX_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    monkeypatch.setattr(satellite, 'build_processing_plan',
+                        lambda item, index: {'scene_id': item['id'], 'index': index})
+    def raster(plan, bbox, geometry_wgs84=None):
+        means = {'ndmi': .41, 'lswi': .39}
+        return {
+            'statistics': {'mean': means[plan['index']]},
+            'pixels': {'valid': 90, 'total': 100, 'valid_fraction': .9},
+            'processing_plan_fingerprint': f"plan-{plan['index']}",
+        }
+    monkeypatch.setattr(satellite, 'compute_index_statistics', raster)
+    url = f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze'
+    ndmi = client.post(url, headers=h, json={'scene_id':scene_id,'index':'ndmi'})
+    lswi = client.post(url, headers=h, json={'scene_id':scene_id,'index':'lswi'})
+    assert ndmi.status_code == 201, ndmi.text
+    assert lswi.status_code == 201, lswi.text
+    assert ndmi.json()['observation']['metric'] == 'ndmi'
+    assert lswi.json()['observation']['metric'] == 'lswi'
+    assert float(ndmi.json()['observation']['value']) == pytest.approx(.41)
+    assert float(lswi.json()['observation']['value']) == pytest.approx(.39)
+    rows = client.get(f'/api/agriculture/observations?parcel_id={parcel_id}', headers=h).json()
+    by_metric = {row['metric']: row for row in rows}
+    assert {'ndmi','lswi'} <= set(by_metric)
+    assert ':ndmi:' in by_metric['ndmi']['source_ref']
+    assert ':lswi:' in by_metric['lswi']['source_ref']
