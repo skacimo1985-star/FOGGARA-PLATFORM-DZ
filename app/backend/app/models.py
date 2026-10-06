@@ -867,11 +867,19 @@ class AgriParcel(Base):
     crop: Mapped[str] = mapped_column(String(80))
     area_ha: Mapped[float] = mapped_column(Numeric(12, 4))
     location: Mapped[str] = mapped_column(String(160))
+    site_id: Mapped[int | None] = mapped_column(ForeignKey('sites.id'), index=True)
+    lat: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    lon: Mapped[float | None] = mapped_column(Numeric(9, 6))
     stage: Mapped[str] = mapped_column(String(30), default='initial')
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
-    __table_args__ = (CheckConstraint('area_ha > 0', name='ck_agri_area'),)
+    __table_args__ = (
+        CheckConstraint('area_ha > 0', name='ck_agri_area'),
+        CheckConstraint('(lat IS NULL AND lon IS NULL) OR (lat IS NOT NULL AND lon IS NOT NULL)', name='ck_agri_parcel_coordinate_pair'),
+        CheckConstraint('lat IS NULL OR (lat >= -90 AND lat <= 90)', name='ck_agri_parcel_lat'),
+        CheckConstraint('lon IS NULL OR (lon >= -180 AND lon <= 180)', name='ck_agri_parcel_lon'),
+    )
 
 
 class AgriObservation(Base):
