@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
@@ -423,8 +424,8 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
             'irrigation_water_screening': bool(water['coverage']),
             'irrigation_planning': True,
             'vegetation_monitoring': 'ndvi' in latest or 'lswi' in latest,
-            'satellite_live': False,
-            'weather_live': False,
+            'satellite_live': True,
+            'weather_live': config.WEATHER_PROVIDER_ENABLED,
         },
         'provenance': 'RECORDED_AND_COMPUTED',
         'soil_provenance': soil_provenance,

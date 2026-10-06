@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import pytest
 from sqlalchemy import select
+from app import config as app_config
 from app.models import AuditLog
 from app.services.agriculture_operations import irrigation_scenario, vegetation_index
 from tests.conftest import login
@@ -185,7 +186,7 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     assert body['irrigation_water_assessment']['decision_status'] == 'UNAVAILABLE'
     assert 'PROJECT_WATER_RESOURCE_REQUIRED' in body['irrigation_water_assessment']['limitations']
     assert 'VERIFIED_WATER_MEASUREMENTS_REQUIRED' in body['irrigation_water_assessment']['limitations']
-    assert body['available_services']['satellite_live'] is False
+    assert body['available_services']['satellite_live'] is True
     assert body['available_services']['weather_live'] is False
     assert body['soil_assessment']['evidence_status'] == 'COMPUTED'
     assert body['soil_assessment']['decision_status'] == 'PROPOSED'
@@ -198,6 +199,14 @@ def test_service_summary_is_org_isolated(client, world, farm):
     _, pid = farm
     h2 = login(client, 'o2m@t.dz')
     assert client.get(f'/api/agriculture/parcels/{pid}/service-summary', headers=h2).status_code == 404
+
+def test_service_summary_weather_live_follows_operator_config(client, world, farm, monkeypatch):
+    h, pid = farm
+    monkeypatch.setattr(app_config, 'WEATHER_PROVIDER_ENABLED', True)
+    body = client.get(f'/api/agriculture/parcels/{pid}/service-summary', headers=h).json()
+    assert body['available_services']['satellite_live'] is True
+    assert body['available_services']['weather_live'] is True
+
 
 
 def test_service_summary_can_be_saved_as_submitted_evidence(client, world, farm):

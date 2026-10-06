@@ -346,6 +346,8 @@ def main():
                     if path == f"/app/projects/{project_id}":
                         expect(page.locator(".fg-project-spine")).to_be_visible()
                         expect(page.locator(".fg-project-spine-flow article")).to_have_count(7)
+                        page.get_by_role("tab", name="الذكاء الزراعي").click()
+                        expect(page.get_by_test_id("live-weather-panel")).to_be_visible()
                     if path == "/app":
                         expect(page.locator(".fg-command-project-board")).to_be_visible()
                         expect(page.locator(".fg-command-project-list article")).to_have_count(1)

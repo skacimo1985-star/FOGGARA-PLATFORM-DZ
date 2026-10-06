@@ -142,6 +142,13 @@ docker run -p 8000:8000 foggara-dz
 | `ENV` | `dev` أو `prod`. عند `prod` يُرفض الإقلاع بـ `JWT_SECRET` الافتراضي أو الأقصر من 32 حرفًا |
 | `JWT_SECRET` | سر توقيع JWT. أنشئه: `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `TOKEN_TTL_HOURS` | مدة صلاحية التوكن بالساعات (افتراضي 12) |
+| `WEATHER_PROVIDER_ENABLED` | مزود الطقس الزراعي الحي؛ معطل افتراضيًا، ولا ينبغي تفعيله دون endpoint مرخّص تجاريًا أو ذاتي الاستضافة |
+| `WEATHER_BASE_URL` | أصل Open-Meteo-compatible ثابت يضبطه المشغل؛ لا يُقبل من طلب المستخدم، وHTTPS إلزامي في `prod` |
+| `WEATHER_API_KEY` | مفتاح اختياري للخدمة التجارية؛ يُحفظ في Secrets ولا يُودع في Git |
+| `WEATHER_PROVIDER_NAME` | اسم المزود الذي يظهر مع توقعات الطقس |
+| `WEATHER_PROVIDER_ATTRIBUTION` | نص الإسناد الظاهر للمستخدم عند عرض التوقع |
+| `WEATHER_PROVIDER_ATTRIBUTION_URL` | رابط الإسناد/الترخيص؛ HTTPS إلزامي في `prod` |
+| `WEATHER_TIMEOUT_SECONDS` | مهلة المزود بين 3 و30 ثانية (افتراضي 12) |
 | `DATABASE_URL` | رابط PostgreSQL بسائق psycopg: `postgresql+psycopg://user:pass@host:5432/foggara` |
 | `CORS_ORIGINS` | أصول مسموحة مفصولة بفواصل؛ **فارغ = نفس الأصل فقط** ولا رؤوس CORS تُرسل |
 | `SEED_DEMO` | تفعيل بيانات العرض الاصطناعية فقط عند الحاجة؛ الافتراضي `false` |
