@@ -281,3 +281,7 @@ from tests.test_remote_sensing_raster import *  # noqa: F401,F403,E402
 
 # Staging-only collection: execute real measurement CSV batch-import tests.
 from tests.test_measurement_import import *  # noqa: F401,F403,E402
+
+
+# Staging-only collection: atomic imported measurement batch review.
+from tests.test_measurement_batch_review import *  # noqa: F401,F403,E402
