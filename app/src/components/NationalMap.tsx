@@ -23,10 +23,12 @@ type Props = {
   sites: GisSite[];
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
+  selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
   onSelectWilaya?: (code: string) => void;
   onSelectSite?: (siteId: number) => void;
+  onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
   locale?: string;
   compact?: boolean;
@@ -128,10 +130,12 @@ export function NationalMap({
   sites,
   wilayas,
   satelliteScenes = [],
+  selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
   onSelectWilaya,
   onSelectSite,
+  onSelectScene,
   onViewportChange,
   locale = "ar",
   compact = false,
@@ -140,6 +144,7 @@ export function NationalMap({
   const mapRef = useRef<MapInstance | null>(null);
   const onSelectSiteRef = useRef(onSelectSite);
   const onSelectWilayaRef = useRef(onSelectWilaya);
+  const onSelectSceneRef = useRef(onSelectScene);
   const onViewportChangeRef = useRef(onViewportChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
@@ -147,6 +152,7 @@ export function NationalMap({
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
+  onSelectSceneRef.current = onSelectScene;
   onViewportChangeRef.current = onViewportChange;
 
   const plotted = useMemo(
@@ -193,9 +199,10 @@ export function NationalMap({
         datetime: scene.datetime,
         cloudCover: scene.cloud_cover_pct,
         provider: scene.provider,
+        selected: scene.id === selectedSceneId,
       },
     })),
-  }), [satelliteScenes]);
+  }), [satelliteScenes, selectedSceneId]);
   sceneFeaturesRef.current = sceneFeatureCollection;
 
   const labels = locale === "fr"
@@ -274,8 +281,8 @@ export function NationalMap({
             type: "fill",
             source: "satellite-scenes",
             paint: {
-              "fill-color": "#0ea5e9",
-              "fill-opacity": 0.09,
+              "fill-color": ["case", ["boolean", ["get", "selected"], false], "#f59e0b", "#0ea5e9"],
+              "fill-opacity": ["case", ["boolean", ["get", "selected"], false], 0.2, 0.09],
             },
           });
           map.addLayer({
@@ -283,9 +290,9 @@ export function NationalMap({
             type: "line",
             source: "satellite-scenes",
             paint: {
-              "line-color": "#0284c7",
-              "line-width": 2,
-              "line-opacity": 0.8,
+              "line-color": ["case", ["boolean", ["get", "selected"], false], "#d97706", "#0284c7"],
+              "line-width": ["case", ["boolean", ["get", "selected"], false], 3, 2],
+              "line-opacity": 0.86,
             },
           });
 
@@ -315,6 +322,17 @@ export function NationalMap({
               "circle-stroke-width": ["case", ["boolean", ["get", "selected"], false], 2.5, 1.5],
               "circle-opacity": 0.96,
             },
+          });
+
+          map.on("mouseenter", "satellite-scenes-fill", () => {
+            if (map) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "satellite-scenes-fill", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "satellite-scenes-fill", (event) => {
+            const sceneId = String(event.features?.[0]?.properties?.sceneId ?? "");
+            if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
           });
 
           map.on("mouseenter", "foggara-sites", () => {
