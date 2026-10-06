@@ -1,4 +1,5 @@
 from app.routers import expo
+from tests.conftest import login
 
 
 class FakeResponse:
@@ -142,3 +143,54 @@ def test_expo_satellite_rejects_outside_algeria_before_provider_io(client, monke
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "EXPO_BBOX_OUTSIDE_ALGERIA"
+
+
+
+def test_expo_insights_require_reviewer(client, world):
+    member = login(client, world["o1_member"].email)
+    response = client.get("/api/expo/insights", headers=member)
+    assert response.status_code == 403
+
+    reviewer = login(client, world["o1_reviewer"].email)
+    response = client.get("/api/expo/insights", headers=reviewer)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["visitors"] == 0
+    assert body["feedback"] == 0
+    assert body["average_rating"] is None
+    assert body["rating_distribution"] == {}
+    assert body["role_distribution"] == []
+    assert body["recent_feedback"] == []
+
+
+def test_expo_insights_aggregate_feedback_without_session_keys(client, world):
+    first = client.post(
+        "/api/expo/visit",
+        json={"session_key": "expo_insights_visitor_0001", "name": "Amina", "visitor_role": "Investor"},
+    ).json()
+    second = client.post(
+        "/api/expo/visit",
+        json={"session_key": "expo_insights_visitor_0002", "name": "Karim", "visitor_role": "Farmer"},
+    ).json()
+    client.post(
+        "/api/expo/feedback",
+        json={"visit_id": first["visit_id"], "rating": 5, "suggestion": "Add irrigation alerts"},
+    )
+    client.post(
+        "/api/expo/feedback",
+        json={"visit_id": second["visit_id"], "rating": 3, "suggestion": "More local crop data"},
+    )
+
+    reviewer = login(client, world["o1_reviewer"].email)
+    response = client.get("/api/expo/insights", headers=reviewer)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["visitors"] == 2
+    assert body["visitors_last_24h"] == 2
+    assert body["feedback"] == 2
+    assert body["average_rating"] == 4.0
+    assert body["rating_distribution"] == {"3": 1, "5": 1}
+    assert {row["visitor_role"] for row in body["role_distribution"]} == {"Investor", "Farmer"}
+    assert len(body["recent_feedback"]) == 2
+    assert body["recent_feedback"][0]["suggestion"] == "More local crop data"
+    assert "session_key" not in body["recent_feedback"][0]
