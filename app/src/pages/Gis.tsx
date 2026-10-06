@@ -35,6 +35,70 @@ type SitesGeoJSON = {
   };
 };
 
+type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi";
+
+type RasterAnalysis = {
+  scene_id: string;
+  index: RemoteIndex;
+  formula_version: string;
+  processing_plan_fingerprint: string;
+  analysis_bbox_wgs84: [number, number, number, number];
+  grid: {
+    crs: string;
+    width: number;
+    height: number;
+    resolution_m: number;
+  };
+  mask: {
+    method: string;
+    masked_scl_classes: number[];
+    cloud_masked_pixel_count: number;
+    source_nodata_pixel_count: number;
+    formula_nodata_pixel_count: number;
+  };
+  pixels: {
+    total: number;
+    valid: number;
+    masked: number;
+    valid_fraction: number;
+  };
+  statistics: {
+    min: number | null;
+    max: number | null;
+    mean: number | null;
+    median: number | null;
+  };
+  provenance: {
+    provider_metadata: string;
+    derived_index: string;
+    verified: boolean;
+    persisted: boolean;
+  };
+};
+
+function rasterBudget(bbox: [number, number, number, number]) {
+  const [west, south, east, north] = bbox;
+  const valid = [west, south, east, north].every(Number.isFinite)
+    && west >= -180 && east <= 180 && south >= -90 && north <= 90
+    && west < east && south < north;
+  if (!valid) {
+    return { allowed: false, pixels: 0, width: 0, height: 0, areaKm2: 0 };
+  }
+  const midLat = ((south + north) / 2) * Math.PI / 180;
+  const widthM = (east - west) * 111_320 * Math.max(Math.cos(midLat), 0.01);
+  const heightM = (north - south) * 110_574;
+  const width = Math.max(1, Math.ceil(widthM / 10));
+  const height = Math.max(1, Math.ceil(heightM / 10));
+  const pixels = width * height;
+  return {
+    allowed: width <= 2048 && height <= 2048 && pixels <= 1_000_000,
+    pixels,
+    width,
+    height,
+    areaKm2: Math.max(0, (widthM * heightM) / 1_000_000),
+  };
+}
+
 export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
@@ -58,6 +122,11 @@ export default function Gis() {
   const [sceneStart, setSceneStart] = useState(defaultStart);
   const [sceneEnd, setSceneEnd] = useState(today);
   const [cloudCover, setCloudCover] = useState(25);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<RemoteIndex>("ndvi");
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<unknown>(null);
+  const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -93,6 +162,12 @@ export default function Gis() {
       ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented." }
       : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI." };
 
+  const analysisCopy = lang === "fr"
+    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est enregistré ni déclaré vérifié." }
+    : lang === "en"
+      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are neither persisted nor marked verified." }
+      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُخزن ولا تُصنّف VERIFIED." };
+
   const summary = useMemo(() => {
     const rows = filtered ?? [];
     return {
@@ -115,6 +190,17 @@ export default function Gis() {
     [data, selectedSiteId],
   );
 
+  const selectedScene = useMemo(
+    () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
+    [satelliteScenes, selectedSceneId],
+  );
+  const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
+
+  useEffect(() => {
+    setAnalysisResult(null);
+    setAnalysisError(null);
+  }, [selectedSceneId, selectedIndex]);
+
 
   const searchSatelliteScenes = async () => {
     setSatelliteLoading(true);
@@ -132,11 +218,34 @@ export default function Gis() {
         `/remote-sensing/catalog/scenes?${params.toString()}`,
       );
       setSatelliteScenes(result.scenes);
+      setSelectedSceneId((current) => result.scenes.some((scene) => scene.id === current) ? current : null);
+      setAnalysisResult(null);
     } catch (err) {
       setSatelliteScenes([]);
       setSatelliteError(err);
     } finally {
       setSatelliteLoading(false);
+    }
+  };
+
+  const analyzeCurrentView = async () => {
+    if (!selectedSceneId || !currentRasterBudget.allowed) return;
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      const params = new URLSearchParams({
+        index: selectedIndex,
+        bbox: viewportBbox.map((value) => Number(value.toFixed(6))).join(","),
+      });
+      const result = await api.get<RasterAnalysis>(
+        `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/statistics?${params.toString()}`,
+      );
+      setAnalysisResult(result);
+    } catch (err) {
+      setAnalysisResult(null);
+      setAnalysisError(err);
+    } finally {
+      setAnalysisLoading(false);
     }
   };
 
@@ -234,14 +343,121 @@ export default function Gis() {
           sites={data ?? []}
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
+          selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
           onViewportChange={setViewportBbox}
+          onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
           onSelectSite={(siteId) => void selectSite(siteId)}
           locale={lang}
         />
       )}
+
+      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={analysisCopy.title}>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-bold">{analysisCopy.title}</h2>
+              <Badge variant="outline">{analysisCopy.computed}</Badge>
+              <Badge variant="outline">{analysisCopy.notVerified}</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{analysisCopy.note}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_130px_auto]">
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{analysisCopy.scene}</span>
+              <select
+                className="rounded-md border bg-background px-2 py-2"
+                value={selectedSceneId ?? ""}
+                onChange={(e) => setSelectedSceneId(e.target.value || null)}
+              >
+                <option value="">{analysisCopy.selectScene}</option>
+                {satelliteScenes.map((scene) => (
+                  <option key={scene.id} value={scene.id}>{scene.id}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{analysisCopy.index}</span>
+              <select
+                className="rounded-md border bg-background px-2 py-2 font-semibold uppercase"
+                value={selectedIndex}
+                onChange={(e) => setSelectedIndex(e.target.value as RemoteIndex)}
+              >
+                <option value="ndvi">NDVI</option>
+                <option value="evi">EVI</option>
+                <option value="savi">SAVI</option>
+                <option value="ndwi">NDWI</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!selectedSceneId || !currentRasterBudget.allowed || analysisLoading}
+              onClick={() => void analyzeCurrentView()}
+            >
+              {analysisLoading ? analysisCopy.running : analysisCopy.run}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          <Badge variant="outline">
+            {currentRasterBudget.allowed ? analysisCopy.ready : analysisCopy.zoom}
+          </Badge>
+          <span className="rounded-md border px-2 py-1 text-muted-foreground">
+            {analysisCopy.area}: {currentRasterBudget.areaKm2.toFixed(2)} km²
+          </span>
+          <span className="rounded-md border px-2 py-1 text-muted-foreground">
+            {currentRasterBudget.pixels.toLocaleString(locale)} {analysisCopy.pixels}
+          </span>
+          {selectedScene ? <span className="rounded-md border px-2 py-1 font-mono text-[11px]">{selectedScene.id}</span> : null}
+        </div>
+
+        <ErrorText error={analysisError} />
+
+        {analysisResult ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            {[
+              [analysisCopy.mean, analysisResult.statistics.mean],
+              [analysisCopy.median, analysisResult.statistics.median],
+              [analysisCopy.min, analysisResult.statistics.min],
+              [analysisCopy.max, analysisResult.statistics.max],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-xl border bg-background p-3">
+                <span className="text-xs text-muted-foreground">{label}</span>
+                <strong className="mt-1 block text-xl tabular-nums" dir="ltr">
+                  {typeof value === "number" ? value.toFixed(4) : "—"}
+                </strong>
+              </div>
+            ))}
+            <div className="rounded-xl border bg-background p-3">
+              <span className="text-xs text-muted-foreground">{analysisCopy.valid}</span>
+              <strong className="mt-1 block text-xl tabular-nums" dir="ltr">
+                {(analysisResult.pixels.valid_fraction * 100).toFixed(1)}%
+              </strong>
+            </div>
+            <div className="rounded-xl border bg-background p-3">
+              <span className="text-xs text-muted-foreground">{analysisCopy.masked}</span>
+              <strong className="mt-1 block text-xl tabular-nums" dir="ltr">
+                {analysisResult.pixels.masked.toLocaleString(locale)}
+              </strong>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4 xl:col-span-6 flex flex-wrap gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+              <span>{analysisResult.formula_version}</span>
+              <span>·</span>
+              <span>{analysisResult.grid.resolution_m} m</span>
+              <span>·</span>
+              <span>{analysisResult.grid.crs}</span>
+              <span>·</span>
+              <span>{analysisResult.mask.method}</span>
+              <span>·</span>
+              <strong>{analysisResult.provenance.derived_index}</strong>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       {satelliteScenes.length > 0 ? (
         <section className="rounded-2xl border bg-card p-4">
@@ -251,14 +467,24 @@ export default function Gis() {
           </div>
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {satelliteScenes.slice(0, 12).map((scene) => (
-              <article key={scene.id} className="rounded-xl border p-3 text-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <strong className="break-all text-xs">{scene.id}</strong>
-                  <Badge variant="outline">{scene.cloud_cover_pct == null ? "—" : `${Number(scene.cloud_cover_pct).toFixed(1)}% ☁`}</Badge>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">{scene.datetime ? new Date(scene.datetime).toLocaleString(locale) : "—"}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{scene.platform ?? scene.constellation ?? "Sentinel-2"}</p>
-                <p className="mt-2 text-[11px] text-sky-700">{scene.provenance}</p>
+              <article
+                key={scene.id}
+                className={`rounded-xl border p-3 text-sm transition-colors ${selectedSceneId === scene.id ? "border-amber-500 bg-amber-50/40" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="w-full text-start"
+                  aria-pressed={selectedSceneId === scene.id}
+                  onClick={() => setSelectedSceneId(scene.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <strong className="break-all text-xs">{scene.id}</strong>
+                    <Badge variant="outline">{scene.cloud_cover_pct == null ? "—" : `${Number(scene.cloud_cover_pct).toFixed(1)}% ☁`}</Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{scene.datetime ? new Date(scene.datetime).toLocaleString(locale) : "—"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{scene.platform ?? scene.constellation ?? "Sentinel-2"}</p>
+                  <p className="mt-2 text-[11px] text-sky-700">{scene.provenance}</p>
+                </button>
               </article>
             ))}
           </div>
