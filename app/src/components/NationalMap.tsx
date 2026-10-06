@@ -7,6 +7,24 @@ export type AnalysisRasterOverlay = {
   index: "ndvi" | "evi" | "savi" | "ndwi";
 };
 
+export type ParcelBoundaryFeature = {
+  type: "Feature";
+  id: number;
+  geometry: {
+    type: "Polygon";
+    coordinates: unknown;
+  };
+  properties: {
+    id: number;
+    name: string;
+    crop: string;
+    area_ha: number;
+    location: string;
+    site_id: number | null;
+    is_demo: boolean;
+  };
+};
+
 export type SatelliteScene = {
   id: string;
   collection: string;
@@ -29,6 +47,7 @@ type Props = {
   sites: GisSite[];
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
+  parcelBoundaries?: ParcelBoundaryFeature[];
   analysisOverlay?: AnalysisRasterOverlay | null;
   selectedSceneId?: string | null;
   selectedWilaya?: string;
@@ -153,6 +172,7 @@ export function NationalMap({
   sites,
   wilayas,
   satelliteScenes = [],
+  parcelBoundaries = [],
   analysisOverlay = null,
   selectedSceneId = null,
   selectedWilaya = "",
@@ -172,6 +192,7 @@ export function NationalMap({
   const onViewportChangeRef = useRef(onViewportChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
+  const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
 
@@ -231,6 +252,12 @@ export function NationalMap({
   }), [satelliteScenes, selectedSceneId]);
   sceneFeaturesRef.current = sceneFeatureCollection;
 
+  const parcelFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: parcelBoundaries,
+  }), [parcelBoundaries]);
+  parcelFeaturesRef.current = parcelFeatureCollection;
+
   const labels = locale === "fr"
     ? {
         title: "Carte opérationnelle nationale",
@@ -241,6 +268,7 @@ export function NationalMap({
         note: "Fond OpenStreetMap via OpenFreeMap · points FOGGARA + empreintes Sentinel-2 en direct",
         source: "Open map",
         scenes: "scènes Sentinel-2",
+        parcels: "parcelles cartographiées",
       }
     : locale === "en"
       ? {
@@ -252,6 +280,7 @@ export function NationalMap({
           note: "OpenStreetMap via OpenFreeMap · FOGGARA points + live Sentinel-2 footprints",
           source: "Open map",
           scenes: "Sentinel-2 scenes",
+          parcels: "mapped parcels",
         }
       : {
           title: "الخريطة التشغيلية الوطنية",
@@ -262,6 +291,7 @@ export function NationalMap({
           note: "OpenStreetMap عبر OpenFreeMap · نقاط FOGGARA + حدود مشاهد Sentinel-2 الحية",
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
+          parcels: "قطع مرسومة",
         };
 
   useEffect(() => {
@@ -335,6 +365,30 @@ export function NationalMap({
               "line-color": ["case", ["boolean", ["get", "selected"], false], "#d97706", "#0284c7"],
               "line-width": ["case", ["boolean", ["get", "selected"], false], 3, 2],
               "line-opacity": 0.86,
+            },
+          });
+
+          map.addSource("agri-parcel-boundaries", {
+            type: "geojson",
+            data: parcelFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "agri-parcel-fill",
+            type: "fill",
+            source: "agri-parcel-boundaries",
+            paint: {
+              "fill-color": "#178568",
+              "fill-opacity": 0.17,
+            },
+          });
+          map.addLayer({
+            id: "agri-parcel-outline",
+            type: "line",
+            source: "agri-parcel-boundaries",
+            paint: {
+              "line-color": "#0f6f56",
+              "line-width": 2.2,
+              "line-opacity": 0.92,
             },
           });
 
@@ -432,6 +486,11 @@ export function NationalMap({
   }, [sceneFeatureCollection]);
 
   useEffect(() => {
+    const source = mapRef.current?.getSource("agri-parcel-boundaries");
+    if (isGeoJsonSource(source)) source.setData(parcelFeatureCollection);
+  }, [parcelFeatureCollection]);
+
+  useEffect(() => {
     const map = mapRef.current;
     const source = map?.getSource("analysis-overlay");
     if (!map || !isImageSource(source)) return;
@@ -484,7 +543,7 @@ export function NationalMap({
         </div>
         <div className="fg-map-head-meta">
           <span>{labels.source}</span>
-          <strong>{plotted.length} {labels.sites} · {satelliteScenes.length} {labels.scenes}</strong>
+          <strong>{plotted.length} {labels.sites} · {parcelBoundaries.length} {labels.parcels} · {satelliteScenes.length} {labels.scenes}</strong>
         </div>
       </div>
 
@@ -503,6 +562,7 @@ export function NationalMap({
 
       <div className="fg-national-map-foot">
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
+        <span><i className="fg-map-legend-dot" style={{ background: "#178568" }} /> {labels.parcels}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
         {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
