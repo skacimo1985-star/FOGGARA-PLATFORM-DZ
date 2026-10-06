@@ -606,3 +606,26 @@ def test_sentinel_uses_real_boundary_and_recomputes_when_boundary_changes(client
         f"/api/agriculture/observations?parcel_id={parcel['id']}", headers=h,
     ).json()
     assert len([x for x in observations if x['metric'] == 'ndvi']) == 2
+
+
+def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):
+    h1 = login(client, 'o1m@t.dz')
+    h2 = login(client, 'o2m@t.dz')
+    boundary = {
+        'type':'Polygon',
+        'coordinates':[[[2.8695,33.7995],[2.8705,33.7995],[2.8705,33.8005],[2.8695,33.8005],[2.8695,33.7995]]],
+    }
+    row = client.post('/api/agriculture/parcels', headers=h1, json={
+        'name':'GIS field','crop':'wheat','area_ha':1,'location':'Laghouat',
+        'boundary_geojson':boundary,
+    })
+    assert row.status_code == 201, row.text
+    own_geo = client.get('/api/gis/parcels.geojson', headers=h1)
+    assert own_geo.status_code == 200, own_geo.text
+    body = own_geo.json()
+    assert body['metadata']['spatial_engine'] == 'portable_geojson'
+    assert body['features'][0]['geometry']['type'] == 'Polygon'
+    assert body['features'][0]['properties']['id'] == row.json()['id']
+    other_geo = client.get('/api/gis/parcels.geojson', headers=h2)
+    assert other_geo.status_code == 200
+    assert other_geo.json()['features'] == []
