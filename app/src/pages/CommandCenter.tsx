@@ -32,11 +32,6 @@ const initial: Snapshot = {
   pending: null,
 };
 
-const flow = [
-  "Resource", "Data", "Structure", "Analysis", "Rules", "Intelligence",
-  "Decision", "Action", "Monitoring", "Evidence", "Learning",
-];
-
 export default function CommandCenter() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -136,6 +131,12 @@ export default function CommandCenter() {
     { label: copy.evidence, value: counts.evidence, to: "/app/review", icon: ShieldCheck },
     { label: copy.infrastructure, value: counts.infrastructure, to: "/app/iot", icon: Radio },
   ];
+
+  const flow = lang === "fr"
+    ? ["Ressource", "Données", "Structure", "Analyse", "Règles", "Intelligence", "Décision", "Action", "Suivi", "Preuve", "Apprentissage"]
+    : lang === "en"
+      ? ["Resource", "Data", "Structure", "Analysis", "Rules", "Intelligence", "Decision", "Action", "Monitoring", "Evidence", "Learning"]
+      : ["المورد", "البيانات", "الهيكلة", "التحليل", "القواعد", "الذكاء", "القرار", "الإجراء", "المتابعة", "الدليل", "التعلّم"];
 
   const workspaceBody = lang === "fr" ? {
     water: "Ressources · pompage · allocation", agriculture: "Sol · culture · irrigation",
@@ -287,7 +288,7 @@ export default function CommandCenter() {
       </section>
 
       <section className="fg-command-flow">
-        <div><span>RESOURCE → LEARNING</span><h2>{copy.flow}</h2></div>
+        <div><span>{flow[0]} → {flow[flow.length - 1]}</span><h2>{copy.flow}</h2></div>
         <ol>
           {flow.map((step, index) => (
             <li key={step}><b>{String(index + 1).padStart(2, "0")}</b><span>{step}</span></li>
