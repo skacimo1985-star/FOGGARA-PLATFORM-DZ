@@ -106,6 +106,7 @@ def test_live_weather_disabled_provider_fails_closed(client, world, monkeypatch)
 def test_weather_provider_normalizes_daily_agricultural_fields(monkeypatch):
     monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_NAME", "Test Weather")
     monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_ATTRIBUTION", "CC BY test")
+    monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_ATTRIBUTION_URL", "https://example.invalid/weather-license")
     body = {
         "latitude": 33.8125,
         "longitude": 2.875,
@@ -124,6 +125,7 @@ def test_weather_provider_normalizes_daily_agricultural_fields(monkeypatch):
     result = weather_provider.normalize_forecast(body, requested_days=15)
     assert result["provider"] == "Test Weather"
     assert result["provenance"] == "INFERRED_PROVIDER_FORECAST"
+    assert result["attribution_url"] == "https://example.invalid/weather-license"
     assert result["verified"] is False
     assert result["days"][1]["rain_mm"] == 2.7
     assert result["days"][0]["eto_mm"] == 5.3
