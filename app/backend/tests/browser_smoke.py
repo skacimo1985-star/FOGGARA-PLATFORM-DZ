@@ -24,7 +24,7 @@ def main():
     if os.environ.get("CI") != "true" or "foggara_migration" not in os.environ.get("DATABASE_URL", ""):
         raise RuntimeError("This test requires the isolated CI foggara_migration database")
     from app.db import SessionLocal
-    from app.models import Organization, User, Project, Site, Measurement
+    from app.models import AgriParcel, Organization, User, Project, Site, Measurement
     from datetime import datetime, timedelta, timezone
     from app.services.catalog import ensure_service_catalog
     from app.security import hash_password
@@ -36,18 +36,30 @@ def main():
         org = Organization(code="CI-BROWSER", name_ar="مؤسسة اختبار", name_fr="Test", name_en="Test", is_demo=True)
         db.add(org)
         db.flush()
-        db.add_all([
-            Site(org_id=org.id, name="CI-Bechar", wilaya="08", lat=31.6, lon=-2.2, is_demo=True),
-            Site(org_id=org.id, name="CI-Algiers", wilaya="16", lat=36.7, lon=3.0, is_demo=True),
-        ])
+        site_bechar = Site(org_id=org.id, name="CI-Bechar", wilaya="08", lat=31.6, lon=-2.2, is_demo=True)
+        site_algiers = Site(org_id=org.id, name="CI-Algiers", wilaya="16", lat=36.7, lon=3.0, is_demo=True)
+        db.add_all([site_bechar, site_algiers])
         user = User(org_id=org.id, email="browser@example.invalid", password_hash=hash_password(password),
                     full_name="Browser QA", role="admin", locale="ar")
         db.add(user)
         db.flush()
-        project = Project(org_id=org.id, title="واحة الاختبار", domain="water", created_by=user.id, is_demo=True)
+        project = Project(org_id=org.id, title="واحة الاختبار", domain="water", site_id=site_bechar.id,
+                          created_by=user.id, is_demo=True)
         db.add(project)
         db.flush()
         project_id = project.id
+        site_bechar_id = site_bechar.id
+        parcel = AgriParcel(
+            org_id=org.id, name="CI Field", crop="wheat", area_ha=2.5, location="CI-Bechar",
+            site_id=site_bechar.id, lat=31.6, lon=-2.2, stage="development",
+            boundary_geojson={"type":"Polygon","coordinates":[[
+                [-2.205,31.595],[-2.195,31.595],[-2.195,31.605],[-2.205,31.605],[-2.205,31.595]
+            ]]},
+            created_by=user.id, is_demo=True,
+        )
+        db.add(parcel)
+        db.flush()
+        parcel_id = parcel.id
         for i, quality in enumerate(("validated", "validated", "validated", "pending", "rejected")):
             db.add(Measurement(org_id=org.id, project_id=project.id, parameter="flow_rate", unit="L/s",
                 value=float(i + 1), measured_at=datetime.now(timezone.utc) - timedelta(hours=5-i),
@@ -320,8 +332,10 @@ def main():
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/gis":
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
-                        expect(page.locator(".fg-map-site")).to_have_count(2)
-                        page.locator(".fg-map-site").first.click()
+                        expect(page.locator(".fg-maplibre-host")).to_be_visible()
+                        expect(page.locator(".fg-gis-register tbody tr")).to_have_count(2)
+                        page.locator(".fg-gis-register tbody tr").first.click()
+                        expect(page).to_have_url(__import__("re").compile(r"/app/gis\?.*site=\d+"))
                         expect(page.locator(".fg-gis-nearest li")).to_have_count(1)
                     if path == "/app/review":
                         expect(page.locator(".fg-evidence-assurance")).to_be_visible()
@@ -335,6 +349,14 @@ def main():
                         for locale, title in (("fr", "Équipe et compte"), ("en", "Team and account"), ("ar", "الفريق والحساب")):
                             page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                             expect(page.locator(".fg-console h1")).to_have_text(title)
+                authenticated_visit(f"/app/gis?project={project_id}&site={site_bechar_id}&parcel={parcel_id}")
+                expect(page.get_by_test_id("gis-operational-context")).to_be_visible()
+                expect(page.get_by_test_id("gis-operational-context")).to_contain_text("واحة الاختبار")
+                expect(page.get_by_test_id("gis-selected-parcel")).to_contain_text("CI Field")
+                page.get_by_test_id("gis-selected-parcel").get_by_role("link").click()
+                expect(page).to_have_url(f"http://127.0.0.1:8000/app/agriculture?parcel={parcel_id}")
+                expect(page.get_by_test_id("selected-parcel-card")).to_contain_text("CI Field")
+                ensure_no_overflow(page, ("parcel-context", parcel_id))
                 assert not errors, errors
                 (out / "results.json").write_text(json.dumps({
                     "status":"passed", "browser":"Chromium", "viewports":[390,768,1440],
