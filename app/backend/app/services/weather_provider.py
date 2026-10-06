@@ -129,6 +129,7 @@ def normalize_forecast(body: object, *, requested_days: int) -> dict:
         "provider": config.WEATHER_PROVIDER_NAME,
         "provider_contract": "open-meteo-compatible-v1",
         "attribution": config.WEATHER_PROVIDER_ATTRIBUTION,
+        "attribution_url": config.WEATHER_PROVIDER_ATTRIBUTION_URL,
         "model_name": "provider-best-match",
         "latitude": latitude,
         "longitude": longitude,
