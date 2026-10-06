@@ -25,7 +25,9 @@ def _parse_bbox(raw: str) -> list[float]:
         values = [float(part.strip()) for part in raw.split(",")]
     except ValueError:
         api_error(422, "INVALID_BBOX", "bbox must contain four numeric coordinates")
-    if len(values) != 4 or not all(math.isfinite(value) for value in values):
+    if len(values) != 4:
+        api_error(422, "INVALID_BBOX", "bbox must contain four coordinates")
+    if not all(math.isfinite(value) for value in values):
         api_error(422, "INVALID_BBOX", "bbox must contain four finite coordinates")
     west, south, east, north = values
     if not (-180 <= west <= 180 and -180 <= east <= 180 and -90 <= south <= north <= 90):
