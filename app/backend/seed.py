@@ -689,12 +689,55 @@ def main():
                               status=w["resource_status"], is_demo=True))
             created["resources"] += c
 
-            _, c = get_or_create(db, Project, org_id=org_x.id, title=w["project_title"],
+            project_x, c = get_or_create(db, Project, org_id=org_x.id, title=w["project_title"],
                 defaults=dict(description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
                               domain=w["project_domain"], status="active",
                               site_id=site_x.id, resource_id=res_x.id, is_demo=True,
                               created_by=usr_x.id))
             created["projects"] += c
+
+            # One deterministic operational signal and one evidence record per
+            # national demo workspace. These are synthetic investor/expo data,
+            # never field observations and never national statistics.
+            demo_observed_at = datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc)
+            demo_flow = round(0.25 + (int(w["code"]) % 10) * 0.03, 2)
+            _, c = get_or_create(
+                db, Measurement,
+                org_id=org_x.id, project_id=project_x.id, parameter="flow_rate",
+                value=demo_flow, unit="L/s",
+                source=f"SYNTHETIC-DEMO-WILAYA-{w['code']}",
+                defaults=dict(
+                    resource_id=res_x.id,
+                    measured_at=demo_observed_at,
+                    method="Synthetic baseline generated for investor/expo demonstration",
+                    source_type="manual",
+                    quality_status="pending",
+                    verification_status="unverified",
+                    is_demo=True,
+                    submitted_by=usr_x.id,
+                ),
+            )
+            created["measurements"] += c
+
+            _, c = get_or_create(
+                db, Evidence,
+                org_id=org_x.id,
+                project_id=project_x.id,
+                title=f"Baseline national demo — {w['wilaya_ar']}",
+                defaults=dict(
+                    doc_type="report",
+                    license="Synthetic demo data — internal demonstration",
+                    content_note=(
+                        f"DEMO_ONLY; wilaya_code={w['code']}; "
+                        "synthetic baseline for interface and workflow demonstration; "
+                        "not a field measurement, official statistic, or verified national dataset."
+                    ),
+                    status="submitted",
+                    is_demo=True,
+                    submitted_by=usr_x.id,
+                ),
+            )
+            created["evidences"] += c
 
         res1, c = get_or_create(db, WaterResource, org_id=org1.id, name="فڨارة أولف الشرقية (تجريبية)",
                                 defaults=dict(site_id=site1.id, type="foggara",
