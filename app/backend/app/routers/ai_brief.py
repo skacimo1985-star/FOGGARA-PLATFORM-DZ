@@ -107,6 +107,23 @@ def _provider_configured() -> bool:
     return True
 
 
+def _parse_provider_json(content: object) -> object:
+    if not isinstance(content, str):
+        raise ValueError("provider content must be text")
+    text = content.strip()
+    if text.startswith("```"):
+        first_newline = text.find("\n")
+        if first_newline == -1:
+            raise ValueError("invalid fenced provider response")
+        text = text[first_newline + 1:]
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3].rstrip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("provider response has no JSON object")
+    return json.loads(text[start:end + 1])
+
+
 def _clean_brief(data: object, fallback: dict) -> dict:
     if not isinstance(data, dict):
         return fallback
@@ -150,7 +167,7 @@ def _provider_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
             response.raise_for_status()
             body = response.json()
             content = body["choices"][0]["message"]["content"].strip()
-        return _clean_brief(json.loads(content), fallback), True
+        return _clean_brief(_parse_provider_json(content), fallback), True
     except Exception:
         log.warning(
             "Configured AI brief unavailable; deterministic fallback used",
@@ -171,7 +188,7 @@ def ai_status(user: User = Depends(get_current_user)):
         "configured": configured,
         "mode": f"{provider_mode}-ready",
         "model": config.AI_MODEL if configured else None,
-        "payload_policy": "aggregated_counts_only",
+        "payload_policy": "aggregated_state_only",
         "external_payload_policy": "aggregated_counts_only",
         "data_boundary": "operator-local" if provider_mode == "local" else "external-provider" if provider_mode == "external" else "in-process",
         "provenance": "PROPOSED",
@@ -200,7 +217,7 @@ def investor_brief(payload: BriefIn, user: User = Depends(get_current_user), db:
             "configured_mode": config.AI_PROVIDER_MODE,
             "locale": payload.locale,
             "scope": scope["type"],
-            "payload_policy": "aggregated_counts_only",
+            "payload_policy": "aggregated_state_only",
         },
     )
     db.commit()
@@ -217,7 +234,7 @@ def investor_brief(payload: BriefIn, user: User = Depends(get_current_user), db:
         "brief": brief,
         "provenance": "PROPOSED",
         "generated_from": "aggregated_platform_state",
-        "payload_policy": "aggregated_counts_only",
+        "payload_policy": "aggregated_state_only",
         "external_payload_policy": "aggregated_counts_only",
         "investment_certification": False,
     }
