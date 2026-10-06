@@ -21,6 +21,7 @@ from ..services.remote_sensing_processing import (
     validate_scene_id,
 )
 from ..services.remote_sensing_raster import (
+    RasterCapacityError,
     RasterStatisticsError,
     compute_index_statistics,
     validate_analysis_bbox,
@@ -262,6 +263,8 @@ def scene_index_statistics(
         )
     try:
         return compute_index_statistics(plan, raw_bbox)
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster analysis capacity is busy; retry later")
     except RasterStatisticsError as exc:
         message = str(exc)
         if "bbox" in message or "pixel budget" in message or "too large" in message:
