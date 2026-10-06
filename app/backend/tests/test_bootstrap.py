@@ -74,6 +74,15 @@ def test_seed_demo_false_creates_no_users(db, monkeypatch):
     ).scalar_one() == 0
 
 
+def test_seed_demo_requires_explicit_credential(monkeypatch):
+    monkeypatch.setenv("ENV", "dev")
+    monkeypatch.setenv("SEED_DEMO", "true")
+    monkeypatch.delenv("DEMO_PASSWORD", raising=False)
+    import seed
+    with pytest.raises(RuntimeError, match="requires DEMO_PASSWORD"):
+        seed._demo_password()
+
+
 def test_prod_seed_demo_requires_explicit_demo_instance(monkeypatch):
     monkeypatch.setenv("ENV", "prod")
     monkeypatch.setenv("SEED_DEMO", "true")
