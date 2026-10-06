@@ -22,9 +22,6 @@ from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
 from app.services.catalog import ensure_service_catalog
 
-DEMO_PASSWORD = "Demo#2026"
-
-
 def get_or_create(db, model_cls, defaults=None, **lookup):
     obj = db.execute(select(model_cls).filter_by(**lookup)).scalar_one_or_none()
     if obj is not None:
@@ -40,6 +37,16 @@ TRUTHY = {"1", "true", "yes"}
 
 def _env_flag(name: str, default: str = "false") -> bool:
     return os.environ.get(name, default).strip().lower() in TRUTHY
+
+
+def _require_demo_password() -> str:
+    """Read the demo-only credential from the environment without logging it."""
+    value = os.environ.get("DEMO_PASSWORD", "")
+    if not value:
+        raise RuntimeError("SEED_DEMO=true requires DEMO_PASSWORD to be set")
+    if not 15 <= len(value) <= 128:
+        raise RuntimeError("DEMO_PASSWORD must be between 15 and 128 characters")
+    return value
 
 
 def _seed_demo_enabled() -> bool:
@@ -58,6 +65,7 @@ def main():
     # DEMO_INSTANCE=true. The authored indicator/service catalog is ensured
     # even when synthetic business data is disabled.
     seed_demo = _seed_demo_enabled()
+    demo_password = _require_demo_password() if seed_demo else None
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
@@ -84,23 +92,23 @@ def main():
 
         # ---- Users ----
         member1, c = get_or_create(db, User, email="member@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(DEMO_PASSWORD),
+            org_id=org1.id, password_hash=hash_password(demo_password),
             full_name="مستخدم تجريبي — عضو 1", role="member"))
         created["users"] += c
         reviewer1, c = get_or_create(db, User, email="reviewer@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(DEMO_PASSWORD),
+            org_id=org1.id, password_hash=hash_password(demo_password),
             full_name="مراجع تجريبي 1", role="reviewer"))
         created["users"] += c
         admin1, c = get_or_create(db, User, email="admin@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(DEMO_PASSWORD),
+            org_id=org1.id, password_hash=hash_password(demo_password),
             full_name="مشرف تجريبي 1", role="admin"))
         created["users"] += c
         member2, c = get_or_create(db, User, email="member@demo2.dz", defaults=dict(
-            org_id=org2.id, password_hash=hash_password(DEMO_PASSWORD),
+            org_id=org2.id, password_hash=hash_password(demo_password),
             full_name="مستخدم تجريبي — عضو 2", role="member"))
         created["users"] += c
         _, c = get_or_create(db, User, email="reviewer@demo2.dz", defaults=dict(
-            org_id=org2.id, password_hash=hash_password(DEMO_PASSWORD),
+            org_id=org2.id, password_hash=hash_password(demo_password),
             full_name="مراجع تجريبي 2", role="reviewer"))
         created["users"] += c
 
@@ -675,7 +683,7 @@ def main():
 
             usr_x, c = get_or_create(db, User,
                 email=f"member@{w['org_code'].lower()}.dz",
-                defaults=dict(org_id=org_x.id, password_hash=hash_password(DEMO_PASSWORD),
+                defaults=dict(org_id=org_x.id, password_hash=hash_password(demo_password),
                               full_name=f"عضو تجريبي — {w['wilaya_ar']}", role="member"))
             created["users"] += c
 
@@ -1067,7 +1075,7 @@ def main():
             print("Seed already up to date — nothing inserted (idempotent).")
         else:
             print("Inserted:", {k: v for k, v in created.items() if v})
-        print(f"Demo password for all seeded users: {DEMO_PASSWORD}")
+        print("Demo users seeded; credential supplied through DEMO_PASSWORD and not logged.")
     finally:
         db.close()
 
