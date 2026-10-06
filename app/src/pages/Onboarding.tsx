@@ -19,7 +19,7 @@ export default function Onboarding() {
     <form className="space-y-4" onSubmit={async e => { e.preventDefault(); if (busy || retryIn) return; const fd = new FormData(e.currentTarget); setBusy(true); setError(null); try {
       const body = joining ? { token: fd.get("token"), full_name: fd.get("full_name"), password: fd.get("password") } : { email: fd.get("email"), full_name: fd.get("full_name"), password: fd.get("password"), organization_name: fd.get("organization_name"), locale: i18n.language };
       const result = await api.post<{ token: string; user: User }>(joining ? "/org/invitations/accept" : "/auth/register", body);
-      startSession(result); navigate("/app");
+      startSession(result); navigate(joining ? "/app" : "/app/setup");
     } catch (err) { setError(err); } finally { setBusy(false); } }}>
       <div className="space-y-1"><Label htmlFor="full-name">{t("membership.fullName")}</Label><Input id="full-name" name="full_name" autoComplete="name" required minLength={2} maxLength={255} /></div>
       {joining ? <div className="space-y-1"><Label htmlFor="join-token">{t("membership.token")}</Label><Input id="join-token" name="token" type="password" required minLength={40} maxLength={100} dir="ltr" autoComplete="off" /></div> : <>
