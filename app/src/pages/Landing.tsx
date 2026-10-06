@@ -17,7 +17,7 @@ export default function Landing() {
   const {user}=useAuth(); const {t,i18n}=useTranslation(); const [active,setActive]=useState("all");
   const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
-  const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور"};
+  const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe",operate:"Créer un espace opérationnel"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required",operate:"Create operational workspace"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور",operate:"إنشاء مساحة عمل حقيقية"};
   const narrative=lang==="fr"?{
     real:"FOGGARA RÉELLE",digital:"FOGGARA NUMÉRIQUE",intelligence:"INTELLIGENCE WEFEH",
     national:`${WILAYAS.length} wilayas`,evidence:"5 états de preuve",cycle:"11 étapes décisionnelles",
@@ -46,8 +46,9 @@ export default function Landing() {
         <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
         <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
         <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
-        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/login"}>{user?t("publicExperience.enter"):expoCopy.enter}<ArrowUpRight size={18}/></Link>
-          <Link className="fg-button fg-secondary" to="/demo">{t("demo.try")}</Link></div>
+        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/register"}>{user?t("publicExperience.enter"):expoCopy.operate}<ArrowUpRight size={18}/></Link>
+          {!user&&<Link className="fg-button fg-secondary" to="/login">{expoCopy.enter}</Link>}
+          <Link className="fg-link" to="/demo">{t("demo.try")}<ArrowUpRight size={16}/></Link></div>
         {!user&&<p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p>}
         <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
         <p className="fg-oasis-caption">{t("demo.imageNotice")}</p>
