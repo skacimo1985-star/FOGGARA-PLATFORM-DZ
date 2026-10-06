@@ -19,12 +19,15 @@ def processing_plan(index="ndvi"):
         "B03": {"band": "B03", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B03.tif", "scale": 0.0001, "offset": 0.0},
         "B04": {"band": "B04", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B04.tif", "scale": 0.0001, "offset": 0.0},
         "B08": {"band": "B08", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B08.tif", "scale": 0.0001, "offset": 0.0},
+        "B11": {"band": "B11", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B11.tif", "scale": 0.0001, "offset": 0.0},
     }
     needed = {
         "ndvi": ["B04", "B08"],
         "evi": ["B02", "B04", "B08"],
         "savi": ["B04", "B08"],
         "ndwi": ["B03", "B08"],
+        "ndmi": ["B08", "B11"],
+        "lswi": ["B08", "B11"],
     }[index]
     return {
         "scene_id": "S2A_TEST_L2A",
@@ -69,6 +72,7 @@ def raster_assets(monkeypatch):
         "B03": make_memfile(base * 2000, dtype="uint16"),
         "B04": make_memfile(base * 2000, dtype="uint16"),
         "B08": make_memfile(base * 6000, dtype="uint16"),
+        "B11": make_memfile(base * 3000, dtype="uint16"),
         "SCL": make_memfile(
             np.array(
                 [
@@ -110,7 +114,7 @@ def test_live_ndvi_statistics_use_scale_and_scl_mask(raster_assets):
     assert result["provenance"]["persisted"] is False
 
 
-@pytest.mark.parametrize("index", ["ndvi", "evi", "savi", "ndwi"])
+@pytest.mark.parametrize("index", ["ndvi", "evi", "savi", "ndwi", "ndmi", "lswi"])
 def test_all_indices_produce_finite_statistics(raster_assets, index):
     result = remote_sensing_raster.compute_index_statistics(
         processing_plan(index),
@@ -188,6 +192,7 @@ def provider_item():
             "green": asset("B03"),
             "red": asset("B04"),
             "nir": asset("B08"),
+            "swir16": asset("B11", gsd=20),
             "scl": scl,
         },
     }
