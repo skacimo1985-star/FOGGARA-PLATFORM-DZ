@@ -329,6 +329,7 @@ def main():
                         expect(page.locator(".fg-water-chain article")).to_have_count(7)
                     if path == "/app/insights":
                         expect(page.locator('[data-testid="ai-investor-brief"]')).to_be_visible()
+                        expect(page.get_by_test_id("ai-provider-mode")).to_be_visible()
                         expect(page.locator(".ai-brief-section")).to_have_count(3)
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
