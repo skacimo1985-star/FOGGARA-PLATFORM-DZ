@@ -12,7 +12,7 @@ import json
 import math
 import re
 from typing import Mapping
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 from .remote_sensing_indices import get_index_definition
 
@@ -97,13 +97,20 @@ def _validate_cog_href(href: str) -> str:
         raise ProcessingPlanError("raster asset must use https")
     if parsed.username or parsed.password:
         raise ProcessingPlanError("raster asset must not contain credentials")
-    if parsed.port not in (None, 443):
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ProcessingPlanError("raster asset uses an invalid port") from exc
+    if port not in (None, 443):
         raise ProcessingPlanError("raster asset uses an unsupported port")
     if parsed.hostname != TRUSTED_COG_HOST:
         raise ProcessingPlanError("raster asset host is not trusted")
-    if not parsed.path.startswith(TRUSTED_COG_PATH_PREFIX):
+    decoded_path = unquote(parsed.path)
+    if not decoded_path.startswith(TRUSTED_COG_PATH_PREFIX):
         raise ProcessingPlanError("raster asset path is outside the Sentinel-2 COG prefix")
-    if not parsed.path.lower().endswith(".tif"):
+    if any(part in {".", ".."} for part in decoded_path.split("/")):
+        raise ProcessingPlanError("raster asset path contains traversal segments")
+    if not decoded_path.lower().endswith(".tif"):
         raise ProcessingPlanError("raster asset is not a GeoTIFF")
     if parsed.query or parsed.fragment:
         raise ProcessingPlanError("raster asset URL must be immutable and unsigned")
@@ -124,7 +131,10 @@ def _resolve_asset(
         media_type = candidate.get("type")
         if not isinstance(href, str) or not isinstance(media_type, str):
             continue
-        if not media_type.lower().startswith("image/tiff"):
+        normalized_media_type = media_type.lower()
+        if not normalized_media_type.startswith("image/tiff"):
+            continue
+        if "profile=cloud-optimized" not in normalized_media_type:
             continue
         safe_href = _validate_cog_href(href)
         scale, offset = _raster_scale_offset(candidate)
