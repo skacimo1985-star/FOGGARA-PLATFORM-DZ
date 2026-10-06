@@ -72,3 +72,20 @@ def test_seed_demo_false_creates_no_users(db, monkeypatch):
     assert db.execute(
         __import__("sqlalchemy").select(__import__("sqlalchemy").func.count(User.id))
     ).scalar_one() == 0
+
+
+def test_prod_seed_demo_requires_explicit_demo_instance(monkeypatch):
+    monkeypatch.setenv("ENV", "prod")
+    monkeypatch.setenv("SEED_DEMO", "true")
+    monkeypatch.delenv("DEMO_INSTANCE", raising=False)
+    import seed
+    with pytest.raises(RuntimeError, match="requires DEMO_INSTANCE=true"):
+        seed._seed_demo_enabled()
+
+
+def test_prod_demo_instance_can_explicitly_enable_synthetic_seed(monkeypatch):
+    monkeypatch.setenv("ENV", "prod")
+    monkeypatch.setenv("SEED_DEMO", "true")
+    monkeypatch.setenv("DEMO_INSTANCE", "true")
+    import seed
+    assert seed._seed_demo_enabled() is True
