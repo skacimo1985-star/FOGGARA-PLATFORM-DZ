@@ -49,6 +49,7 @@ def _ai_state() -> dict:
         "data_boundary": "operator-local" if configured and config.AI_PROVIDER_MODE == "local"
         else "external-provider" if configured and config.AI_PROVIDER_MODE == "external"
         else "in-process",
+        "live_probe": False,
     }
 
 
@@ -66,6 +67,7 @@ def _weather_state() -> dict:
         "provider": config.WEATHER_PROVIDER_NAME if configured else None,
         "forecast_provenance": "INFERRED" if configured else None,
         "field_execution": False,
+        "live_probe": False,
     }
 
 
@@ -89,10 +91,11 @@ def readiness(_user: User = Depends(get_current_user)):
     }
     integrations = {
         "satellite": {
-            "status": "available",
+            "status": "adapter-configured",
             "provider_contract": "fixed-element84-sentinel2",
             "provenance": "COMPUTED/INFERRED",
             "field_execution": False,
+            "live_probe": False,
         },
         "weather": _weather_state(),
         "ai": _ai_state(),
@@ -117,5 +120,5 @@ def readiness(_user: User = Depends(get_current_user)):
         "core": core,
         "integrations": integrations,
         "assurance_gates": assurance_gates,
-        "meaning": "Runtime health and configuration visibility only; not production certification.",
+        "meaning": "Runtime health and configuration visibility only; upstream integrations are not live-probed and this is not production certification.",
     }
