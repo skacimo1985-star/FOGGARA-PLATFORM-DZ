@@ -56,7 +56,7 @@ export default function CommandCenter() {
     activity: "État opérationnel", noData: "Aucune donnée", unavailable: "Indisponible",
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
     decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
-    updated: "Actualisé", review: "File de revue", national: "Couverture nationale", setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
+    updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel", setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
     title: "From field reality to decision.",
@@ -67,7 +67,7 @@ export default function CommandCenter() {
     activity: "Operational state", noData: "No data", unavailable: "Unavailable",
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
     decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
-    updated: "Updated", review: "Review queue", national: "National coverage", setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
+    updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects", setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
     title: "من الواقع الميداني إلى القرار.",
@@ -78,7 +78,7 @@ export default function CommandCenter() {
     activity: "الحالة التشغيلية", noData: "لا توجد بيانات", unavailable: "غير متاح",
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
     decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
-    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
+    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية", setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
   };
 
   useEffect(() => {
@@ -149,6 +149,12 @@ export default function CommandCenter() {
   ];
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
+  const recentProjects = [...(snapshot.projects ?? [])]
+    .filter((project) => project.status !== "closed")
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 6);
+  const projectSite = (project: Project) =>
+    project.site_id == null ? null : snapshot.sites?.find((row) => row.site.id === project.site_id)?.site ?? null;
   const needsSetup = snapshot.projects !== null && snapshot.sites !== null && snapshot.projects.length === 0 && snapshot.sites.length === 0;
 
   return (
@@ -184,6 +190,33 @@ export default function CommandCenter() {
             <ArrowUpRight size={15} />
           </Link>
         ))}
+      </section>
+
+      <section className="fg-command-project-board" aria-label={copy.activeProjects}>
+        <div className="fg-command-section-title">
+          <div><span>PORTFOLIO / LIVE CONTEXT</span><h2>{copy.activeProjects}</h2></div>
+          <FolderKanban size={26}/>
+        </div>
+        {snapshot.projects === null ? <p className="fg-command-empty">{copy.unavailable}</p> : recentProjects.length === 0 ? (
+          <p className="fg-command-empty">{copy.noProjects}</p>
+        ) : (
+          <div className="fg-command-project-list">
+            {recentProjects.map((project) => {
+              const site = projectSite(project);
+              return <article key={project.id}>
+                <div className="fg-command-project-main">
+                  <span className="fg-command-project-domain">{project.domain}</span>
+                  <Link to={`/app/projects/${project.id}`}><strong>{project.title}</strong></Link>
+                  <small>{site ? `${site.name} · ${site.wilaya}` : "—"} · {project.status}</small>
+                </div>
+                <div className="fg-command-project-actions">
+                  <Link to={`/app/projects/${project.id}`}>{copy.openProject}<ArrowUpRight size={14}/></Link>
+                  {site ? <Link to={`/app/gis?project=${project.id}&site=${site.id}`}><MapPinned size={14}/>{copy.viewSite}</Link> : null}
+                </div>
+              </article>;
+            })}
+          </div>
+        )}
       </section>
 
       <section className="fg-command-grid">
