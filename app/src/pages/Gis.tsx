@@ -119,8 +119,12 @@ export default function Gis() {
   const wilayaFilter = searchParams.get("wilaya") || "";
   const requestedSiteId = Number(searchParams.get("site"));
   const requestedProjectId = Number(searchParams.get("project"));
+  const requestedParcelId = Number(searchParams.get("parcel"));
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(
     Number.isInteger(requestedSiteId) && requestedSiteId > 0 ? requestedSiteId : null,
+  );
+  const [selectedParcelId, setSelectedParcelId] = useState<number | null>(
+    Number.isInteger(requestedParcelId) && requestedParcelId > 0 ? requestedParcelId : null,
   );
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
@@ -194,10 +198,10 @@ export default function Gis() {
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
 
   const contextCopy = lang === "fr"
-    ? { label: "CONTEXTE OPÉRATIONNEL", project: "Projet", site: "Site", open: "Ouvrir le projet", mode: "Le SIG conserve le contexte pendant l’analyse spatiale et satellite." }
+    ? { label: "CONTEXTE OPÉRATIONNEL", project: "Projet", site: "Site", parcel: "Parcelle", open: "Ouvrir le projet", openParcel: "Ouvrir la parcelle", mode: "Le SIG conserve le contexte pendant l’analyse spatiale et satellite." }
     : lang === "en"
-      ? { label: "OPERATIONAL CONTEXT", project: "Project", site: "Site", open: "Open project", mode: "GIS keeps project context while you work with spatial and satellite analysis." }
-      : { label: "السياق التشغيلي", project: "المشروع", site: "الموقع", open: "فتح المشروع", mode: "يحافظ GIS على سياق المشروع أثناء التحليل المكاني والفضائي." };
+      ? { label: "OPERATIONAL CONTEXT", project: "Project", site: "Site", parcel: "Parcel", open: "Open project", openParcel: "Open parcel", mode: "GIS keeps project context while you work with spatial and satellite analysis." }
+      : { label: "السياق التشغيلي", project: "المشروع", site: "الموقع", parcel: "القطعة", open: "فتح المشروع", openParcel: "فتح القطعة", mode: "يحافظ GIS على سياق المشروع أثناء التحليل المكاني والفضائي." };
 
   const satelliteCopy = lang === "fr"
     ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée." }
@@ -236,6 +240,10 @@ export default function Gis() {
   const selectedScene = useMemo(
     () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
     [satelliteScenes, selectedSceneId],
+  );
+  const selectedParcel = useMemo(
+    () => parcelBoundaries.find((feature) => feature.id === selectedParcelId) ?? null,
+    [parcelBoundaries, selectedParcelId],
   );
   const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
 
@@ -308,6 +316,16 @@ export default function Gis() {
     } finally {
       setAnalysisLoading(false);
     }
+  };
+
+  const selectParcel = (parcelId: number) => {
+    setSelectedParcelId(parcelId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("parcel", String(parcelId));
+    const feature = parcelBoundaries.find((row) => row.id === parcelId);
+    if (feature?.properties.site_id) nextParams.set("site", String(feature.properties.site_id));
+    setSearchParams(nextParams, { replace: true });
+    if (feature?.properties.site_id) void selectSite(feature.properties.site_id);
   };
 
   const selectSite = async (siteId: number) => {
@@ -439,8 +457,10 @@ export default function Gis() {
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
+          selectedParcelId={selectedParcelId}
           onViewportChange={setViewportBbox}
           onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
+          onSelectParcel={(parcelId) => selectParcel(parcelId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
           onSelectSite={(siteId) => void selectSite(siteId)}
           locale={lang}
@@ -592,6 +612,20 @@ export default function Gis() {
               <h2>{copy.selected}: {selectedSite.site.name}</h2>
               <p>{selectedSite.site.wilaya}{selectedSite.site.commune ? ` · ${selectedSite.site.commune}` : ""}</p>
               <strong dir="ltr">{selectedSite.site.lat.toFixed(5)}, {selectedSite.site.lon.toFixed(5)}</strong>
+              {selectedParcel ? (
+                <div className="mt-3 rounded-xl border bg-background/80 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{contextCopy.parcel}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <strong>{selectedParcel.properties.name}</strong>
+                    <Badge variant="outline">{selectedParcel.properties.crop}</Badge>
+                    <Badge variant="outline">{Number(selectedParcel.properties.area_ha).toFixed(2)} ha</Badge>
+                    {selectedParcel.properties.is_demo ? <DemoBadge show /> : null}
+                  </div>
+                  <Link className="mt-2 inline-flex rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent" to={`/app/agriculture?parcel=${selectedParcel.id}`}>
+                    {contextCopy.openParcel}
+                  </Link>
+                </div>
+              ) : null}
             </>
           ) : (
             <p>{lang === "fr" ? "Sélectionnez un point sur la carte pour lancer une requête spatiale." : lang === "en" ? "Select a point on the map to run a spatial query." : "اختر نقطة على الخريطة لتشغيل استعلام مكاني."}</p>
