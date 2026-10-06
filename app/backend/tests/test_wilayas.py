@@ -65,9 +65,10 @@ class TestSeedIdempotency:
     """Validate that seed.py is idempotent and covers all 69 wilayas."""
 
     @pytest.fixture(autouse=True)
-    def _setup_env(self):
-        os.environ["SEED_DEMO"] = "true"
-        os.environ["ENV"] = "dev"
+    def _setup_env(self, monkeypatch):
+        monkeypatch.setenv("SEED_DEMO", "true")
+        monkeypatch.setenv("ENV", "dev")
+        monkeypatch.setenv("DEMO_PASSWORD", "TestDemoPass#2026")
         backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if backend_dir not in sys.path:
             sys.path.insert(0, backend_dir)
