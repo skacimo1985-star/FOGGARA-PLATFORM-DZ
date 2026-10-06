@@ -167,17 +167,17 @@ export default function CommandCenter() {
 
   const readinessLabels: Record<string, string> = lang === "fr" ? {
     healthy: "Sain", degraded: "Dégradé", up: "Connectée", down: "Indisponible",
-    configured: "Configuré", deterministic: "Déterministe", available: "Disponible", disabled: "Désactivé",
+    configured: "Configuré", deterministic: "Déterministe", available: "Disponible", "adapter-configured": "Adaptateur configuré", disabled: "Désactivé",
     "web-runtime-enabled": "Runtime web actif", "web-runtime-disabled": "Runtime web désactivé",
     local: "Local souverain", external: "Externe", optional: "Optionnel",
   } : lang === "en" ? {
     healthy: "Healthy", degraded: "Degraded", up: "Up", down: "Down",
-    configured: "Configured", deterministic: "Deterministic", available: "Available", disabled: "Disabled",
+    configured: "Configured", deterministic: "Deterministic", available: "Available", "adapter-configured": "Adapter configured", disabled: "Disabled",
     "web-runtime-enabled": "Web runtime enabled", "web-runtime-disabled": "Web runtime disabled",
     local: "Sovereign local", external: "External", optional: "Optional",
   } : {
     healthy: "سليم", degraded: "متدهور", up: "متصل", down: "غير متاح",
-    configured: "مهيأ", deterministic: "حتمي", available: "متاح", disabled: "معطل",
+    configured: "مهيأ", deterministic: "حتمي", available: "متاح", "adapter-configured": "المهايئ مهيأ", disabled: "معطل",
     "web-runtime-enabled": "تشغيل الويب مفعل", "web-runtime-disabled": "تشغيل الويب معطل",
     local: "محلي سيادي", external: "خارجي", optional: "اختياري",
   };
