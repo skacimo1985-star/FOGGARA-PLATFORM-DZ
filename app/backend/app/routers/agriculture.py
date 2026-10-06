@@ -1,4 +1,4 @@
-"""Agricultural intelligence from supplied, reviewed sources; no live-feed claims."""
+"""Agricultural intelligence from reviewed records plus optional read-only live forecasts."""
 from datetime import date, datetime, timezone
 from typing import Literal
 from fastapi import APIRouter, Depends, Query
