@@ -37,6 +37,14 @@ class ParcelIn(Input):
 class ParcelUpdate(Input):
     stage: Literal['initial', 'development', 'mid', 'late'] | None = None
     archived: bool | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode='after')
+    def coordinate_pair(self):
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError('Latitude and longitude must be provided together')
+        return self
 
 METRICS = {
     'ph': ('pH', 0, 14), 'nitrogen': ('mg/kg', 0, 1000000),
