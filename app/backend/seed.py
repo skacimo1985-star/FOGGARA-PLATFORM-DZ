@@ -1,4 +1,4 @@
-"""Seed DEMO data — all rows are synthetic and flagged is_demo=True.
+"""Seed DEMO data — all rows are synthetic. Models with an is_demo field are flagged true; other rows live only under demo organizations and use explicit demo identifiers.
 
 Run:  python3 seed.py
 Idempotent: every block checks existence (by a natural key) before inserting,
@@ -17,7 +17,10 @@ from app.models import (VFD, Asset, Calibration, Certificate, Evidence,
                         Inspection, Instrument, IrrigationZone, Measurement,
                         Organization, Project, Pump, Reservoir, Service,
                         ServiceRequest, Site, User, Valve, WaterAllocation,
-                        WaterResource, Well)
+                        WaterResource, Well, AgriParcel, AgriObservation,
+                        AgriPlan, AgriTask, SimulationRun)
+from app.platform_models import DataRoom, Opportunity
+from app.operations_models import ValueListing, ValueMatch
 from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
 from app.services.catalog import ensure_service_catalog
@@ -47,11 +50,24 @@ def main():
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
                "calibrations": 0, "certificates": 0, "inspections": 0,
-               "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0}
+               "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0,
+               "agriculture": 0, "simulation": 0, "collaboration": 0,
+               "opportunities": 0, "matching": 0}
     try:
         created["services"] += ensure_service_catalog(db)
         if not seed_demo:
-            ensure_default_indicator(db)
+            _, c = get_or_create(
+            db, SimulationRun, org_id=org1.id, device_id=dev1.id,
+            scenario="LOW_WATER", seed=2601001,
+            defaults=dict(
+                steps=12, step_seconds=300,
+                start_time=datetime(2026, 10, 1, 6, 0, tzinfo=timezone.utc),
+                status="CREATED", generated_count=0, created_by=reviewer1.id,
+                configuration={"purpose": "demo", "expected": "water-level stress"},
+                is_demo=True))
+        created["simulation"] += c
+
+        ensure_default_indicator(db)
             db.commit()
             print("SEED_DEMO=false — no demo data inserted (indicator and authored service catalog ensured).")
             return
@@ -909,6 +925,109 @@ def main():
                 decision_id=dec2.id, from_status="", to_status="PROPOSED",
                 actor_id=reviewer1.id, actor_role="reviewer",
                 created_at=datetime(2026, 9, 28, 9, 0, tzinfo=timezone.utc)))
+
+        # ---- Agriculture / collaboration / opportunity DEMO ----
+        parcel1, c = get_or_create(
+            db, AgriParcel, org_id=org1.id, name="قطعة نخيل أولف A-01 (تجريبي)",
+            defaults=dict(
+                crop="date_palm", area_ha=12.5, location="أولف — أدرار",
+                site_id=site1.id, lat=27.90, lon=-0.29, stage="mid",
+                archived=False, created_by=member1.id))
+        created["agriculture"] += c
+
+        demo_observations = [
+            ("ph", 7.3, "pH", "lab", "DEMO-LAB-SOIL-PH-001", "OBSERVED"),
+            ("ec", 2.1, "dS/m", "lab", "DEMO-LAB-SOIL-EC-001", "OBSERVED"),
+            ("ndvi", 0.68, "index", "satellite", "DEMO-SAT-NDVI-2026-10-01", "INFERRED"),
+            ("moisture", 26.4, "% VWC", "satellite", "DEMO-SAT-MOIST-2026-10-01", "INFERRED"),
+        ]
+        for metric, value, unit, source_type, source_ref, evidence_status in demo_observations:
+            _, c = get_or_create(
+                db, AgriObservation,
+                org_id=org1.id, parcel_id=parcel1.id, metric=metric, source_ref=source_ref,
+                defaults=dict(
+                    value=value, unit=unit, source_type=source_type,
+                    observed_at=datetime(2026, 10, 1, 7, 0, tzinfo=timezone.utc),
+                    evidence_status=evidence_status, created_by=member1.id))
+            created["agriculture"] += c
+
+        _, c = get_or_create(
+            db, AgriPlan, org_id=org1.id, parcel_id=parcel1.id,
+            defaults=dict(
+                inputs={
+                    "area_ha": 12.5, "eto_mm_day": 5.8, "kc": 0.85,
+                    "effective_rain_mm": 0.5, "efficiency": 0.82, "days": 2,
+                    "input_source": "DEMO-WEATHER-2026-10"},
+                result={
+                    "net_mm": 9.36, "volume_m3": 1426.83,
+                    "decision_status": "PROPOSED", "provenance": "COMPUTED"},
+                created_by=member1.id))
+        created["agriculture"] += c
+
+        _, c = get_or_create(
+            db, AgriTask, org_id=org1.id, parcel_id=parcel1.id,
+            title="فحص شبكة الري بالتنقيط (تجريبي)",
+            defaults=dict(due_date="2026-10-13", completed=False, created_by=member1.id))
+        created["agriculture"] += c
+
+        room1, c = get_or_create(
+            db, DataRoom, org_id=org1.id, project_id=proj.id,
+            title="Data Room — فڨارة أولف الشرقية (تجريبي)",
+            defaults=dict(
+                purpose="غرفة بيانات تجريبية لمشاركة الأدلة والجاهزية الفنية مع الشركاء.",
+                discoverable=True, status="open", created_by=reviewer1.id))
+        created["collaboration"] += c
+
+        _, c = get_or_create(
+            db, Opportunity, org_id=org1.id,
+            title="طلب شريك تقني لتحسين كفاءة الري — أدرار (تجريبي)",
+            defaults=dict(
+                created_by=member1.id,
+                description="حاجة تجريبية إلى شريك هندسي لتحسين كفاءة الري وربط القياسات بالأدلة.",
+                domain="water", kind="need", category="engineering", wilaya="أدرار",
+                room_id=room1.id, published=True,
+                consent_at=datetime(2026, 10, 1, 10, 0, tzinfo=timezone.utc),
+                consent_version="publication-v1", status="open"))
+        created["opportunities"] += c
+
+        _, c = get_or_create(
+            db, Opportunity, org_id=org2.id,
+            title="عرض خدمات هندسة ري ومراقبة — تندوف (تجريبي)",
+            defaults=dict(
+                created_by=member2.id,
+                description="عرض تجريبي لخدمات هندسة الري والمراقبة وربط القياسات بخطط التشغيل.",
+                domain="water", kind="offer", category="engineering", wilaya="تندوف",
+                room_id=None, published=True,
+                consent_at=datetime(2026, 10, 1, 10, 5, tzinfo=timezone.utc),
+                consent_version="publication-v1", status="open"))
+        created["opportunities"] += c
+
+        listing_offer, c = get_or_create(
+            db, ValueListing, org_id=org1.id, kind="offer",
+            product_code="demo.drip-irrigation-kit",
+            title="حزمة ري بالتنقيط ذكية (تجريبي)",
+            defaults=dict(
+                project_id=proj.id, sector="equipment", quantity=40, unit="unit",
+                wilaya="أدرار", status="active", created_by=member1.id))
+        created["matching"] += c
+
+        listing_demand, c = get_or_create(
+            db, ValueListing, org_id=org1.id, kind="demand",
+            product_code="demo.drip-irrigation-kit",
+            title="طلب حزمة ري بالتنقيط ذكية (تجريبي)",
+            defaults=dict(
+                project_id=proj.id, sector="equipment", quantity=12, unit="unit",
+                wilaya="أدرار", status="active", created_by=member1.id))
+        created["matching"] += c
+
+        _, c = get_or_create(
+            db, ValueMatch, org_id=org1.id,
+            offer_id=listing_offer.id, demand_id=listing_demand.id,
+            defaults=dict(
+                quantity=12, score=100,
+                reasons=["same_product_code", "same_unit", "opposite_kind", "same_wilaya"],
+                status="suggested"))
+        created["matching"] += c
 
         # ---- Demo IoT/simulator ----
         dev1, c = get_or_create(db, Device, org_id=org1.id,
