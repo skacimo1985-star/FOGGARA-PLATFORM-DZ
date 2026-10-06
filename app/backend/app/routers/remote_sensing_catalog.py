@@ -37,11 +37,48 @@ def _parse_bbox(raw: str) -> list[float]:
     return values
 
 
+def _valid_position(value) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) >= 2
+        and all(isinstance(coord, (int, float)) and not isinstance(coord, bool) and math.isfinite(coord) for coord in value[:2])
+        and -180 <= float(value[0]) <= 180
+        and -90 <= float(value[1]) <= 90
+    )
+
+
+def _valid_ring(value) -> bool:
+    return isinstance(value, list) and len(value) >= 4 and all(_valid_position(position) for position in value)
+
+
+def _sanitize_geometry(value):
+    if not isinstance(value, dict):
+        return None
+    geometry_type = value.get("type")
+    coordinates = value.get("coordinates")
+    if geometry_type == "Polygon":
+        if not isinstance(coordinates, list) or not coordinates or not all(_valid_ring(ring) for ring in coordinates):
+            return None
+    elif geometry_type == "MultiPolygon":
+        if (
+            not isinstance(coordinates, list)
+            or not coordinates
+            or not all(
+                isinstance(polygon, list)
+                and polygon
+                and all(_valid_ring(ring) for ring in polygon)
+                for polygon in coordinates
+            )
+        ):
+            return None
+    else:
+        return None
+    return {"type": geometry_type, "coordinates": coordinates}
+
+
 def _scene_from_feature(feature: dict) -> dict:
     props = feature.get("properties") if isinstance(feature.get("properties"), dict) else {}
-    geometry = feature.get("geometry")
-    if not isinstance(geometry, dict) or geometry.get("type") not in {"Polygon", "MultiPolygon"}:
-        geometry = None
+    geometry = _sanitize_geometry(feature.get("geometry"))
 
     raw_bbox = feature.get("bbox")
     bbox = None
