@@ -159,8 +159,8 @@ jobs:
         shell: powershell
         run: |
           "## FOGGARA self-hosted verification" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "- Target: `${{ inputs.target_ref }}`" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "- Runner: `Windows self-hosted X64`" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Target: ${{ steps.target.outputs.ref }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Runner: Windows self-hosted X64" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
           "- PostgreSQL/Alembic recovery gates remain owned by the full Linux CI workflow." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
       - name: Remove disposable SQLite files
