@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from tests.conftest import login
@@ -106,9 +107,9 @@ def test_verified_parcel_measurements_drive_soil_service_after_independent_revie
     )
     assert saved.status_code == 201, saved.text
     evidence = client.get(f"/api/evidences/{saved.json()['evidence_id']}", headers=member).json()
-    assert '"soil_provenance":"VERIFIED_MEASUREMENTS"' in evidence["content_note"]
-    for measurement_id in soil["measurement_ids"]:
-        assert str(measurement_id) in evidence["content_note"]
+    note = json.loads(evidence["content_note"])
+    assert note["soil_provenance"] == "VERIFIED_MEASUREMENTS"
+    assert set(note["soil_measurement_ids"]) == set(soil["measurement_ids"])
 
 
 def test_parcel_link_is_tenant_scoped_and_site_consistent(client, world):
