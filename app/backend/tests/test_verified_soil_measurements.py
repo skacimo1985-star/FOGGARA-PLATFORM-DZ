@@ -12,6 +12,20 @@ def project(client, headers, title="Verified soil project", site_id=None):
     return response.json()
 
 
+
+
+def owned_parcel(client, email="o1m@t.dz"):
+    headers = login(client, email)
+    response = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "Verified soil field",
+        "crop": "wheat",
+        "area_ha": 4.0,
+        "location": "Laghouat",
+    })
+    assert response.status_code == 201, response.text
+    return headers, response.json()["id"]
+
+
 def soil_row(parcel_id, parameter, value, unit, source):
     return {
         "parcel_id": parcel_id,
@@ -27,8 +41,8 @@ def soil_row(parcel_id, parameter, value, unit, source):
     }
 
 
-def test_verified_parcel_measurements_drive_soil_service_after_independent_review(client, world, farm):
-    member, parcel_id = farm
+def test_verified_parcel_measurements_drive_soil_service_after_independent_review(client, world):
+    member, parcel_id = owned_parcel(client)
     reviewer = login(client, "o1r@t.dz")
     p = project(client, member)
     batch = "SOIL-LAB-VERIFIED-01"
@@ -135,8 +149,8 @@ def test_parcel_link_is_tenant_scoped_and_site_consistent(client, world):
     assert mismatch.json()["detail"]["code"] == "PARCEL_PROJECT_SITE_MISMATCH"
 
 
-def test_manual_measurement_can_link_to_owned_parcel(client, world, farm):
-    member, parcel_id = farm
+def test_manual_measurement_can_link_to_owned_parcel(client, world):
+    member, parcel_id = owned_parcel(client)
     p = project(client, member, "Manual parcel measurement")
     response = client.post("/api/measurements", headers=member, json={
         "project_id": p["id"],
