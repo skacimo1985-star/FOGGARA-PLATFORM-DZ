@@ -372,6 +372,11 @@ def main():
                 expect(page.get_by_test_id("gis-selected-parcel")).to_contain_text("CI Real Parcel")
                 ensure_no_overflow(page, ("workspace-setup-context", page.url))
 
+                authenticated_visit(f"/app/water?project={project_id}&site={site_bechar_id}")
+                expect(page.get_by_test_id("water-project-context")).to_be_visible()
+                expect(page.get_by_test_id("water-project-context")).to_contain_text("CI-Bechar")
+                ensure_no_overflow(page, ("water-project-context", site_bechar_id))
+
                 authenticated_visit(f"/app/gis?project={project_id}&site={site_bechar_id}&parcel={parcel_id}")
                 expect(page.get_by_test_id("gis-operational-context")).to_be_visible()
                 expect(page.get_by_test_id("gis-operational-context")).to_contain_text("واحة الاختبار")
