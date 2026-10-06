@@ -177,7 +177,7 @@ def test_stac_bbox_datetime_and_collection_filters(client, world, db):
 def test_stac_rejects_invalid_filters(client, world):
     headers = login(client, world["o1_member"].email)
 
-    for bbox in ("1,2,3", "x,2,3,4", "5,2,1,4", "-181,0,1,2"):
+    for bbox in ("1,2,3", "x,2,3,4", "1,5,2,4", "-181,0,1,2"):
         response = client.get(f"/api/stac/search?bbox={bbox}", headers=headers)
         assert response.status_code == 422, (bbox, response.text)
         assert response.json()["detail"]["code"] == "INVALID_BBOX"
