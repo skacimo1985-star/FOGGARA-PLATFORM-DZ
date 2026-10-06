@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useSearchParams } from "react-router";
 import { CircleGauge, Droplets, Gauge, Network, Waves, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
@@ -38,6 +39,10 @@ interface WaterData {
 export default function Water() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const [search] = useSearchParams();
+  const contextSiteId = Number(search.get("site"));
+  const contextProjectId = Number(search.get("project"));
+  const scopedSiteId = Number.isInteger(contextSiteId) && contextSiteId > 0 ? contextSiteId : null;
   const [d, setD] = useState<WaterData | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [error, setError] = useState<unknown>(null);
@@ -55,11 +60,33 @@ export default function Water() {
       api.get<Valve[]>("/water/valves"),
       api.get<WaterAllocation[]>("/water/allocations"),
     ])
-      .then(([wells, reservoirs, pumps, vfds, zones, valves, allocations]) =>
-        setD({ wells, reservoirs, pumps, vfds, zones, valves, allocations }))
+      .then(([wells, reservoirs, pumps, vfds, zones, valves, allocations]) => {
+        if (!scopedSiteId) {
+          setD({ wells, reservoirs, pumps, vfds, zones, valves, allocations });
+          return;
+        }
+        const scopedWells = wells.filter((row) => row.site_id === scopedSiteId);
+        const scopedReservoirs = reservoirs.filter((row) => row.site_id === scopedSiteId);
+        const scopedPumps = pumps.filter((row) => row.site_id === scopedSiteId);
+        const scopedZones = zones.filter((row) => row.site_id === scopedSiteId);
+        const scopedValves = valves.filter((row) => row.site_id === scopedSiteId);
+        const pumpIds = new Set(scopedPumps.map((row) => row.id));
+        const zoneIds = new Set(scopedZones.map((row) => row.id));
+        setD({
+          wells: scopedWells,
+          reservoirs: scopedReservoirs,
+          pumps: scopedPumps,
+          vfds: vfds.filter((row) => pumpIds.has(row.pump_id)),
+          zones: scopedZones,
+          valves: scopedValves,
+          allocations: allocations.filter((row) => zoneIds.has(row.zone_id)),
+        });
+      })
       .catch(setError);
-    api.getAll<Site>("/sites").then(setSites).catch(setError);
-  }, []);
+    api.getAll<Site>("/sites")
+      .then((rows) => setSites(scopedSiteId ? rows.filter((row) => row.id === scopedSiteId) : rows))
+      .catch(setError);
+  }, [scopedSiteId]);
 
   useEffect(() => { reload(); }, [reload]);
 
@@ -126,6 +153,19 @@ export default function Water() {
         <h1 className="t-section text-ink">{t("water.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("water.subtitle")}</p>
       </div>
+      {scopedSiteId ? (
+        <section data-testid="water-project-context" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-500/25 bg-sky-500/5 p-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-sky-700">FOGGARA / PROJECT WATER CONTEXT</p>
+            <strong>{siteName(scopedSiteId)}</strong>
+          </div>
+          {Number.isInteger(contextProjectId) && contextProjectId > 0 ? (
+            <Link className="text-sm font-semibold underline underline-offset-4" to={`/app/projects/${contextProjectId}`}>
+              {t("common.back")}
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
       <ErrorText error={error} />
 
       {d && waterSummary && (
