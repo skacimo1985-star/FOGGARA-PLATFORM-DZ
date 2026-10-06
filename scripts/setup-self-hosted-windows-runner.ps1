@@ -69,7 +69,7 @@ try {
     }
 
     Write-Host "Registering runner without storing the token in this script..."
-    & ".\config.cmd" --url $RepositoryUrl --token $plainToken --name $RunnerName --work "_work" --unattended --replace
+    & ".\config.cmd" --url $RepositoryUrl --token $plainToken --name $RunnerName --labels "foggara-ci" --work "_work" --unattended --replace
 
     if ($LASTEXITCODE -ne 0) {
         throw "GitHub runner registration failed with exit code $LASTEXITCODE."
