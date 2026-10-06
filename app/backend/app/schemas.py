@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generic, Literal, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -168,6 +168,33 @@ class MeasurementIn(BaseModel):
     source_type: Literal["manual", "instrument", "imported"] = "manual"
     instrument_id: Optional[int] = None
     asset_id: Optional[int] = None
+
+
+class MeasurementImportRow(BaseModel):
+    resource_id: Optional[int] = None
+    parameter: MEASUREMENT_PARAMETERS
+    value: float
+    unit: str = Field(min_length=1, max_length=20)
+    measured_at: datetime
+    source: str = Field(min_length=1, max_length=255)
+    method: str = Field(min_length=1, max_length=255)
+    instrument_id: Optional[int] = None
+    asset_id: Optional[int] = None
+
+    @field_validator("measured_at")
+    @classmethod
+    def validate_measured_at(cls, value: datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("measured_at must include a timezone")
+        if value > datetime.now(timezone.utc):
+            raise ValueError("measured_at cannot be in the future")
+        return value
+
+
+class MeasurementBatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    batch_reference: str = Field(min_length=1, max_length=120)
+    rows: list[MeasurementImportRow] = Field(min_length=1, max_length=500)
 
 
 class MeasurementOut(ORM):
