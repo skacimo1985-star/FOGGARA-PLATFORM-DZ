@@ -1104,7 +1104,7 @@
   "agri": {
     "title": "Intelligence agricole",
     "subtitle": "Intelligence du sol, des cultures et de l’irrigation liée aux sources examinées et aux dates d’acquisition. Les indices satellitaires complètent les mesures et l’examen agronomique.",
-    "liveNotice": "Cette version traite les données fournies. Aucun fournisseur satellite ou météo en direct ni modèle de diagnostic automatique n’est connecté.",
+    "liveNotice": "Le catalogue Sentinel-2 et les indices raster sont disponibles en direct. La météo en direct est configurée par l’opérateur et reste inférée ; le diagnostic d’image automatisé n’est pas activé.",
     "recorded": "Données sources disponibles ; vérifier date et méthode.",
     "unavailable": "Aucune donnée source admissible",
     "complimentary": "Calcul d’indice inclus",
