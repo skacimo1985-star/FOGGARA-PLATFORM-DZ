@@ -1104,7 +1104,7 @@
   "agri": {
     "title": "Agricultural intelligence",
     "subtitle": "Soil, crop and irrigation intelligence linked to reviewed sources and acquisition times. Satellite indices complement measurements and agronomic review.",
-    "liveNotice": "This release processes supplied records. No live satellite or weather provider or automated image-diagnosis model is connected.",
+    "liveNotice": "Live Sentinel-2 catalog and raster indices are available. Live weather is operator-configured and remains inferred; automated image diagnosis is not enabled.",
     "recorded": "Source records available; check date and method.",
     "unavailable": "No eligible source data",
     "complimentary": "Included index calculation",
