@@ -205,3 +205,18 @@ def test_stac_collection_extent_is_derived_from_org_records(client, world, db):
         float(parcel.lon), float(parcel.lat), float(parcel.lon), float(parcel.lat)
     ]]
     assert collection["summaries"]["foggara:evidence_status"] == ["INFERRED"]
+
+
+def test_stac_mixed_demo_scene_remains_demo(client, world, db):
+    _parcel, rows = _scene(db, world, source_ref="provider:mixed-demo-scene")
+    rows[0].is_demo = False
+    db.commit()
+    headers = login(client, world["o1_member"].email)
+
+    response = client.get("/api/stac/search", headers=headers)
+    assert response.status_code == 200
+    item = next(
+        feature for feature in response.json()["features"]
+        if feature["properties"]["foggara:scene_id"] == "mixed-demo-scene"
+    )
+    assert item["properties"]["foggara:is_demo"] is True
