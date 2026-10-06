@@ -142,6 +142,10 @@ docker run -p 8000:8000 foggara-dz
 | `ENV` | `dev` أو `prod`. عند `prod` يُرفض الإقلاع بـ `JWT_SECRET` الافتراضي أو الأقصر من 32 حرفًا |
 | `JWT_SECRET` | سر توقيع JWT. أنشئه: `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `TOKEN_TTL_HOURS` | مدة صلاحية التوكن بالساعات (افتراضي 12) |
+| `AI_PROVIDER_MODE` | `deterministic` أو `local` أو `external`. استخدم `local` مع Ollama/LocalAI داخل بنيتك السيادية |
+| `AI_BASE_URL` | قاعدة API متوافقة مع OpenAI؛ مثال محلي `http://127.0.0.1:11434/v1` |
+| `AI_MODEL` | اسم النموذج المحلي/الخارجي الذي يختاره المشغل |
+| `AI_API_KEY` | غير مطلوب في `local`، ومطلوب في `external`؛ يُحفظ في Secrets ولا يُودع في Git |
 | `WEATHER_PROVIDER_ENABLED` | مزود الطقس الزراعي الحي؛ معطل افتراضيًا، ولا ينبغي تفعيله دون endpoint مرخّص تجاريًا أو ذاتي الاستضافة |
 | `WEATHER_BASE_URL` | أصل Open-Meteo-compatible ثابت يضبطه المشغل؛ لا يُقبل من طلب المستخدم، وHTTPS إلزامي في `prod` |
 | `WEATHER_API_KEY` | مفتاح اختياري للخدمة التجارية؛ يُحفظ في Secrets ولا يُودع في Git |
