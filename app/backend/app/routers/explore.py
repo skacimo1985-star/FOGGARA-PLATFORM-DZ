@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import (Asset, Indicator, Project, Service, ServiceRequest, Site,
+from ..models import (AgriParcel, Asset, Indicator, Project, Service, ServiceRequest, Site,
                       User, WaterResource)
 from ..wilayas import WILAYAS
 from ..platform_models import NexusResource
@@ -205,6 +205,42 @@ def gis_sites_geojson(user: User = Depends(get_current_user), db: Session = Depe
             "count": len(sites),
             "crs": "EPSG:4326",
             "spatial_engine": "portable_latlon",
+        },
+    }
+
+
+@router.get("/gis/parcels.geojson")
+def gis_parcels_geojson(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    parcels = list(db.scalars(
+        select(AgriParcel).where(
+            AgriParcel.org_id == user.org_id,
+            AgriParcel.archived.is_(False),
+            AgriParcel.boundary_geojson.is_not(None),
+        ).order_by(AgriParcel.id.desc()).limit(2000)
+    ))
+    features = [{
+        "type": "Feature",
+        "id": parcel.id,
+        "geometry": parcel.boundary_geojson,
+        "properties": {
+            "id": parcel.id,
+            "name": parcel.name,
+            "crop": parcel.crop,
+            "area_ha": float(parcel.area_ha),
+            "location": parcel.location,
+            "site_id": parcel.site_id,
+            "is_demo": parcel.is_demo,
+        },
+    } for parcel in parcels]
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "metadata": {
+            "organization_scoped": True,
+            "count": len(features),
+            "crs": "EPSG:4326",
+            "spatial_engine": "portable_geojson",
+            "geometry_type": "Polygon",
         },
     }
 

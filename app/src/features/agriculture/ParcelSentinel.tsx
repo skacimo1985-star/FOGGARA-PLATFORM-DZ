@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Satellite, MapPinned, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import ParcelBoundaryEditor from "./ParcelBoundaryEditor";
 
 type Parcel = {
   id: number;
@@ -9,6 +10,7 @@ type Parcel = {
   area_ha: number;
   lat?: number | null;
   lon?: number | null;
+  boundary_geojson?: {type:"Polygon";coordinates:[number,number][][]} | null;
   archived: boolean;
 };
 type Scene = {
@@ -49,7 +51,7 @@ export default function ParcelSentinel({
     scene: "Scène satellite", clouds: "Nuages", compute: "Calculer et enregistrer le NDVI",
     coords: "Les coordonnées du centre sont requises.", lat: "Latitude", lon: "Longitude",
     saveCoords: "Enregistrer la position", noScenes: "Aucune scène trouvée pour la période.",
-    missing: "Ajoutez une parcelle réelle d’abord.", info: "Échantillon carré approximatif autour du point central, pas une mesure de toute la parcelle. Résultat INFÉRÉ et non vérifié sur le terrain.",
+    missing: "Ajoutez une parcelle réelle d’abord.", info: "Sans contour, l’analyse utilise un carré estimé autour du centre. Avec un contour enregistré, les statistiques sont masquées au polygone réel. Résultat INFÉRÉ et non vérifié sur le terrain.",
     saved: "NDVI enregistré", duplicate: "Scène déjà enregistrée", load: "Consultation du catalogue…",
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
   } : lang === "en" ? {
@@ -58,7 +60,7 @@ export default function ParcelSentinel({
     scene: "Satellite scene", clouds: "Clouds", compute: "Compute and save NDVI",
     coords: "Parcel centre coordinates are required.", lat: "Latitude", lon: "Longitude",
     saveCoords: "Save location", noScenes: "No scenes found for this period.",
-    missing: "Add a real parcel first.", info: "Approximate square sample around the parcel centre, not a field-wide measurement. Result is INFERRED, not ground verified.",
+    missing: "Add a real parcel first.", info: "Without a boundary, analysis uses an approximate square around the centre. With a saved boundary, statistics are masked to the real polygon. Result remains INFERRED, not ground verified.",
     saved: "NDVI saved", duplicate: "Scene already recorded", load: "Checking satellite catalogue…",
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
   } : {
@@ -67,7 +69,7 @@ export default function ParcelSentinel({
     scene: "المشهد الفضائي", clouds: "الغيوم", compute: "حساب NDVI وحفظه",
     coords: "يجب إدخال إحداثيات مركز القطعة.", lat: "خط العرض", lon: "خط الطول",
     saveCoords: "حفظ الموقع", noScenes: "لا توجد مشاهد ضمن هذه الفترة.",
-    missing: "أنشئ قطعة زراعية حقيقية أولاً.", info: "التحليل لعينة مربعة تقريبية حول مركز القطعة، وليس لكامل حدود الحقل. النتيجة INFERRED وليست قياسًا ميدانيًا متحققًا.",
+    missing: "أنشئ قطعة زراعية حقيقية أولاً.", info: "بدون حدود مرسومة يستخدم التحليل مربعًا تقديريًا حول المركز؛ وعند حفظ الحدود تُقص الإحصاءات على البوليغون الحقيقي. تبقى النتيجة INFERRED وليست قياسًا ميدانيًا متحققًا.",
     saved: "تم حفظ NDVI", duplicate: "هذا المشهد محفوظ سابقًا", load: "جاري البحث في فهرس الأقمار…",
     busy: "جاري تحليل الصورة…", error: "فشلت العملية. تحقق من الإحداثيات وتوفر المزود وجودة المشهد.",
   };
@@ -150,6 +152,7 @@ export default function ParcelSentinel({
       <label className="fg-field"><span>{text.parcel}</span><select value={parcel.id} onChange={e => setParcelId(Number(e.target.value))}>
         {active.map(p => <option key={p.id} value={p.id}>{p.name} — {Number(p.area_ha).toFixed(2)} ha</option>)}
       </select></label>
+      <ParcelBoundaryEditor parcel={parcel} onSaved={onSaved}/>
       {!hasCoords ? <form onSubmit={handleCoords} className="fg-form">
         <p className="fg-muted"><MapPinned size={16}/> {text.coords}</p>
         <div className="fg-form-grid">
@@ -181,7 +184,7 @@ export default function ParcelSentinel({
         {result.statistics && <small>Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%</small>}
       </div>}
       {error && <p className="fg-error" role="alert">{error}</p>}
-      <p className="fg-footnote">{text.info}</p>
+      <p className="fg-footnote">{text.info} {parcel.boundary_geojson ? " · PARCEL_BOUNDARY_GEOJSON" : " · POINT_CENTERED_ESTIMATE"}</p>
     </div>
   </section>;
 }

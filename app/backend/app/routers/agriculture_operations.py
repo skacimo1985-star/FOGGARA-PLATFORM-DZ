@@ -11,6 +11,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, Site, User
 from ..services.agriculture_operations import irrigation_scenario
+from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
 from ..services.service_delivery import irrigation_water_assessment, soil_assessment
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
@@ -26,11 +27,19 @@ class ParcelIn(Input):
     site_id: int | None = Field(default=None, gt=0)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lon: float | None = Field(default=None, ge=-180, le=180)
+    boundary_geojson: dict | None = None
     stage: Literal['initial', 'development', 'mid', 'late'] = 'initial'
 
     @model_validator(mode='after')
-    def coordinate_pair(self):
-        if (self.lat is None) != (self.lon is None):
+    def geometry(self):
+        if self.boundary_geojson is not None:
+            try:
+                normalized, meta = normalize_parcel_boundary(self.boundary_geojson)
+            except ParcelGeometryError as exc:
+                raise ValueError(str(exc)) from exc
+            self.boundary_geojson = normalized
+            self.lon, self.lat = meta['centroid']
+        elif (self.lat is None) != (self.lon is None):
             raise ValueError('Latitude and longitude must be supplied together')
         return self
 
@@ -39,10 +48,18 @@ class ParcelUpdate(Input):
     archived: bool | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
     lon: float | None = Field(default=None, ge=-180, le=180)
+    boundary_geojson: dict | None = None
 
     @model_validator(mode='after')
-    def coordinate_pair(self):
-        if (self.lat is None) != (self.lon is None):
+    def geometry(self):
+        if 'boundary_geojson' in self.model_fields_set and self.boundary_geojson is not None:
+            try:
+                normalized, meta = normalize_parcel_boundary(self.boundary_geojson)
+            except ParcelGeometryError as exc:
+                raise ValueError(str(exc)) from exc
+            self.boundary_geojson = normalized
+            self.lon, self.lat = meta['centroid']
+        elif ('lat' in self.model_fields_set) != ('lon' in self.model_fields_set):
             raise ValueError('Latitude and longitude must be provided together')
         return self
 
@@ -183,8 +200,15 @@ def create_parcel(payload: ParcelIn, user: User = Depends(get_current_user), db:
 @operations_router.patch('/parcels/{identity}')
 def update_parcel(identity: int, payload: ParcelUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     row = own(db, AgriParcel, identity, user)
-    for k, v in payload.model_dump(exclude_none=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    for k, v in changes.items():
         setattr(row, k, v)
+    if 'boundary_geojson' in payload.model_fields_set:
+        meta = None
+        if row.boundary_geojson is not None:
+            _normalized, meta = normalize_parcel_boundary(row.boundary_geojson)
+        audit(db, user, 'boundary_update', 'agri_parcels', entity_id=row.id,
+              meta={'has_boundary': row.boundary_geojson is not None, 'geometry': meta})
     return record(db, user, row, 'update')
 
 @operations_router.get('/observations')
