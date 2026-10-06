@@ -6,9 +6,9 @@ from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
 from ..models import (Action, Asset, Evidence, HumanDecision, Instrument,
-                      Measurement, Recommendation, Review, User)
+                      Measurement, Recommendation, Review, User, WaterResource)
 from ..schemas import (EvidenceIn, EvidenceOut, HumanDecisionIn,
-                       HumanDecisionOut, MeasurementIn, MeasurementOut,
+                       HumanDecisionOut, MeasurementBatchIn, MeasurementIn, MeasurementOut,
                        ReviewIn, ReviewOut)
 from ..services.indicators import canonical_unit, validate_measurement
 from ..services.metrology import instrument_has_valid_calibration
@@ -25,23 +25,31 @@ def list_measurements(project_id: int, user: User = Depends(get_current_user), d
                       .order_by(Measurement.measured_at.desc())).scalars().all()
 
 
+def _validate_measurement_links(db: Session, user: User, *, resource_id, instrument_id, asset_id):
+    if resource_id is not None:
+        resource = db.get(WaterResource, resource_id)
+        if resource is None or resource.org_id != user.org_id:
+            api_error(404, "NOT_FOUND", "Resource not found")
+    if instrument_id is not None:
+        instrument = db.get(Instrument, instrument_id)
+        if instrument is None or instrument.org_id != user.org_id:
+            api_error(404, "NOT_FOUND", "Instrument not found")
+    if asset_id is not None:
+        asset = db.get(Asset, asset_id)
+        if asset is None or asset.org_id != user.org_id:
+            api_error(404, "NOT_FOUND", "Asset not found")
+
+
 @router.post("/measurements", response_model=MeasurementOut, status_code=201)
 def create_measurement(payload: MeasurementIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     get_project_or_404(db, user, payload.project_id)
     validate_measurement(payload.parameter, payload.value, payload.unit)
-    if payload.resource_id is not None:
-        from ..models import WaterResource
-        r = db.get(WaterResource, payload.resource_id)
-        if r is None or r.org_id != user.org_id:
-            api_error(404, "NOT_FOUND", "Resource not found")
-    if payload.instrument_id is not None:
-        inst = db.get(Instrument, payload.instrument_id)
-        if inst is None or inst.org_id != user.org_id:
-            api_error(404, "NOT_FOUND", "Instrument not found")
-    if payload.asset_id is not None:
-        a = db.get(Asset, payload.asset_id)
-        if a is None or a.org_id != user.org_id:
-            api_error(404, "NOT_FOUND", "Asset not found")
+    _validate_measurement_links(
+        db, user,
+        resource_id=payload.resource_id,
+        instrument_id=payload.instrument_id,
+        asset_id=payload.asset_id,
+    )
     data = payload.model_dump()
     data["unit"] = canonical_unit(payload.parameter, payload.unit)  # تخزين قياسي موحّد
     m = Measurement(org_id=user.org_id, submitted_by=user.id, **data)
@@ -52,6 +60,115 @@ def create_measurement(payload: MeasurementIn, user: User = Depends(get_current_
                 "source_type": m.source_type, "instrument_id": m.instrument_id})
     db.commit()
     return m
+
+
+@router.post("/projects/{project_id}/measurements/import", status_code=201)
+def import_measurements(project_id: int, payload: MeasurementBatchIn,
+                        user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Atomically import up to 500 field/lab measurements.
+
+    Re-importing the same exact observation is idempotent. Imported records
+    remain pending/unverified; the batch endpoint never promotes evidence.
+    """
+    get_project_or_404(db, user, project_id)
+    normalized = []
+    seen = set()
+    skipped_duplicates = 0
+
+    for row in payload.rows:
+        validate_measurement(row.parameter, row.value, row.unit)
+        _validate_measurement_links(
+            db, user,
+            resource_id=row.resource_id,
+            instrument_id=row.instrument_id,
+            asset_id=row.asset_id,
+        )
+        unit = canonical_unit(row.parameter, row.unit)
+        key = (
+            project_id, row.resource_id, row.parameter, float(row.value), unit,
+            row.measured_at, row.source, row.method, row.instrument_id, row.asset_id,
+        )
+        if key in seen:
+            skipped_duplicates += 1
+            continue
+        seen.add(key)
+        existing = db.scalar(select(Measurement.id).where(
+            Measurement.org_id == user.org_id,
+            Measurement.project_id == project_id,
+            Measurement.resource_id == row.resource_id,
+            Measurement.parameter == row.parameter,
+            Measurement.value == row.value,
+            Measurement.unit == unit,
+            Measurement.measured_at == row.measured_at,
+            Measurement.source == row.source,
+            Measurement.method == row.method,
+            Measurement.instrument_id == row.instrument_id,
+            Measurement.asset_id == row.asset_id,
+        ))
+        if existing is not None:
+            skipped_duplicates += 1
+            continue
+        normalized.append((row, unit))
+
+    created = []
+    for row, unit in normalized:
+        data = row.model_dump()
+        data["unit"] = unit
+        measurement = Measurement(
+            org_id=user.org_id,
+            project_id=project_id,
+            submitted_by=user.id,
+            source_type="imported",
+            quality_status="pending",
+            verification_status="unverified",
+            is_demo=False,
+            **data,
+        )
+        db.add(measurement)
+        db.flush()
+        audit(
+            db, user, "import", "measurement",
+            entity_id=measurement.id, project_id=project_id,
+            meta={
+                "batch_reference": payload.batch_reference,
+                "parameter": measurement.parameter,
+                "unit": measurement.unit,
+                "source_type": "imported",
+                "instrument_id": measurement.instrument_id,
+            },
+        )
+        created.append(measurement)
+
+    audit(
+        db, user, "measurement_batch_import", "project",
+        entity_id=project_id, project_id=project_id,
+        meta={
+            "batch_reference": payload.batch_reference,
+            "received": len(payload.rows),
+            "created": len(created),
+            "skipped_duplicates": skipped_duplicates,
+        },
+    )
+    db.commit()
+    return {
+        "project_id": project_id,
+        "batch_reference": payload.batch_reference,
+        "received": len(payload.rows),
+        "created_count": len(created),
+        "skipped_duplicates": skipped_duplicates,
+        "created": [
+            {
+                "id": row.id,
+                "parameter": row.parameter,
+                "value": float(row.value),
+                "unit": row.unit,
+                "measured_at": row.measured_at,
+                "quality_status": row.quality_status,
+                "verification_status": row.verification_status,
+            }
+            for row in created
+        ],
+    }
 
 
 @router.get("/measurements/{measurement_id}", response_model=MeasurementOut)
