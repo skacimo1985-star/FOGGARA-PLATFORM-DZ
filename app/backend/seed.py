@@ -44,8 +44,8 @@ def _demo_password() -> str:
     value = os.environ.get("DEMO_PASSWORD", "")
     if not value:
         raise RuntimeError("SEED_DEMO=true requires DEMO_PASSWORD to be set")
-    if len(value) < 12:
-        raise RuntimeError("DEMO_PASSWORD must be at least 12 characters")
+    if not 12 <= len(value) <= 128:
+        raise RuntimeError("DEMO_PASSWORD must be between 12 and 128 characters")
     return value
 
 
