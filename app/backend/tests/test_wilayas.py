@@ -164,7 +164,8 @@ class TestSeedIdempotency:
                     )
                 ).scalars().first()
                 assert evidence is not None, f"Wilaya {w['code']} has no demo evidence"
-                assert "DEMO" in (evidence.content_note or "").upper()
+                assert evidence.is_demo is True
+                assert (evidence.content_note or "").strip(), f"Wilaya {w['code']} demo evidence has no explanatory note"
         finally:
             s.close()
 
