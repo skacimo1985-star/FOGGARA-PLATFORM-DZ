@@ -131,6 +131,12 @@ jobs:
           Remove-Item selfhosted_ci_plugin.py -Force -ErrorAction SilentlyContinue
           if ($testExit -ne 0) { exit $testExit }
 
+      - name: Verify OGC Features compatibility
+        working-directory: app/backend
+        shell: powershell
+        run: |
+          python -m pytest tests/test_ogc_features.py -q -ra --tb=short
+
       - name: Set up Node 22
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
