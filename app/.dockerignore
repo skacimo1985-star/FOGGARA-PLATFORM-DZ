@@ -7,6 +7,10 @@ dist
 **/*.pyc
 **/*.db
 **/*.db-*
+**/backups
+**/*.manifest.json
+**/*.partial
+**/*.dump
 **/.env
 **/.env.*
 **/uploads
