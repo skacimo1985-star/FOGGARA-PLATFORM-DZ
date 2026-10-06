@@ -19,6 +19,9 @@ dist/
 *.sql
 *.sql.gz
 backups/
+*.manifest.json
+*.partial
+*.dump
 pgdata/
 
 # قواعد بيانات SQLite المحلية (تطوير/تجربة)
