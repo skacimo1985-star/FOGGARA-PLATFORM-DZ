@@ -359,3 +359,21 @@ def test_georeferenced_parcel_rejects_invalid_coordinates(client, world, lat, lo
     })
     assert response.status_code == 422
 
+def test_agriculture_demo_flag_is_system_controlled(client, world):
+    h = login(client, 'o1m@t.dz')
+    injected = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'Injected demo','crop':'wheat','area_ha':1.0,'location':'Laghouat',
+        'is_demo': True,
+    })
+    assert injected.status_code == 422
+
+    created = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'Normal parcel','crop':'wheat','area_ha':1.0,'location':'Laghouat',
+    })
+    assert created.status_code == 201, created.text
+    assert created.json()['is_demo'] is False
+
+    observation_payload = observation(created.json()['id'])
+    observation_payload['is_demo'] = True
+    assert client.post('/api/agriculture/observations', headers=h, json=observation_payload).status_code == 422
+

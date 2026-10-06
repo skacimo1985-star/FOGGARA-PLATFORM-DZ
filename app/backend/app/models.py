@@ -873,6 +873,7 @@ class AgriParcel(Base):
     stage: Mapped[str] = mapped_column(String(30), default='initial')
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     __table_args__ = (
         CheckConstraint('area_ha > 0', name='ck_agri_area'),
@@ -895,6 +896,7 @@ class AgriObservation(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     evidence_status: Mapped[str] = mapped_column(String(20), default='OBSERVED')
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     verified_by: Mapped[int | None] = mapped_column(ForeignKey('users.id'))
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
@@ -909,6 +911,7 @@ class AgriPlan(Base):
     inputs: Mapped[dict] = mapped_column(PortableJSON)
     result: Mapped[dict] = mapped_column(PortableJSON)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
 
 
@@ -921,4 +924,5 @@ class AgriTask(Base):
     due_date: Mapped[str] = mapped_column(String(10))
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
