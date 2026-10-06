@@ -6,7 +6,7 @@ the Algeria viewport with bounded provider requests.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 
 import httpx
@@ -16,8 +16,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..deps import api_error
+from ..deps import api_error, require_reviewer
 from ..expo_models import ExpoFeedback, ExpoVisit
+from ..models import User
 from ..ratelimit import check_rate_limit
 from .remote_sensing_catalog import (
     EARTH_SEARCH_SEARCH_URL,
@@ -106,6 +107,86 @@ def expo_feedback(payload: FeedbackIn, request: Request, db: Session = Depends(g
     db.add(row)
     db.commit()
     return {"feedback_id": row.id, "status": "received", **_counts(db)}
+
+
+
+
+@router.get("/insights")
+def expo_insights(
+    _user: User = Depends(require_reviewer),
+    db: Session = Depends(get_db),
+):
+    now = datetime.now(timezone.utc)
+    last_24h = now - timedelta(hours=24)
+
+    visitors = db.scalar(select(func.count()).select_from(ExpoVisit)) or 0
+    feedback_total = db.scalar(select(func.count()).select_from(ExpoFeedback)) or 0
+    visitors_24h = db.scalar(
+        select(func.count()).select_from(ExpoVisit).where(ExpoVisit.created_at >= last_24h)
+    ) or 0
+    average_rating = db.scalar(
+        select(func.avg(ExpoFeedback.rating)).where(ExpoFeedback.rating.is_not(None))
+    )
+
+    rating_rows = db.execute(
+        select(ExpoFeedback.rating, func.count(ExpoFeedback.id))
+        .where(ExpoFeedback.rating.is_not(None))
+        .group_by(ExpoFeedback.rating)
+        .order_by(ExpoFeedback.rating)
+    ).all()
+    rating_distribution = {
+        str(int(rating)): int(count)
+        for rating, count in rating_rows
+        if rating is not None
+    }
+
+    role_expr = func.nullif(func.trim(ExpoVisit.visitor_role), "")
+    role_rows = db.execute(
+        select(role_expr.label("visitor_role"), func.count(ExpoVisit.id).label("count"))
+        .where(role_expr.is_not(None))
+        .group_by(role_expr)
+        .order_by(func.count(ExpoVisit.id).desc(), role_expr.asc())
+        .limit(12)
+    ).all()
+    role_distribution = [
+        {"visitor_role": str(role), "count": int(count)}
+        for role, count in role_rows
+    ]
+
+    recent_rows = db.execute(
+        select(
+            ExpoFeedback.id,
+            ExpoFeedback.rating,
+            ExpoFeedback.suggestion,
+            ExpoFeedback.created_at,
+            ExpoVisit.name,
+            ExpoVisit.visitor_role,
+        )
+        .join(ExpoVisit, ExpoVisit.id == ExpoFeedback.visit_id)
+        .order_by(ExpoFeedback.id.desc())
+        .limit(50)
+    ).all()
+    recent_feedback = [
+        {
+            "id": int(feedback_id),
+            "rating": int(rating) if rating is not None else None,
+            "suggestion": suggestion,
+            "created_at": created_at,
+            "name": name,
+            "visitor_role": visitor_role,
+        }
+        for feedback_id, rating, suggestion, created_at, name, visitor_role in recent_rows
+    ]
+
+    return {
+        "visitors": int(visitors),
+        "visitors_last_24h": int(visitors_24h),
+        "feedback": int(feedback_total),
+        "average_rating": round(float(average_rating), 2) if average_rating is not None else None,
+        "rating_distribution": rating_distribution,
+        "role_distribution": role_distribution,
+        "recent_feedback": recent_feedback,
+    }
 
 
 @router.get("/satellite/scenes")

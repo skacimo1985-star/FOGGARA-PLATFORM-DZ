@@ -15,6 +15,7 @@ const AgricultureServices = lazy(() => import("@/pages/AgricultureServices"));
 const Demo = lazy(() => import("@/pages/Demo"));
 const Login = lazy(() => import("@/pages/Login"));
 const Expo = lazy(() => import("@/pages/Expo"));
+const ExpoInsights = lazy(() => import("@/pages/ExpoInsights"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/app/opportunities" element={<Protected><Opportunities /></Protected>} />
             <Route path="/app/org" element={<Protected><OrganizationPage /></Protected>} />
             <Route path="/app/review" element={<Protected><ReviewQueue /></Protected>} />
+            <Route path="/app/expo-feedback" element={<Protected><ExpoInsights /></Protected>} />
             <Route path="/app/audit" element={<Protected><AuditPage /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
