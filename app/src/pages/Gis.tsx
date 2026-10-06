@@ -117,7 +117,11 @@ export default function Gis() {
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
-  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const requestedSiteId = Number(searchParams.get("site"));
+  const requestedProjectId = Number(searchParams.get("project"));
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(
+    Number.isInteger(requestedSiteId) && requestedSiteId > 0 ? requestedSiteId : null,
+  );
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
@@ -286,6 +290,10 @@ export default function Gis() {
 
   const selectSite = async (siteId: number) => {
     setSelectedSiteId(siteId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("site", String(siteId));
+    if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) nextParams.set("project", String(requestedProjectId));
+    setSearchParams(nextParams, { replace: true });
     const entry = (data ?? []).find((row) => row.site.id === siteId);
     if (!entry) {
       setNearest([]);
