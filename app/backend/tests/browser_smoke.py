@@ -319,6 +319,7 @@ def main():
                     if path == "/app/agriculture":
                         expect(page.locator(".fg-section-nav")).to_be_visible()
                         expect(page.locator(".fg-section-nav button")).to_have_count(8)
+                        assert page.locator(".fg-section-nav button").first.evaluate("e => e.getBoundingClientRect().height >= 44")
                         expect(page.locator(".fg-sidebar")).to_have_count(0)
                         expect(page.locator(".fg-intelligence-band")).to_be_visible()
                         expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
@@ -338,6 +339,7 @@ def main():
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
                         expect(page.locator(".fg-maplibre-host")).to_be_visible()
                         expect(page.locator(".fg-gis-register tbody tr")).to_have_count(2)
+                        assert page.locator(".fg-gis-register tbody tr").first.get_by_role("button").evaluate("e => e.getBoundingClientRect().height >= 32")
                         page.locator(".fg-gis-register tbody tr").first.get_by_role("button").click()
                         expect(page).to_have_url(__import__("re").compile(r"/app/gis\?.*site=\d+"))
                         expect(page.locator(".fg-gis-nearest li")).to_have_count(1)
@@ -356,6 +358,7 @@ def main():
                         expect(page.locator(".fg-command-project-board")).to_be_visible()
                         expect(page.locator(".fg-command-project-list article")).to_have_count(1)
                         expect(page.locator(".fg-command-project-list article").first).to_contain_text("واحة الاختبار")
+                        assert page.locator(".fg-command-project-actions a").first.evaluate("e => e.getBoundingClientRect().height >= 24")
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
