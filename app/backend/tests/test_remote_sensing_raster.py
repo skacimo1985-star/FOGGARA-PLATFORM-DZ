@@ -247,3 +247,38 @@ def test_statistics_endpoint_rejects_large_bbox_before_raster(client, world, mon
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "RASTER_ANALYSIS_BOUNDS_INVALID"
+
+
+
+def test_raster_capacity_fails_fast(raster_assets):
+    acquired = remote_sensing_raster._RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False)
+    assert acquired is True
+    try:
+        with pytest.raises(remote_sensing_raster.RasterCapacityError, match="capacity"):
+            remote_sensing_raster.compute_index_statistics(
+                processing_plan("ndvi"),
+                TEST_BBOX,
+            )
+    finally:
+        remote_sensing_raster._RASTER_ANALYSIS_SEMAPHORE.release()
+
+
+def test_statistics_endpoint_returns_429_when_capacity_is_busy(client, world, monkeypatch):
+    monkeypatch.setattr(
+        remote_sensing_catalog.httpx,
+        "Client",
+        lambda **_kwargs: FakeClient(provider_item()),
+    )
+
+    def busy(_plan, _bbox):
+        raise remote_sensing_raster.RasterCapacityError("raster analysis capacity is busy")
+
+    monkeypatch.setattr(remote_sensing_catalog, "compute_index_statistics", busy)
+    headers = login(client, "o1m@t.dz")
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/statistics"
+        "?index=ndvi&bbox=3,0,3.00035,0.00035",
+        headers=headers,
+    )
+    assert response.status_code == 429
+    assert response.json()["detail"]["code"] == "RASTER_ANALYSIS_BUSY"
