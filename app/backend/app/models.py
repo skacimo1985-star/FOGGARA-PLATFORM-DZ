@@ -870,6 +870,7 @@ class AgriParcel(Base):
     site_id: Mapped[int | None] = mapped_column(ForeignKey('sites.id'), index=True)
     lat: Mapped[float | None] = mapped_column(Numeric(9, 6))
     lon: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    boundary_geojson: Mapped[dict | None] = mapped_column(PortableJSON)
     stage: Mapped[str] = mapped_column(String(30), default='initial')
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int] = mapped_column(ForeignKey('users.id'))
