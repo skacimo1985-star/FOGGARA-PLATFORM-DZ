@@ -56,18 +56,7 @@ def main():
     try:
         created["services"] += ensure_service_catalog(db)
         if not seed_demo:
-            _, c = get_or_create(
-            db, SimulationRun, org_id=org1.id, device_id=dev1.id,
-            scenario="LOW_WATER", seed=2601001,
-            defaults=dict(
-                steps=12, step_seconds=300,
-                start_time=datetime(2026, 10, 1, 6, 0, tzinfo=timezone.utc),
-                status="CREATED", generated_count=0, created_by=reviewer1.id,
-                configuration={"purpose": "demo", "expected": "water-level stress"},
-                is_demo=True))
-        created["simulation"] += c
-
-        ensure_default_indicator(db)
+            ensure_default_indicator(db)
             db.commit()
             print("SEED_DEMO=false — no demo data inserted (indicator and authored service catalog ensured).")
             return
@@ -1077,6 +1066,17 @@ def main():
                                      "expected_result": "استعادة المستوى الآمن للبئر"},
                                  is_demo=True))
         created["iot"] += c
+
+        _, c = get_or_create(
+            db, SimulationRun, org_id=org1.id, device_id=dev1.id,
+            scenario="LOW_WATER", seed=2601001,
+            defaults=dict(
+                steps=12, step_seconds=300,
+                start_time=datetime(2026, 10, 1, 6, 0, tzinfo=timezone.utc),
+                status="CREATED", generated_count=0, created_by=reviewer1.id,
+                configuration={"purpose": "demo", "expected": "water-level stress"},
+                is_demo=True))
+        created["simulation"] += c
 
         ensure_default_indicator(db)
         db.commit()
