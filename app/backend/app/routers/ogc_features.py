@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from math import isfinite
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,10 @@ from ..deps import api_error, get_current_user
 from ..models import Site, User
 
 router = APIRouter(prefix="/api/ogc", tags=["ogc-features"])
+
+
+class GeoJSONResponse(JSONResponse):
+    media_type = "application/geo+json"
 
 CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 CORE_CONF = "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core"
@@ -157,7 +162,7 @@ def sites_collection(request: Request, user: User = Depends(get_current_user), d
     return _collection(db, user, request)
 
 
-@router.get("/collections/sites/items")
+@router.get("/collections/sites/items", response_class=GeoJSONResponse)
 def site_items(
     request: Request,
     bbox: str | None = Query(default=None, description="CRS84 bbox: minLon,minLat,maxLon,maxLat"),
@@ -201,12 +206,11 @@ def site_items(
         "numberReturned": len(rows),
         "features": [_site_feature(site) for site in rows],
         "links": links,
-        "crs": CRS84,
         "x-foggara-profile": PROFILE,
     }
 
 
-@router.get("/collections/sites/items/{site_id}")
+@router.get("/collections/sites/items/{site_id}", response_class=GeoJSONResponse)
 def site_item(
     site_id: int,
     request: Request,
@@ -222,6 +226,5 @@ def site_item(
         {"href": f"{root}/collections/sites/items/{site.id}", "rel": "self", "type": "application/geo+json"},
         {"href": f"{root}/collections/sites", "rel": "collection", "type": "application/json"},
     ]
-    feature["crs"] = CRS84
     feature["x-foggara-profile"] = PROFILE
     return feature
