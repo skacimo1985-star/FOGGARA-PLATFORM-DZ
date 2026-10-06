@@ -139,7 +139,7 @@ export default function CommandCenter() {
   const workspaces = [
     { label: copy.water, body: "Water intelligence", to: "/app/water", icon: Droplets },
     { label: copy.agriculture, body: "Soil · crop · irrigation", to: "/app/agriculture", icon: Sprout },
-    { label: copy.gis, body: "58 wilayas · sites · projects", to: "/app/gis", icon: MapPinned },
+    { label: copy.gis, body: "National sites · projects · layers", to: "/app/gis", icon: MapPinned },
     { label: copy.telemetryLabel, body: "Devices · sensors · streams", to: "/app/telemetry", icon: Gauge },
     { label: copy.decisionsLabel, body: "Evidence → review → action", to: "/app/decisions", icon: ClipboardCheck },
     { label: copy.automation, body: "Jobs · rules · monitoring", to: "/app/automation", icon: Workflow },
@@ -158,7 +158,7 @@ export default function CommandCenter() {
           <p>{copy.intro}</p>
           <div className="fg-command-status">
             <span><i />{copy.live}</span>
-            <span><Layers3 size={14} />{copy.national}: {wilayas.length || "—"}/58</span>
+            <span><Layers3 size={14} />{copy.national}: {wilayas.length || "—"}</span>
             {updatedAt && <span>{copy.updated}: {updatedAt.toLocaleTimeString()}</span>}
           </div>
         </div>
