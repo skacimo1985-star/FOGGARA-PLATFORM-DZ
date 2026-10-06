@@ -139,7 +139,9 @@ def landing(request: Request, user: User = Depends(get_current_user)):
 @router.get("/conformance")
 def conformance(user: User = Depends(get_current_user)):
     return {
-        "conformsTo": [CORE_CONF, GEOJSON_CONF],
+        "conformsTo": [],
+        "x-foggara-target-conformance": [CORE_CONF, GEOJSON_CONF],
+        "x-foggara-validation": "internal_application_tests_only",
         "x-foggara-profile": PROFILE,
         "x-foggara-certified": False,
     }
