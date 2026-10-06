@@ -377,3 +377,124 @@ def test_agriculture_demo_flag_is_system_controlled(client, world):
     observation_payload['is_demo'] = True
     assert client.post('/api/agriculture/observations', headers=h, json=observation_payload).status_code == 422
 
+
+
+def _satellite_parcel(client, headers):
+    row = client.post('/api/agriculture/parcels', headers=headers, json={
+        'name': 'Real Sentinel test parcel', 'crop': 'wheat', 'area_ha': 4.5,
+        'location': 'Laghouat', 'lat': 33.8, 'lon': 2.87,
+    })
+    assert row.status_code == 201, row.text
+    return row.json()['id']
+
+
+def test_live_sentinel_workflow_persists_real_ndvi_and_audit(client, world, monkeypatch, db):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = 'S2A_TEST_SCENE_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+    calls = {'provider': 0, 'raster': 0}
+    def provider(value):
+        assert value == scene_id
+        calls['provider'] += 1
+        return value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}}
+    def raster(plan, bbox):
+        assert plan['scene_id'] == scene_id
+        assert len(bbox) == 4 and bbox[0] < 2.87 < bbox[2]
+        assert bbox[1] < 33.8 < bbox[3]
+        calls['raster'] += 1
+        return {
+            'scene_id': scene_id, 'index': 'ndvi',
+            'processing_plan_fingerprint': 'sha256:test-scene-plan',
+            'statistics': {'mean': 0.62, 'min': 0.1, 'max': 0.9},
+            'pixels': {'valid': 90, 'total': 100, 'valid_fraction': .9},
+        }
+    monkeypatch.setattr(satellite, '_provider_item', provider)
+    monkeypatch.setattr(satellite, 'build_processing_plan', lambda item, index: {
+        'scene_id': item['id'], 'index': index,
+    })
+    monkeypatch.setattr(satellite, 'compute_index_statistics', raster)
+    monkeypatch.setattr(satellite, 'catalog_scenes', lambda **kwargs: {
+        'scenes': [{'id': scene_id, 'datetime': acquired, 'cloud_cover_pct': 6.0}],
+        'count': 1, 'live': True,
+    })
+
+    scenes = client.get(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/scenes',
+        params={'start': '2026-09-01', 'end': '2026-10-05'}, headers=h,
+    )
+    assert scenes.status_code == 200, scenes.text
+    assert scenes.json()['scenes'][0]['id'] == scene_id
+    assert scenes.json()['sample_geometry'] == 'POINT_CENTERED_ESTIMATE_NOT_PARCEL_BOUNDARY'
+    url = f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze'
+    first = client.post(url, headers=h, json={'scene_id': scene_id})
+    assert first.status_code == 201, first.text
+    assert first.json()['created'] is True
+    record = first.json()['observation']
+    assert float(record['value']) == .62
+    assert record['is_demo'] is False
+    assert record['evidence_status'] == 'INFERRED'
+    assert record['source_ref'] == f'element84-earth-search:{scene_id}:ndvi'
+    assert first.json()['statistics']['pixels']['valid_fraction'] == .9
+    assert calls == {'provider': 1, 'raster': 1}
+
+    again = client.post(url, headers=h, json={'scene_id': scene_id})
+    assert again.status_code == 201
+    assert again.json()['created'] is False
+    assert again.json()['observation']['id'] == record['id']
+    assert calls == {'provider': 1, 'raster': 1}
+    observations = client.get(
+        f'/api/agriculture/observations?parcel_id={parcel_id}', headers=h,
+    ).json()
+    assert len([row for row in observations if row['metric'] == 'ndvi']) == 1
+    assert db.scalar(select(AuditLog).where(
+        AuditLog.action == 'sentinel_index_computed',
+        AuditLog.entity_type == 'agri_observations',
+    )) is not None
+    reviewer = login(client, 'o1r@t.dz')
+    assert client.post(
+        f"/api/agriculture/observations/{record['id']}/verify", headers=reviewer,
+    ).status_code == 409
+    other = login(client, 'o2m@t.dz')
+    assert client.post(url, headers=other, json={'scene_id': scene_id}).status_code == 404
+    assert client.get(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/scenes',
+        params={'start': '2026-09-01', 'end': '2026-10-05'}, headers=other,
+    ).status_code == 404
+    assert calls == {'provider': 1, 'raster': 1}
+
+
+def test_sentinel_rejects_missing_coordinates_and_low_quality(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    unlocated = client.post('/api/agriculture/parcels', headers=h, json={
+        'name': 'No coordinates', 'crop': 'wheat', 'area_ha': 2, 'location': 'Laghouat',
+    }).json()['id']
+    url = f'/api/agriculture/parcels/{unlocated}/remote-sensing/analyze'
+    resp = client.post(url, headers=h, json={'scene_id': 'S2A_TEST_SCENE_2026'})
+    assert resp.status_code == 422
+    assert resp.json()['detail']['code'] == 'PARCEL_COORDINATES_REQUIRED'
+    fixed = client.patch(
+        f'/api/agriculture/parcels/{unlocated}', headers=h,
+        json={'lat': 33.8, 'lon': 2.87},
+    )
+    assert fixed.status_code == 200, fixed.text
+    incomplete = client.patch(
+        f'/api/agriculture/parcels/{unlocated}', headers=h, json={'lat': 33.8},
+    )
+    assert incomplete.status_code == 422
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    monkeypatch.setattr(satellite, 'build_processing_plan', lambda item, index: {'scene_id': item['id']})
+    monkeypatch.setattr(satellite, 'compute_index_statistics', lambda plan, bbox: {
+        'statistics': {'mean': None}, 'pixels': {'valid': 0, 'total': 100, 'valid_fraction': 0},
+    })
+    poor = client.post(url, headers=h, json={'scene_id': 'S2A_TEST_SCENE_2026'})
+    assert poor.status_code == 422, poor.text
+    assert poor.json()['detail']['code'] == 'LOW_QUALITY_SATELLITE_SCENE'
+    assert client.get(
+        f'/api/agriculture/observations?parcel_id={unlocated}', headers=h,
+    ).json() == []
