@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:matrix": "node --test tests/presentation-matrix.test.mjs",
     "typecheck": "tsc -b",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high"
   },
   "dependencies": {
     "@fontsource/hanken-grotesk": "^5.3.0",
