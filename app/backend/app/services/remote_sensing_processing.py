@@ -74,7 +74,10 @@ def _finite_optional(value) -> float | None:
         return None
     if isinstance(value, bool):
         raise ProcessingPlanError("numeric raster metadata must not be boolean")
-    number = float(value)
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ProcessingPlanError("numeric raster metadata must be numeric") from exc
     if not math.isfinite(number):
         raise ProcessingPlanError("numeric raster metadata must be finite")
     return number
