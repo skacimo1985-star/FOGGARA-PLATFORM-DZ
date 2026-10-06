@@ -334,7 +334,7 @@ def main():
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
                         expect(page.locator(".fg-maplibre-host")).to_be_visible()
                         expect(page.locator(".fg-gis-register tbody tr")).to_have_count(2)
-                        page.locator(".fg-gis-register tbody tr").first.click()
+                        page.locator(".fg-gis-register tbody tr").first.get_by_role("button").click()
                         expect(page).to_have_url(__import__("re").compile(r"/app/gis\?.*site=\d+"))
                         expect(page.locator(".fg-gis-nearest li")).to_have_count(1)
                     if path == "/app/review":
