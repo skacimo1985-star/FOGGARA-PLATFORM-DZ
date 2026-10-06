@@ -1,9 +1,7 @@
-from app.models import AgriParcel, Project, Site, WaterResource
-
-
 def test_workspace_setup_creates_real_operational_records(client, world):
-    token = world["token1"]
-    headers = {"Authorization": f"Bearer {token}"}
+    login = client.post("/api/auth/login", json={"email": world["o1_member"].email, "password": "pass#1"})
+    assert login.status_code == 200, login.text
+    headers = {"Authorization": f"Bearer {login.json()['token']}"}
     body = {
         "site": {"name": "Operational farm", "wilaya": "الأغواط", "commune": "Laghouat", "lat": 33.8, "lon": 2.87},
         "project": {"title": "Irrigation modernization", "description": "Real onboarding record", "domain": "food"},
@@ -35,7 +33,9 @@ def test_workspace_setup_creates_real_operational_records(client, world):
 
 
 def test_workspace_setup_rejects_half_coordinate_pair(client, world):
-    headers = {"Authorization": f"Bearer {world['token1']}"}
+    login = client.post("/api/auth/login", json={"email": world["o1_member"].email, "password": "pass#1"})
+    assert login.status_code == 200, login.text
+    headers = {"Authorization": f"Bearer {login.json()['token']}"}
     result = client.post("/api/workspace/setup", headers=headers, json={
         "site": {"name": "Bad coordinate site", "wilaya": "الأغواط", "lat": 33.8},
         "project": {"title": "Bad coordinate project", "domain": "water"},
