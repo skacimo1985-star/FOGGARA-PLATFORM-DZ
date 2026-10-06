@@ -171,7 +171,7 @@ def _item(parcel: AgriParcel, rows: list[AgriObservation], anchor_id: int, reque
             "foggara:parcel_name": parcel.name,
             "foggara:crop": parcel.crop,
             "foggara:evidence_status": "INFERRED",
-            "foggara:is_demo": all(row.is_demo for row in rows),
+            "foggara:is_demo": any(row.is_demo for row in rows),
             "foggara:metrics": metrics,
         },
         "links": [
