@@ -12,7 +12,7 @@ from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, Site, User
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
-from ..services.service_delivery import irrigation_water_assessment, soil_assessment
+from ..services.service_delivery import irrigation_water_assessment, soil_assessment, soil_assessment_values
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -129,6 +129,65 @@ class TaskUpdate(Input):
 class ServiceEvidenceIn(Input):
     project_id: int = Field(gt=0)
 
+
+
+SOIL_MEASUREMENT_PARAMETER_MAP = {
+    "ph": "ph",
+    "soil_ec": "ec",
+    "soil_moisture": "moisture",
+    "soil_temperature": "temperature",
+    "soil_nitrogen": "nitrogen",
+    "soil_phosphorus": "phosphorus",
+    "soil_potassium": "potassium",
+    "soil_soc": "soc",
+    "soil_organic_matter": "organic_matter",
+}
+
+
+def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
+    rows = list(db.scalars(select(Measurement).where(
+        Measurement.org_id == user.org_id,
+        Measurement.parcel_id == parcel.id,
+        Measurement.parameter.in_(tuple(SOIL_MEASUREMENT_PARAMETER_MAP)),
+        Measurement.quality_status == "validated",
+        Measurement.verification_status == "verified",
+    ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(300)))
+    latest = {}
+    ids = []
+    sources = []
+    for row in rows:
+        metric = SOIL_MEASUREMENT_PARAMETER_MAP[row.parameter]
+        if metric in latest:
+            continue
+        latest[metric] = float(row.value)
+        ids.append(row.id)
+        sources.append({
+            "measurement_id": row.id,
+            "parameter": row.parameter,
+            "metric": metric,
+            "source": row.source,
+            "method": row.method,
+            "measured_at": row.measured_at.isoformat(),
+        })
+    if not latest:
+        return {
+            "service": "soil_screening",
+            "evidence_status": "MISSING",
+            "decision_status": "UNAVAILABLE",
+            "inputs": {},
+            "findings": [],
+            "actions": [],
+            "coverage": [],
+            "measurement_ids": [],
+            "measurement_sources": [],
+            "limitations": ["VERIFIED_PARCEL_SOIL_MEASUREMENTS_REQUIRED"],
+        }
+    result = soil_assessment_values(
+        latest, evidence_status="COMPUTED_FROM_VERIFIED_MEASUREMENTS"
+    )
+    result["measurement_ids"] = ids
+    result["measurement_sources"] = sources
+    return result
 
 
 def verified_water_assessment(db: Session, user: User, project: Project | None):
@@ -336,7 +395,10 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
         AgriObservation.org_id == user.org_id,
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
-    soil = soil_assessment(observations)
+    recorded_soil = soil_assessment(observations)
+    verified_soil = verified_soil_assessment(db, user, parcel)
+    soil = verified_soil if verified_soil["coverage"] else recorded_soil
+    soil_provenance = "VERIFIED_MEASUREMENTS" if verified_soil["coverage"] else "AGRICULTURE_OBSERVATIONS"
     project = None
     if project_id is not None:
         project = db.scalar(select(Project).where(Project.id == project_id, Project.org_id == user.org_id))
@@ -365,6 +427,7 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
             'weather_live': False,
         },
         'provenance': 'RECORDED_AND_COMPUTED',
+        'soil_provenance': soil_provenance,
     }
 
 @operations_router.post('/parcels/{identity}/service-summary/evidence', status_code=201)
@@ -378,19 +441,31 @@ def save_service_summary_evidence(identity: int, payload: ServiceEvidenceIn,
         AgriObservation.org_id == user.org_id,
         AgriObservation.parcel_id == parcel.id,
     ).order_by(AgriObservation.observed_at.desc()).limit(1000)))
-    soil = soil_assessment(observations)
+    recorded_soil = soil_assessment(observations)
+    verified_soil = verified_soil_assessment(db, user, parcel)
+    soil = verified_soil if verified_soil["coverage"] else recorded_soil
+    soil_provenance = "VERIFIED_MEASUREMENTS" if verified_soil["coverage"] else "AGRICULTURE_OBSERVATIONS"
     water = verified_water_assessment(db, user, project)
     if not soil['coverage'] and not water['coverage']:
         api_error(409, 'INSUFFICIENT_EVIDENCE', 'Recorded observations are required before saving a service result')
     source_refs = sorted({row.source_ref for row in observations if row.metric in set(soil['coverage'])})
+    soil_measurement_ids = soil.get('measurement_ids', [])
+    soil_measurement_sources = soil.get('measurement_sources', [])
+    water_measurement_ids = water['measurement_ids']
+    water_measurement_sources = water['measurement_sources']
     summary = {
         'kind': 'FOGGARA_AGRICULTURE_SERVICE_SUMMARY',
         'parcel_id': parcel.id,
         'parcel_name': parcel.name,
         'provenance': 'RECORDED_AND_COMPUTED',
-        'source_refs': source_refs,
-        'measurement_ids': water['measurement_ids'],
-        'measurement_sources': water['measurement_sources'],
+        'soil_provenance': soil_provenance,
+        'source_refs': source_refs if soil_provenance == "AGRICULTURE_OBSERVATIONS" else [],
+        'measurement_ids': sorted(set(soil_measurement_ids + water_measurement_ids)),
+        'measurement_sources': soil_measurement_sources + water_measurement_sources,
+        'soil_measurement_ids': soil_measurement_ids,
+        'soil_measurement_sources': soil_measurement_sources,
+        'water_measurement_ids': water_measurement_ids,
+        'water_measurement_sources': water_measurement_sources,
         'soil_assessment': soil,
         'irrigation_water_assessment': water,
     }
