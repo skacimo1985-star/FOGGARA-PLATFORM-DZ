@@ -1,6 +1,6 @@
 // Cache the public shell only. API requests, uploads and user data never enter cache.
-const SHELL_CACHE = "foggara-public-shell-v1";
-const SHELL = ["/", "/manifest.webmanifest", "/foggara-icon.svg"];
+const SHELL_CACHE = "foggara-public-shell-v2";
+const SHELL = ["/", "/manifest.webmanifest", "/foggara-icon.svg", "/vendor/maplibre-gl.mjs", "/vendor/maplibre-gl-shared.mjs", "/vendor/maplibre-gl-worker.mjs", "/vendor/maplibre-gl.css"];
 self.addEventListener("install", event => event.waitUntil(caches.open(SHELL_CACHE).then(cache => cache.addAll(SHELL))));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("foggara-public-shell-") && key !== SHELL_CACHE).map(key => caches.delete(key))))));
 self.addEventListener("fetch", event => {

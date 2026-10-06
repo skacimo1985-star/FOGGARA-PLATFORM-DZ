@@ -30,3 +30,19 @@
 .fg-gis-nearest h3{font-size:13px;font-weight:720}.fg-gis-nearest>p{margin-top:10px;color:var(--muted-foreground);font-size:11px}.fg-gis-nearest ol{display:flex;flex-direction:column;margin-top:8px}
 .fg-gis-nearest li+li{border-top:1px solid var(--cc-line)}.fg-gis-nearest button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 2px;text-align:start}.fg-gis-nearest button:hover span{color:#3f8f70}.fg-gis-nearest button span,.fg-gis-nearest button small{display:block}.fg-gis-nearest button span{min-width:0;font-size:11px;font-weight:650}.fg-gis-nearest button small{margin-top:2px;color:var(--muted-foreground);font-size:9px;font-weight:500}.fg-gis-nearest button strong{flex-shrink:0;font-size:10px;color:var(--muted-foreground)}
 @media(max-width:800px){.fg-gis-spatial-panel{grid-template-columns:1fr;padding:14px}}
+
+
+/* Operational national map: self-hosted MapLibre runtime + OpenFreeMap tiles. */
+.fg-maplibre-host{position:absolute;inset:0;width:100%;height:100%;background:#e8efe9}
+.fg-maplibre-host .maplibregl-canvas{outline:none}
+.fg-maplibre-host .maplibregl-ctrl-top-left{top:10px;left:10px}
+.fg-maplibre-host .maplibregl-ctrl-group{border:1px solid color-mix(in srgb,var(--border) 82%,transparent);box-shadow:0 8px 24px #17372a1f}
+.fg-maplibre-host .maplibregl-ctrl-attrib{font-size:9px;background:color-mix(in srgb,var(--background) 88%,transparent)}
+.fg-map-head-meta{display:flex;align-items:center;gap:10px;color:var(--muted-foreground);font-size:10px}
+.fg-map-head-meta>span{padding:4px 8px;border:1px solid var(--cc-line);border-radius:999px;background:color-mix(in srgb,#4ca27c 8%,var(--background))}
+.fg-map-head-meta>strong{font-size:12px;color:var(--foreground)}
+.fg-map-engine-state{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:12px;color:var(--muted-foreground);background:linear-gradient(180deg,color-mix(in srgb,var(--background) 72%,transparent),color-mix(in srgb,var(--background) 88%,transparent));pointer-events:none}
+.fg-map-engine-state.error{flex-direction:column;gap:6px;background:color-mix(in srgb,var(--background) 94%,#b85b4b 6%)}
+.fg-map-engine-state.error strong{color:var(--foreground);font-size:13px}
+.fg-national-map.compact .fg-maplibre-host .maplibregl-ctrl-fullscreen{display:none}
+@media (max-width:720px){.fg-national-map-head{align-items:flex-start}.fg-map-head-meta{flex-direction:column;align-items:flex-end;gap:5px}.fg-national-map-canvas{min-height:360px;aspect-ratio:auto}}
