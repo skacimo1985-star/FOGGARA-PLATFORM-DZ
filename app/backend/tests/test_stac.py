@@ -269,3 +269,7 @@ def test_stac_search_next_link_preserves_search_filters(client, world, db):
 
 # Staging-only collection for expo visitor and insights verification.
 from tests.test_expo_public import *  # noqa: F401,F403,E402
+
+
+# Staging-only collection for operational onboarding verification.
+from tests.test_workspace_setup import *  # noqa: F401,F403,E402
