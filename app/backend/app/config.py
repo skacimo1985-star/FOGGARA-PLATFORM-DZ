@@ -116,6 +116,7 @@ WEATHER_BASE_URL = os.environ.get("WEATHER_BASE_URL", "").strip().rstrip("/")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "").strip()
 WEATHER_PROVIDER_NAME = os.environ.get("WEATHER_PROVIDER_NAME", "Open-Meteo-compatible").strip()
 WEATHER_PROVIDER_ATTRIBUTION = os.environ.get("WEATHER_PROVIDER_ATTRIBUTION", "").strip()
+WEATHER_PROVIDER_ATTRIBUTION_URL = os.environ.get("WEATHER_PROVIDER_ATTRIBUTION_URL", "").strip()
 WEATHER_TIMEOUT_SECONDS = float(os.environ.get("WEATHER_TIMEOUT_SECONDS", "12"))
 if not 3 <= WEATHER_TIMEOUT_SECONDS <= 30:
     raise RuntimeError("WEATHER_TIMEOUT_SECONDS must be between 3 and 30")
@@ -134,5 +135,18 @@ if WEATHER_PROVIDER_ENABLED:
         raise RuntimeError("WEATHER_BASE_URL must be a provider origin without credentials, path, query or fragment")
     if ENV == "prod" and _weather_url.scheme != "https":
         raise RuntimeError("ENV=prod requires HTTPS WEATHER_BASE_URL")
-    if not WEATHER_PROVIDER_NAME or not WEATHER_PROVIDER_ATTRIBUTION:
-        raise RuntimeError("Enabled weather provider requires WEATHER_PROVIDER_NAME and WEATHER_PROVIDER_ATTRIBUTION")
+    if not WEATHER_PROVIDER_NAME or not WEATHER_PROVIDER_ATTRIBUTION or not WEATHER_PROVIDER_ATTRIBUTION_URL:
+        raise RuntimeError(
+            "Enabled weather provider requires WEATHER_PROVIDER_NAME, WEATHER_PROVIDER_ATTRIBUTION "
+            "and WEATHER_PROVIDER_ATTRIBUTION_URL"
+        )
+    _weather_attribution_url = urlsplit(WEATHER_PROVIDER_ATTRIBUTION_URL)
+    if (
+        _weather_attribution_url.scheme not in ("http", "https")
+        or not _weather_attribution_url.hostname
+        or _weather_attribution_url.username
+        or _weather_attribution_url.password
+    ):
+        raise RuntimeError("WEATHER_PROVIDER_ATTRIBUTION_URL must be an absolute HTTP(S) URL")
+    if ENV == "prod" and _weather_attribution_url.scheme != "https":
+        raise RuntimeError("ENV=prod requires HTTPS WEATHER_PROVIDER_ATTRIBUTION_URL")
