@@ -68,7 +68,7 @@ class TestSeedIdempotency:
     def _setup_env(self, monkeypatch):
         monkeypatch.setenv("SEED_DEMO", "true")
         monkeypatch.setenv("ENV", "dev")
-        monkeypatch.setenv("DEMO_PASSWORD", "TestDemoPass#2026")
+        monkeypatch.setenv("DEMO_PASSWORD", "x" * 16)
         backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if backend_dir not in sys.path:
             sys.path.insert(0, backend_dir)
