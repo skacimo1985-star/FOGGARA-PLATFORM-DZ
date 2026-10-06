@@ -13,21 +13,23 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("measurements", sa.Column("parcel_id", sa.BigInteger(), nullable=True))
-    op.create_foreign_key(
-        "fk_measurements_parcel_id_agri_parcels",
-        "measurements", "agri_parcels",
-        ["parcel_id"], ["id"],
-    )
-    op.create_index(
-        "ix_measurements_parcel_series",
-        "measurements",
-        ["org_id", "parcel_id", "parameter", "measured_at", "id"],
-        unique=False,
-    )
+    # Batch mode keeps this migration portable to the SQLite staging gate while
+    # emitting a normal ALTER/FK sequence on PostgreSQL production.
+    with op.batch_alter_table("measurements") as batch:
+        batch.add_column(sa.Column("parcel_id", sa.BigInteger(), nullable=True))
+        batch.create_foreign_key(
+            "fk_measurements_parcel_id_agri_parcels",
+            "agri_parcels", ["parcel_id"], ["id"],
+        )
+        batch.create_index(
+            "ix_measurements_parcel_series",
+            ["org_id", "parcel_id", "parameter", "measured_at", "id"],
+            unique=False,
+        )
 
 
 def downgrade():
-    op.drop_index("ix_measurements_parcel_series", table_name="measurements")
-    op.drop_constraint("fk_measurements_parcel_id_agri_parcels", "measurements", type_="foreignkey")
-    op.drop_column("measurements", "parcel_id")
+    with op.batch_alter_table("measurements") as batch:
+        batch.drop_index("ix_measurements_parcel_series")
+        batch.drop_constraint("fk_measurements_parcel_id_agri_parcels", type_="foreignkey")
+        batch.drop_column("parcel_id")
