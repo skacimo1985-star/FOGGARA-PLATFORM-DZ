@@ -83,6 +83,18 @@ def test_seed_demo_requires_explicit_credential(monkeypatch):
         seed._demo_password()
 
 
+def test_seed_demo_credential_length_bounds(monkeypatch):
+    import seed
+
+    monkeypatch.setenv("DEMO_PASSWORD", "x" * 11)
+    with pytest.raises(RuntimeError, match="between 12 and 128"):
+        seed._demo_password()
+
+    monkeypatch.setenv("DEMO_PASSWORD", "x" * 129)
+    with pytest.raises(RuntimeError, match="between 12 and 128"):
+        seed._demo_password()
+
+
 def test_prod_seed_demo_requires_explicit_demo_instance(monkeypatch):
     monkeypatch.setenv("ENV", "prod")
     monkeypatch.setenv("SEED_DEMO", "true")
