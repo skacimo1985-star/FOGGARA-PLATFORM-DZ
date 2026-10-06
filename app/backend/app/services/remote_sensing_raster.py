@@ -155,6 +155,9 @@ def _compute_index_array(index_key: str, bands: Mapping[str, np.ndarray]) -> np.
     if definition.key == "ndwi":
         green, nir = bands["B03"], bands["B08"]
         return _ratio_array(green - nir, green + nir)
+    if definition.key in {"ndmi", "lswi"}:
+        nir, swir = bands["B08"], bands["B11"]
+        return _ratio_array(nir - swir, nir + swir)
     raise RasterStatisticsError(f"unsupported index: {definition.key}")
 
 
