@@ -31,7 +31,11 @@ class FakeClient:
         return False
 
     def post(self, url, **kwargs):
-        self.calls.append((url, kwargs))
+        self.calls.append(("POST", url, kwargs))
+        return FakeResponse(self.payload, self.status_code)
+
+    def get(self, url, **kwargs):
+        self.calls.append(("GET", url, kwargs))
         return FakeResponse(self.payload, self.status_code)
 
 
@@ -98,7 +102,8 @@ def test_catalog_returns_sanitized_live_scene_metadata(client, world, monkeypatc
     assert scene["geometry"]["type"] == "Polygon"
 
     assert len(fake.calls) == 1
-    url, kwargs = fake.calls[0]
+    method, url, kwargs = fake.calls[0]
+    assert method == "POST"
     assert url == remote_sensing_catalog.EARTH_SEARCH_SEARCH_URL
     assert kwargs["json"]["collections"] == ["sentinel-2-l2a"]
     assert kwargs["json"]["bbox"] == [2.0, 33.0, 2.2, 33.2]
@@ -137,3 +142,88 @@ def test_catalog_drops_invalid_remote_geometry(client, world, monkeypatch):
     assert response.status_code == 200, response.text
     assert response.json()["count"] == 0
     assert response.json()["scenes"] == []
+
+
+def test_raster_descriptor_signs_verified_scene(client, world, monkeypatch):
+    item = scene_feature()
+    item["assets"]["green"] = {}
+    fake = FakeClient(item)
+    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    monkeypatch.setenv("RASTER_BASE_URL", "https://foggara-raster-staging.onrender.com")
+    monkeypatch.setenv("RASTER_SIGNING_SECRET", "s" * 48)
+
+    headers = login(client, "o1m@t.dz")
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_20261005_001/raster?layer=ndvi",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["scene_id"] == "S2A_20261005_001"
+    assert body["layer"] == "ndvi"
+    assert body["evidence_status"] == "COMPUTED"
+    assert body["source_evidence_status"] == "PROVIDER_METADATA"
+    assert body["formula"] == "(NIR-Red)/(NIR+Red)"
+    assert body["stored"] is False
+    assert body["tile_url"].startswith(
+        "https://foggara-raster-staging.onrender.com/tiles/ndvi/S2A_20261005_001/"
+    )
+    assert "{z}/{x}/{y}.png" in body["tile_url"]
+    assert "token=" in body["tile_url"]
+
+    method, url, _kwargs = fake.calls[0]
+    assert method == "GET"
+    assert url == (
+        remote_sensing_catalog.EARTH_SEARCH_ITEM_ROOT
+        + "/S2A_20261005_001"
+    )
+
+
+def test_raster_descriptor_rejects_missing_assets(client, world, monkeypatch):
+    item = scene_feature()
+    item["assets"].pop("nir")
+    fake = FakeClient(item)
+    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    monkeypatch.setenv("RASTER_BASE_URL", "https://foggara-raster-staging.onrender.com")
+    monkeypatch.setenv("RASTER_SIGNING_SECRET", "s" * 48)
+    headers = login(client, "o1m@t.dz")
+
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_20261005_001/raster?layer=ndvi",
+        headers=headers,
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "RASTER_ASSETS_UNAVAILABLE"
+
+
+def test_raster_descriptor_rejects_unsupported_layer_without_provider_call(
+    client, world, monkeypatch
+):
+    fake = FakeClient(scene_feature())
+    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    headers = login(client, "o1m@t.dz")
+
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_20261005_001/raster?layer=fake",
+        headers=headers,
+    )
+    assert response.status_code == 422
+    assert fake.calls == []
+
+
+def test_raster_descriptor_requires_server_configuration(
+    client, world, monkeypatch
+):
+    item = scene_feature()
+    fake = FakeClient(item)
+    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    monkeypatch.delenv("RASTER_BASE_URL", raising=False)
+    monkeypatch.delenv("RASTER_SIGNING_SECRET", raising=False)
+    headers = login(client, "o1m@t.dz")
+
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_20261005_001/raster?layer=true-color",
+        headers=headers,
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "RASTER_NOT_CONFIGURED"
