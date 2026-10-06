@@ -27,6 +27,11 @@ from ..services.remote_sensing_raster import (
     render_index_preview_png,
     validate_analysis_bbox,
 )
+from ..services.stac_search import (
+    StacSearchError,
+    StacSearchRequest,
+    search_sentinel_items,
+)
 
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
@@ -174,29 +179,17 @@ def catalog_scenes(
         api_error(422, "DATE_RANGE_TOO_LARGE", "catalog search is limited to 366 days")
 
     search_bbox = _parse_bbox(bbox)
-    payload = {
-        "collections": [SENTINEL_COLLECTION],
-        "bbox": search_bbox,
-        "datetime": f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z",
-        "query": {"eo:cloud_cover": {"lte": cloud_cover_lte}},
-        "sortby": [{"field": "properties.datetime", "direction": "desc"}],
-        "limit": limit,
-    }
-
+    request = StacSearchRequest(
+        bbox=search_bbox,
+        datetime_range=f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z",
+        cloud_cover_lte=cloud_cover_lte,
+        limit=limit,
+    )
     try:
-        timeout = httpx.Timeout(12.0, connect=5.0)
-        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
-            response = client.post(
-                EARTH_SEARCH_SEARCH_URL,
-                json=payload,
-                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
-            )
-            response.raise_for_status()
-            body = response.json()
-    except (httpx.HTTPError, ValueError):
+        features = search_sentinel_items(request)
+    except StacSearchError:
         api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
 
-    features = body.get("features") if isinstance(body, dict) else None
     if not isinstance(features, list):
         api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid response")
 
