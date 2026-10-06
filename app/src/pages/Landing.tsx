@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
+import { api } from "@/lib/api";
 import { NexusKasria } from "@/components/NexusKasria";
 import { WorkflowGuide } from "@/components/WorkflowGuide";
 import { AgroCapabilities } from "@/components/AgroCapabilities";
@@ -14,7 +15,9 @@ const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food"
 const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"review",Icon:ShieldCheck,to:"/app/review"},{key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}];
 export default function Landing() {
   const {user}=useAuth(); const {t,i18n}=useTranslation(); const [active,setActive]=useState("all");
+  const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
+  const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور"};
   const narrative=lang==="fr"?{
     real:"FOGGARA RÉELLE",digital:"FOGGARA NUMÉRIQUE",intelligence:"INTELLIGENCE WEFEH",
     national:`${WILAYAS.length} wilayas`,evidence:"5 états de preuve",cycle:"11 étapes décisionnelles",
@@ -31,6 +34,7 @@ export default function Landing() {
     spine:"من الواقع الميداني إلى القرار دون فقدان سلسلة الإثبات.",
     spineBody:"تربط FOGGARA المواقع والقياسات والمشاريع والأدلة والقواعد والقرارات والمتابعة في بيئة تشغيلية واحدة."
   };
+  useEffect(()=>{let cancelled=false;api.get<{visitors:number;feedback:number}>("/expo/stats").then(value=>{if(!cancelled)setExpoStats(value);}).catch(()=>undefined);return()=>{cancelled=true;};},[]);
   return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
     <nav className="fg-public-nav" aria-label={t("publicExperience.navigation")}>
       <a href="#ecosystem">{t("publicExperience.ecosystem")}</a><a href="#collaboration">{t("publicExperience.collaboration")}</a>
@@ -42,8 +46,9 @@ export default function Landing() {
         <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
         <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
         <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
-        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/login"}>{t("publicExperience.enter")}<ArrowUpRight size={18}/></Link>
+        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/login"}>{user?t("publicExperience.enter"):expoCopy.enter}<ArrowUpRight size={18}/></Link>
           <Link className="fg-button fg-secondary" to="/demo">{t("demo.try")}</Link></div>
+        {!user&&<p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p>}
         <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
         <p className="fg-oasis-caption">{t("demo.imageNotice")}</p>
       </div>
