@@ -1,17 +1,18 @@
 """Agricultural intelligence from supplied, reviewed sources; no live-feed claims."""
 from datetime import date, datetime, timezone
 from typing import Literal
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import Evidence, User
+from ..models import Evidence, Site, User
 from ..platform_models import AgriculturalRecord, EvidenceFile
 from .collaboration import Payload, commit, evidence_for_user
 from .core import get_project_or_404
+from ..services import weather_provider
 
 router = APIRouter(prefix="/api", tags=["agricultural-intelligence"])
 
@@ -184,6 +185,54 @@ def soil(project_id: int, payload: SoilIn, user=Depends(get_current_user), db: S
 @router.post("/projects/{project_id}/agriculture/weather", status_code=201)
 def weather(project_id: int, payload: WeatherIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return save("weather", project_id, payload, user, db)
+
+@router.get("/projects/{project_id}/agriculture/weather/live")
+def live_weather(
+    project_id: int,
+    days: int = Query(default=15, ge=1, le=15),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    project = get_project_or_404(db, user, project_id)
+    if project.site_id is None:
+        api_error(409, "PROJECT_SITE_REQUIRED", "Project must be linked to a site for live weather")
+
+    site = db.scalar(select(Site).where(Site.id == project.site_id, Site.org_id == user.org_id))
+    if site is None:
+        api_error(404, "SITE_NOT_FOUND", "Project site not found")
+    if site.lat is None or site.lon is None:
+        api_error(
+            409,
+            "PROJECT_SITE_COORDINATES_REQUIRED",
+            "Project site requires WGS84 latitude and longitude for live weather",
+        )
+
+    try:
+        forecast = weather_provider.fetch_forecast(
+            latitude=float(site.lat),
+            longitude=float(site.lon),
+            days=days,
+        )
+    except weather_provider.WeatherProviderNotConfigured:
+        api_error(503, "WEATHER_PROVIDER_NOT_CONFIGURED", "Live weather provider is not configured")
+    except weather_provider.WeatherProviderUnavailable:
+        api_error(502, "WEATHER_PROVIDER_UNAVAILABLE", "Live weather provider is unavailable")
+    except weather_provider.WeatherProviderInvalidResponse:
+        api_error(502, "WEATHER_PROVIDER_INVALID_RESPONSE", "Live weather provider returned invalid data")
+
+    return {
+        "project_id": project.id,
+        "project_is_demo": project.is_demo,
+        "site": {
+            "id": site.id,
+            "name": site.name,
+            "wilaya": site.wilaya,
+            "latitude": float(site.lat),
+            "longitude": float(site.lon),
+        },
+        **forecast,
+    }
+
 
 
 @router.post("/projects/{project_id}/agriculture/calendar", status_code=201)
