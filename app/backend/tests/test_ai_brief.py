@@ -131,3 +131,22 @@ def test_configured_local_ai_falls_back_deterministically(client, world, monkeyp
     assert body["provider"]["mode"] == "deterministic"
     assert body["provider"]["fallback_used"] is True
     assert body["provider"]["data_boundary"] == "in-process"
+
+
+def test_local_ai_host_guard_accepts_private_and_rejects_public_hosts():
+    assert config._is_private_ai_host("localhost") is True
+    assert config._is_private_ai_host("127.0.0.1") is True
+    assert config._is_private_ai_host("10.20.30.40") is True
+    assert config._is_private_ai_host("ollama") is True
+    assert config._is_private_ai_host("ollama.default.svc.cluster.local") is True
+    assert config._is_private_ai_host("api.example.com") is False
+    assert config._is_private_ai_host("8.8.8.8") is False
+
+
+def test_provider_json_parser_accepts_fenced_object_only():
+    parsed = ai_brief._parse_provider_json("""```json
+{"headline":"Local","proof_points":[]}
+```""")
+    assert parsed["headline"] == "Local"
+    with __import__("pytest").raises(ValueError):
+        ai_brief._parse_provider_json("no json here")
