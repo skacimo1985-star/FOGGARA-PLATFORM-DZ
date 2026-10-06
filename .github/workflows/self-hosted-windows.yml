@@ -145,7 +145,10 @@ jobs:
           npm run lint
           npm test
           npm run build
-          node scripts/audit-dependencies.mjs
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm audit --audit-level=high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify Rust engine when available
         working-directory: app/engines/nexus-core
@@ -169,10 +172,10 @@ jobs:
         if: always()
         shell: powershell
         run: |
-          "## FOGGARA self-hosted verification" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "- Target: `${{ inputs.target_ref }}`" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "- Runner: `Windows self-hosted X64`" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "- PostgreSQL/Alembic recovery gates remain owned by the full Linux CI workflow." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '## FOGGARA self-hosted verification'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ('- Target: ' + '${{ steps.target.outputs.ref }}')
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- Runner: Windows self-hosted X64'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- PostgreSQL/Alembic recovery gates remain owned by the full Linux CI workflow.'
 
       - name: Remove disposable SQLite files
         if: always()
