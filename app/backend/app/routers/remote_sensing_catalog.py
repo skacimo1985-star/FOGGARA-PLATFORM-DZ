@@ -23,6 +23,7 @@ from ..services.remote_sensing_processing import (
 from ..services.remote_sensing_raster import (
     RasterStatisticsError,
     compute_index_statistics,
+    validate_analysis_bbox,
 )
 
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
@@ -244,8 +245,13 @@ def scene_index_statistics(
     index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
     _user: User = Depends(get_current_user),
 ):
-    _safe_scene_id, item = _provider_item(scene_id)
     raw_bbox = _parse_bbox(bbox)
+    try:
+        validate_analysis_bbox(raw_bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", str(exc))
+
+    _safe_scene_id, item = _provider_item(scene_id)
     try:
         plan = build_processing_plan(item, index)
     except ProcessingPlanError:
