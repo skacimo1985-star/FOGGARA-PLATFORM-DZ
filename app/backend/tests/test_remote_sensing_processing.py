@@ -212,3 +212,38 @@ def test_processing_plan_rejects_malformed_numeric_metadata():
         assert False, "malformed raster metadata must be rejected"
     except ValueError as exc:
         assert "must be numeric" in str(exc)
+
+
+def test_processing_plan_rejects_plain_geotiff_without_cog_profile():
+    item = stac_item()
+    item["assets"]["red"]["type"] = "image/tiff; application=geotiff"
+
+    try:
+        build_processing_plan(item, "ndvi")
+        assert False, "plain GeoTIFF must not satisfy the COG contract"
+    except ValueError as exc:
+        assert "required COG asset for B04" in str(exc)
+
+
+def test_processing_plan_rejects_traversal_and_bad_port():
+    item = stac_item()
+    item["assets"]["red"]["href"] = (
+        "https://sentinel-cogs.s3.us-west-2.amazonaws.com/"
+        "sentinel-s2-l2a-cogs/%2e%2e/private.tif"
+    )
+    try:
+        build_processing_plan(item, "ndvi")
+        assert False, "encoded traversal must be rejected"
+    except ValueError as exc:
+        assert "traversal" in str(exc)
+
+    item = stac_item()
+    item["assets"]["red"]["href"] = (
+        "https://sentinel-cogs.s3.us-west-2.amazonaws.com:bad/"
+        "sentinel-s2-l2a-cogs/31/S/EA/B04.tif"
+    )
+    try:
+        build_processing_plan(item, "ndvi")
+        assert False, "invalid port must be rejected"
+    except ValueError as exc:
+        assert "invalid port" in str(exc)
