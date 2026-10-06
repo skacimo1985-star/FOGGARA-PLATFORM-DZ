@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { NationalMap, type SatelliteScene } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -127,6 +127,7 @@ export default function Gis() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
+  const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -199,7 +200,14 @@ export default function Gis() {
   useEffect(() => {
     setAnalysisResult(null);
     setAnalysisError(null);
+    setAnalysisOverlay(null);
   }, [selectedSceneId, selectedIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (analysisOverlay?.url) URL.revokeObjectURL(analysisOverlay.url);
+    };
+  }, [analysisOverlay?.url]);
 
 
   const searchSatelliteScenes = async () => {
@@ -220,6 +228,7 @@ export default function Gis() {
       setSatelliteScenes(result.scenes);
       setSelectedSceneId((current) => result.scenes.some((scene) => scene.id === current) ? current : null);
       setAnalysisResult(null);
+      setAnalysisOverlay(null);
     } catch (err) {
       setSatelliteScenes([]);
       setSatelliteError(err);
@@ -240,7 +249,17 @@ export default function Gis() {
       const result = await api.get<RasterAnalysis>(
         `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/statistics?${params.toString()}`,
       );
+      const preview = await api.getBlob(
+        `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/preview.png?${params.toString()}`,
+        60_000,
+      );
+      const previewUrl = URL.createObjectURL(preview);
       setAnalysisResult(result);
+      setAnalysisOverlay({
+        url: previewUrl,
+        bbox: result.analysis_bbox_wgs84,
+        index: result.index,
+      });
     } catch (err) {
       setAnalysisResult(null);
       setAnalysisError(err);
@@ -343,6 +362,7 @@ export default function Gis() {
           sites={data ?? []}
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
+          analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}

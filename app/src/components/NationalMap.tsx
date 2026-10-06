@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GisSite, WilayaMeta } from "@/types";
 
+export type AnalysisRasterOverlay = {
+  url: string;
+  bbox: [number, number, number, number];
+  index: "ndvi" | "evi" | "savi" | "ndwi";
+};
+
 export type SatelliteScene = {
   id: string;
   collection: string;
@@ -23,6 +29,7 @@ type Props = {
   sites: GisSite[];
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
+  analysisOverlay?: AnalysisRasterOverlay | null;
   selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
@@ -60,6 +67,10 @@ type GeoJsonSource = {
   setData: (data: unknown) => void;
 };
 
+type ImageSource = {
+  updateImage: (options: { url: string; coordinates: [Point, Point, Point, Point] }) => void;
+};
+
 type MapEvent = {
   features?: Array<{ properties?: Record<string, unknown> }>;
   error?: unknown;
@@ -71,6 +82,7 @@ type MapInstance = {
   addLayer: (layer: Record<string, unknown>) => void;
   getSource: (id: string) => unknown;
   getCanvas: () => HTMLCanvasElement;
+  setPaintProperty: (layerId: string, name: string, value: unknown) => void;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
   getBounds: () => {
@@ -98,6 +110,12 @@ const MAPLIBRE_MODULE_URL = "/vendor/maplibre-gl.mjs";
 const MAPLIBRE_WORKER_URL = "/vendor/maplibre-gl-worker.mjs";
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const ALGERIA_BOUNDS: [Point, Point] = [[-8.8, 18.4], [12.2, 37.5]];
+const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/2m8pJwAAAABJRU5ErkJggg==";
+
+function overlayCoordinates(bbox: [number, number, number, number]): [Point, Point, Point, Point] {
+  const [west, south, east, north] = bbox;
+  return [[west, north], [east, north], [east, south], [west, south]];
+}
 
 function wilayaCode(siteWilaya: string, wilayas: WilayaMeta[]) {
   const normalized = siteWilaya.trim().toLocaleLowerCase();
@@ -109,6 +127,11 @@ function wilayaCode(siteWilaya: string, wilayas: WilayaMeta[]) {
 function isGeoJsonSource(value: unknown): value is GeoJsonSource {
   if (typeof value !== "object" || value === null || !("setData" in value)) return false;
   return typeof (value as { setData?: unknown }).setData === "function";
+}
+
+function isImageSource(value: unknown): value is ImageSource {
+  if (typeof value !== "object" || value === null || !("updateImage" in value)) return false;
+  return typeof (value as { updateImage?: unknown }).updateImage === "function";
 }
 
 function boundsFor(points: Point[]): [Point, Point] | null {
@@ -130,6 +153,7 @@ export function NationalMap({
   sites,
   wilayas,
   satelliteScenes = [],
+  analysisOverlay = null,
   selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
@@ -148,12 +172,14 @@ export function NationalMap({
   const onViewportChangeRef = useRef(onViewportChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
+  const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
   onViewportChangeRef.current = onViewportChange;
+  analysisOverlayRef.current = analysisOverlay;
 
   const plotted = useMemo(
     () => sites
@@ -271,6 +297,22 @@ export function NationalMap({
         map.on("load", () => {
           if (cancelled || !map) return;
           if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+
+          const initialOverlay = analysisOverlayRef.current;
+          map.addSource("analysis-overlay", {
+            type: "image",
+            url: initialOverlay?.url ?? TRANSPARENT_PIXEL,
+            coordinates: overlayCoordinates(initialOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5]),
+          });
+          map.addLayer({
+            id: "analysis-overlay",
+            type: "raster",
+            source: "analysis-overlay",
+            paint: {
+              "raster-opacity": initialOverlay ? 0.78 : 0,
+              "raster-fade-duration": 0,
+            },
+          });
 
           map.addSource("satellite-scenes", {
             type: "geojson",
@@ -391,6 +433,18 @@ export function NationalMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    const source = map?.getSource("analysis-overlay");
+    if (!map || !isImageSource(source)) return;
+    const bbox: [number, number, number, number] = analysisOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5];
+    source.updateImage({
+      url: analysisOverlay?.url ?? TRANSPARENT_PIXEL,
+      coordinates: overlayCoordinates(bbox),
+    });
+    map.setPaintProperty("analysis-overlay", "raster-opacity", analysisOverlay ? 0.78 : 0);
+  }, [analysisOverlay]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || engineState !== "ready") return;
 
     const selectedSite = plotted.find((entry) => entry.site.id === selectedSiteId);
@@ -450,6 +504,7 @@ export function NationalMap({
       <div className="fg-national-map-foot">
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
+        {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
       </div>
     </section>

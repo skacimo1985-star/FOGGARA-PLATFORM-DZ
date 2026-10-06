@@ -106,6 +106,34 @@ export const api = {
   upload: <T>(path: string, file: File) => request<T>(path, {
     method: "POST", body: file, headers: { "Content-Type": file.type },
   }),
+  getBlob: async (path: string, timeoutMs = 60_000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(`/api${path}`, {
+        headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        if (response.status === 401) {
+          setToken(null);
+          if (window.location.pathname.startsWith("/app")) window.location.assign("/login");
+        }
+        throw new ApiError(
+          response.status,
+          body?.detail?.code ?? "ERROR",
+          body?.detail?.message ?? response.statusText,
+        );
+      }
+      return await response.blob();
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(0, controller.signal.aborted ? "TIMEOUT" : "NETWORK", "blob request failed");
+    } finally {
+      clearTimeout(timer);
+    }
+  },
   download: async (path: string, filename: string) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);

@@ -282,3 +282,60 @@ def test_statistics_endpoint_returns_429_when_capacity_is_busy(client, world, mo
     )
     assert response.status_code == 429
     assert response.json()["detail"]["code"] == "RASTER_ANALYSIS_BUSY"
+
+
+
+def test_preview_png_encoder_has_valid_signature(raster_assets):
+    png, metadata = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"),
+        TEST_BBOX,
+    )
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(png) > 80
+    assert metadata["index"] == "ndvi"
+    assert metadata["derived_index"] == "COMPUTED"
+    assert metadata["verified"] is False
+    assert metadata["persisted"] is False
+
+
+def test_preview_png_endpoint_requires_authentication(client):
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/preview.png"
+        "?index=ndvi&bbox=3,0,3.00035,0.00035"
+    )
+    assert response.status_code == 401
+
+
+def test_preview_png_endpoint_returns_computed_private_image(client, world, monkeypatch):
+    monkeypatch.setattr(
+        remote_sensing_catalog.httpx,
+        "Client",
+        lambda **_kwargs: FakeClient(provider_item()),
+    )
+
+    def fake_preview(plan, bbox):
+        assert plan["scene_id"] == "S2A_TEST_L2A"
+        assert plan["index"] == "ndvi"
+        assert bbox == [3.0, 0.0, 3.00035, 0.00035]
+        return (
+            b"\x89PNG\r\n\x1a\nFAKE",
+            {
+                "scene_id": plan["scene_id"],
+                "index": plan["index"],
+                "formula_version": plan["formula_version"],
+            },
+        )
+
+    monkeypatch.setattr(remote_sensing_catalog, "render_index_preview_png", fake_preview)
+    headers = login(client, "o1m@t.dz")
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/preview.png"
+        "?index=ndvi&bbox=3,0,3.00035,0.00035",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-foggara-evidence"] == "COMPUTED"
+    assert response.headers["x-foggara-verified"] == "false"
+    assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
