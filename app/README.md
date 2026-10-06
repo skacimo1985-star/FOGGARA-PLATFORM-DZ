@@ -113,13 +113,16 @@ python -m pytest tests/ -q
 
 ## حسابات DEMO
 
-| الحساب | الدور | كلمة المرور |
-|---|---|---|
-| member@demo1.dz | عضو (مؤسسة 1) | `Demo#2026` |
-| reviewer@demo1.dz | مراجع (مؤسسة 1) | `Demo#2026` |
-| admin@demo1.dz | مشرف (مؤسسة 1) | `Demo#2026` |
-| member@demo2.dz | عضو (مؤسسة 2 — لاختبار العزل) | `Demo#2026` |
-| reviewer@demo2.dz | مراجع (مؤسسة 2) | `Demo#2026` |
+تُنشأ هذه الحسابات فقط عند تفعيل `SEED_DEMO=true`. لا توجد كلمة مرور افتراضية داخل المستودع؛
+يجب ضبط `DEMO_PASSWORD` في بيئة التشغيل/إدارة الأسرار قبل تنفيذ seed، ولا تُطبع قيمته في السجلات.
+
+| الحساب | الدور |
+|---|---|
+| member@demo1.dz | عضو (مؤسسة 1) |
+| reviewer@demo1.dz | مراجع (مؤسسة 1) |
+| admin@demo1.dz | مشرف (مؤسسة 1) |
+| member@demo2.dz | عضو (مؤسسة 2 — لاختبار العزل) |
+| reviewer@demo2.dz | مراجع (مؤسسة 2) |
 
 ## Docker (تشغيل شامل واحد)
 
@@ -141,6 +144,9 @@ docker run -p 8000:8000 foggara-dz
 | `TOKEN_TTL_HOURS` | مدة صلاحية التوكن بالساعات (افتراضي 12) |
 | `DATABASE_URL` | رابط PostgreSQL بسائق psycopg: `postgresql+psycopg://user:pass@host:5432/foggara` |
 | `CORS_ORIGINS` | أصول مسموحة مفصولة بفواصل؛ **فارغ = نفس الأصل فقط** ولا رؤوس CORS تُرسل |
+| `SEED_DEMO` | تفعيل بيانات العرض الاصطناعية فقط عند الحاجة؛ الافتراضي `false` |
+| `DEMO_PASSWORD` | مطلوب عند `SEED_DEMO=true`؛ يُضبط كسر في بيئة التشغيل ولا يُحفظ في Git |
+| `DEMO_INSTANCE` | مطلوب مع `SEED_DEMO=true` في `ENV=prod` لعزل نسخة المعرض عن الإنتاج الحقيقي |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR` (افتراضي `INFO`) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | تهيئة خدمة db في compose |
 
