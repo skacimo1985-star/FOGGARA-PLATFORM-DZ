@@ -1,13 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GisSite, WilayaMeta } from "@/types";
 
+export type SatelliteScene = {
+  id: string;
+  collection: string;
+  datetime: string | null;
+  cloud_cover_pct: number | null;
+  platform: string | null;
+  constellation: string | null;
+  bbox: [number, number, number, number] | null;
+  geometry: {
+    type: "Polygon" | "MultiPolygon";
+    coordinates: unknown;
+  };
+  asset_keys: string[];
+  stac_item_url: string | null;
+  provider: string;
+  provenance: string;
+};
+
 type Props = {
   sites: GisSite[];
   wilayas: WilayaMeta[];
+  satelliteScenes?: SatelliteScene[];
   selectedWilaya?: string;
   selectedSiteId?: number | null;
   onSelectWilaya?: (code: string) => void;
   onSelectSite?: (siteId: number) => void;
+  onViewportChange?: (bbox: [number, number, number, number]) => void;
   locale?: string;
   compact?: boolean;
 };
@@ -35,7 +55,7 @@ type SiteFeatureCollection = {
 };
 
 type GeoJsonSource = {
-  setData: (data: SiteFeatureCollection) => void;
+  setData: (data: unknown) => void;
 };
 
 type MapEvent = {
@@ -51,6 +71,12 @@ type MapInstance = {
   getCanvas: () => HTMLCanvasElement;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
+  getBounds: () => {
+    getWest: () => number;
+    getSouth: () => number;
+    getEast: () => number;
+    getNorth: () => number;
+  };
   on: {
     (event: string, handler: (event: MapEvent) => void): void;
     (event: string, layer: string, handler: (event: MapEvent) => void): void;
@@ -101,10 +127,12 @@ function boundsFor(points: Point[]): [Point, Point] | null {
 export function NationalMap({
   sites,
   wilayas,
+  satelliteScenes = [],
   selectedWilaya = "",
   selectedSiteId = null,
   onSelectWilaya,
   onSelectSite,
+  onViewportChange,
   locale = "ar",
   compact = false,
 }: Props) {
@@ -112,11 +140,14 @@ export function NationalMap({
   const mapRef = useRef<MapInstance | null>(null);
   const onSelectSiteRef = useRef(onSelectSite);
   const onSelectWilayaRef = useRef(onSelectWilaya);
+  const onViewportChangeRef = useRef(onViewportChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
+  const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
+  onViewportChangeRef.current = onViewportChange;
 
   const plotted = useMemo(
     () => sites
@@ -151,6 +182,22 @@ export function NationalMap({
 
   featuresRef.current = featureCollection;
 
+  const sceneFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: satelliteScenes.map((scene) => ({
+      type: "Feature" as const,
+      id: scene.id,
+      geometry: scene.geometry,
+      properties: {
+        sceneId: scene.id,
+        datetime: scene.datetime,
+        cloudCover: scene.cloud_cover_pct,
+        provider: scene.provider,
+      },
+    })),
+  }), [satelliteScenes]);
+  sceneFeaturesRef.current = sceneFeatureCollection;
+
   const labels = locale === "fr"
     ? {
         title: "Carte opérationnelle nationale",
@@ -158,8 +205,9 @@ export function NationalMap({
         loading: "Chargement de la carte ouverte…",
         unavailable: "Fond cartographique momentanément indisponible",
         unavailableNote: "Les données FOGGARA restent accessibles dans le registre spatial ci-dessous.",
-        note: "Fond OpenStreetMap via OpenFreeMap · points issus des coordonnées enregistrées",
+        note: "Fond OpenStreetMap via OpenFreeMap · points FOGGARA + empreintes Sentinel-2 en direct",
         source: "Open map",
+        scenes: "scènes Sentinel-2",
       }
     : locale === "en"
       ? {
@@ -168,8 +216,9 @@ export function NationalMap({
           loading: "Loading open map…",
           unavailable: "Basemap temporarily unavailable",
           unavailableNote: "FOGGARA data remains available in the spatial register below.",
-          note: "OpenStreetMap basemap via OpenFreeMap · points use stored coordinates",
+          note: "OpenStreetMap via OpenFreeMap · FOGGARA points + live Sentinel-2 footprints",
           source: "Open map",
+          scenes: "Sentinel-2 scenes",
         }
       : {
           title: "الخريطة التشغيلية الوطنية",
@@ -177,8 +226,9 @@ export function NationalMap({
           loading: "جارٍ تحميل الخريطة المفتوحة…",
           unavailable: "الخريطة الأساسية غير متاحة مؤقتًا",
           unavailableNote: "تبقى بيانات FOGGARA متاحة في السجل المكاني أسفل الخريطة.",
-          note: "خريطة OpenStreetMap عبر OpenFreeMap · النقاط من الإحداثيات المسجلة",
+          note: "OpenStreetMap عبر OpenFreeMap · نقاط FOGGARA + حدود مشاهد Sentinel-2 الحية",
           source: "خريطة مفتوحة",
+          scenes: "مشاهد Sentinel-2",
         };
 
   useEffect(() => {
@@ -214,6 +264,30 @@ export function NationalMap({
         map.on("load", () => {
           if (cancelled || !map) return;
           if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+
+          map.addSource("satellite-scenes", {
+            type: "geojson",
+            data: sceneFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "satellite-scenes-fill",
+            type: "fill",
+            source: "satellite-scenes",
+            paint: {
+              "fill-color": "#0ea5e9",
+              "fill-opacity": 0.09,
+            },
+          });
+          map.addLayer({
+            id: "satellite-scenes-outline",
+            type: "line",
+            source: "satellite-scenes",
+            paint: {
+              "line-color": "#0284c7",
+              "line-width": 2,
+              "line-opacity": 0.8,
+            },
+          });
 
           map.addSource("foggara-sites", {
             type: "geojson",
@@ -257,7 +331,19 @@ export function NationalMap({
             else if (code && onSelectWilayaRef.current) onSelectWilayaRef.current(code);
           });
 
+          const reportViewport = () => {
+            const bounds = map?.getBounds();
+            if (!bounds || !onViewportChangeRef.current) return;
+            onViewportChangeRef.current([
+              bounds.getWest(),
+              bounds.getSouth(),
+              bounds.getEast(),
+              bounds.getNorth(),
+            ]);
+          };
+          map.on("moveend", reportViewport);
           map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 0 });
+          reportViewport();
           setEngineState("ready");
         });
       } catch {
@@ -279,6 +365,11 @@ export function NationalMap({
     const source = mapRef.current?.getSource("foggara-sites");
     if (isGeoJsonSource(source)) source.setData(featureCollection);
   }, [featureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("satellite-scenes");
+    if (isGeoJsonSource(source)) source.setData(sceneFeatureCollection);
+  }, [sceneFeatureCollection]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -321,7 +412,7 @@ export function NationalMap({
         </div>
         <div className="fg-map-head-meta">
           <span>{labels.source}</span>
-          <strong>{plotted.length} {labels.sites}</strong>
+          <strong>{plotted.length} {labels.sites} · {satelliteScenes.length} {labels.scenes}</strong>
         </div>
       </div>
 
@@ -340,6 +431,7 @@ export function NationalMap({
 
       <div className="fg-national-map-foot">
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
+        <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
         <small>{labels.note}</small>
       </div>
     </section>
