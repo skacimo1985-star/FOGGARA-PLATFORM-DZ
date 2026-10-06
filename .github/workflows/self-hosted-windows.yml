@@ -1,6 +1,9 @@
 name: Self-hosted Windows Verify
 
 on:
+  push:
+    branches:
+      - "selfhosted-verify/**"
   workflow_dispatch:
     inputs:
       target_ref:
@@ -15,7 +18,7 @@ on:
         type: boolean
 
 concurrency:
-  group: foggara-self-hosted-windows-${{ inputs.target_ref }}
+  group: foggara-self-hosted-windows-${{ github.ref }}-${{ inputs.target_ref || 'push' }}
   cancel-in-progress: true
 
 permissions:
@@ -24,6 +27,7 @@ permissions:
 jobs:
   verify:
     name: windows-self-hosted
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'skacimo1985-star'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 45
     env:
@@ -33,10 +37,35 @@ jobs:
       JWT_SECRET: "self-hosted-ci-disposable-secret-0123456789abcdef"
       ENV: "dev"
     steps:
+      - name: Checkout trigger metadata
+        if: github.event_name == 'push'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          clean: true
+
+      - name: Resolve target ref
+        id: target
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $target = "${{ inputs.target_ref }}"
+          }
+          else {
+            $target = (Get-Content ".github/self-hosted-target.txt" -Raw).Trim()
+          }
+
+          if ([string]::IsNullOrWhiteSpace($target)) {
+            throw "Self-hosted verification target ref is empty."
+          }
+
+          "ref=$target" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Verification target: $target"
+
       - name: Checkout requested ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.target_ref }}
+          ref: ${{ steps.target.outputs.ref }}
           persist-credentials: false
           clean: true
 
