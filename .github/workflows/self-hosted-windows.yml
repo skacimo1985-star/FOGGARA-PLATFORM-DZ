@@ -134,7 +134,7 @@ jobs:
           npm run lint
           npm test
           npm run build
-          node scripts/audit-dependencies.mjs
+          npm run audit:dependencies
 
       - name: Verify Rust engine when available
         working-directory: app/engines/nexus-core
