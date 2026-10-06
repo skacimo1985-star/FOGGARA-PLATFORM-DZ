@@ -38,9 +38,11 @@ const daysAgo = (n: number) => {
 export default function ParcelSentinel({
   parcels,
   onSaved,
+  selectedParcelId = null,
 }: {
   parcels: Parcel[];
   onSaved: () => void | Promise<void>;
+  selectedParcelId?: number | null;
 }) {
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
@@ -74,7 +76,7 @@ export default function ParcelSentinel({
     busy: "جاري تحليل الصورة…", error: "فشلت العملية. تحقق من الإحداثيات وتوفر المزود وجودة المشهد.",
   };
   const active = parcels.filter(p => !p.archived);
-  const [parcelId, setParcelId] = useState<number | null>(null);
+  const [parcelId, setParcelId] = useState<number | null>(selectedParcelId);
   const parcel = active.find(p => p.id === parcelId) ?? active[0];
   const [start, setStart] = useState(daysAgo(45));
   const [end, setEnd] = useState(today());
@@ -85,6 +87,12 @@ export default function ParcelSentinel({
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
+
+  useEffect(() => {
+    if (selectedParcelId && parcels.some((item) => !item.archived && item.id === selectedParcelId)) {
+      setParcelId(selectedParcelId);
+    }
+  }, [selectedParcelId, parcels]);
 
   useEffect(() => {
     setScenes([]);

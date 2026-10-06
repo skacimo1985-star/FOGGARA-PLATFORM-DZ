@@ -177,9 +177,9 @@ export default function ProjectDetail() {
         <div className="fg-project-connected">
           <span>{operationalCopy.connected}</span>
           <nav>
-            <Link to={project.site_id ? `/app/gis` : "/app/gis"}><MapPinned size={15} />{operationalCopy.gis}</Link>
-            <Link to="/app/water"><Droplets size={15} />{operationalCopy.water}</Link>
-            <Link to="/app/decisions"><Gavel size={15} />{operationalCopy.decisions}</Link>
+            <Link to={project.site_id ? `/app/gis?site=${project.site_id}&project=${pid}` : `/app/gis?project=${pid}`}><MapPinned size={15} />{operationalCopy.gis}</Link>
+            <Link to={project.site_id ? `/app/water?project=${pid}&site=${project.site_id}` : "/app/water"}><Droplets size={15} />{operationalCopy.water}</Link>
+            <Link to={`/app/studio?project=${pid}`}><Gavel size={15} />{operationalCopy.decisions}</Link>
             <Link to="/app/automation"><Workflow size={15} />{operationalCopy.automation}</Link>
           </nav>
         </div>

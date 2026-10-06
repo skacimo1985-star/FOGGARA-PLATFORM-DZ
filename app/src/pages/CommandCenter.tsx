@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   Activity, ArrowUpRight, Bot, ClipboardCheck, Droplets, FolderKanban,
@@ -40,6 +40,7 @@ const flow = [
 export default function CommandCenter() {
   const { i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [snapshot, setSnapshot] = useState<Snapshot>(initial);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -189,6 +190,7 @@ export default function CommandCenter() {
         <NationalMap
           sites={snapshot.sites ?? []}
           wilayas={wilayas}
+          onSelectSite={(siteId) => navigate(`/app/gis?site=${siteId}`)}
           locale={lang}
         />
         <aside className="fg-command-rail">

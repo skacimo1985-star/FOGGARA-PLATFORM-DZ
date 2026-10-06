@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import type { GisSite, WilayaMeta } from "@/types";
+import type { GisSite, Project, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -117,7 +117,15 @@ export default function Gis() {
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
-  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const requestedSiteId = Number(searchParams.get("site"));
+  const requestedProjectId = Number(searchParams.get("project"));
+  const requestedParcelId = Number(searchParams.get("parcel"));
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(
+    Number.isInteger(requestedSiteId) && requestedSiteId > 0 ? requestedSiteId : null,
+  );
+  const [selectedParcelId, setSelectedParcelId] = useState<number | null>(
+    Number.isInteger(requestedParcelId) && requestedParcelId > 0 ? requestedParcelId : null,
+  );
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
@@ -141,6 +149,22 @@ export default function Gis() {
   const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
+  const [projectContext, setProjectContext] = useState<Project | null>(null);
+
+  useEffect(() => {
+    if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) {
+      api.get<Project>(`/projects/${requestedProjectId}`)
+        .then((project) => {
+          setProjectContext(project);
+          if (!(Number.isInteger(requestedSiteId) && requestedSiteId > 0) && project.site_id) {
+            setSelectedSiteId(project.site_id);
+          }
+        })
+        .catch(() => setProjectContext(null));
+    } else {
+      setProjectContext(null);
+    }
+  }, [requestedProjectId, requestedSiteId]);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -172,6 +196,12 @@ export default function Gis() {
     : lang === "en"
       ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria", selected: "Selected site", nearest: "Nearest sites", distance: "Distance", engine: "Spatial engine", noNearby: "No other nearby sites" }
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
+
+  const contextCopy = lang === "fr"
+    ? { label: "CONTEXTE OPÉRATIONNEL", project: "Projet", site: "Site", parcel: "Parcelle", open: "Ouvrir le projet", openParcel: "Ouvrir la parcelle", mode: "Le SIG conserve le contexte pendant l’analyse spatiale et satellite." }
+    : lang === "en"
+      ? { label: "OPERATIONAL CONTEXT", project: "Project", site: "Site", parcel: "Parcel", open: "Open project", openParcel: "Open parcel", mode: "GIS keeps project context while you work with spatial and satellite analysis." }
+      : { label: "السياق التشغيلي", project: "المشروع", site: "الموقع", parcel: "القطعة", open: "فتح المشروع", openParcel: "فتح القطعة", mode: "يحافظ GIS على سياق المشروع أثناء التحليل المكاني والفضائي." };
 
   const satelliteCopy = lang === "fr"
     ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée." }
@@ -211,6 +241,20 @@ export default function Gis() {
     () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
     [satelliteScenes, selectedSceneId],
   );
+  const selectedParcel = useMemo(
+    () => parcelBoundaries.find((feature) => feature.id === selectedParcelId) ?? null,
+    [parcelBoundaries, selectedParcelId],
+  );
+
+  useEffect(() => {
+    const siteId = selectedParcel?.properties.site_id ?? null;
+    if (!siteId || selectedSiteId === siteId) return;
+    setSelectedSiteId(siteId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("site", String(siteId));
+    setSearchParams(nextParams, { replace: true });
+  }, [selectedParcel, selectedSiteId, searchParams, setSearchParams]);
+
   const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
 
   useEffect(() => {
@@ -284,8 +328,22 @@ export default function Gis() {
     }
   };
 
-  const selectSite = async (siteId: number) => {
+  const selectParcel = (parcelId: number) => {
+    setSelectedParcelId(parcelId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("parcel", String(parcelId));
+    const feature = parcelBoundaries.find((row) => row.id === parcelId);
+    if (feature?.properties.site_id) nextParams.set("site", String(feature.properties.site_id));
+    setSearchParams(nextParams, { replace: true });
+    if (feature?.properties.site_id) void selectSite(feature.properties.site_id, nextParams);
+  };
+
+  const selectSite = async (siteId: number, contextParams?: URLSearchParams) => {
     setSelectedSiteId(siteId);
+    const nextParams = contextParams ? new URLSearchParams(contextParams) : new URLSearchParams(searchParams);
+    nextParams.set("site", String(siteId));
+    if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) nextParams.set("project", String(requestedProjectId));
+    setSearchParams(nextParams, { replace: true });
     const entry = (data ?? []).find((row) => row.site.id === siteId);
     if (!entry) {
       setNearest([]);
@@ -323,6 +381,32 @@ export default function Gis() {
           ))}
         </select>
       </section>
+
+      {projectContext ? (
+        <section data-testid="gis-operational-context" className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-background to-sky-500/10 p-4 shadow-sm" aria-label={contextCopy.label}>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">{contextCopy.label}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <strong className="text-base">{contextCopy.project}: {projectContext.title}</strong>
+                <Badge variant="outline">#{projectContext.id}</Badge>
+                <Badge variant="secondary">{t(`landing.${projectContext.domain}`, projectContext.domain)}</Badge>
+                <Badge variant="outline">{t(`project.statuses.${projectContext.status}`, projectContext.status)}</Badge>
+                {projectContext.is_demo ? <DemoBadge show /> : null}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {contextCopy.site}: {selectedSite?.site.name ?? (projectContext.site_id ? `#${projectContext.site_id}` : t("common.none"))} · {contextCopy.mode}
+              </p>
+            </div>
+            <Link
+              to={`/app/projects/${projectContext.id}`}
+              className="inline-flex items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-semibold shadow-sm transition hover:bg-accent"
+            >
+              {contextCopy.open}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <ErrorText error={error} />
 
@@ -383,8 +467,10 @@ export default function Gis() {
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
+          selectedParcelId={selectedParcelId}
           onViewportChange={setViewportBbox}
           onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
+          onSelectParcel={(parcelId) => selectParcel(parcelId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
           onSelectSite={(siteId) => void selectSite(siteId)}
           locale={lang}
@@ -536,6 +622,20 @@ export default function Gis() {
               <h2>{copy.selected}: {selectedSite.site.name}</h2>
               <p>{selectedSite.site.wilaya}{selectedSite.site.commune ? ` · ${selectedSite.site.commune}` : ""}</p>
               <strong dir="ltr">{selectedSite.site.lat.toFixed(5)}, {selectedSite.site.lon.toFixed(5)}</strong>
+              {selectedParcel ? (
+                <div data-testid="gis-selected-parcel" className="mt-3 rounded-xl border bg-background/80 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{contextCopy.parcel}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <strong>{selectedParcel.properties.name}</strong>
+                    <Badge variant="outline">{selectedParcel.properties.crop}</Badge>
+                    <Badge variant="outline">{Number(selectedParcel.properties.area_ha).toFixed(2)} ha</Badge>
+                    {selectedParcel.properties.is_demo ? <DemoBadge show /> : null}
+                  </div>
+                  <Link className="mt-2 inline-flex rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent" to={`/app/agriculture?parcel=${selectedParcel.id}`}>
+                    {contextCopy.openParcel}
+                  </Link>
+                </div>
+              ) : null}
             </>
           ) : (
             <p>{lang === "fr" ? "Sélectionnez un point sur la carte pour lancer une requête spatiale." : lang === "en" ? "Select a point on the map to run a spatial query." : "اختر نقطة على الخريطة لتشغيل استعلام مكاني."}</p>
@@ -586,9 +686,11 @@ export default function Gis() {
               </TableHeader>
               <TableBody>
                 {(filtered ?? []).map((g) => (
-                  <TableRow key={g.site.id} className={selectedSiteId === g.site.id ? "bg-accent/50" : undefined} onClick={() => void selectSite(g.site.id)}>
+                  <TableRow key={g.site.id} className={selectedSiteId === g.site.id ? "bg-accent/50" : undefined}>
                     <TableCell className="font-medium">
-                      {g.site.name}<DemoBadge show={g.site.is_demo} />
+                      <button type="button" className="font-medium underline-offset-4 hover:underline focus-visible:underline" onClick={() => void selectSite(g.site.id)}>
+                        {g.site.name}
+                      </button><DemoBadge show={g.site.is_demo} />
                     </TableCell>
                     <TableCell>{g.site.wilaya}</TableCell>
                     <TableCell>{g.site.commune ?? t("common.none")}</TableCell>
@@ -597,7 +699,7 @@ export default function Gis() {
                       {g.projects.length === 0 ? t("common.none") : (
                         <ul className="space-y-0.5">
                           {g.projects.map((p) => (
-                            <li key={p.id}>#{p.id} {p.title} <Badge variant="outline">{t(`project.statuses.${p.status}`, p.status)}</Badge></li>
+                            <li key={p.id}><Link className="font-medium underline-offset-4 hover:underline" to={`/app/projects/${p.id}`}>#{p.id} {p.title}</Link> <Badge variant="outline">{t(`project.statuses.${p.status}`, p.status)}</Badge></li>
                           ))}
                         </ul>
                       )}

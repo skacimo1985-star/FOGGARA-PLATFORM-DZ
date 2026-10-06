@@ -52,8 +52,10 @@ type Props = {
   selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
+  selectedParcelId?: number | null;
   onSelectWilaya?: (code: string) => void;
   onSelectSite?: (siteId: number) => void;
+  onSelectParcel?: (parcelId: number) => void;
   onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
   locale?: string;
@@ -177,8 +179,10 @@ export function NationalMap({
   selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
+  selectedParcelId = null,
   onSelectWilaya,
   onSelectSite,
+  onSelectParcel,
   onSelectScene,
   onViewportChange,
   locale = "ar",
@@ -189,6 +193,7 @@ export function NationalMap({
   const onSelectSiteRef = useRef(onSelectSite);
   const onSelectWilayaRef = useRef(onSelectWilaya);
   const onSelectSceneRef = useRef(onSelectScene);
+  const onSelectParcelRef = useRef(onSelectParcel);
   const onViewportChangeRef = useRef(onViewportChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
@@ -199,6 +204,7 @@ export function NationalMap({
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
+  onSelectParcelRef.current = onSelectParcel;
   onViewportChangeRef.current = onViewportChange;
   analysisOverlayRef.current = analysisOverlay;
 
@@ -254,8 +260,14 @@ export function NationalMap({
 
   const parcelFeatureCollection = useMemo(() => ({
     type: "FeatureCollection" as const,
-    features: parcelBoundaries,
-  }), [parcelBoundaries]);
+    features: parcelBoundaries.map((feature) => ({
+      ...feature,
+      properties: {
+        ...feature.properties,
+        selected: feature.id === selectedParcelId,
+      },
+    })),
+  }), [parcelBoundaries, selectedParcelId]);
   parcelFeaturesRef.current = parcelFeatureCollection;
 
   const labels = locale === "fr"
@@ -377,8 +389,8 @@ export function NationalMap({
             type: "fill",
             source: "agri-parcel-boundaries",
             paint: {
-              "fill-color": "#178568",
-              "fill-opacity": 0.17,
+              "fill-color": ["case", ["boolean", ["get", "selected"], false], "#f0b75d", "#178568"],
+              "fill-opacity": ["case", ["boolean", ["get", "selected"], false], 0.34, 0.17],
             },
           });
           map.addLayer({
@@ -386,8 +398,8 @@ export function NationalMap({
             type: "line",
             source: "agri-parcel-boundaries",
             paint: {
-              "line-color": "#0f6f56",
-              "line-width": 2.2,
+              "line-color": ["case", ["boolean", ["get", "selected"], false], "#d97706", "#0f6f56"],
+              "line-width": ["case", ["boolean", ["get", "selected"], false], 3.6, 2.2],
               "line-opacity": 0.92,
             },
           });
@@ -421,7 +433,7 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map && onSelectSceneRef.current) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
             if (map) map.getCanvas().style.cursor = "";
@@ -431,8 +443,19 @@ export function NationalMap({
             if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
           });
 
+          map.on("mouseenter", "agri-parcel-fill", () => {
+            if (map && onSelectParcelRef.current) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "agri-parcel-fill", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "agri-parcel-fill", (event) => {
+            const parcelId = Number(event.features?.[0]?.properties?.id);
+            if (Number.isFinite(parcelId) && onSelectParcelRef.current) onSelectParcelRef.current(parcelId);
+          });
+
           map.on("mouseenter", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map && (onSelectSiteRef.current || onSelectWilayaRef.current)) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "foggara-sites", () => {
             if (map) map.getCanvas().style.cursor = "";
