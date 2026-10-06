@@ -17,10 +17,12 @@ from app.models import (VFD, Asset, Calibration, Certificate, Evidence,
                         Inspection, Instrument, IrrigationZone, Measurement,
                         Organization, Project, Pump, Reservoir, Service,
                         ServiceRequest, Site, User, Valve, WaterAllocation,
-                        WaterResource, Well)
+                        WaterResource, Well, AgriParcel, AgriObservation,
+                        AgriPlan, AgriTask)
 from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
 from app.services.catalog import ensure_service_catalog
+from app.services.agriculture_operations import irrigation_scenario
 
 def get_or_create(db, model_cls, defaults=None, **lookup):
     obj = db.execute(select(model_cls).filter_by(**lookup)).scalar_one_or_none()
@@ -30,6 +32,102 @@ def get_or_create(db, model_cls, defaults=None, **lookup):
     db.add(obj)
     db.flush()
     return obj, True
+
+
+def seed_agriculture_workspace(db, created, *, org, user, site, code, wilaya_ar, crop):
+    """Create deterministic, explicitly synthetic agriculture demo records."""
+    area_ha = round(1.5 + (int(code) % 6) * 0.5, 2)
+    coords = {}
+    if site.lat is not None and site.lon is not None:
+        coords = {"lat": float(site.lat), "lon": float(site.lon)}
+
+    parcel, made = get_or_create(
+        db, AgriParcel,
+        org_id=org.id,
+        name=f"قطعة زراعية تجريبية — {wilaya_ar}",
+        defaults=dict(
+            crop=crop,
+            area_ha=area_ha,
+            location=wilaya_ar,
+            site_id=site.id,
+            stage="development",
+            created_by=user.id,
+            is_demo=True,
+            **coords,
+        ),
+    )
+    created["agri_parcels"] += made
+
+    observed_at = datetime(2026, 9, 30, 10, 0, tzinfo=timezone.utc)
+    code_num = int(code)
+    observations = (
+        ("ndvi", round(0.38 + (code_num % 10) * 0.025, 3), "index"),
+        ("lswi", round(-0.05 + (code_num % 8) * 0.025, 3), "index"),
+        ("moisture", round(24 + (code_num % 12) * 2.5, 2), "% VWC"),
+    )
+    for metric, value, unit in observations:
+        source_ref = f"SYNTHETIC-DEMO-{metric.upper()}-WILAYA-{code}"
+        _, made = get_or_create(
+            db, AgriObservation,
+            org_id=org.id,
+            parcel_id=parcel.id,
+            metric=metric,
+            source_ref=source_ref,
+            defaults=dict(
+                value=value,
+                unit=unit,
+                source_type="satellite",
+                observed_at=observed_at,
+                evidence_status="INFERRED",
+                created_by=user.id,
+                is_demo=True,
+            ),
+        )
+        created["agri_observations"] += made
+
+    plan = db.scalar(select(AgriPlan).where(
+        AgriPlan.org_id == org.id,
+        AgriPlan.parcel_id == parcel.id,
+        AgriPlan.is_demo == True,
+    ))
+    if plan is None:
+        inputs = dict(
+            parcel_id=parcel.id,
+            eto_mm_day=6.0,
+            kc=0.85,
+            effective_rain_mm=2.0,
+            efficiency=0.80,
+            days=7,
+            input_source=f"SYNTHETIC-DEMO-WILAYA-{code}",
+            area_ha=area_ha,
+        )
+        plan = AgriPlan(
+            org_id=org.id,
+            parcel_id=parcel.id,
+            inputs=inputs,
+            result=irrigation_scenario(area_ha, 6.0, 0.85, 2.0, 0.80, 7),
+            created_by=user.id,
+            is_demo=True,
+        )
+        db.add(plan)
+        db.flush()
+        created["agri_plans"] += 1
+
+    _, made = get_or_create(
+        db, AgriTask,
+        org_id=org.id,
+        parcel_id=parcel.id,
+        title=f"مراجعة خطة الري التجريبية — {wilaya_ar}",
+        defaults=dict(
+            due_date="2026-10-13",
+            completed=False,
+            created_by=user.id,
+            is_demo=True,
+        ),
+    )
+    created["agri_tasks"] += made
+
+    return parcel
 
 
 TRUTHY = {"1", "true", "yes"}
@@ -70,7 +168,8 @@ def main():
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
                "calibrations": 0, "certificates": 0, "inspections": 0,
-               "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0}
+               "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0,
+               "agri_parcels": 0, "agri_observations": 0, "agri_plans": 0, "agri_tasks": 0}
     try:
         created["services"] += ensure_service_catalog(db)
         if not seed_demo:
@@ -121,6 +220,15 @@ def main():
                                  defaults=dict(wilaya="تندوف", commune="أم العسل",
                                                lat=27.67, lon=-8.15, is_demo=True))
         created["sites"] += c
+
+        seed_agriculture_workspace(
+            db, created, org=org1, user=member1, site=site1,
+            code="01", wilaya_ar="أدرار", crop="date_palm",
+        )
+        seed_agriculture_workspace(
+            db, created, org=org2, user=member2, site=site2,
+            code="37", wilaya_ar="تندوف", crop="wheat",
+        )
 
         # ---- Additional wilayas (national coverage expansion) ----
         # 67 wilayas beyond Adrar(01) and Tindouf(37), covering codes 01–69.
@@ -746,6 +854,16 @@ def main():
                 ),
             )
             created["evidences"] += c
+
+            seed_agriculture_workspace(
+                db, created,
+                org=org_x,
+                user=usr_x,
+                site=site_x,
+                code=w["code"],
+                wilaya_ar=w["wilaya_ar"],
+                crop="date_palm" if w["org_kind"] == "water" else "wheat",
+            )
 
         res1, c = get_or_create(db, WaterResource, org_id=org1.id, name="فڨارة أولف الشرقية (تجريبية)",
                                 defaults=dict(site_id=site1.id, type="foggara",
