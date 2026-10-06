@@ -69,7 +69,7 @@ jobs:
           $suite = 'full'
           if (Test-Path '.github/self-hosted-suite.txt') {
             $candidate = (Get-Content '.github/self-hosted-suite.txt' -Raw).Trim().ToLowerInvariant()
-            if ($candidate -in @('full', 'ogc')) { $suite = $candidate }
+            if ($candidate -in @('full', 'ogc', 'stac')) { $suite = $candidate }
             else { throw "Unsupported self-hosted verification suite: $candidate" }
           }
           "suite=$suite" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
@@ -151,6 +151,13 @@ jobs:
         shell: powershell
         run: |
           python -m pytest tests/test_ogc_features.py -q -ra --tb=short
+
+      - name: Verify STAC remote-sensing projection
+        if: steps.suite.outputs.suite == 'stac'
+        working-directory: app/backend
+        shell: powershell
+        run: |
+          python -m pytest tests/test_stac.py -q -ra --tb=short
 
       - name: Set up Node 22
         if: steps.suite.outputs.suite == 'full'
