@@ -3,7 +3,7 @@
 Run:  python3 seed.py
 Idempotent: every block checks existence (by a natural key) before inserting,
 so running the script multiple times never duplicates rows.
-Passwords below are for local demo only. Never use in production.
+Passwords below are for synthetic demo instances only. Never enable demo seeding on a real production dataset.
 """
 from datetime import datetime, timedelta, timezone
 import os
@@ -35,14 +35,29 @@ def get_or_create(db, model_cls, defaults=None, **lookup):
     return obj, True
 
 
+TRUTHY = {"1", "true", "yes"}
+
+
+def _env_flag(name: str, default: str = "false") -> bool:
+    return os.environ.get(name, default).strip().lower() in TRUTHY
+
+
+def _seed_demo_enabled() -> bool:
+    """Allow demo data in prod only on an explicitly isolated demo/expo instance."""
+    seed_demo = _env_flag("SEED_DEMO")
+    if os.environ.get("ENV", "dev") == "prod" and seed_demo and not _env_flag("DEMO_INSTANCE"):
+        raise RuntimeError(
+            "SEED_DEMO=true in ENV=prod requires DEMO_INSTANCE=true on an isolated demo/expo instance"
+        )
+    return seed_demo
+
+
 def main():
-    # SEED_DEMO: في الإنتاج (ENV=prod) الافتراضي false — لا حسابات/بيانات تجريبية
-    # إطلاقًا ما لم تُضبط القيمة صراحة. المؤشر الافتراضي يُنشأ دائمًا.
-    seed_demo = os.environ.get(
-        "SEED_DEMO", "false"
-    ).strip().lower() in ("1", "true", "yes")
-    if os.environ.get("ENV", "dev") == "prod" and seed_demo:
-        raise RuntimeError("Demo business data is forbidden in production")
+    # Real production remains demo-free by default. A deliberately isolated
+    # expo/demo deployment may opt in with both SEED_DEMO=true and
+    # DEMO_INSTANCE=true. The authored indicator/service catalog is ensured
+    # even when synthetic business data is disabled.
+    seed_demo = _seed_demo_enabled()
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
