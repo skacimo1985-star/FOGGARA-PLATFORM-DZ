@@ -67,11 +67,14 @@ METRICS = {
     'ph': ('pH', 0, 14), 'nitrogen': ('mg/kg', 0, 1000000),
     'phosphorus': ('mg/kg', 0, 1000000), 'potassium': ('mg/kg', 0, 1000000),
     'soc': ('%', 0, 100), 'moisture': ('% VWC', 0, 100),
-    'ndvi': ('index', -1, 1), 'lswi': ('index', -1, 1), 'ec': ('dS/m', 0, 100),
+    'ndvi': ('index', -1, 1), 'ndmi': ('index', -1, 1),
+    'lswi': ('index', -1, 1), 'ndwi': ('index', -1, 1),
+    'evi': ('index', -1, 1), 'savi': ('index', -1, 1),
+    'ec': ('dS/m', 0, 100),
 }
 class ObservationIn(Input):
     parcel_id: int = Field(gt=0)
-    metric: Literal['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','lswi','ec']
+    metric: Literal['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','ndmi','lswi','ndwi','evi','savi','ec']
     value: float
     source_type: Literal['lab','sensor','satellite','manual']
     source_ref: str = Field(min_length=3, max_length=300)
@@ -85,7 +88,7 @@ class ObservationIn(Input):
         if self.observed_at > datetime.now(timezone.utc):
             raise ValueError('Observation cannot be in the future')
         # No unsupported NPK/pH inference is admitted as a laboratory measurement.
-        if self.source_type == 'satellite' and self.metric not in ('ndvi', 'lswi', 'moisture'):
+        if self.source_type == 'satellite' and self.metric not in ('ndvi', 'ndmi', 'lswi', 'ndwi', 'evi', 'savi', 'moisture'):
             raise ValueError('Satellite soil chemistry requires a separately validated model')
         return self
 
