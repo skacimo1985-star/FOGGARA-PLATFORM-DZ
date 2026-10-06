@@ -171,6 +171,7 @@ class MeasurementIn(BaseModel):
 
 
 class MeasurementImportRow(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     resource_id: Optional[int] = None
     parameter: MEASUREMENT_PARAMETERS
     value: float
