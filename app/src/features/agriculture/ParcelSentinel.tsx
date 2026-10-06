@@ -89,7 +89,7 @@ export default function ParcelSentinel({
   const [lon, setLon] = useState("");
 
   useEffect(() => {
-    if (selectedParcelId && active.some((item) => item.id === selectedParcelId)) {
+    if (selectedParcelId && parcels.some((item) => !item.archived && item.id === selectedParcelId)) {
       setParcelId(selectedParcelId);
     }
   }, [selectedParcelId, parcels]);
