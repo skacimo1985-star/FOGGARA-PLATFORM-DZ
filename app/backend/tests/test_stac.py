@@ -285,3 +285,7 @@ from tests.test_measurement_import import *  # noqa: F401,F403,E402
 
 # Staging-only collection: atomic imported measurement batch review.
 from tests.test_measurement_batch_review import *  # noqa: F401,F403,E402
+
+
+# Staging-only collection: verified parcel-linked soil measurements.
+from tests.test_verified_soil_measurements import *  # noqa: F401,F403,E402
