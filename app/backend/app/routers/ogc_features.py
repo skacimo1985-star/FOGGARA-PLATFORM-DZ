@@ -196,17 +196,17 @@ def site_items(
         {"href": f"{root}/collections/sites", "rel": "collection", "type": "application/json"},
     ]
     if offset + len(rows) < total:
-        next_offset = offset + len(rows)
-        query = f"?limit={limit}&offset={next_offset}"
-        if bbox is not None:
-            query += f"&bbox={bbox}"
-        links.append({"href": f"{root}/collections/sites/items{query}", "rel": "next", "type": "application/geo+json"})
+        next_url = request.url.include_query_params(
+            limit=limit,
+            offset=offset + len(rows),
+        )
+        links.append({"href": str(next_url), "rel": "next", "type": "application/geo+json"})
     if offset > 0:
-        previous_offset = max(0, offset - limit)
-        query = f"?limit={limit}&offset={previous_offset}"
-        if bbox is not None:
-            query += f"&bbox={bbox}"
-        links.append({"href": f"{root}/collections/sites/items{query}", "rel": "prev", "type": "application/geo+json"})
+        previous_url = request.url.include_query_params(
+            limit=limit,
+            offset=max(0, offset - limit),
+        )
+        links.append({"href": str(previous_url), "rel": "prev", "type": "application/geo+json"})
 
     return {
         "type": "FeatureCollection",
