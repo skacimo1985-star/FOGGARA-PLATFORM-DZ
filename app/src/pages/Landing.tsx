@@ -22,7 +22,7 @@ export default function Landing() {
     spineBody:"FOGGARA relie les sites, mesures, projets, preuves, règles, décisions et suivi dans un même espace opérationnel."
   }:lang==="en"?{
     real:"REAL FOGGARA",digital:"DIGITAL FOGGARA",intelligence:"WEFEH INTELLIGENCE",
-    national:"58 wilayas",evidence:"5 evidence states",cycle:"11 decision stages",
+    national:`${WILAYAS.length} wilayas`,evidence:"5 evidence states",cycle:"11 decision stages",
     spine:"From field reality to decision, without losing provenance.",
     spineBody:"FOGGARA links sites, measurements, projects, evidence, rules, decisions and monitoring in one operational environment."
   }:{
