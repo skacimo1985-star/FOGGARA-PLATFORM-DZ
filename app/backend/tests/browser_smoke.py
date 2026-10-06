@@ -317,6 +317,9 @@ def main():
                     else:
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path == "/app/agriculture":
+                        expect(page.locator(".fg-section-nav")).to_be_visible()
+                        expect(page.locator(".fg-section-nav button")).to_have_count(8)
+                        expect(page.locator(".fg-sidebar")).to_have_count(0)
                         expect(page.locator(".fg-intelligence-band")).to_be_visible()
                         expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
                         expect(page.locator(".fg-remote-sensing-state")).to_be_visible()
