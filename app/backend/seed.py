@@ -164,7 +164,7 @@ def main():
     # even when synthetic business data is disabled.
     seed_demo = _seed_demo_enabled()
     demo_password = _require_demo_password() if seed_demo else None
-    demo_password_hash = demo_password_hash if demo_password is not None else None
+    demo_password_hash = hash_password(demo_password) if demo_password is not None else None
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
