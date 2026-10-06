@@ -242,3 +242,26 @@ def test_stac_bbox_supports_antimeridian_and_degenerate_ranges(client, world, db
     )
     assert point_box.status_code == 200, point_box.text
     assert point_box.json()["numberMatched"] == 1
+
+
+def test_stac_search_next_link_preserves_search_filters(client, world, db):
+    _scene(db, world, source_ref="provider:page-a")
+    _scene(db, world, source_ref="provider:page-b")
+    headers = login(client, world["o1_member"].email)
+
+    response = client.get(
+        "/api/stac/search?collections=foggara-remote-sensing"
+        "&bbox=-1,27,0,29"
+        "&datetime=2026-09-30T09:00:00Z/2026-09-30T11:00:00Z"
+        "&limit=1&offset=0",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
+    href = next_link["href"]
+    assert "/api/stac/search?" in href
+    assert "collections=foggara-remote-sensing" in href
+    assert "bbox=-1%2C27%2C0%2C29" in href or "bbox=-1,27,0,29" in href
+    assert "datetime=" in href
+    assert "limit=1" in href
+    assert "offset=1" in href
