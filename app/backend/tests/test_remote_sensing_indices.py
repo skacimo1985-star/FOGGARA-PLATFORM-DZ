@@ -11,10 +11,12 @@ def test_index_definitions_use_expected_sentinel2_bands():
     assert get_index_definition("evi").required_bands == ("B02", "B04", "B08")
     assert get_index_definition("savi").required_bands == ("B04", "B08")
     assert get_index_definition("ndwi").required_bands == ("B03", "B08")
+    assert get_index_definition("ndmi").required_bands == ("B08", "B11")
+    assert get_index_definition("lswi").required_bands == ("B08", "B11")
 
 
 def test_compute_indices_against_hand_calculation():
-    bands = {"B02": 0.10, "B03": 0.20, "B04": 0.30, "B08": 0.70}
+    bands = {"B02": 0.10, "B03": 0.20, "B04": 0.30, "B08": 0.70, "B11": 0.25}
 
     ndvi = compute_index("ndvi", bands)
     assert ndvi == pytest.approx((0.70 - 0.30) / (0.70 + 0.30))
@@ -30,10 +32,18 @@ def test_compute_indices_against_hand_calculation():
     ndwi = compute_index("ndwi", bands)
     assert ndwi == pytest.approx((0.20 - 0.70) / (0.20 + 0.70))
 
+    ndmi = compute_index("ndmi", bands)
+    lswi = compute_index("lswi", bands)
+    expected_moisture = (0.70 - 0.25) / (0.70 + 0.25)
+    assert ndmi == pytest.approx(expected_moisture)
+    assert lswi == pytest.approx(expected_moisture)
+
 
 def test_singular_denominator_preserves_nodata():
     assert compute_index("ndvi", {"B04": 0.0, "B08": 0.0}) is None
     assert compute_index("ndwi", {"B03": 0.0, "B08": 0.0}) is None
+    assert compute_index("ndmi", {"B08": 0.0, "B11": 0.0}) is None
+    assert compute_index("lswi", {"B08": 0.0, "B11": 0.0}) is None
 
 
 def test_missing_or_nonfinite_inputs_fail_closed():
@@ -71,8 +81,10 @@ def test_index_definition_endpoint_exposes_computed_not_verified_metadata(client
     assert body["verified"] is False
 
     by_key = {row["key"]: row for row in body["indices"]}
-    assert set(by_key) == {"ndvi", "evi", "savi", "ndwi"}
+    assert set(by_key) == {"ndvi", "evi", "savi", "ndwi", "ndmi", "lswi"}
     assert by_key["ndvi"]["required_bands"] == ["B04", "B08"]
     assert by_key["ndvi"]["evidence_status"] == "COMPUTED"
     assert by_key["ndwi"]["colormap_family"] == "water"
+    assert by_key["ndmi"]["required_bands"] == ["B08", "B11"]
+    assert by_key["lswi"]["required_bands"] == ["B08", "B11"]
     assert all(row["formula_version"] == "foggara-rs-v1" for row in body["indices"])
