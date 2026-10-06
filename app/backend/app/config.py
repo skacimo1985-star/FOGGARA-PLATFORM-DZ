@@ -3,6 +3,7 @@
 قاعدة الأمان الأساسية: عند ENV=prod يُرفض الإقلاع بأي JWT_SECRET افتراضي/ضعيف.
 """
 import os
+from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 # الافتراضي بلا إعداد: SQLite محلي (تطوير/تجربة بلا Docker).
@@ -104,6 +105,19 @@ AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 if not 3 <= AI_TIMEOUT_SECONDS <= 60:
     raise RuntimeError("AI_TIMEOUT_SECONDS must be between 3 and 60")
 
+def _is_private_ai_host(hostname: str) -> bool:
+    host = hostname.strip().lower().rstrip(".")
+    if host == "localhost" or "." not in host:
+        return True
+    if host.endswith((".local", ".internal", ".svc", ".svc.cluster.local")):
+        return True
+    try:
+        address = ip_address(host)
+    except ValueError:
+        return False
+    return bool(address.is_private or address.is_loopback or address.is_link_local)
+
+
 if AI_PROVIDER_MODE != "deterministic":
     _ai_url = urlsplit(AI_BASE_URL)
     if not AI_BASE_URL or not AI_MODEL:
@@ -117,6 +131,8 @@ if AI_PROVIDER_MODE != "deterministic":
         or _ai_url.fragment
     ):
         raise RuntimeError("AI_BASE_URL must be an HTTP(S) provider base URL without embedded credentials, query or fragment")
+    if AI_PROVIDER_MODE == "local" and not _is_private_ai_host(_ai_url.hostname):
+        raise RuntimeError("AI_PROVIDER_MODE=local requires a loopback/private/internal AI_BASE_URL host")
     if AI_PROVIDER_MODE == "external":
         if not AI_API_KEY:
             raise RuntimeError("External AI requires AI_API_KEY")
