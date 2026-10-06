@@ -201,3 +201,14 @@ def test_processing_plan_endpoint_rejects_malformed_scene_id(client, world):
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "INVALID_SCENE_ID"
+
+
+def test_processing_plan_rejects_malformed_numeric_metadata():
+    item = stac_item()
+    item["assets"]["red"]["raster:bands"][0]["scale"] = "not-a-number"
+
+    try:
+        build_processing_plan(item, "ndvi")
+        assert False, "malformed raster metadata must be rejected"
+    except ValueError as exc:
+        assert "must be numeric" in str(exc)
