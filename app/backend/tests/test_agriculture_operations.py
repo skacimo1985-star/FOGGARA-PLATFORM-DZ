@@ -399,7 +399,8 @@ def test_live_sentinel_workflow_persists_real_ndvi_and_audit(client, world, monk
         assert value == scene_id
         calls['provider'] += 1
         return value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}}
-    def raster(plan, bbox):
+    def raster(plan, bbox, geometry_wgs84=None):
+        assert geometry_wgs84 is None
         assert plan['scene_id'] == scene_id
         assert len(bbox) == 4 and bbox[0] < 2.87 < bbox[2]
         assert bbox[1] < 33.8 < bbox[3]
@@ -435,7 +436,7 @@ def test_live_sentinel_workflow_persists_real_ndvi_and_audit(client, world, monk
     assert float(record['value']) == .62
     assert record['is_demo'] is False
     assert record['evidence_status'] == 'INFERRED'
-    assert record['source_ref'] == f'element84-earth-search:{scene_id}:ndvi'
+    assert record['source_ref'].startswith(f'element84-earth-search:{scene_id}:ndvi:')
     assert first.json()['statistics']['pixels']['valid_fraction'] == .9
     assert calls == {'provider': 1, 'raster': 1}
 
@@ -489,7 +490,7 @@ def test_sentinel_rejects_missing_coordinates_and_low_quality(client, world, mon
         value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
     ))
     monkeypatch.setattr(satellite, 'build_processing_plan', lambda item, index: {'scene_id': item['id']})
-    monkeypatch.setattr(satellite, 'compute_index_statistics', lambda plan, bbox: {
+    monkeypatch.setattr(satellite, 'compute_index_statistics', lambda plan, bbox, geometry_wgs84=None: {
         'statistics': {'mean': None}, 'pixels': {'valid': 0, 'total': 100, 'valid_fraction': 0},
     })
     poor = client.post(url, headers=h, json={'scene_id': 'S2A_TEST_SCENE_2026'})
@@ -498,3 +499,110 @@ def test_sentinel_rejects_missing_coordinates_and_low_quality(client, world, mon
     assert client.get(
         f'/api/agriculture/observations?parcel_id={unlocated}', headers=h,
     ).json() == []
+
+
+def test_parcel_boundary_geojson_sets_centroid_and_rejects_self_intersection(client, world, db):
+    h = login(client, 'o1m@t.dz')
+    boundary = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8695, 33.7995], [2.8705, 33.7995],
+            [2.8705, 33.8005], [2.8695, 33.8005],
+            [2.8695, 33.7995],
+        ]],
+    }
+    created = client.post('/api/agriculture/parcels', headers=h, json={
+        'name': 'Mapped field', 'crop': 'wheat', 'area_ha': 1.0,
+        'location': 'Laghouat', 'boundary_geojson': boundary,
+    })
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert body['boundary_geojson']['type'] == 'Polygon'
+    assert float(body['lat']) == pytest.approx(33.8, abs=1e-5)
+    assert float(body['lon']) == pytest.approx(2.87, abs=1e-5)
+
+    crossed = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8695, 33.7995], [2.8705, 33.8005],
+            [2.8695, 33.8005], [2.8705, 33.7995],
+            [2.8695, 33.7995],
+        ]],
+    }
+    bad = client.patch(f"/api/agriculture/parcels/{body['id']}", headers=h,
+                       json={'boundary_geojson': crossed})
+    assert bad.status_code == 422
+    assert client.get('/api/agriculture/parcels', headers=login(client, 'o2m@t.dz')).json() == []
+
+
+def test_sentinel_uses_real_boundary_and_recomputes_when_boundary_changes(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    boundary = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8695, 33.7995], [2.8705, 33.7995],
+            [2.8705, 33.8005], [2.8695, 33.8005],
+            [2.8695, 33.7995],
+        ]],
+    }
+    parcel = client.post('/api/agriculture/parcels', headers=h, json={
+        'name': 'Boundary Sentinel field', 'crop': 'wheat', 'area_ha': 1,
+        'location': 'Laghouat', 'boundary_geojson': boundary,
+    }).json()
+    scene_id = 'S2A_BOUNDARY_SCENE_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    captured = []
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    monkeypatch.setattr(satellite, 'build_processing_plan',
+                        lambda item, index: {'scene_id': item['id'], 'index': index})
+    def raster(plan, bbox, geometry_wgs84=None):
+        captured.append({'bbox': bbox, 'geometry': geometry_wgs84})
+        return {
+            'statistics': {'mean': .55},
+            'pixels': {'valid': 60, 'total': 64, 'valid_fraction': .9375},
+            'processing_plan_fingerprint': 'boundary-plan',
+        }
+    monkeypatch.setattr(satellite, 'compute_index_statistics', raster)
+    monkeypatch.setattr(satellite, 'catalog_scenes', lambda **kwargs: {
+        'scenes': [{'id': scene_id, 'datetime': acquired, 'cloud_cover_pct': 4.0}],
+        'count': 1, 'live': True,
+    })
+    scenes = client.get(
+        f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/scenes",
+        headers=h, params={'start':'2026-09-01','end':'2026-10-05'},
+    )
+    assert scenes.status_code == 200, scenes.text
+    assert scenes.json()['sample_geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
+
+    url = f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/analyze"
+    first = client.post(url, headers=h, json={'scene_id':scene_id})
+    assert first.status_code == 201, first.text
+    assert first.json()['sample_geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
+    first_fp = first.json()['analysis_fingerprint']
+    assert captured[0]['geometry']['type'] == 'Polygon'
+    assert captured[0]['bbox'][0] == pytest.approx(2.8695)
+
+    shifted = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8700, 33.7995], [2.8710, 33.7995],
+            [2.8710, 33.8005], [2.8700, 33.8005],
+            [2.8700, 33.7995],
+        ]],
+    }
+    patched = client.patch(
+        f"/api/agriculture/parcels/{parcel['id']}", headers=h,
+        json={'boundary_geojson': shifted},
+    )
+    assert patched.status_code == 200, patched.text
+    second = client.post(url, headers=h, json={'scene_id':scene_id})
+    assert second.status_code == 201, second.text
+    assert second.json()['created'] is True
+    assert second.json()['analysis_fingerprint'] != first_fp
+    observations = client.get(
+        f"/api/agriculture/observations?parcel_id={parcel['id']}", headers=h,
+    ).json()
+    assert len([x for x in observations if x['metric'] == 'ndvi']) == 2
