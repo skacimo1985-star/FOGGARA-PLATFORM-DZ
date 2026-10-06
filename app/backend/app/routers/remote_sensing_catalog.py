@@ -20,6 +20,12 @@ from ..services.remote_sensing_processing import (
     item_url,
     validate_scene_id,
 )
+from ..services.remote_sensing_raster import (
+    RasterCapacityError,
+    RasterStatisticsError,
+    compute_index_statistics,
+    validate_analysis_bbox,
+)
 
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
@@ -124,6 +130,34 @@ def _scene_from_feature(feature: dict) -> dict:
     }
 
 
+
+
+def _provider_item(scene_id: str) -> tuple[str, dict]:
+    try:
+        safe_scene_id = validate_scene_id(scene_id)
+        provider_url = item_url(safe_scene_id)
+    except ProcessingPlanError as exc:
+        api_error(422, "INVALID_SCENE_ID", str(exc))
+
+    try:
+        timeout = httpx.Timeout(12.0, connect=5.0)
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            response = client.get(
+                provider_url,
+                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
+            )
+            response.raise_for_status()
+            item = response.json()
+    except (httpx.HTTPError, ValueError):
+        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
+
+    if not isinstance(item, dict):
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid item")
+    if item.get("id") != safe_scene_id or item.get("collection") != SENTINEL_COLLECTION:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue item identity is invalid")
+    return safe_scene_id, item
+
+
 @router.get("/catalog/scenes")
 def catalog_scenes(
     bbox: str = Query(..., min_length=7, max_length=160),
@@ -194,29 +228,7 @@ def scene_processing_plan(
     index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
     _user: User = Depends(get_current_user),
 ):
-    try:
-        safe_scene_id = validate_scene_id(scene_id)
-        provider_url = item_url(safe_scene_id)
-    except ProcessingPlanError as exc:
-        api_error(422, "INVALID_SCENE_ID", str(exc))
-
-    try:
-        timeout = httpx.Timeout(12.0, connect=5.0)
-        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
-            response = client.get(
-                provider_url,
-                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
-            )
-            response.raise_for_status()
-            item = response.json()
-    except (httpx.HTTPError, ValueError):
-        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
-
-    if not isinstance(item, dict):
-        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid item")
-    if item.get("id") != safe_scene_id or item.get("collection") != SENTINEL_COLLECTION:
-        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue item identity is invalid")
-
+    _safe_scene_id, item = _provider_item(scene_id)
     try:
         return build_processing_plan(item, index)
     except ProcessingPlanError:
@@ -225,3 +237,36 @@ def scene_processing_plan(
             "REMOTE_PROVIDER_INVALID_RESPONSE",
             "Satellite catalogue item cannot produce a trusted processing plan",
         )
+
+
+@router.get("/catalog/scenes/{scene_id}/statistics")
+def scene_index_statistics(
+    scene_id: str,
+    bbox: str = Query(..., min_length=7, max_length=160),
+    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
+    _user: User = Depends(get_current_user),
+):
+    raw_bbox = _parse_bbox(bbox)
+    try:
+        validate_analysis_bbox(raw_bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", str(exc))
+
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+    except ProcessingPlanError:
+        api_error(
+            502,
+            "REMOTE_PROVIDER_INVALID_RESPONSE",
+            "Satellite catalogue item cannot produce a trusted processing plan",
+        )
+    try:
+        return compute_index_statistics(plan, raw_bbox)
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster analysis capacity is busy; retry later")
+    except RasterStatisticsError as exc:
+        message = str(exc)
+        if "bbox" in message or "pixel budget" in message or "too large" in message:
+            api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", message)
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Trusted Sentinel raster analysis failed")
