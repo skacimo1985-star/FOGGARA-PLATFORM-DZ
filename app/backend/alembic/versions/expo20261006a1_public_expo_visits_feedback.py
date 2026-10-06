@@ -1,13 +1,13 @@
 """Public expo visits and feedback.
 
 Revision ID: expo20261006a1
-Revises: rc1agriops01, demo20261006a1
+Revises: demo20261006a1
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "expo20261006a1"
-down_revision = ("rc1agriops01", "demo20261006a1")
+down_revision = "demo20261006a1"
 branch_labels = None
 depends_on = None
 
