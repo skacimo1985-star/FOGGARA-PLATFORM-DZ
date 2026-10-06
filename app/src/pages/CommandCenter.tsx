@@ -38,7 +38,7 @@ const flow = [
 ];
 
 export default function CommandCenter() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [snapshot, setSnapshot] = useState<Snapshot>(initial);
@@ -137,15 +137,31 @@ export default function CommandCenter() {
     { label: copy.infrastructure, value: counts.infrastructure, to: "/app/iot", icon: Radio },
   ];
 
+  const workspaceBody = lang === "fr" ? {
+    water: "Ressources · pompage · allocation", agriculture: "Sol · culture · irrigation",
+    gis: "Sites · projets · couches nationales", telemetry: "Appareils · capteurs · flux",
+    decisions: "Preuves → revue → action", automation: "Tâches · règles · suivi",
+    evidence: "Observé · vérifié · calculé", ai: "Portefeuille · risques · prochaines actions",
+  } : lang === "en" ? {
+    water: "Resources · pumping · allocation", agriculture: "Soil · crop · irrigation",
+    gis: "National sites · projects · layers", telemetry: "Devices · sensors · streams",
+    decisions: "Evidence → review → action", automation: "Jobs · rules · monitoring",
+    evidence: "Observed · verified · computed", ai: "Portfolio · risks · next actions",
+  } : {
+    water: "الموارد · الضخ · التخصيص", agriculture: "التربة · المحصول · الري",
+    gis: "المواقع · المشاريع · الطبقات الوطنية", telemetry: "الأجهزة · الحساسات · التدفقات",
+    decisions: "الأدلة ← المراجعة ← الإجراء", automation: "المهام · القواعد · المتابعة",
+    evidence: "مرصود · متحقق · محسوب", ai: "المحفظة · المخاطر · الإجراءات التالية",
+  };
   const workspaces = [
-    { label: copy.water, body: "Water intelligence", to: "/app/water", icon: Droplets },
-    { label: copy.agriculture, body: "Soil · crop · irrigation", to: "/app/agriculture", icon: Sprout },
-    { label: copy.gis, body: "National sites · projects · layers", to: "/app/gis", icon: MapPinned },
-    { label: copy.telemetryLabel, body: "Devices · sensors · streams", to: "/app/telemetry", icon: Gauge },
-    { label: copy.decisionsLabel, body: "Evidence → review → action", to: "/app/decisions", icon: ClipboardCheck },
-    { label: copy.automation, body: "Jobs · rules · monitoring", to: "/app/automation", icon: Workflow },
-    { label: copy.evidenceLabel, body: "Observed · verified · computed", to: "/app/review", icon: ShieldCheck },
-    { label: copy.ai, body: "Portfolio · evidence · risks · next actions", to: "/app/insights", icon: Bot },
+    { label: copy.water, body: workspaceBody.water, to: "/app/water", icon: Droplets },
+    { label: copy.agriculture, body: workspaceBody.agriculture, to: "/app/agriculture", icon: Sprout },
+    { label: copy.gis, body: workspaceBody.gis, to: "/app/gis", icon: MapPinned },
+    { label: copy.telemetryLabel, body: workspaceBody.telemetry, to: "/app/telemetry", icon: Gauge },
+    { label: copy.decisionsLabel, body: workspaceBody.decisions, to: "/app/decisions", icon: ClipboardCheck },
+    { label: copy.automation, body: workspaceBody.automation, to: "/app/automation", icon: Workflow },
+    { label: copy.evidenceLabel, body: workspaceBody.evidence, to: "/app/review", icon: ShieldCheck },
+    { label: copy.ai, body: workspaceBody.ai, to: "/app/insights", icon: Bot },
   ];
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
@@ -205,9 +221,9 @@ export default function CommandCenter() {
               const site = projectSite(project);
               return <article key={project.id}>
                 <div className="fg-command-project-main">
-                  <span className="fg-command-project-domain">{project.domain}</span>
+                  <span className="fg-command-project-domain">{t(`landing.${project.domain}`, project.domain)}</span>
                   <Link to={`/app/projects/${project.id}`}><strong>{project.title}</strong></Link>
-                  <small>{site ? `${site.name} · ${site.wilaya}` : "—"} · {project.status}</small>
+                  <small>{site ? `${site.name} · ${site.wilaya}` : "—"} · {t(`project.statuses.${project.status}`, project.status)}</small>
                 </div>
                 <div className="fg-command-project-actions">
                   <Link to={`/app/projects/${project.id}`}>{copy.openProject}<ArrowUpRight size={14}/></Link>
