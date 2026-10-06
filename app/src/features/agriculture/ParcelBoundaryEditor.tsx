@@ -84,7 +84,7 @@ export default function ParcelBoundaryEditor({parcel,onSaved}:{parcel:Parcel;onS
     title:"حدود القطعة الحقيقية",note:"اضغط على الخريطة لرسم الحد الخارجي. يلزم 3 رؤوس على الأقل، والخادم يرفض المضلع المتقاطع ذاتيًا.",
     undo:"تراجع",reset:"إعادة الرسم",save:"حفظ الحدود",remove:"حذف الحدود",saved:"تم حفظ الحدود",removed:"تم حذف الحدود",error:"تعذر حفظ هذه الهندسة.",vertices:"رؤوس",
   };
-  const initial=useMemo(()=>pointsFromBoundary(parcel.boundary_geojson),[parcel.id,parcel.boundary_geojson]);
+  const initial=useMemo(()=>pointsFromBoundary(parcel.boundary_geojson),[parcel.boundary_geojson]);
   const [points,setPoints]=useState<Point[]>(initial);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("");
@@ -92,7 +92,9 @@ export default function ParcelBoundaryEditor({parcel,onSaved}:{parcel:Parcel;onS
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<MapInstance|null>(null);
   const pointsRef=useRef<Point[]>(points);
+  const errorTextRef=useRef(text.error);
   pointsRef.current=points;
+  errorTextRef.current=text.error;
 
   useEffect(()=>{setPoints(initial);setMessage("");setError("");},[initial]);
 
@@ -120,11 +122,11 @@ export default function ParcelBoundaryEditor({parcel,onSaved}:{parcel:Parcel;onS
           const p:Point=[Number(event.lngLat.lng.toFixed(8)),Number(event.lngLat.lat.toFixed(8))];
           setPoints(current=>[...current,p]);
         });
-      }catch{if(!cancelled)setError(text.error);}
+      }catch{if(!cancelled)setError(errorTextRef.current);}
     };
     void boot();
     return()=>{cancelled=true;map?.remove();mapRef.current=null;};
-  },[parcel.id]);
+  },[parcel.id,parcel.lat,parcel.lon]);
 
   useEffect(()=>{
     const source=asSource(mapRef.current?.getSource("parcel-boundary-draw"));
