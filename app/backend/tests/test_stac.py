@@ -220,3 +220,25 @@ def test_stac_mixed_demo_scene_remains_demo(client, world, db):
         if feature["properties"]["foggara:scene_id"] == "mixed-demo-scene"
     )
     assert item["properties"]["foggara:is_demo"] is True
+
+
+def test_stac_bbox_supports_antimeridian_and_degenerate_ranges(client, world, db):
+    parcel, _rows = _scene(db, world, source_ref="provider:antimeridian-scene")
+    parcel.lat = 0.0
+    parcel.lon = 179.0
+    db.commit()
+    headers = login(client, world["o1_member"].email)
+
+    crossing = client.get(
+        "/api/stac/search?bbox=170,-1,-170,1",
+        headers=headers,
+    )
+    assert crossing.status_code == 200, crossing.text
+    assert crossing.json()["numberMatched"] == 1
+
+    point_box = client.get(
+        "/api/stac/search?bbox=179,0,179,0",
+        headers=headers,
+    )
+    assert point_box.status_code == 200, point_box.text
+    assert point_box.json()["numberMatched"] == 1
