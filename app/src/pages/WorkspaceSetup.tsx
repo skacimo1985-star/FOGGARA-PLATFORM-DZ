@@ -96,7 +96,16 @@ export default function WorkspaceSetup() {
           stage: "initial",
         } : null,
       });
-      navigate(result.parcel ? "/app/agriculture" : "/app", { replace: true });
+      if (result.parcel) {
+        const params = new URLSearchParams({
+          project: String(result.project.id),
+          site: String(result.site.id),
+          parcel: String(result.parcel.id),
+        });
+        navigate(`/app/gis?${params.toString()}`, { replace: true });
+      } else {
+        navigate(`/app/projects/${result.project.id}`, { replace: true });
+      }
     } catch (err) {
       setError(err);
     } finally {
