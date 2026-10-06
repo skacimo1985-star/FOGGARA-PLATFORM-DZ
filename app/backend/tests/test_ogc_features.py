@@ -52,9 +52,13 @@ def test_ogc_landing_and_conformance(client, world):
 
     conformance = client.get("/api/ogc/conformance", headers=headers)
     assert conformance.status_code == 200
-    classes = set(conformance.json()["conformsTo"])
-    assert "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core" in classes
-    assert "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson" in classes
+    body = conformance.json()
+    assert body["conformsTo"] == []
+    targets = set(body["x-foggara-target-conformance"])
+    assert "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core" in targets
+    assert "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson" in targets
+    assert body["x-foggara-validation"] == "internal_application_tests_only"
+    assert body["x-foggara-certified"] is False
 
 
 def test_ogc_items_are_geojson_and_org_scoped(client, world, db):
