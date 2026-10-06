@@ -373,7 +373,7 @@ export default function Gis() {
       </section>
 
       {projectContext ? (
-        <section className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-background to-sky-500/10 p-4 shadow-sm" aria-label={contextCopy.label}>
+        <section data-testid="gis-operational-context" className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-background to-sky-500/10 p-4 shadow-sm" aria-label={contextCopy.label}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">{contextCopy.label}</p>
@@ -613,7 +613,7 @@ export default function Gis() {
               <p>{selectedSite.site.wilaya}{selectedSite.site.commune ? ` · ${selectedSite.site.commune}` : ""}</p>
               <strong dir="ltr">{selectedSite.site.lat.toFixed(5)}, {selectedSite.site.lon.toFixed(5)}</strong>
               {selectedParcel ? (
-                <div className="mt-3 rounded-xl border bg-background/80 p-3">
+                <div data-testid="gis-selected-parcel" className="mt-3 rounded-xl border bg-background/80 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{contextCopy.parcel}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <strong>{selectedParcel.properties.name}</strong>
