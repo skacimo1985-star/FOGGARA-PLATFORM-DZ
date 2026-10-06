@@ -245,6 +245,16 @@ export default function Gis() {
     () => parcelBoundaries.find((feature) => feature.id === selectedParcelId) ?? null,
     [parcelBoundaries, selectedParcelId],
   );
+
+  useEffect(() => {
+    const siteId = selectedParcel?.properties.site_id ?? null;
+    if (!siteId || selectedSiteId === siteId) return;
+    setSelectedSiteId(siteId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("site", String(siteId));
+    setSearchParams(nextParams, { replace: true });
+  }, [selectedParcel, selectedSiteId, searchParams, setSearchParams]);
+
   const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
 
   useEffect(() => {
