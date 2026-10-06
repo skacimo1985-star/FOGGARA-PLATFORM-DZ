@@ -145,7 +145,7 @@ docker run -p 8000:8000 foggara-dz
 | `DATABASE_URL` | رابط PostgreSQL بسائق psycopg: `postgresql+psycopg://user:pass@host:5432/foggara` |
 | `CORS_ORIGINS` | أصول مسموحة مفصولة بفواصل؛ **فارغ = نفس الأصل فقط** ولا رؤوس CORS تُرسل |
 | `SEED_DEMO` | تفعيل بيانات العرض الاصطناعية فقط عند الحاجة؛ الافتراضي `false` |
-| `DEMO_PASSWORD` | مطلوب عند `SEED_DEMO=true`؛ من 12 إلى 128 حرفًا، ويُضبط كسر في بيئة التشغيل ولا يُحفظ في Git |
+| `DEMO_PASSWORD` | مطلوب عند `SEED_DEMO=true`؛ من 15 إلى 128 حرفًا، ويُضبط كسر في بيئة التشغيل ولا يُحفظ في Git |
 | `DEMO_INSTANCE` | مطلوب مع `SEED_DEMO=true` في `ENV=prod` لعزل نسخة المعرض عن الإنتاج الحقيقي |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR` (افتراضي `INFO`) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | تهيئة خدمة db في compose |
