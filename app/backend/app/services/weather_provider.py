@@ -6,8 +6,9 @@ verified measurements or automatic field-control inputs.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import math
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -75,6 +76,8 @@ def normalize_forecast(body: object, *, requested_days: int) -> dict:
     keys = {key: _daily_array(daily, key, len(raw_days)) for key in DAILY_VARIABLES}
     result_days: list[dict] = []
     previous: date | None = None
+    local_today = datetime.now(ZoneInfo("Africa/Algiers")).date()
+    latest_allowed = local_today + timedelta(days=requested_days)
     for index, raw_day in enumerate(raw_days):
         if not isinstance(raw_day, str):
             raise WeatherProviderInvalidResponse("forecast day must be an ISO date")
@@ -82,6 +85,8 @@ def normalize_forecast(body: object, *, requested_days: int) -> dict:
             parsed_day = date.fromisoformat(raw_day)
         except ValueError as exc:
             raise WeatherProviderInvalidResponse("forecast day is not ISO-8601") from exc
+        if parsed_day < local_today or parsed_day > latest_allowed:
+            raise WeatherProviderInvalidResponse("forecast day is outside the requested live window")
         if previous is not None and parsed_day <= previous:
             raise WeatherProviderInvalidResponse("forecast days must be strictly chronological")
         previous = parsed_day
@@ -98,6 +103,8 @@ def normalize_forecast(body: object, *, requested_days: int) -> dict:
         weather_code = _required_number(
             keys["weather_code"][index], minimum=0, maximum=99, label="weather_code"
         )
+        if not weather_code.is_integer():
+            raise WeatherProviderInvalidResponse("weather_code must be an integer")
         result_days.append({
             "day": parsed_day.isoformat(),
             "min_c": minimum,
