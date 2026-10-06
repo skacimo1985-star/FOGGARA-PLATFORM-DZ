@@ -14,7 +14,7 @@ import sys
 import pytest
 
 from app.wilayas import WILAYAS
-from app.models import Organization, Site, Project
+from app.models import Evidence, Measurement, Organization, Site, Project
 from sqlalchemy import select, func, text
 
 
@@ -121,6 +121,53 @@ class TestSeedIdempotency:
         for w in WILAYAS:
             assert w["ar"] in wilaya_names_in_sites, \
                 f"Wilaya {w['en']} ({w['ar']}) has no site after seeding"
+
+
+
+    def test_every_national_demo_workspace_has_operational_signal_and_evidence(self, db):
+        """Each seeded wilaya workspace exposes non-empty, explicitly synthetic demo content."""
+        import seed as seed_module
+        seed_module.main()
+
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            for w in WILAYAS:
+                site = s.execute(
+                    select(Site).where(Site.wilaya == w["ar"], Site.is_demo == True)
+                ).scalars().first()
+                assert site is not None, f"Wilaya {w['code']} has no demo site"
+
+                project = s.execute(
+                    select(Project).where(
+                        Project.org_id == site.org_id,
+                        Project.site_id == site.id,
+                        Project.is_demo == True,
+                    )
+                ).scalars().first()
+                assert project is not None, f"Wilaya {w['code']} has no demo project"
+
+                measurement = s.execute(
+                    select(Measurement).where(
+                        Measurement.org_id == project.org_id,
+                        Measurement.project_id == project.id,
+                        Measurement.is_demo == True,
+                    )
+                ).scalars().first()
+                assert measurement is not None, f"Wilaya {w['code']} has no demo measurement"
+
+                evidence = s.execute(
+                    select(Evidence).where(
+                        Evidence.org_id == project.org_id,
+                        Evidence.project_id == project.id,
+                        Evidence.is_demo == True,
+                    )
+                ).scalars().first()
+                assert evidence is not None, f"Wilaya {w['code']} has no demo evidence"
+                assert evidence.is_demo is True
+                assert (evidence.content_note or "").strip(), f"Wilaya {w['code']} demo evidence has no explanatory note"
+        finally:
+            s.close()
 
     def test_adrar_tindouf_demo_records_preserved(self, db):
         """Original Adrar and Tindouf demo orgs/sites remain after re-seed."""
