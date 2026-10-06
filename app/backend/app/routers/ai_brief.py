@@ -98,7 +98,13 @@ def _fallback(locale: str, scope: dict, s: dict):
 
 
 def _provider_configured() -> bool:
-    return bool(config.AI_EXTERNAL_ENABLED and config.AI_BASE_URL and config.AI_API_KEY and config.AI_MODEL)
+    if config.AI_PROVIDER_MODE == "deterministic":
+        return False
+    if not config.AI_BASE_URL or not config.AI_MODEL:
+        return False
+    if config.AI_PROVIDER_MODE == "external" and not config.AI_API_KEY:
+        return False
+    return True
 
 
 def _clean_brief(data: object, fallback: dict) -> dict:
@@ -118,7 +124,7 @@ def _clean_brief(data: object, fallback: dict) -> dict:
     return result
 
 
-def _external_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
+def _provider_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
     safe_payload = {"locale": locale, "scope": {"type": scope["type"], "domain": scope.get("domain"), "is_demo": scope.get("is_demo")}, "snapshot": snapshot}
     system = (
         "You are the FOGGARA-DZ investor briefing analyst. Use only the supplied aggregate JSON. "
@@ -131,35 +137,87 @@ def _external_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
         "temperature": 0.2,
         "max_tokens": 900,
     }
+    headers = {"Content-Type": "application/json"}
+    if config.AI_API_KEY:
+        headers["Authorization"] = f"Bearer {config.AI_API_KEY}"
     try:
         with httpx.Client(timeout=config.AI_TIMEOUT_SECONDS, follow_redirects=False) as client:
-            response = client.post(config.AI_BASE_URL + "/chat/completions", headers={"Authorization": f"Bearer {config.AI_API_KEY}", "Content-Type": "application/json"}, json=payload)
+            response = client.post(
+                config.AI_BASE_URL + "/chat/completions",
+                headers=headers,
+                json=payload,
+            )
             response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"].strip()
+            body = response.json()
+            content = body["choices"][0]["message"]["content"].strip()
         return _clean_brief(json.loads(content), fallback), True
     except Exception:
-        log.warning("External AI brief unavailable; deterministic fallback used", exc_info=False)
+        log.warning(
+            "Configured AI brief unavailable; deterministic fallback used",
+            exc_info=False,
+            extra={"provider_mode": config.AI_PROVIDER_MODE},
+        )
         return fallback, False
 
 
 @router.get("/status")
 def ai_status(user: User = Depends(get_current_user)):
     configured = _provider_configured()
-    return {"external_enabled": config.AI_EXTERNAL_ENABLED, "configured": configured, "mode": "external-ready" if configured else "deterministic-ready", "model": config.AI_MODEL if configured else None, "external_payload_policy": "aggregated_counts_only", "provenance": "PROPOSED"}
+    provider_mode = config.AI_PROVIDER_MODE if configured else "deterministic"
+    return {
+        "external_enabled": provider_mode == "external",
+        "local_enabled": provider_mode == "local",
+        "provider_mode": provider_mode,
+        "configured": configured,
+        "mode": f"{provider_mode}-ready",
+        "model": config.AI_MODEL if configured else None,
+        "payload_policy": "aggregated_counts_only",
+        "external_payload_policy": "aggregated_counts_only",
+        "data_boundary": "operator-local" if provider_mode == "local" else "external-provider" if provider_mode == "external" else "in-process",
+        "provenance": "PROPOSED",
+    }
 
 
 @router.post("/investor-brief")
 def investor_brief(payload: BriefIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     scope, snapshot = _snapshot(db, user, payload.project_id)
     fallback = _fallback(payload.locale, scope, snapshot)
-    brief, used_external = (fallback, False)
-    if _provider_configured():
-        brief, used_external = _external_brief(payload.locale, scope, snapshot, fallback)
-    audit(db, user, "generate", "investor_ai_brief", project_id=payload.project_id, meta={"external_used": used_external, "locale": payload.locale, "scope": scope["type"]})
+    brief, used_provider = (fallback, False)
+    configured = _provider_configured()
+    if configured:
+        brief, used_provider = _provider_brief(payload.locale, scope, snapshot, fallback)
+
+    effective_mode = config.AI_PROVIDER_MODE if used_provider else "deterministic"
+    audit(
+        db,
+        user,
+        "generate",
+        "investor_ai_brief",
+        project_id=payload.project_id,
+        meta={
+            "provider_used": used_provider,
+            "provider_mode": effective_mode,
+            "configured_mode": config.AI_PROVIDER_MODE,
+            "locale": payload.locale,
+            "scope": scope["type"],
+            "payload_policy": "aggregated_counts_only",
+        },
+    )
     db.commit()
     return {
-        "provider": {"mode": "external" if used_external else "deterministic", "configured": _provider_configured(), "model": config.AI_MODEL if used_external else None, "fallback_used": bool(_provider_configured() and not used_external)},
-        "scope": scope, "snapshot": snapshot, "brief": brief, "provenance": "PROPOSED",
-        "generated_from": "aggregated_platform_state", "external_payload_policy": "aggregated_counts_only",
+        "provider": {
+            "mode": effective_mode,
+            "configured": configured,
+            "model": config.AI_MODEL if used_provider else None,
+            "fallback_used": bool(configured and not used_provider),
+            "data_boundary": "operator-local" if effective_mode == "local" else "external-provider" if effective_mode == "external" else "in-process",
+        },
+        "scope": scope,
+        "snapshot": snapshot,
+        "brief": brief,
+        "provenance": "PROPOSED",
+        "generated_from": "aggregated_platform_state",
+        "payload_policy": "aggregated_counts_only",
+        "external_payload_policy": "aggregated_counts_only",
         "investment_certification": False,
     }
