@@ -8,7 +8,9 @@ FOGGARA index, and returns statistics. It does not persist imagery or products.
 from __future__ import annotations
 
 import math
+import struct
 import threading
+import zlib
 from typing import Mapping
 
 import numpy as np
@@ -332,5 +334,133 @@ def compute_index_statistics(plan: Mapping, bbox) -> dict:
         raise RasterCapacityError("raster analysis capacity is busy")
     try:
         return _compute_index_statistics_unlocked(plan, bbox)
+    finally:
+        _RASTER_ANALYSIS_SEMAPHORE.release()
+
+
+
+def _png_chunk(kind: bytes, payload: bytes) -> bytes:
+    checksum = zlib.crc32(kind)
+    checksum = zlib.crc32(payload, checksum) & 0xFFFFFFFF
+    return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
+
+
+def _encode_rgba_png(rgba: np.ndarray) -> bytes:
+    if rgba.ndim != 3 or rgba.shape[2] != 4 or rgba.dtype != np.uint8:
+        raise RasterStatisticsError("preview image must be uint8 RGBA")
+    height, width, _channels = rgba.shape
+    if width <= 0 or height <= 0:
+        raise RasterStatisticsError("preview image dimensions are invalid")
+    scanlines = b"".join(b"\x00" + rgba[row].tobytes() for row in range(height))
+    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", header)
+        + _png_chunk(b"IDAT", zlib.compress(scanlines, level=6))
+        + _png_chunk(b"IEND", b"")
+    )
+
+
+def _colorize_index(index_key: str, values: np.ndarray, valid_mask: np.ndarray) -> np.ndarray:
+    definition = get_index_definition(index_key)
+    low, high = definition.display_range
+    span = max(float(high - low), 1e-9)
+    normalized = np.clip((values.astype(np.float32) - np.float32(low)) / np.float32(span), 0.0, 1.0)
+    normalized = np.where(valid_mask, normalized, 0.0)
+
+    rgba = np.zeros((*values.shape, 4), dtype=np.uint8)
+    if definition.colormap_family == "water":
+        rgba[..., 0] = np.where(valid_mask, (20 + 20 * normalized).astype(np.uint8), 0)
+        rgba[..., 1] = np.where(valid_mask, (90 + 120 * normalized).astype(np.uint8), 0)
+        rgba[..., 2] = np.where(valid_mask, (150 + 105 * normalized).astype(np.uint8), 0)
+    else:
+        rgba[..., 0] = np.where(valid_mask, (220 - 180 * normalized).astype(np.uint8), 0)
+        rgba[..., 1] = np.where(valid_mask, (80 + 160 * normalized).astype(np.uint8), 0)
+        rgba[..., 2] = np.where(valid_mask, (45 + 35 * (1.0 - normalized)).astype(np.uint8), 0)
+    rgba[..., 3] = np.where(valid_mask, 205, 0).astype(np.uint8)
+    return rgba
+
+
+def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict]:
+    analysis_bbox = validate_analysis_bbox(bbox)
+    assets = plan.get("required_assets")
+    cloud_mask = plan.get("cloud_mask")
+    if not isinstance(assets, list) or not assets or not isinstance(cloud_mask, Mapping):
+        raise RasterStatisticsError("processing plan is incomplete")
+    scl_asset = cloud_mask.get("asset")
+    if not isinstance(scl_asset, Mapping):
+        raise RasterStatisticsError("processing plan has no SCL asset")
+
+    try:
+        with rasterio.Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif,.TIF",
+            GDAL_HTTP_MAX_RETRY="1",
+            GDAL_HTTP_RETRY_DELAY="0.2",
+            GDAL_HTTP_TIMEOUT="10",
+            GDAL_HTTP_CONNECTTIMEOUT="5",
+            AWS_NO_SIGN_REQUEST="YES",
+        ):
+            target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
+
+            band_arrays: dict[str, np.ndarray] = {}
+            source_invalid = np.zeros((height, width), dtype=bool)
+            for asset in assets:
+                if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
+                    raise RasterStatisticsError("processing plan contains an invalid band asset")
+                values, invalid = _read_aligned(
+                    asset,
+                    target_crs=target_crs,
+                    target_transform=target_transform,
+                    width=width,
+                    height=height,
+                    resampling=Resampling.bilinear,
+                )
+                scaled = _scaled(values, asset)
+                source_invalid |= invalid | ~np.isfinite(scaled)
+                band_arrays[str(asset["band"])] = scaled
+
+            scl_values, scl_invalid = _read_aligned(
+                scl_asset,
+                target_crs=target_crs,
+                target_transform=target_transform,
+                width=width,
+                height=height,
+                resampling=Resampling.nearest,
+            )
+    except RasterStatisticsError:
+        raise
+    except (RasterioError, OSError, ValueError) as exc:
+        raise RasterStatisticsError("trusted Sentinel raster could not be read") from exc
+
+    safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
+    rounded_scl = safe_scl.astype(np.int16, copy=False)
+    cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
+    combined_invalid = source_invalid | scl_invalid | cloud_invalid
+
+    index_values = _compute_index_array(str(plan.get("index") or ""), band_arrays)
+    valid_mask = ~(combined_invalid | ~np.isfinite(index_values))
+    rgba = _colorize_index(str(plan.get("index") or ""), index_values, valid_mask)
+    png = _encode_rgba_png(rgba)
+    metadata = {
+        "scene_id": plan.get("scene_id"),
+        "index": plan.get("index"),
+        "formula_version": plan.get("formula_version"),
+        "analysis_bbox_wgs84": list(analysis_bbox),
+        "width": width,
+        "height": height,
+        "valid_fraction": float(np.count_nonzero(valid_mask) / max(width * height, 1)),
+        "derived_index": "COMPUTED",
+        "verified": False,
+        "persisted": False,
+    }
+    return png, metadata
+
+
+def render_index_preview_png(plan: Mapping, bbox) -> tuple[bytes, dict]:
+    if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
+        raise RasterCapacityError("raster analysis capacity is busy")
+    try:
+        return _render_index_preview_png_unlocked(plan, bbox)
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
