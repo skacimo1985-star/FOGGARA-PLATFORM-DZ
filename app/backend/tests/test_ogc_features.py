@@ -178,3 +178,19 @@ def test_ogc_omits_extent_when_org_has_no_located_sites(client, world):
     response = client.get("/api/ogc/collections/sites", headers=headers)
     assert response.status_code == 200
     assert "extent" not in response.json()
+
+
+def test_ogc_pagination_links_preserve_bbox_filter(client, world, db):
+    _sites(db, world)
+    headers = login(client, world["o1_member"].email)
+    response = client.get(
+        "/api/ogc/collections/sites/items?bbox=-1,27,4,35&limit=1&offset=0",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
+    href = next_link["href"]
+    assert "/api/ogc/collections/sites/items?" in href
+    assert "bbox=" in href
+    assert "limit=1" in href
+    assert "offset=1" in href
