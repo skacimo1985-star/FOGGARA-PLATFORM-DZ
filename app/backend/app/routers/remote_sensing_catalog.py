@@ -6,7 +6,13 @@ never stores provider data, and never upgrades satellite inference to verified e
 from __future__ import annotations
 
 from datetime import date
+import hashlib
+import hmac
 import math
+import os
+import re
+import time
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, Query
@@ -17,7 +23,14 @@ from ..models import User
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
 EARTH_SEARCH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
+EARTH_SEARCH_ITEM_ROOT = "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items"
 SENTINEL_COLLECTION = "sentinel-2-l2a"
+SCENE_ID_RE = re.compile(r"^[A-Za-z0-9._-]{10,200}$")
+RASTER_LAYERS = {
+    "true-color": {"assets": {"visual"}, "formula": None},
+    "ndvi": {"assets": {"nir", "red"}, "formula": "(NIR-Red)/(NIR+Red)"},
+    "ndwi": {"assets": {"green", "nir"}, "formula": "(Green-NIR)/(Green+NIR)"},
+}
 
 
 def _parse_bbox(raw: str) -> list[float]:
@@ -168,4 +181,79 @@ def catalog_scenes(
         "evidence_status": "PROVIDER_METADATA",
         "count": len(scenes),
         "scenes": scenes,
+    }
+
+
+def _raster_config() -> tuple[str, bytes]:
+    base_url = os.environ.get("RASTER_BASE_URL", "").strip().rstrip("/")
+    secret = os.environ.get("RASTER_SIGNING_SECRET", "")
+    if not base_url.startswith("https://") or len(secret) < 32:
+        api_error(503, "RASTER_NOT_CONFIGURED", "Raster service is not configured")
+    return base_url, secret.encode("utf-8")
+
+
+def _raster_signature(secret: bytes, scene_id: str, layer: str, exp: int) -> str:
+    payload = f"{scene_id}|{layer}|{exp}".encode("utf-8")
+    return hmac.new(secret, payload, hashlib.sha256).hexdigest()
+
+
+def _fetch_catalog_item(scene_id: str) -> dict:
+    if not SCENE_ID_RE.fullmatch(scene_id):
+        api_error(422, "INVALID_SCENE_ID", "Invalid Sentinel-2 scene identifier")
+    item_url = f"{EARTH_SEARCH_ITEM_ROOT}/{quote(scene_id, safe='')}"
+    try:
+        timeout = httpx.Timeout(10.0, connect=5.0)
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            response = client.get(
+                item_url,
+                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/raster-signing"},
+            )
+            if response.status_code == 404:
+                api_error(404, "SCENE_NOT_FOUND", "Sentinel-2 scene was not found")
+            response.raise_for_status()
+            item = response.json()
+    except httpx.HTTPStatusError:
+        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
+    except (httpx.HTTPError, ValueError):
+        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
+
+    if not isinstance(item, dict) or item.get("id") != scene_id or item.get("collection") != SENTINEL_COLLECTION:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid item")
+    return item
+
+
+@router.get("/catalog/scenes/{scene_id}/raster")
+def raster_descriptor(
+    scene_id: str,
+    layer: str = Query(...),
+    _user: User = Depends(get_current_user),
+):
+    definition = RASTER_LAYERS.get(layer)
+    if definition is None:
+        api_error(422, "INVALID_RASTER_LAYER", "Unsupported raster layer")
+
+    item = _fetch_catalog_item(scene_id)
+    assets = item.get("assets") if isinstance(item.get("assets"), dict) else {}
+    missing = sorted(definition["assets"] - set(assets))
+    if missing:
+        api_error(409, "RASTER_ASSETS_UNAVAILABLE", "Required raster assets are unavailable")
+
+    base_url, secret = _raster_config()
+    exp = int(time.time()) + 600
+    token = _raster_signature(secret, scene_id, layer, exp)
+    tile_url = (
+        f"{base_url}/tiles/{layer}/{quote(scene_id, safe='')}/"
+        f"{{z}}/{{x}}/{{y}}.png?exp={exp}&token={token}"
+    )
+    return {
+        "scene_id": scene_id,
+        "layer": layer,
+        "tile_url": tile_url,
+        "expires_at": exp,
+        "provider": "Element 84 Earth Search",
+        "collection": SENTINEL_COLLECTION,
+        "source_evidence_status": "PROVIDER_METADATA",
+        "evidence_status": "COMPUTED",
+        "formula": definition["formula"],
+        "stored": False,
     }
