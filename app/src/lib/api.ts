@@ -50,7 +50,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = sessionToken;
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), path.startsWith("/auth/") || path === "/org/invitations/accept" ? 60_000 : DEFAULT_TIMEOUT_MS);
+  const isLongRunningAnalysis = path.startsWith("/remote-sensing/catalog/scenes/") && path.includes("/statistics?");
+  const timeoutMs = path.startsWith("/auth/") || path === "/org/invitations/accept" || isLongRunningAnalysis
+    ? 60_000
+    : DEFAULT_TIMEOUT_MS;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   let body;
   try {
