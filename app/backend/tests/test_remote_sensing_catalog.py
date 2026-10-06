@@ -66,6 +66,7 @@ def test_catalog_requires_authentication(client):
 def test_catalog_validates_bounds_and_dates(client, world):
     headers = login(client, "o1m@t.dz")
     base = "/api/remote-sensing/catalog/scenes"
+    assert client.get(f"{base}?bbox=2,33,2&start=2026-10-01&end=2026-10-06", headers=headers).status_code == 422
     assert client.get(f"{base}?bbox=2,33,2,33.2&start=2026-10-01&end=2026-10-06", headers=headers).status_code == 422
     assert client.get(f"{base}?bbox=2,33,2.2,33.2&start=2026-10-07&end=2026-10-06", headers=headers).status_code == 422
     assert client.get(f"{base}?bbox=2,33,2.2,33.2&start=2024-01-01&end=2026-10-06", headers=headers).status_code == 422
