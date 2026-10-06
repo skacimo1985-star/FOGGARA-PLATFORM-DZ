@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { NationalMap } from "@/components/NationalMap";
+import { NationalMap, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -45,6 +45,19 @@ export default function Gis() {
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
+  const [satelliteScenes, setSatelliteScenes] = useState<SatelliteScene[]>([]);
+  const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteError, setSatelliteError] = useState<unknown>(null);
+  const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const defaultStart = useMemo(() => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - 30);
+    return date.toISOString().slice(0, 10);
+  }, []);
+  const [sceneStart, setSceneStart] = useState(defaultStart);
+  const [sceneEnd, setSceneEnd] = useState(today);
+  const [cloudCover, setCloudCover] = useState(25);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -74,6 +87,12 @@ export default function Gis() {
       ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria", selected: "Selected site", nearest: "Nearest sites", distance: "Distance", engine: "Spatial engine", noNearby: "No other nearby sites" }
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
 
+  const satelliteCopy = lang === "fr"
+    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée." }
+    : lang === "en"
+      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented." }
+      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI." };
+
   const summary = useMemo(() => {
     const rows = filtered ?? [];
     return {
@@ -95,6 +114,31 @@ export default function Gis() {
     () => (data ?? []).find((entry) => entry.site.id === selectedSiteId) ?? null,
     [data, selectedSiteId],
   );
+
+
+  const searchSatelliteScenes = async () => {
+    setSatelliteLoading(true);
+    setSatelliteError(null);
+    try {
+      const bbox = viewportBbox.map((value) => Number(value.toFixed(6))).join(",");
+      const params = new URLSearchParams({
+        bbox,
+        start: sceneStart,
+        end: sceneEnd,
+        cloud_cover_lte: String(cloudCover),
+        limit: "30",
+      });
+      const result = await api.get<{ count: number; scenes: SatelliteScene[] }>(
+        `/remote-sensing/catalog/scenes?${params.toString()}`,
+      );
+      setSatelliteScenes(result.scenes);
+    } catch (err) {
+      setSatelliteScenes([]);
+      setSatelliteError(err);
+    } finally {
+      setSatelliteLoading(false);
+    }
+  };
 
   const selectSite = async (siteId: number) => {
     setSelectedSiteId(siteId);
@@ -145,19 +189,81 @@ export default function Gis() {
         <div className="fg-command-kpi"><div><span>{t("gis.assets")}</span></div><strong>{filtered === null ? "—" : summary.assets}</strong></div>
       </section>
 
+      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600">{satelliteCopy.provider}</p>
+            <h2 className="mt-1 text-lg font-bold">{satelliteCopy.title}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{satelliteCopy.metadata}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4">
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{satelliteCopy.start}</span>
+              <input className="rounded-md border bg-background px-2 py-2" type="date" value={sceneStart} max={sceneEnd} onChange={(e) => setSceneStart(e.target.value)} />
+            </label>
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{satelliteCopy.end}</span>
+              <input className="rounded-md border bg-background px-2 py-2" type="date" value={sceneEnd} min={sceneStart} max={today} onChange={(e) => setSceneEnd(e.target.value)} />
+            </label>
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{satelliteCopy.clouds}: {cloudCover}%</span>
+              <input className="h-10" type="range" min="0" max="100" step="5" value={cloudCover} onChange={(e) => setCloudCover(Number(e.target.value))} />
+            </label>
+            <button
+              type="button"
+              className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={satelliteLoading || !sceneStart || !sceneEnd}
+              onClick={() => void searchSatelliteScenes()}
+            >
+              {satelliteLoading ? satelliteCopy.searching : satelliteCopy.search}
+            </button>
+          </div>
+        </div>
+        <ErrorText error={satelliteError} />
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="outline">LIVE STAC</Badge>
+          <span>{satelliteScenes.length} {satelliteCopy.found}</span>
+          {satelliteScenes.length === 0 && !satelliteLoading ? <span>{satelliteCopy.empty}</span> : null}
+        </div>
+      </section>
+
       {data === null && !error ? (
         <Skeleton className="h-[430px] w-full rounded-2xl" />
       ) : (
         <NationalMap
           sites={data ?? []}
           wilayas={wilayas}
+          satelliteScenes={satelliteScenes}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
+          onViewportChange={setViewportBbox}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
           onSelectSite={(siteId) => void selectSite(siteId)}
           locale={lang}
         />
       )}
+
+      {satelliteScenes.length > 0 ? (
+        <section className="rounded-2xl border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-bold">{satelliteCopy.title}</h2>
+            <Badge variant="outline">{satelliteScenes.length}</Badge>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {satelliteScenes.slice(0, 12).map((scene) => (
+              <article key={scene.id} className="rounded-xl border p-3 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <strong className="break-all text-xs">{scene.id}</strong>
+                  <Badge variant="outline">{scene.cloud_cover_pct == null ? "—" : `${Number(scene.cloud_cover_pct).toFixed(1)}% ☁`}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{scene.datetime ? new Date(scene.datetime).toLocaleString(locale) : "—"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{scene.platform ?? scene.constellation ?? "Sentinel-2"}</p>
+                <p className="mt-2 text-[11px] text-sky-700">{scene.provenance}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="fg-gis-spatial-panel" aria-label={copy.selected}>
         <div className="fg-gis-spatial-summary">
