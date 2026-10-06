@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, FileCheck2, FlaskConical, Gavel, ShieldCheck } from "lucide-react";
+import { ArrowRight, FileCheck2, FileSpreadsheet, FlaskConical, Gavel, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Evidence, Measurement } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,71 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText } from "@/components/common";
 import "./evidence-review.css";
 
-interface Pending { measurements: Measurement[]; evidences: Evidence[] }
+interface MeasurementBatchSummary {
+  project_id: number;
+  batch_reference: string;
+  count: number;
+  parameters: string[];
+  submitter_ids: number[];
+  instrument_ids: number[];
+  measurement_ids: number[];
+}
+interface Pending {
+  measurements: Measurement[];
+  measurement_batches?: MeasurementBatchSummary[];
+  evidences: Evidence[];
+}
+
+function BatchReviewForm({ batch, onDone }: {
+  batch: MeasurementBatchSummary; onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    try {
+      await api.post("/reviews/measurement-batches", {
+        project_id: batch.project_id,
+        batch_reference: batch.batch_reference,
+        decision: String(fd.get("decision")),
+        note: String(fd.get("note") || ""),
+        reason: String(fd.get("reason") || ""),
+      });
+      onDone();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-3 grid gap-2 rounded-md bg-parchment/70 p-3">
+      <div className="flex flex-wrap gap-4 text-sm">
+        <label className="flex items-center gap-1">
+          <input type="radio" name="decision" value="accepted" required /> {t("review.accept")}
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="radio" name="decision" value="rejected" required /> {t("review.reject")}
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="radio" name="decision" value="request_clarification" required /> {t("review.requestClarification")}
+        </label>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-1"><Label>{t("review.note")}</Label><Input name="note" required maxLength={2000}/></div>
+        <div className="space-y-1"><Label>{t("review.reason")}</Label><Input name="reason" required maxLength={2000}/></div>
+      </div>
+      <ErrorText error={error}/>
+      <div><Button size="sm" type="submit" disabled={busy}>{busy?t("common.loading"):t("review.submit")}</Button></div>
+    </form>
+  );
+}
 
 function ReviewForm({ targetType, targetId, onDone }: {
   targetType: "measurement" | "evidence"; targetId: number; onDone: () => void;
@@ -94,6 +158,7 @@ export default function ReviewQueue() {
         title: "File de revue et chaîne de confiance",
         subtitle: "Aucune preuve n’est promue automatiquement : la revue humaine reste explicite.",
         measurements: "Mesures en attente", evidences: "Preuves en attente", total: "À examiner",
+        batches: "Lots CSV à examiner", batch: "Lot", measures: "mesures", instruments: "instruments",
         flow: ["Donnée", "Contrôle", "Preuve", "Décision"],
       }
     : language === "en"
@@ -102,6 +167,7 @@ export default function ReviewQueue() {
           title: "Review queue and trust chain",
           subtitle: "No evidence is promoted automatically: human review remains explicit.",
           measurements: "Pending measurements", evidences: "Pending evidence", total: "To review",
+          batches: "CSV batches to review", batch: "Batch", measures: "measurements", instruments: "instruments",
           flow: ["Data", "Review", "Evidence", "Decision"],
         }
       : {
@@ -109,10 +175,14 @@ export default function ReviewQueue() {
           title: "طابور المراجعة وسلسلة الثقة",
           subtitle: "لا تتم ترقية أي دليل تلقائيًا؛ تبقى المراجعة البشرية صريحة وقابلة للتتبع.",
           measurements: "قياسات تنتظر المراجعة", evidences: "أدلة تنتظر المراجعة", total: "إجمالي المراجعة",
+          batches: "دفعات CSV تنتظر المراجعة", batch: "دفعة", measures: "قياس", instruments: "أجهزة",
           flow: ["بيانات", "مراجعة", "دليل", "قرار"],
         };
 
   const pendingTotal = (data?.measurements.length ?? 0) + (data?.evidences.length ?? 0);
+  const batches = data?.measurement_batches ?? [];
+  const batchedIds = new Set(batches.flatMap(batch => batch.measurement_ids));
+  const individualMeasurements = data?.measurements.filter(measurement => !batchedIds.has(measurement.id)) ?? [];
 
   return (
     <div className="space-y-6">
@@ -148,11 +218,42 @@ export default function ReviewQueue() {
 
       {data && (
         <>
+          {batches.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><FileSpreadsheet size={18}/>{copy.batches}</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {batches.map((batch) => (
+                  <div key={`${batch.project_id}:${batch.batch_reference}`} className="rounded-md border p-3 text-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <strong>{copy.batch}: {batch.batch_reference}</strong>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {batch.count} {copy.measures} · {batch.parameters.join(" · ")}
+                          {batch.instrument_ids.length > 0 ? ` · ${batch.instrument_ids.length} ${copy.instruments}` : ""}
+                        </p>
+                        <Link className="mt-1 inline-block text-oasis-strong underline" to={`/app/projects/${batch.project_id}`}>
+                          {t("project.title")} #{batch.project_id}
+                        </Link>
+                      </div>
+                      <Button size="sm" variant="secondary"
+                              onClick={() => setOpenFor(openFor === `b:${batch.project_id}:${batch.batch_reference}` ? null : `b:${batch.project_id}:${batch.batch_reference}`)}>
+                        {t("common.details")}
+                      </Button>
+                    </div>
+                    {openFor === `b:${batch.project_id}:${batch.batch_reference}` && (
+                      <BatchReviewForm batch={batch} onDone={() => { setOpenFor(null); reload(); }}/>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader><CardTitle className="text-base">{t("review.pendingMeasurements")}</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {data.measurements.length === 0 && <p className="text-sm text-muted-foreground">{t("review.empty")}</p>}
-              {data.measurements.map((m) => (
+              {individualMeasurements.length === 0 && <p className="text-sm text-muted-foreground">{t("review.empty")}</p>}
+              {individualMeasurements.map((m) => (
                 <div key={m.id} className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span>
