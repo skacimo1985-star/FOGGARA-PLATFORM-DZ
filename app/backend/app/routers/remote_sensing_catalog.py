@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Query
 
 from ..deps import api_error, get_current_user
 from ..models import User
+from ..services.remote_sensing_indices import public_index_definitions
 
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
@@ -168,4 +169,14 @@ def catalog_scenes(
         "evidence_status": "PROVIDER_METADATA",
         "count": len(scenes),
         "scenes": scenes,
+    }
+
+
+@router.get("/indices/definitions")
+def index_definitions(_user: User = Depends(get_current_user)):
+    return {
+        "sensor": "Sentinel-2 L2A",
+        "computed": True,
+        "verified": False,
+        "indices": public_index_definitions(),
     }
