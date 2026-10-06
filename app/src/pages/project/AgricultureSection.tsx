@@ -13,6 +13,17 @@ import { AgroCapabilities } from "@/components/AgroCapabilities";
 import { ProvenanceBadge, type ProvenanceClass } from "@/components/ProvenanceBadge";
 
 interface AgriRecord { id: number; kind: string; source: string; observed_at: string; evidence_id: number; content: Record<string, unknown>; provenance: string; }
+interface LiveWeatherDay {
+  day: string; min_c: number; max_c: number; rain_mm: number;
+  precipitation_probability: number | null; eto_mm: number | null;
+  wind_speed_kmh: number | null; weather_code: number;
+}
+interface LiveWeatherForecast {
+  provider: string; attribution: string; attribution_url: string;
+  provenance: string; verified: boolean; stored: boolean; fetched_at: string;
+  site: { id: number; name: string; wilaya: string; latitude: number; longitude: number };
+  days: LiveWeatherDay[];
+}
 const services = ["soil", "moisture", "crop", "weather", "forewarning", "diagnosis", "irrigation", "calendar", "lswi"];
 const fields: Record<string, string[]> = {
   satellite: ["product_id", "red", "nir", "swir1", "common_resolution_m"],
@@ -30,16 +41,88 @@ const displayKeys = ["report_ref", "source_resolution_m", "update_interval_days"
 export function AgricultureSection({ projectId, evidences }: { projectId: number; evidences: Evidence[] }) {
   const { t, i18n } = useTranslation(); const { user } = useAuth(); const [records, setRecords] = useState<AgriRecord[]>([]);
   const [kind, setKind] = useState("soil"); const [dayCount, setDayCount] = useState(1); const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false);
+  const [liveWeather, setLiveWeather] = useState<LiveWeatherForecast | null>(null);
+  const [weatherBusy, setWeatherBusy] = useState(false);
+  const [weatherError, setWeatherError] = useState<unknown>(null);
   const reload = useCallback(async () => { const result = await api.get<{ records: AgriRecord[] }>(`/projects/${projectId}/agriculture`); setRecords(result.records); }, [projectId]);
   useEffect(() => { reload().catch(setError); }, [reload]);
   const types = user?.role === "reviewer" || user?.role === "admin" ? Object.keys(fields) : Object.keys(fields).filter(k => k !== "diagnosis" && k !== "forewarning");
+  const language = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const weatherCopy = language === "fr" ? {
+    title: "Prévision agricole en direct · 15 jours", body: "Prévision fournisseur liée au site du projet. Elle reste INFERRED et n’autorise aucune commande terrain.",
+    load: "Charger la prévision", refresh: "Actualiser", day: "Jour", min: "Min.", max: "Max.", rain: "Pluie",
+    probability: "Prob.", eto: "ET₀", wind: "Vent", source: "Source", notStored: "Lecture seule · non stockée",
+  } : language === "en" ? {
+    title: "Live agricultural forecast · 15 days", body: "Provider forecast tied to the project site. It remains INFERRED and cannot authorize field control.",
+    load: "Load forecast", refresh: "Refresh", day: "Day", min: "Min.", max: "Max.", rain: "Rain",
+    probability: "Prob.", eto: "ET₀", wind: "Wind", source: "Source", notStored: "Read-only · not stored",
+  } : {
+    title: "توقع زراعي حي · 15 يومًا", body: "توقع من المزود مرتبط بموقع المشروع. يبقى INFERRED ولا يسمح بأي تحكم ميداني.",
+    load: "تحميل التوقع", refresh: "تحديث", day: "اليوم", min: "الدنيا", max: "العليا", rain: "الأمطار",
+    probability: "الاحتمال", eto: "ET₀", wind: "الرياح", source: "المصدر", notStored: "للقراءة فقط · غير مخزن",
+  };
+
+  async function loadLiveWeather() {
+    setWeatherBusy(true); setWeatherError(null);
+    try {
+      setLiveWeather(await api.get<LiveWeatherForecast>(`/projects/${projectId}/agriculture/weather/live?days=15`));
+    } catch (err) {
+      setLiveWeather(null); setWeatherError(err);
+    } finally {
+      setWeatherBusy(false);
+    }
+  }
+
   function serviceAvailable(service: string) {
+    if (service === "weather" && liveWeather) return true;
     if (service === "soil") return records.some(r => r.kind === "soil");
     if (service === "moisture") return records.some(r => r.kind === "soil" && r.content.moisture_percent != null);
     if (service === "crop" || service === "lswi") return records.some(r => r.kind === "satellite" && r.content[service === "crop" ? "ndvi" : "lswi"] != null);
     return records.some(r => r.kind === service);
   }
   return <div className="space-y-6"><div className="rounded-2xl border bg-paper p-5"><h2 className="flex items-center gap-2 text-xl font-semibold"><Satellite size={22} />{t("agri.title")}</h2><p className="mt-3 text-sm text-muted-foreground">{t("agri.subtitle")}</p><p className="mt-2 text-xs text-muted-foreground">{t("agri.liveNotice")}</p></div>
+    <section data-testid="live-weather-panel" className="rounded-2xl border border-sky-500/25 bg-gradient-to-br from-sky-500/5 via-background to-emerald-500/5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-3xl">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-sky-700">FOGGARA / LIVE WEATHER</p>
+          <h3 className="mt-1 flex items-center gap-2 text-lg font-semibold"><CloudSun size={20}/>{weatherCopy.title}</h3>
+          <p className="mt-2 text-xs leading-6 text-muted-foreground">{weatherCopy.body}</p>
+        </div>
+        <Button type="button" variant="outline" onClick={() => void loadLiveWeather()} disabled={weatherBusy}>
+          <CloudSun size={16}/>{weatherBusy ? t("common.loading") : liveWeather ? weatherCopy.refresh : weatherCopy.load}
+        </Button>
+      </div>
+      <div className="mt-3"><ErrorText error={weatherError}/></div>
+      {liveWeather ? <>
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <ProvenanceBadge value="INFERRED" />
+          <span className="rounded-full border px-2 py-1">{weatherCopy.notStored}</span>
+          <span className="rounded-full border px-2 py-1">{liveWeather.site.name} · {liveWeather.site.wilaya}</span>
+          <span className="rounded-full border px-2 py-1">{liveWeather.provider}</span>
+        </div>
+        <div className="mt-4 overflow-x-auto rounded-xl border bg-background">
+          <table className="min-w-[880px] w-full text-xs">
+            <thead className="bg-muted/40"><tr>
+              <th className="p-2 text-start">{weatherCopy.day}</th><th>{weatherCopy.min}</th><th>{weatherCopy.max}</th>
+              <th>{weatherCopy.rain}</th><th>{weatherCopy.probability}</th><th>{weatherCopy.eto}</th><th>{weatherCopy.wind}</th>
+            </tr></thead>
+            <tbody>{liveWeather.days.map(day => <tr key={day.day} className="border-t">
+              <td className="p-2 font-medium" dir="ltr">{day.day}</td>
+              <td className="text-center" dir="ltr">{day.min_c.toFixed(1)} °C</td>
+              <td className="text-center" dir="ltr">{day.max_c.toFixed(1)} °C</td>
+              <td className="text-center" dir="ltr">{day.rain_mm.toFixed(1)} mm</td>
+              <td className="text-center" dir="ltr">{day.precipitation_probability == null ? "—" : `${day.precipitation_probability.toFixed(0)}%`}</td>
+              <td className="text-center" dir="ltr">{day.eto_mm == null ? "—" : `${day.eto_mm.toFixed(1)} mm`}</td>
+              <td className="text-center" dir="ltr">{day.wind_speed_kmh == null ? "—" : `${day.wind_speed_kmh.toFixed(1)} km/h`}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          {weatherCopy.source}: <a className="font-semibold underline underline-offset-4" href={liveWeather.attribution_url} target="_blank" rel="noreferrer">{liveWeather.attribution}</a>
+          {" · "}{new Date(liveWeather.fetched_at).toLocaleString(i18n.language)}
+        </p>
+      </> : null}
+    </section>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{services.map((service, i) => { const Icon = [Sprout, Leaf, Satellite, CloudSun][i % 4]; return <article key={service} className="rounded-xl border p-4 space-y-2"><Icon size={18} className="text-oasis-strong" /><h3 className="text-sm font-semibold">{t(`agri.services.${service}`)}</h3><p className="text-xs text-muted-foreground">{t(serviceAvailable(service) ? "agri.recorded" : "agri.unavailable")}</p>{(service === "crop" || service === "lswi") && <p className="text-xs text-oasis-strong">{t("agri.complimentary")}</p>}</article>; })}</div>
     <AgroCapabilities compact/>
     <ProviderEstimateForm projectId={projectId} evidences={evidences} onSaved={reload}/>
