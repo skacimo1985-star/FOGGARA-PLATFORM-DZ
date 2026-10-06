@@ -1,6 +1,6 @@
 """الدليل الإداري المحلي — منسوخ من الواجهة ../src/lib/wilayas.ts (مصدر واحد للحقيقة).
 
-58 ولاية: المرجع الرسمي الجزائري (الأكواد 01–58).
+69 ولاية: القانون 26-06 المؤرخ في 4 أفريل 2026، والأكواد 01–69 وفق الجريدة الرسمية رقم 26.
 ملاحظة: ملف الواجهة الحالي لا يتضمن البلديات؛ تُضاف لاحقًا بنفس البنية عند توفرها.
 """
 
@@ -63,4 +63,15 @@ WILAYAS: list[dict] = [
     {"code": "56", "ar": "جانت", "fr": "Djanet", "en": "Djanet"},
     {"code": "57", "ar": "المغير", "fr": "El M'Ghair", "en": "El M'Ghair"},
     {"code": "58", "ar": "المنيعة", "fr": "El Meniaa", "en": "El Meniaa"},
+    {"code": "59", "ar": "أفلو", "fr": "Aflou", "en": "Aflou"},
+    {"code": "60", "ar": "بريكة", "fr": "Barika", "en": "Barika"},
+    {"code": "61", "ar": "القنطرة", "fr": "El Kantara", "en": "El Kantara"},
+    {"code": "62", "ar": "بئر العاتر", "fr": "Bir El Ater", "en": "Bir El Ater"},
+    {"code": "63", "ar": "العريشة", "fr": "El Aricha", "en": "El Aricha"},
+    {"code": "64", "ar": "قصر الشلالة", "fr": "Ksar Chellala", "en": "Ksar Chellala"},
+    {"code": "65", "ar": "عين وسارة", "fr": "Aïn Ouessara", "en": "Aïn Ouessara"},
+    {"code": "66", "ar": "مسعد", "fr": "Messaad", "en": "Messaad"},
+    {"code": "67", "ar": "قصر البخاري", "fr": "Ksar El Boukhari", "en": "Ksar El Boukhari"},
+    {"code": "68", "ar": "بوسعادة", "fr": "Bou Saada", "en": "Bou Saada"},
+    {"code": "69", "ar": "الأبيض سيدي الشيخ", "fr": "El Abiodh Sidi Cheikh", "en": "El Abiodh Sidi Cheikh"},
 ]
