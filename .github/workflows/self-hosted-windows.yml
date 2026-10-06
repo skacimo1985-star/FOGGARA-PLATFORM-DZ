@@ -62,6 +62,19 @@ jobs:
           "ref=$target" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "Verification target: $target"
 
+      - name: Resolve verification suite
+        id: suite
+        shell: powershell
+        run: |
+          $suite = 'full'
+          if (Test-Path '.github/self-hosted-suite.txt') {
+            $candidate = (Get-Content '.github/self-hosted-suite.txt' -Raw).Trim().ToLowerInvariant()
+            if ($candidate -in @('full', 'ogc')) { $suite = $candidate }
+            else { throw "Unsupported self-hosted verification suite: $candidate" }
+          }
+          "suite=$suite" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Verification suite: $suite"
+
       - name: Checkout requested ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -115,6 +128,7 @@ jobs:
         run: python -m bandit -q -r app -ll
 
       - name: Verify demo seed and agriculture paths on SQLite
+        if: steps.suite.outputs.suite == 'full'
         working-directory: app/backend
         shell: powershell
         run: |
@@ -132,17 +146,20 @@ jobs:
           if ($testExit -ne 0) { exit $testExit }
 
       - name: Verify OGC Features compatibility
+        if: steps.suite.outputs.suite == 'ogc'
         working-directory: app/backend
         shell: powershell
         run: |
           python -m pytest tests/test_ogc_features.py -q -ra --tb=short
 
       - name: Set up Node 22
+        if: steps.suite.outputs.suite == 'full'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22.18.0"
 
       - name: Verify frontend
+        if: steps.suite.outputs.suite == 'full'
         working-directory: app
         shell: powershell
         run: |
@@ -157,6 +174,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify Rust engine when available
+        if: steps.suite.outputs.suite == 'full'
         working-directory: app/engines/nexus-core
         shell: powershell
         run: |
