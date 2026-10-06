@@ -117,3 +117,23 @@ def test_catalog_provider_failure_is_bounded_502(client, world, monkeypatch):
     )
     assert response.status_code == 502
     assert response.json()["detail"]["code"] == "REMOTE_PROVIDER_UNAVAILABLE"
+
+
+def test_catalog_drops_invalid_remote_geometry(client, world, monkeypatch):
+    invalid = scene_feature()
+    invalid["id"] = "BAD-GEOMETRY"
+    invalid["geometry"] = {
+        "type": "Polygon",
+        "coordinates": [[[999, 999], [2.2, 33.0], [2.2, 33.2], [999, 999]]],
+    }
+    fake = FakeClient({"type": "FeatureCollection", "features": [invalid]})
+    monkeypatch.setattr(remote_sensing_catalog.httpx, "Client", lambda **_kwargs: fake)
+    headers = login(client, "o1m@t.dz")
+
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes?bbox=2,33,2.2,33.2&start=2026-10-01&end=2026-10-06",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["count"] == 0
+    assert response.json()["scenes"] == []
