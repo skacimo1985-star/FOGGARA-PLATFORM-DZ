@@ -335,12 +335,12 @@ export default function Gis() {
     const feature = parcelBoundaries.find((row) => row.id === parcelId);
     if (feature?.properties.site_id) nextParams.set("site", String(feature.properties.site_id));
     setSearchParams(nextParams, { replace: true });
-    if (feature?.properties.site_id) void selectSite(feature.properties.site_id);
+    if (feature?.properties.site_id) void selectSite(feature.properties.site_id, nextParams);
   };
 
-  const selectSite = async (siteId: number) => {
+  const selectSite = async (siteId: number, contextParams?: URLSearchParams) => {
     setSelectedSiteId(siteId);
-    const nextParams = new URLSearchParams(searchParams);
+    const nextParams = contextParams ? new URLSearchParams(contextParams) : new URLSearchParams(searchParams);
     nextParams.set("site", String(siteId));
     if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) nextParams.set("project", String(requestedProjectId));
     setSearchParams(nextParams, { replace: true });
