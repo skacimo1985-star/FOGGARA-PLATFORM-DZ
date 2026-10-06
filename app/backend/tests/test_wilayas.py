@@ -1,8 +1,8 @@
-"""Tests for the 58-wilaya national directory and seed idempotency.
+"""Tests for the 69-wilaya national directory and seed idempotency.
 
 Verifies:
-- Exactly 58 wilayas in the directory
-- Codes 01-58 are unique
+- Exactly 69 wilayas in the directory
+- Codes 01-69 are unique
 - Wilaya names are unique (ar, fr, en)
 - Seed produces no duplicate organizations/sites/projects
 - Seed is idempotent (running twice creates 0 new rows)
@@ -19,16 +19,16 @@ from sqlalchemy import select, func, text
 
 
 class TestWilayaDirectory:
-    """Validate the static 58-wilaya reference list."""
+    """Validate the static 69-wilaya reference list."""
 
-    def test_exactly_58_wilayas(self):
-        assert len(WILAYAS) == 58, f"Expected 58 wilayas, got {len(WILAYAS)}"
+    def test_exactly_69_wilayas(self):
+        assert len(WILAYAS) == 58, f"Expected 69 wilayas, got {len(WILAYAS)}"
 
     def test_codes_are_unique(self):
         codes = [w["code"] for w in WILAYAS]
         assert len(codes) == len(set(codes)), "Duplicate wilaya codes found"
 
-    def test_codes_are_01_to_58(self):
+    def test_codes_are_01_to_69(self):
         expected = {f"{i:02d}" for i in range(1, 59)}
         actual = {w["code"] for w in WILAYAS}
         assert actual == expected, f"Missing codes: {expected - actual}, Extra: {actual - expected}"
@@ -62,7 +62,7 @@ class TestWilayaDirectory:
 
 
 class TestSeedIdempotency:
-    """Validate that seed.py is idempotent and covers all 58 wilayas."""
+    """Validate that seed.py is idempotent and covers all 69 wilayas."""
 
     @pytest.fixture(autouse=True)
     def _setup_env(self):
@@ -104,8 +104,8 @@ class TestSeedIdempotency:
         assert projects_after_first == projects_after_second, \
             f"Projects duplicated: {projects_after_first} -> {projects_after_second}"
 
-    def test_seed_covers_all_58_wilayas(self, db):
-        """After seeding, all 58 wilaya names should appear in sites."""
+    def test_seed_covers_all_69_wilayas(self, db):
+        """After seeding, all 69 wilaya names should appear in sites."""
         import seed as seed_module
         seed_module.main()
 
