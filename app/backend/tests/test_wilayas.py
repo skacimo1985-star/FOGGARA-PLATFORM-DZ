@@ -14,7 +14,8 @@ import sys
 import pytest
 
 from app.wilayas import WILAYAS
-from app.models import Evidence, Measurement, Organization, Site, Project
+from app.models import (AgriObservation, AgriParcel, AgriPlan, AgriTask, Evidence,
+                        Measurement, Organization, Site, Project)
 from sqlalchemy import select, func, text
 
 
@@ -166,6 +167,66 @@ class TestSeedIdempotency:
                 assert evidence is not None, f"Wilaya {w['code']} has no demo evidence"
                 assert evidence.is_demo is True
                 assert (evidence.content_note or "").strip(), f"Wilaya {w['code']} demo evidence has no explanatory note"
+        finally:
+            s.close()
+
+
+    def test_every_wilaya_has_agriculture_demo_workspace(self, db):
+        """National demo includes non-empty agriculture/remote-sensing/irrigation content."""
+        import seed as seed_module
+        seed_module.main()
+
+        from app.db import SessionLocal
+        s = SessionLocal()
+        try:
+            for w in WILAYAS:
+                site = s.execute(
+                    select(Site).where(Site.wilaya == w["ar"], Site.is_demo == True)
+                ).scalars().first()
+                assert site is not None, f"Wilaya {w['code']} has no demo site"
+
+                parcel = s.execute(
+                    select(AgriParcel).where(
+                        AgriParcel.org_id == site.org_id,
+                        AgriParcel.site_id == site.id,
+                        AgriParcel.is_demo == True,
+                    )
+                ).scalars().first()
+                assert parcel is not None, f"Wilaya {w['code']} has no demo parcel"
+
+                observations = s.execute(
+                    select(AgriObservation).where(
+                        AgriObservation.org_id == site.org_id,
+                        AgriObservation.parcel_id == parcel.id,
+                        AgriObservation.is_demo == True,
+                    )
+                ).scalars().all()
+                metrics = {row.metric for row in observations}
+                assert {"ndvi", "lswi", "moisture"} <= metrics, (
+                    f"Wilaya {w['code']} missing agriculture demo metrics: "
+                    f"{ {'ndvi', 'lswi', 'moisture'} - metrics }"
+                )
+                assert all(row.evidence_status == "INFERRED" for row in observations)
+
+                plan = s.execute(
+                    select(AgriPlan).where(
+                        AgriPlan.org_id == site.org_id,
+                        AgriPlan.parcel_id == parcel.id,
+                        AgriPlan.is_demo == True,
+                    )
+                ).scalars().first()
+                assert plan is not None, f"Wilaya {w['code']} has no demo irrigation plan"
+                assert plan.result["evidence_status"] == "COMPUTED"
+                assert plan.result["decision_status"] == "PROPOSED"
+
+                task = s.execute(
+                    select(AgriTask).where(
+                        AgriTask.org_id == site.org_id,
+                        AgriTask.parcel_id == parcel.id,
+                        AgriTask.is_demo == True,
+                    )
+                ).scalars().first()
+                assert task is not None, f"Wilaya {w['code']} has no demo agriculture task"
         finally:
             s.close()
 
