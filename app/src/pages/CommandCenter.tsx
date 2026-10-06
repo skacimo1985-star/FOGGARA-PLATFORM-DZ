@@ -12,6 +12,24 @@ import { useAuth } from "@/context/useAuth";
 import { NationalMap } from "@/components/NationalMap";
 import "./command-center.css";
 
+type Readiness = {
+  runtime_status: "healthy" | "degraded";
+  deployment_mode: "dev" | "prod";
+  production_mode: boolean;
+  production_certification: boolean;
+  core: {
+    database: { status: string; latency_ms: number; schema_revision: string; engine: string };
+    environment: { mode: string; production_mode: boolean; app_version: string };
+  };
+  integrations: {
+    satellite: { status: string; provenance: string };
+    weather: { status: string; enabled: boolean; provider: string | null };
+    ai: { status: string; mode: string; model: string | null; data_boundary: string };
+    automation: { status: string; web_runtime_enabled: boolean; external_worker_observed: boolean };
+  };
+  assurance_gates: { key: string; status: string }[];
+};
+
 type Snapshot = {
   projects: Project[] | null;
   sites: GisSite[] | null;
@@ -37,6 +55,7 @@ export default function CommandCenter() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [snapshot, setSnapshot] = useState<Snapshot>(initial);
+  const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
@@ -51,7 +70,9 @@ export default function CommandCenter() {
     activity: "État opérationnel", noData: "Aucune donnée", unavailable: "Indisponible",
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
     decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
-    updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel", setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
+    updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel",
+    readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
+    setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
     title: "From field reality to decision.",
@@ -62,7 +83,9 @@ export default function CommandCenter() {
     activity: "Operational state", noData: "No data", unavailable: "Unavailable",
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
     decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
-    updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects", setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
+    updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects",
+    readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
+    setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
     title: "من الواقع الميداني إلى القرار.",
@@ -73,7 +96,9 @@ export default function CommandCenter() {
     activity: "الحالة التشغيلية", noData: "لا توجد بيانات", unavailable: "غير متاح",
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
     decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
-    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية", setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
+    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية",
+    readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
+    setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
   };
 
   useEffect(() => {
@@ -90,6 +115,7 @@ export default function CommandCenter() {
           ? api.get<{ measurements: unknown[]; evidences: unknown[] }>("/reviews/pending")
           : Promise.resolve({ measurements: [], evidences: [] }),
         api.get<{ count: number; wilayas: WilayaMeta[] }>("/meta/wilayas"),
+        api.get<Readiness>("/system/readiness"),
       ]);
 
       const value = <T,>(index: number): T | null =>
@@ -105,6 +131,7 @@ export default function CommandCenter() {
         pending: value<{ measurements: unknown[]; evidences: unknown[] }>(6),
       });
       setWilayas(value<{ count: number; wilayas: WilayaMeta[] }>(7)?.wilayas ?? []);
+      setReadiness(value<Readiness>(8));
       setUpdatedAt(new Date());
     };
     void load();
@@ -137,6 +164,37 @@ export default function CommandCenter() {
     : lang === "en"
       ? ["Resource", "Data", "Structure", "Analysis", "Rules", "Intelligence", "Decision", "Action", "Monitoring", "Evidence", "Learning"]
       : ["المورد", "البيانات", "الهيكلة", "التحليل", "القواعد", "الذكاء", "القرار", "الإجراء", "المتابعة", "الدليل", "التعلّم"];
+
+  const readinessLabels: Record<string, string> = lang === "fr" ? {
+    healthy: "Sain", degraded: "Dégradé", up: "Connectée", down: "Indisponible",
+    configured: "Configuré", deterministic: "Déterministe", available: "Disponible", "adapter-configured": "Adaptateur configuré", disabled: "Désactivé",
+    "web-runtime-enabled": "Runtime web actif", "web-runtime-disabled": "Runtime web désactivé",
+    local: "Local souverain", external: "Externe", optional: "Optionnel",
+  } : lang === "en" ? {
+    healthy: "Healthy", degraded: "Degraded", up: "Up", down: "Down",
+    configured: "Configured", deterministic: "Deterministic", available: "Available", "adapter-configured": "Adapter configured", disabled: "Disabled",
+    "web-runtime-enabled": "Web runtime enabled", "web-runtime-disabled": "Web runtime disabled",
+    local: "Sovereign local", external: "External", optional: "Optional",
+  } : {
+    healthy: "سليم", degraded: "متدهور", up: "متصل", down: "غير متاح",
+    configured: "مهيأ", deterministic: "حتمي", available: "متاح", "adapter-configured": "المهايئ مهيأ", disabled: "معطل",
+    "web-runtime-enabled": "تشغيل الويب مفعل", "web-runtime-disabled": "تشغيل الويب معطل",
+    local: "محلي سيادي", external: "خارجي", optional: "اختياري",
+  };
+  const gateLabels: Record<string, string> = lang === "fr" ? {
+    backup_restore: "Sauvegarde / restauration", hosted_tls_proxy: "TLS / proxy hébergé",
+    load_capacity: "Charge / capacité", incident_response: "Réponse aux incidents",
+    legal_privacy_approval: "Validation juridique / vie privée",
+  } : lang === "en" ? {
+    backup_restore: "Backup / restore", hosted_tls_proxy: "Hosted TLS / proxy",
+    load_capacity: "Load / capacity", incident_response: "Incident response",
+    legal_privacy_approval: "Legal / privacy approval",
+  } : {
+    backup_restore: "النسخ والاستعادة", hosted_tls_proxy: "TLS والبروكسي المستضاف",
+    load_capacity: "الحمولة والسعة", incident_response: "الاستجابة للحوادث",
+    legal_privacy_approval: "الاعتماد القانوني والخصوصية",
+  };
+  const readinessLabel = (value: string) => readinessLabels[value] ?? value;
 
   const workspaceBody = lang === "fr" ? {
     water: "Ressources · pompage · allocation", agriculture: "Sol · culture · irrigation",
@@ -207,6 +265,45 @@ export default function CommandCenter() {
             <ArrowUpRight size={15} />
           </Link>
         ))}
+      </section>
+
+      <section className="fg-command-readiness" data-testid="runtime-readiness" aria-label={copy.readinessTitle}>
+        <div className="fg-command-section-title">
+          <div><span>RUNTIME / EVIDENCE OF OPERATION</span><h2>{copy.readinessTitle}</h2></div>
+          <ShieldCheck size={26}/>
+        </div>
+        {readiness ? <>
+          <div className="fg-readiness-grid">
+            <article className={readiness.runtime_status === "healthy" ? "ok" : "warn"}>
+              <span>{copy.runtime}</span><strong>{readinessLabel(readiness.runtime_status)}</strong>
+              <small>{readiness.deployment_mode.toUpperCase()} · v{readiness.core.environment.app_version}</small>
+            </article>
+            <article className={readiness.core.database.status === "up" ? "ok" : "warn"}>
+              <span>{copy.database}</span><strong>{readinessLabel(readiness.core.database.status)}</strong>
+              <small dir="ltr">{readiness.core.database.engine} · {readiness.core.database.latency_ms} ms · {readiness.core.database.schema_revision}</small>
+            </article>
+            <article className={readiness.integrations.ai.status === "configured" ? "ok" : ""}>
+              <span>{copy.aiMode}</span><strong>{readinessLabel(readiness.integrations.ai.mode)}</strong>
+              <small>{readiness.integrations.ai.data_boundary}</small>
+            </article>
+            <article className={readiness.integrations.weather.status === "configured" ? "ok" : ""}>
+              <span>{copy.weather}</span><strong>{readinessLabel(readiness.integrations.weather.status)}</strong>
+              <small>{readiness.integrations.weather.provider ?? readinessLabel("optional")}</small>
+            </article>
+            <article className="ok">
+              <span>{copy.satelliteLabel}</span><strong>{readinessLabel(readiness.integrations.satellite.status)}</strong>
+              <small>{readiness.integrations.satellite.provenance}</small>
+            </article>
+            <article className={readiness.integrations.automation.web_runtime_enabled ? "ok" : ""}>
+              <span>{copy.automationLabel}</span><strong>{readinessLabel(readiness.integrations.automation.status)}</strong>
+              <small>{readiness.integrations.automation.external_worker_observed ? (lang === "fr" ? "worker observé" : lang === "en" ? "worker observed" : "worker مرصود") : (lang === "fr" ? "worker externe non observé" : lang === "en" ? "external worker not observed" : "لم يُرصد worker خارجي")}</small>
+            </article>
+          </div>
+          <div className="fg-readiness-assurance">
+            <div><strong>{copy.assurance}</strong><span>{copy.notCertified}</span></div>
+            <ul>{readiness.assurance_gates.map(gate => <li key={gate.key}><span>{gateLabels[gate.key] ?? gate.key}</span><b>{gate.status}</b></li>)}</ul>
+          </div>
+        </> : <p className="fg-command-empty">{copy.unavailable}</p>}
       </section>
 
       <section className="fg-command-project-board" aria-label={copy.activeProjects}>
