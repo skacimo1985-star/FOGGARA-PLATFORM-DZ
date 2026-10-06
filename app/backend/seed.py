@@ -38,7 +38,7 @@ def get_or_create(db, model_cls, defaults=None, **lookup):
 
 
 def seed_agriculture_workspace(db, created, *, org, user, site, code, wilaya_ar, crop):
-    """Create deterministic, explicitly synthetic agriculture demo records."""
+    """Create deterministic, explicitly synthetic demo records; never treat them as field or official data."""
     area_ha = round(1.5 + (int(code) % 6) * 0.5, 2)
     coords = {}
     if site.lat is not None and site.lon is not None:
