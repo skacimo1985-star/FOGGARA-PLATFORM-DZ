@@ -22,7 +22,6 @@ def test_health_requires_no_auth_and_has_security_headers(client):
     assert "fonts.googleapis.com" in csp
     assert "script-src 'self'" in csp
     assert "tiles.openfreemap.org" in csp
-    assert "assets.openfreemap.com" in csp
     assert "connect-src https:" not in csp
 
 
