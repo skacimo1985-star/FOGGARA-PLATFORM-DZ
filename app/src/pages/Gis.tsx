@@ -192,7 +192,7 @@ export default function Gis() {
       <section className="fg-gis-register">
         <div className="fg-command-section-title">
           <div><span>GIS / SITES / RESOURCES / PROJECTS</span><h2>{copy.table}</h2></div>
-          <Badge variant="outline">{wilayaFilter || "58"}</Badge>
+          <Badge variant="outline">{wilayaFilter || String(wilayas.length || 69)}</Badge>
         </div>
         <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">{t("gis.manualOnly")}</p>
 
