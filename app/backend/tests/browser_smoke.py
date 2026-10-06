@@ -346,6 +346,10 @@ def main():
                     if path == f"/app/projects/{project_id}":
                         expect(page.locator(".fg-project-spine")).to_be_visible()
                         expect(page.locator(".fg-project-spine-flow article")).to_have_count(7)
+                    if path == "/app":
+                        expect(page.locator(".fg-command-project-board")).to_be_visible()
+                        expect(page.locator(".fg-command-project-list article")).to_have_count(1)
+                        expect(page.locator(".fg-command-project-list article").first).to_contain_text("واحة الاختبار")
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
