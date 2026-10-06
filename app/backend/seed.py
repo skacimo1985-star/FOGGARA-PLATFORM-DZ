@@ -39,13 +39,13 @@ def _env_flag(name: str, default: str = "false") -> bool:
     return os.environ.get(name, default).strip().lower() in TRUTHY
 
 
-def _demo_password() -> str:
+def _require_demo_password() -> str:
     """Read the demo-only credential from the environment without logging it."""
     value = os.environ.get("DEMO_PASSWORD", "")
     if not value:
         raise RuntimeError("SEED_DEMO=true requires DEMO_PASSWORD to be set")
-    if not 12 <= len(value) <= 128:
-        raise RuntimeError("DEMO_PASSWORD must be between 12 and 128 characters")
+    if not 15 <= len(value) <= 128:
+        raise RuntimeError("DEMO_PASSWORD must be between 15 and 128 characters")
     return value
 
 
@@ -65,6 +65,7 @@ def main():
     # DEMO_INSTANCE=true. The authored indicator/service catalog is ensured
     # even when synthetic business data is disabled.
     seed_demo = _seed_demo_enabled()
+    demo_password = _require_demo_password() if seed_demo else None
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
@@ -77,7 +78,6 @@ def main():
             db.commit()
             print("SEED_DEMO=false — no demo data inserted (indicator and authored service catalog ensured).")
             return
-        demo_password = _demo_password()
         # ---- Organizations ----
         org1, c = get_or_create(db, Organization, code="DEMO-ADRAR-ADE", defaults=dict(
             name_ar="مديرية الموارد المائية — أدرار (تجريبي)",
