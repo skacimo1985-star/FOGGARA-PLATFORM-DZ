@@ -55,7 +55,7 @@ export default function CommandCenter() {
     activity: "État opérationnel", noData: "Aucune donnée", unavailable: "Indisponible",
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
     decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
-    updated: "Actualisé", review: "File de revue", national: "Couverture nationale",
+    updated: "Actualisé", review: "File de revue", national: "Couverture nationale", setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
     title: "From field reality to decision.",
@@ -66,7 +66,7 @@ export default function CommandCenter() {
     activity: "Operational state", noData: "No data", unavailable: "Unavailable",
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
     decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
-    updated: "Updated", review: "Review queue", national: "National coverage",
+    updated: "Updated", review: "Review queue", national: "National coverage", setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
     title: "من الواقع الميداني إلى القرار.",
@@ -77,7 +77,7 @@ export default function CommandCenter() {
     activity: "الحالة التشغيلية", noData: "لا توجد بيانات", unavailable: "غير متاح",
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
     decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
-    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية",
+    updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
   };
 
   useEffect(() => {
@@ -148,6 +148,7 @@ export default function CommandCenter() {
   ];
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
+  const needsSetup = snapshot.projects !== null && snapshot.sites !== null && snapshot.projects.length === 0 && snapshot.sites.length === 0;
 
   return (
     <div className="fg-command-center" dir={i18n.dir()}>
@@ -168,6 +169,11 @@ export default function CommandCenter() {
           <span className="o4">E</span><span className="o5">H</span>
         </div>
       </section>
+
+      {needsSetup && <section className="fg-command-section" aria-label={copy.setupTitle}>
+        <div className="fg-command-section-title"><div><span>PRODUCTION / REAL DATA</span><h2>{copy.setupTitle}</h2><p>{copy.setupBody}</p></div><MapPinned size={26}/></div>
+        <Link to="/app/setup" className="fg-command-workspace"><Sprout size={23}/><div><strong>{copy.setupAction}</strong><small>Site · Project · Water · Parcel</small></div><ArrowUpRight size={15}/></Link>
+      </section>}
 
       <section className="fg-command-kpis" aria-label={copy.activity}>
         {cards.map(({ label, value, to, icon: Icon }) => (
