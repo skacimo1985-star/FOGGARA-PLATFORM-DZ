@@ -121,6 +121,7 @@ class Measurement(Base):
     source: Mapped[str] = mapped_column(String(255), nullable=False)  # جهة/مصدر القياس
     method: Mapped[str] = mapped_column(String(255), nullable=False)  # طريقة القياس
     source_type: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")  # manual|instrument|imported
+    import_batch_ref: Mapped[str | None] = mapped_column(String(120), index=True)
     instrument_id: Mapped[int | None] = mapped_column(ForeignKey("instruments.id"))
     asset_id: Mapped[int | None] = mapped_column(ForeignKey("assets.id"))
     quality_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")  # pending|validated|rejected
