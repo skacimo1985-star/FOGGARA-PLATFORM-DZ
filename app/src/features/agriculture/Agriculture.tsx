@@ -10,7 +10,7 @@ import { setLocale } from '@/lib/i18n';
 import { translate, type Lang, type TextKey } from './i18n';
 import './agriculture.css';
 
-type Parcel = { id: number; name: string; crop: string; area_ha: number; location: string; stage: string; archived: boolean; lat?: number | null; lon?: number | null };
+type Parcel = { id: number; name: string; crop: string; area_ha: number; location: string; stage: string; archived: boolean; lat?: number | null; lon?: number | null; boundary_geojson?: {type:"Polygon";coordinates:[number,number][][]} | null };
 type Observation = { id: number; parcel_id: number; metric: TextKey; value: number; unit: string; source_type: TextKey; source_ref: string; observed_at: string; evidence_status: TextKey; created_by?: number };
 type Plan = { id: number; parcel_id: number; inputs: Record<string, string | number>; result: { volume_m3: number; net_mm: number; gross_mm: number; etc_mm: number; evidence_status: string; decision_status: string } };
 type Task = { id: number; parcel_id: number; title: string; due_date: string; completed: boolean };

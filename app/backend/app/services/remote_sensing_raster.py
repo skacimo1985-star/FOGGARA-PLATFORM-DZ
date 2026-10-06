@@ -17,9 +17,10 @@ import numpy as np
 import rasterio
 from rasterio.enums import Resampling
 from rasterio.errors import RasterioError
+from rasterio.features import geometry_mask
 from rasterio.transform import from_bounds
 from rasterio.vrt import WarpedVRT
-from rasterio.warp import transform_bounds
+from rasterio.warp import transform_bounds, transform_geom
 
 from .remote_sensing_indices import compute_index, get_index_definition
 from .remote_sensing_processing import (
@@ -191,6 +192,7 @@ def _target_grid(
 def _compute_index_statistics_unlocked(
     plan: Mapping,
     bbox,
+    geometry_wgs84: Mapping | None = None,
 ) -> dict:
     analysis_bbox = validate_analysis_bbox(bbox)
     assets = plan.get("required_assets")
@@ -246,18 +248,37 @@ def _compute_index_statistics_unlocked(
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
     rounded_scl = safe_scl.astype(np.int16, copy=False)
     cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
-    combined_invalid = source_invalid | scl_invalid | cloud_invalid
 
+    analysis_mask = np.ones((height, width), dtype=bool)
+    if geometry_wgs84 is not None:
+        if not isinstance(geometry_wgs84, Mapping) or geometry_wgs84.get("type") != "Polygon":
+            raise RasterStatisticsError("analysis geometry must be a GeoJSON Polygon")
+        try:
+            projected_geometry = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+            analysis_mask = geometry_mask(
+                [projected_geometry],
+                out_shape=(height, width),
+                transform=target_transform,
+                invert=True,
+                all_touched=False,
+            )
+        except (RasterioError, ValueError, TypeError) as exc:
+            raise RasterStatisticsError("parcel polygon could not be projected onto the raster grid") from exc
+        if not np.any(analysis_mask):
+            raise RasterStatisticsError("parcel polygon does not cover any analysis pixels")
+
+    combined_invalid = source_invalid | scl_invalid | cloud_invalid
     index_values = _compute_index_array(str(plan.get("index") or ""), band_arrays)
     formula_invalid = ~np.isfinite(index_values)
-    valid_mask = ~(combined_invalid | formula_invalid)
+    valid_mask = analysis_mask & ~(combined_invalid | formula_invalid)
     valid_values = index_values[valid_mask]
 
-    total_pixels = int(width * height)
+    total_pixels = int(np.count_nonzero(analysis_mask))
     valid_pixels = int(valid_values.size)
-    cloud_pixels = int(np.count_nonzero(cloud_invalid))
-    source_nodata_pixels = int(np.count_nonzero(source_invalid | scl_invalid))
-    formula_nodata_pixels = int(np.count_nonzero((~combined_invalid) & formula_invalid))
+    cloud_pixels = int(np.count_nonzero(cloud_invalid & analysis_mask))
+    source_nodata_pixels = int(np.count_nonzero((source_invalid | scl_invalid) & analysis_mask))
+    formula_nodata_pixels = int(np.count_nonzero(analysis_mask & (~combined_invalid) & formula_invalid))
+    outside_geometry_pixels = int(width * height - total_pixels)
 
     statistics = {
         "min": None,
@@ -306,6 +327,8 @@ def _compute_index_statistics_unlocked(
             "cloud_masked_pixel_count": cloud_pixels,
             "source_nodata_pixel_count": source_nodata_pixels,
             "formula_nodata_pixel_count": formula_nodata_pixels,
+            "geometry_mask_applied": geometry_wgs84 is not None,
+            "outside_geometry_pixel_count": outside_geometry_pixels,
         },
         "pixels": {
             "total": total_pixels,
@@ -324,7 +347,7 @@ def _compute_index_statistics_unlocked(
 
 
 
-def compute_index_statistics(plan: Mapping, bbox) -> dict:
+def compute_index_statistics(plan: Mapping, bbox, geometry_wgs84: Mapping | None = None) -> dict:
     """Run one bounded synchronous raster analysis per API instance.
 
     Heavy raster IO is intentionally fail-fast under contention so authenticated
@@ -333,7 +356,7 @@ def compute_index_statistics(plan: Mapping, bbox) -> dict:
     if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
         raise RasterCapacityError("raster analysis capacity is busy")
     try:
-        return _compute_index_statistics_unlocked(plan, bbox)
+        return _compute_index_statistics_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84)
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
 
