@@ -80,19 +80,33 @@ def test_seed_demo_requires_explicit_credential(monkeypatch):
     monkeypatch.delenv("DEMO_PASSWORD", raising=False)
     import seed
     with pytest.raises(RuntimeError, match="requires DEMO_PASSWORD"):
-        seed._demo_password()
+        seed._require_demo_password()
 
 
 def test_seed_demo_credential_length_bounds(monkeypatch):
     import seed
 
-    monkeypatch.setenv("DEMO_PASSWORD", "x" * 11)
-    with pytest.raises(RuntimeError, match="between 12 and 128"):
-        seed._demo_password()
+    monkeypatch.setenv("DEMO_PASSWORD", "x" * 14)
+    with pytest.raises(RuntimeError, match="between 15 and 128"):
+        seed._require_demo_password()
 
     monkeypatch.setenv("DEMO_PASSWORD", "x" * 129)
-    with pytest.raises(RuntimeError, match="between 12 and 128"):
-        seed._demo_password()
+    with pytest.raises(RuntimeError, match="between 15 and 128"):
+        seed._require_demo_password()
+
+
+def test_demo_seed_validates_credential_before_database_access(monkeypatch):
+    monkeypatch.setenv("ENV", "dev")
+    monkeypatch.setenv("SEED_DEMO", "true")
+    monkeypatch.delenv("DEMO_PASSWORD", raising=False)
+    import seed
+
+    def fail_if_db_opened():
+        raise AssertionError("database access must not start before demo credential validation")
+
+    monkeypatch.setattr(seed, "SessionLocal", fail_if_db_opened)
+    with pytest.raises(RuntimeError, match="requires DEMO_PASSWORD"):
+        seed.main()
 
 
 def test_prod_seed_demo_requires_explicit_demo_instance(monkeypatch):
