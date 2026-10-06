@@ -265,3 +265,7 @@ def test_stac_search_next_link_preserves_search_filters(client, world, db):
     assert "datetime=" in href
     assert "limit=1" in href
     assert "offset=1" in href
+
+
+# Staging-only OGC regression collection.
+from tests.test_ogc_features import *  # noqa: F403,F401,E402
