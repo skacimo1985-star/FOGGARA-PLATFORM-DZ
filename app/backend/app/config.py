@@ -84,25 +84,44 @@ if not 1 <= LIST_MAX_LIMIT <= 1000:
     raise RuntimeError("LIST_MAX_LIMIT must be between 1 and 1000")
 
 
-# Optional external AI for investor-facing summaries. The UI never calls providers directly.
+# Optional OpenAI-compatible AI for investor-facing summaries. The UI never
+# calls providers directly. "local" is intended for Ollama/LocalAI/Open WebUI
+# gateways inside the operator's infrastructure; "external" is for a remote API.
 _AI_EXTERNAL_FLAG = os.environ.get("AI_EXTERNAL_ENABLED", "false").strip().lower()
 if _AI_EXTERNAL_FLAG not in ("true", "false"):
     raise RuntimeError("AI_EXTERNAL_ENABLED must be true or false")
 AI_EXTERNAL_ENABLED = _AI_EXTERNAL_FLAG == "true"
+
+_AI_PROVIDER_DEFAULT = "external" if AI_EXTERNAL_ENABLED else "deterministic"
+AI_PROVIDER_MODE = os.environ.get("AI_PROVIDER_MODE", _AI_PROVIDER_DEFAULT).strip().lower()
+if AI_PROVIDER_MODE not in ("deterministic", "local", "external"):
+    raise RuntimeError("AI_PROVIDER_MODE must be deterministic, local or external")
+
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "").strip().rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_MODEL = os.environ.get("AI_MODEL", "").strip()
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 if not 3 <= AI_TIMEOUT_SECONDS <= 60:
     raise RuntimeError("AI_TIMEOUT_SECONDS must be between 3 and 60")
-if AI_EXTERNAL_ENABLED:
+
+if AI_PROVIDER_MODE != "deterministic":
     _ai_url = urlsplit(AI_BASE_URL)
-    if not AI_BASE_URL or not AI_API_KEY or not AI_MODEL:
-        raise RuntimeError("External AI requires AI_BASE_URL, AI_API_KEY and AI_MODEL")
-    if not _ai_url.hostname or _ai_url.username or _ai_url.password:
-        raise RuntimeError("AI_BASE_URL must be a provider base URL without embedded credentials")
-    if ENV == "prod" and _ai_url.scheme != "https":
-        raise RuntimeError("ENV=prod requires HTTPS AI_BASE_URL")
+    if not AI_BASE_URL or not AI_MODEL:
+        raise RuntimeError("Configured AI provider requires AI_BASE_URL and AI_MODEL")
+    if (
+        _ai_url.scheme not in ("http", "https")
+        or not _ai_url.hostname
+        or _ai_url.username
+        or _ai_url.password
+        or _ai_url.query
+        or _ai_url.fragment
+    ):
+        raise RuntimeError("AI_BASE_URL must be an HTTP(S) provider base URL without embedded credentials, query or fragment")
+    if AI_PROVIDER_MODE == "external":
+        if not AI_API_KEY:
+            raise RuntimeError("External AI requires AI_API_KEY")
+        if ENV == "prod" and _ai_url.scheme != "https":
+            raise RuntimeError("ENV=prod requires HTTPS external AI_BASE_URL")
 
 
 # Optional live agricultural-weather provider. The adapter targets the stable
