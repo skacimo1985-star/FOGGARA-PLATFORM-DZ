@@ -303,15 +303,13 @@ def _items_response(db: Session, user: User, request: Request, bbox_raw, datetim
         if parcel is not None and rows:
             features.append(_item(parcel, rows, scene.anchor_id, request))
 
-    root = _root(request)
     links = [{"rel": "self", "href": str(request.url), "type": "application/geo+json"}]
     if offset + len(scene_rows) < total:
-        query = f"?limit={limit}&offset={offset + len(scene_rows)}"
-        if bbox_raw:
-            query += f"&bbox={bbox_raw}"
-        if datetime_raw:
-            query += f"&datetime={datetime_raw}"
-        links.append({"rel": "next", "href": f"{root}/collections/{COLLECTION_ID}/items{query}", "type": "application/geo+json"})
+        next_url = request.url.include_query_params(
+            limit=limit,
+            offset=offset + len(scene_rows),
+        )
+        links.append({"rel": "next", "href": str(next_url), "type": "application/geo+json"})
     return {
         "type": "FeatureCollection",
         "features": features,
