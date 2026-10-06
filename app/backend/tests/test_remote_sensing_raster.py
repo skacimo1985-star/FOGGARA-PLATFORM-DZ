@@ -339,3 +339,25 @@ def test_preview_png_endpoint_returns_computed_private_image(client, world, monk
     assert response.headers["x-foggara-evidence"] == "COMPUTED"
     assert response.headers["x-foggara-verified"] == "false"
     assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_polygon_geometry_masks_statistics_to_field_boundary(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    full = remote_sensing_raster.compute_index_statistics(processing_plan("ndvi"), TEST_BBOX)
+    clipped = remote_sensing_raster.compute_index_statistics(
+        processing_plan("ndvi"), TEST_BBOX, geometry_wgs84=geometry,
+    )
+    assert clipped["mask"]["geometry_mask_applied"] is True
+    assert clipped["mask"]["outside_geometry_pixel_count"] > 0
+    assert 0 < clipped["pixels"]["total"] < full["pixels"]["total"]
+    assert 0 <= clipped["pixels"]["valid"] <= clipped["pixels"]["total"]
+    assert clipped["statistics"]["mean"] == pytest.approx(0.5, abs=1e-5)
