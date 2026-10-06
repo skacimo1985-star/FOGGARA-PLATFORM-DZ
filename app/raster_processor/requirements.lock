@@ -1,0 +1,5 @@
+# Isolated raster processor dependencies — Python 3.12
+# Kept out of the main FastAPI runtime.
+numpy==2.5.3
+rasterio==1.5.2
+rio-cogeo==7.0.3
