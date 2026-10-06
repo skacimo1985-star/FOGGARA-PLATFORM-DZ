@@ -1,4 +1,6 @@
 import pytest
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app.services import weather_provider
 from tests.conftest import login
@@ -19,18 +21,24 @@ def _site_project(client, headers, *, coordinates=True, title="Weather project")
     return site.json(), project.json()
 
 
+def _today():
+    return datetime.now(ZoneInfo("Africa/Algiers")).date()
+
+
 def _provider_result():
+    today = _today()
     return {
         "provider": "FOGGARA Weather",
         "provider_contract": "open-meteo-compatible-v1",
         "attribution": "Weather data test attribution",
+        "attribution_url": "https://example.invalid/weather-license",
         "model_name": "provider-best-match",
         "latitude": 33.8,
         "longitude": 2.88,
         "timezone": "Africa/Algiers",
-        "fetched_at": "2026-10-06T22:00:00+00:00",
+        "fetched_at": datetime.now(ZoneInfo("UTC")).isoformat(),
         "days": [{
-            "day": "2026-10-07",
+            "day": today.isoformat(),
             "min_c": 16.0,
             "max_c": 29.0,
             "rain_mm": 0.0,
@@ -107,12 +115,13 @@ def test_weather_provider_normalizes_daily_agricultural_fields(monkeypatch):
     monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_NAME", "Test Weather")
     monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_ATTRIBUTION", "CC BY test")
     monkeypatch.setattr(weather_provider.config, "WEATHER_PROVIDER_ATTRIBUTION_URL", "https://example.invalid/weather-license")
+    today = _today()
     body = {
         "latitude": 33.8125,
         "longitude": 2.875,
         "timezone": "Africa/Algiers",
         "daily": {
-            "time": ["2026-10-07", "2026-10-08"],
+            "time": [today.isoformat(), (today + timedelta(days=1)).isoformat()],
             "weather_code": [1, 3],
             "temperature_2m_max": [29.2, 27.0],
             "temperature_2m_min": [16.1, 15.4],
@@ -132,11 +141,12 @@ def test_weather_provider_normalizes_daily_agricultural_fields(monkeypatch):
 
 
 def test_weather_provider_rejects_malformed_or_out_of_bounds_data():
+    today = _today()
     malformed = {
         "latitude": 33.8,
         "longitude": 2.88,
         "daily": {
-            "time": ["2026-10-07"],
+            "time": [today.isoformat()],
             "weather_code": [1],
             "temperature_2m_max": [25],
             "temperature_2m_min": [30],
@@ -148,3 +158,31 @@ def test_weather_provider_rejects_malformed_or_out_of_bounds_data():
     }
     with pytest.raises(weather_provider.WeatherProviderInvalidResponse):
         weather_provider.normalize_forecast(malformed, requested_days=15)
+
+
+def test_weather_provider_rejects_fractional_code_and_outside_live_window():
+    today = _today()
+    base = {
+        "latitude": 33.8,
+        "longitude": 2.88,
+        "daily": {
+            "time": [today.isoformat()],
+            "weather_code": [1.5],
+            "temperature_2m_max": [28],
+            "temperature_2m_min": [16],
+            "precipitation_sum": [0],
+            "precipitation_probability_max": [0],
+            "et0_fao_evapotranspiration": [4],
+            "wind_speed_10m_max": [10],
+        },
+    }
+    with pytest.raises(weather_provider.WeatherProviderInvalidResponse):
+        weather_provider.normalize_forecast(base, requested_days=15)
+
+    stale = {**base, "daily": {**base["daily"], "weather_code": [1], "time": [(today - timedelta(days=1)).isoformat()]}}
+    with pytest.raises(weather_provider.WeatherProviderInvalidResponse):
+        weather_provider.normalize_forecast(stale, requested_days=15)
+
+    distant = {**base, "daily": {**base["daily"], "weather_code": [1], "time": [(today + timedelta(days=16)).isoformat()]}}
+    with pytest.raises(weather_provider.WeatherProviderInvalidResponse):
+        weather_provider.normalize_forecast(distant, requested_days=15)
