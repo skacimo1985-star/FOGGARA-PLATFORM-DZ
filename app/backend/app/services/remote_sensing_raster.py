@@ -7,7 +7,6 @@ FOGGARA index, and returns statistics. It does not persist imagery or products.
 """
 from __future__ import annotations
 
-from contextlib import ExitStack
 import math
 from typing import Mapping
 
@@ -234,7 +233,8 @@ def compute_index_statistics(
     except (RasterioError, OSError, ValueError) as exc:
         raise RasterStatisticsError("trusted Sentinel raster could not be read") from exc
 
-    rounded_scl = np.rint(scl_values).astype(np.int16, copy=False)
+    safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
+    rounded_scl = safe_scl.astype(np.int16, copy=False)
     cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
     combined_invalid = source_invalid | scl_invalid | cloud_invalid
 
