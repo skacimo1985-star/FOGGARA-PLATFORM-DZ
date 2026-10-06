@@ -688,7 +688,7 @@ export default function Gis() {
                 {(filtered ?? []).map((g) => (
                   <TableRow key={g.site.id} className={selectedSiteId === g.site.id ? "bg-accent/50" : undefined}>
                     <TableCell className="font-medium">
-                      <button type="button" className="font-medium underline-offset-4 hover:underline focus-visible:underline" onClick={() => void selectSite(g.site.id)}>
+                      <button type="button" className="min-h-8 rounded px-1 font-medium underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600" onClick={() => void selectSite(g.site.id)}>
                         {g.site.name}
                       </button><DemoBadge show={g.site.is_demo} />
                     </TableCell>
