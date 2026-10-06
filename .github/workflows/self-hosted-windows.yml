@@ -46,7 +46,7 @@ jobs:
 
       - name: Resolve target ref
         id: target
-        shell: pwsh
+        shell: powershell
         run: |
           if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $target = "${{ inputs.target_ref }}"
@@ -76,19 +76,19 @@ jobs:
 
       - name: Install backend and audit dependencies
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: |
           python -m pip install -r requirements.lock -r requirements-dev.txt
           python -m pip install pip-audit==2.10.1 bandit==1.8.6
 
       - name: Compile Python sources
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: |
           python -m compileall -q app seed.py tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py
 
       - name: Reject repository-stored demo credential
-        shell: pwsh
+        shell: powershell
         run: |
           $literal = Get-ChildItem -Path app -Recurse -File |
             Select-String -SimpleMatch 'Demo#2026'
@@ -106,17 +106,17 @@ jobs:
 
       - name: Audit backend dependencies
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: python -m pip_audit -r requirements.lock
 
       - name: Bandit backend scan
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: python -m bandit -q -r app -ll
 
       - name: Verify demo seed and agriculture paths on SQLite
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: |
           python -m pytest tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py -q -ra --tb=short
 
@@ -127,7 +127,7 @@ jobs:
 
       - name: Verify frontend
         working-directory: app
-        shell: pwsh
+        shell: powershell
         run: |
           npm ci
           npm run typecheck
@@ -138,7 +138,7 @@ jobs:
 
       - name: Verify Rust engine when available
         working-directory: app/engines/nexus-core
-        shell: pwsh
+        shell: powershell
         run: |
           $cargo = Get-Command cargo -ErrorAction SilentlyContinue
           if (-not $cargo) {
@@ -156,7 +156,7 @@ jobs:
 
       - name: Verification summary
         if: always()
-        shell: pwsh
+        shell: powershell
         run: |
           "## FOGGARA self-hosted verification" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
           "- Target: `${{ inputs.target_ref }}`" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -166,7 +166,7 @@ jobs:
       - name: Remove disposable SQLite files
         if: always()
         working-directory: app/backend
-        shell: pwsh
+        shell: powershell
         run: |
           Get-ChildItem -Path . -Filter 'foggara-selfhosted-ci.db*' -ErrorAction SilentlyContinue |
             Remove-Item -Force -ErrorAction SilentlyContinue
