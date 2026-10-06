@@ -28,7 +28,7 @@ jobs:
   verify:
     name: windows-self-hosted
     if: github.event_name == 'workflow_dispatch' || github.actor == 'skacimo1985-star'
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, foggara-ci]
     timeout-minutes: 45
     env:
       PYTHONDONTWRITEBYTECODE: "1"
