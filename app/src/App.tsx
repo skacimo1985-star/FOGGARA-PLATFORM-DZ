@@ -17,6 +17,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Expo = lazy(() => import("@/pages/Expo"));
 const ExpoInsights = lazy(() => import("@/pages/ExpoInsights"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
+const WorkspaceSetup = lazy(() => import("@/pages/WorkspaceSetup"));
 const DataRoom = lazy(() => import("@/pages/DataRoom"));
 const NexusResources = lazy(() => import("@/pages/NexusResources"));
 const Opportunities = lazy(() => import("@/pages/Opportunities"));
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="/register" element={<Onboarding />} />
             <Route path="/join" element={<Onboarding />} />
             <Route path="/app" element={<Protected><CommandCenter /></Protected>} />
+            <Route path="/app/setup" element={<Protected><WorkspaceSetup /></Protected>} />
             <Route path="/app/explore" element={<Protected><Explore /></Protected>} />
             <Route path="/app/explore/:domain" element={<Protected><ExploreDomain /></Protected>} />
             <Route path="/app/studio" element={<Protected><DecisionStudio /></Protected>} />
