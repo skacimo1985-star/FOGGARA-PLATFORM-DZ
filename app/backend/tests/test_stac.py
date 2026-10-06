@@ -277,3 +277,7 @@ from tests.test_workspace_setup import *  # noqa: F401,F403,E402
 
 # Staging-only collection: execute raster masking tests in Render gate.
 from tests.test_remote_sensing_raster import *  # noqa: F401,F403,E402
+
+
+# Staging-only collection: execute real measurement CSV batch-import tests.
+from tests.test_measurement_import import *  # noqa: F401,F403,E402
