@@ -433,7 +433,7 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map && onSelectSceneRef.current) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
             if (map) map.getCanvas().style.cursor = "";
@@ -444,7 +444,7 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "agri-parcel-fill", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map && onSelectParcelRef.current) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "agri-parcel-fill", () => {
             if (map) map.getCanvas().style.cursor = "";
@@ -455,7 +455,7 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map && (onSelectSiteRef.current || onSelectWilayaRef.current)) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "foggara-sites", () => {
             if (map) map.getCanvas().style.cursor = "";
