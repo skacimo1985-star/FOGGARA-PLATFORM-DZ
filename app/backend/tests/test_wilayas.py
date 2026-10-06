@@ -22,14 +22,14 @@ class TestWilayaDirectory:
     """Validate the static 69-wilaya reference list."""
 
     def test_exactly_69_wilayas(self):
-        assert len(WILAYAS) == 58, f"Expected 69 wilayas, got {len(WILAYAS)}"
+        assert len(WILAYAS) == 69, f"Expected 69 wilayas, got {len(WILAYAS)}"
 
     def test_codes_are_unique(self):
         codes = [w["code"] for w in WILAYAS]
         assert len(codes) == len(set(codes)), "Duplicate wilaya codes found"
 
     def test_codes_are_01_to_69(self):
-        expected = {f"{i:02d}" for i in range(1, 59)}
+        expected = {f"{i:02d}" for i in range(1, 70)}
         actual = {w["code"] for w in WILAYAS}
         assert actual == expected, f"Missing codes: {expected - actual}, Extra: {actual - expected}"
 
