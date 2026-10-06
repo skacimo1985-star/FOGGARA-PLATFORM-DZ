@@ -85,7 +85,7 @@ jobs:
         working-directory: app/backend
         shell: powershell
         run: |
-          python -m compileall -q app seed.py tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py
+          python -m compileall -q app seed.py tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py tests/test_stac.py
 
       - name: Reject repository-stored demo credential
         shell: powershell
@@ -118,7 +118,7 @@ jobs:
         working-directory: app/backend
         shell: powershell
         run: |
-          python -m pytest tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py -q -ra --tb=short
+          python -m pytest tests/test_bootstrap.py tests/test_wilayas.py tests/test_agriculture_operations.py tests/test_stac.py -q -ra --tb=short
 
       - name: Set up Node 22
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
