@@ -10,13 +10,19 @@ def _finite(value):
     return value is not None and math.isfinite(float(value))
 
 
-def soil_assessment(observations):
-    """Return a conservative agronomic screening from the latest recorded soil observations."""
-    latest = {}
-    for row in observations:
-        metric = row.metric
-        if metric in {"ph", "ec", "moisture", "soc", "nitrogen", "phosphorus", "potassium"} and metric not in latest:
-            latest[metric] = float(row.value)
+SOIL_SCREEN_METRICS = {
+    "ph", "ec", "moisture", "soc", "nitrogen", "phosphorus", "potassium",
+    "organic_matter", "temperature",
+}
+
+
+def soil_assessment_values(values, *, evidence_status="COMPUTED"):
+    """Conservative agronomic screening over explicitly supplied soil values."""
+    latest = {
+        metric: float(value)
+        for metric, value in values.items()
+        if metric in SOIL_SCREEN_METRICS and _finite(value)
+    }
     findings, actions = [], []
     ph = latest.get("ph")
     if _finite(ph):
@@ -36,11 +42,21 @@ def soil_assessment(observations):
         else:
             findings.append({"metric": "ec", "level": "ok", "message": "below_general_salinity_screen"})
     return {
-        "service": "soil_screening", "evidence_status": "COMPUTED",
+        "service": "soil_screening", "evidence_status": evidence_status,
         "decision_status": "PROPOSED", "inputs": latest, "findings": findings,
         "actions": actions, "coverage": sorted(latest),
         "limitations": ["SCREENING_NOT_LAB_CERTIFICATE", "CROP_SPECIFIC_THRESHOLDS_NOT_APPLIED", "HUMAN_REVIEW_REQUIRED"],
     }
+
+
+def soil_assessment(observations):
+    """Return screening from the latest recorded agriculture observations."""
+    latest = {}
+    for row in observations:
+        metric = row.metric
+        if metric in SOIL_SCREEN_METRICS and metric not in latest:
+            latest[metric] = float(row.value)
+    return soil_assessment_values(latest)
 
 
 def irrigation_water_assessment(measurements):
