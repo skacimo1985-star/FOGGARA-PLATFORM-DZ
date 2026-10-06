@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
-from ..models import (Action, Asset, Evidence, HumanDecision, Instrument,
+from ..models import (Action, AgriParcel, Asset, Evidence, HumanDecision, Instrument,
                       Measurement, Recommendation, Review, User, WaterResource)
 from ..schemas import (EvidenceIn, EvidenceOut, HumanDecisionIn,
                        HumanDecisionOut, MeasurementBatchIn, MeasurementBatchReviewIn,
@@ -25,7 +25,16 @@ def list_measurements(project_id: int, user: User = Depends(get_current_user), d
                       .order_by(Measurement.measured_at.desc())).scalars().all()
 
 
-def _validate_measurement_links(db: Session, user: User, *, resource_id, instrument_id, asset_id):
+def _validate_measurement_links(db: Session, user: User, project, *,
+                                parcel_id, resource_id, instrument_id, asset_id):
+    if parcel_id is not None:
+        parcel = db.get(AgriParcel, parcel_id)
+        if parcel is None or parcel.org_id != user.org_id:
+            api_error(404, "NOT_FOUND", "Parcel not found")
+        if parcel.archived:
+            api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+        if project.site_id is not None and parcel.site_id is not None and project.site_id != parcel.site_id:
+            api_error(409, "PARCEL_PROJECT_SITE_MISMATCH", "Parcel and project belong to different sites")
     if resource_id is not None:
         resource = db.get(WaterResource, resource_id)
         if resource is None or resource.org_id != user.org_id:
@@ -42,10 +51,11 @@ def _validate_measurement_links(db: Session, user: User, *, resource_id, instrum
 
 @router.post("/measurements", response_model=MeasurementOut, status_code=201)
 def create_measurement(payload: MeasurementIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    get_project_or_404(db, user, payload.project_id)
+    project = get_project_or_404(db, user, payload.project_id)
     validate_measurement(payload.parameter, payload.value, payload.unit)
     _validate_measurement_links(
-        db, user,
+        db, user, project,
+        parcel_id=payload.parcel_id,
         resource_id=payload.resource_id,
         instrument_id=payload.instrument_id,
         asset_id=payload.asset_id,
@@ -57,7 +67,8 @@ def create_measurement(payload: MeasurementIn, user: User = Depends(get_current_
     db.flush()
     audit(db, user, "create", "measurement", entity_id=m.id, project_id=m.project_id,
           meta={"parameter": m.parameter, "value": str(m.value), "unit": m.unit,
-                "source_type": m.source_type, "instrument_id": m.instrument_id})
+                "source_type": m.source_type, "parcel_id": m.parcel_id,
+                "instrument_id": m.instrument_id})
     db.commit()
     return m
 
@@ -70,7 +81,7 @@ def import_measurements(project_id: int, payload: MeasurementBatchIn,
     Re-importing the same exact observation is idempotent. Imported records
     remain pending/unverified; the batch endpoint never promotes evidence.
     """
-    get_project_or_404(db, user, project_id)
+    project = get_project_or_404(db, user, project_id)
     normalized = []
     seen = set()
     skipped_duplicates = 0
@@ -78,14 +89,15 @@ def import_measurements(project_id: int, payload: MeasurementBatchIn,
     for row in payload.rows:
         validate_measurement(row.parameter, row.value, row.unit)
         _validate_measurement_links(
-            db, user,
+            db, user, project,
+            parcel_id=row.parcel_id,
             resource_id=row.resource_id,
             instrument_id=row.instrument_id,
             asset_id=row.asset_id,
         )
         unit = canonical_unit(row.parameter, row.unit)
         key = (
-            project_id, row.resource_id, row.parameter, float(row.value), unit,
+            project_id, row.parcel_id, row.resource_id, row.parameter, float(row.value), unit,
             row.measured_at, row.source, row.method, row.instrument_id, row.asset_id,
         )
         if key in seen:
@@ -95,6 +107,7 @@ def import_measurements(project_id: int, payload: MeasurementBatchIn,
         existing = db.scalar(select(Measurement.id).where(
             Measurement.org_id == user.org_id,
             Measurement.project_id == project_id,
+            Measurement.parcel_id == row.parcel_id,
             Measurement.resource_id == row.resource_id,
             Measurement.parameter == row.parameter,
             Measurement.value == row.value,
@@ -133,6 +146,7 @@ def import_measurements(project_id: int, payload: MeasurementBatchIn,
             meta={
                 "batch_reference": payload.batch_reference,
                 "parameter": measurement.parameter,
+                "parcel_id": measurement.parcel_id,
                 "unit": measurement.unit,
                 "source_type": "imported",
                 "instrument_id": measurement.instrument_id,

@@ -113,6 +113,7 @@ class Measurement(Base):
     id: Mapped[int] = mapped_column(BigId, primary_key=True)
     org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False, index=True)
+    parcel_id: Mapped[int | None] = mapped_column(ForeignKey("agri_parcels.id"), index=True)
     resource_id: Mapped[int | None] = mapped_column(ForeignKey("water_resources.id"))
     parameter: Mapped[str] = mapped_column(String(50), nullable=False)  # see services/indicators.PARAMETERS
     value: Mapped[float] = mapped_column(Numeric(14, 4), nullable=False)
