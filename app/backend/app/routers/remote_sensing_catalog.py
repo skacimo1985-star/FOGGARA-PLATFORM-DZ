@@ -14,6 +14,12 @@ from fastapi import APIRouter, Depends, Query
 from ..deps import api_error, get_current_user
 from ..models import User
 from ..services.remote_sensing_indices import public_index_definitions
+from ..services.remote_sensing_processing import (
+    ProcessingPlanError,
+    build_processing_plan,
+    item_url,
+    validate_scene_id,
+)
 
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
@@ -180,3 +186,42 @@ def index_definitions(_user: User = Depends(get_current_user)):
         "verified": False,
         "indices": public_index_definitions(),
     }
+
+
+@router.get("/catalog/scenes/{scene_id}/processing-plan")
+def scene_processing_plan(
+    scene_id: str,
+    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
+    _user: User = Depends(get_current_user),
+):
+    try:
+        safe_scene_id = validate_scene_id(scene_id)
+        provider_url = item_url(safe_scene_id)
+    except ProcessingPlanError as exc:
+        api_error(422, "INVALID_SCENE_ID", str(exc))
+
+    try:
+        timeout = httpx.Timeout(12.0, connect=5.0)
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            response = client.get(
+                provider_url,
+                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
+            )
+            response.raise_for_status()
+            item = response.json()
+    except (httpx.HTTPError, ValueError):
+        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
+
+    if not isinstance(item, dict):
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid item")
+    if item.get("id") != safe_scene_id or item.get("collection") != SENTINEL_COLLECTION:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue item identity is invalid")
+
+    try:
+        return build_processing_plan(item, index)
+    except ProcessingPlanError:
+        api_error(
+            502,
+            "REMOTE_PROVIDER_INVALID_RESPONSE",
+            "Satellite catalogue item cannot produce a trusted processing plan",
+        )
