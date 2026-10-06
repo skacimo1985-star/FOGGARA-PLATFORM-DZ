@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import type { GisSite, WilayaMeta } from "@/types";
+import type { GisSite, Project, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -145,6 +145,22 @@ export default function Gis() {
   const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
+  const [projectContext, setProjectContext] = useState<Project | null>(null);
+
+  useEffect(() => {
+    if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) {
+      api.get<Project>(`/projects/${requestedProjectId}`)
+        .then((project) => {
+          setProjectContext(project);
+          if (!(Number.isInteger(requestedSiteId) && requestedSiteId > 0) && project.site_id) {
+            setSelectedSiteId(project.site_id);
+          }
+        })
+        .catch(() => setProjectContext(null));
+    } else {
+      setProjectContext(null);
+    }
+  }, [requestedProjectId, requestedSiteId]);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -176,6 +192,12 @@ export default function Gis() {
     : lang === "en"
       ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria", selected: "Selected site", nearest: "Nearest sites", distance: "Distance", engine: "Spatial engine", noNearby: "No other nearby sites" }
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
+
+  const contextCopy = lang === "fr"
+    ? { label: "CONTEXTE OPÉRATIONNEL", project: "Projet", site: "Site", open: "Ouvrir le projet", mode: "Le SIG conserve le contexte pendant l’analyse spatiale et satellite." }
+    : lang === "en"
+      ? { label: "OPERATIONAL CONTEXT", project: "Project", site: "Site", open: "Open project", mode: "GIS keeps project context while you work with spatial and satellite analysis." }
+      : { label: "السياق التشغيلي", project: "المشروع", site: "الموقع", open: "فتح المشروع", mode: "يحافظ GIS على سياق المشروع أثناء التحليل المكاني والفضائي." };
 
   const satelliteCopy = lang === "fr"
     ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée." }
@@ -331,6 +353,32 @@ export default function Gis() {
           ))}
         </select>
       </section>
+
+      {projectContext ? (
+        <section className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-background to-sky-500/10 p-4 shadow-sm" aria-label={contextCopy.label}>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">{contextCopy.label}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <strong className="text-base">{contextCopy.project}: {projectContext.title}</strong>
+                <Badge variant="outline">#{projectContext.id}</Badge>
+                <Badge variant="secondary">{t(`landing.${projectContext.domain}`, projectContext.domain)}</Badge>
+                <Badge variant="outline">{t(`project.statuses.${projectContext.status}`, projectContext.status)}</Badge>
+                {projectContext.is_demo ? <DemoBadge show /> : null}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {contextCopy.site}: {selectedSite?.site.name ?? (projectContext.site_id ? `#${projectContext.site_id}` : t("common.none"))} · {contextCopy.mode}
+              </p>
+            </div>
+            <Link
+              to={`/app/projects/${projectContext.id}`}
+              className="inline-flex items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-semibold shadow-sm transition hover:bg-accent"
+            >
+              {contextCopy.open}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <ErrorText error={error} />
 
@@ -605,7 +653,7 @@ export default function Gis() {
                       {g.projects.length === 0 ? t("common.none") : (
                         <ul className="space-y-0.5">
                           {g.projects.map((p) => (
-                            <li key={p.id}>#{p.id} {p.title} <Badge variant="outline">{t(`project.statuses.${p.status}`, p.status)}</Badge></li>
+                            <li key={p.id}><Link className="font-medium underline-offset-4 hover:underline" to={`/app/projects/${p.id}`}>#{p.id} {p.title}</Link> <Badge variant="outline">{t(`project.statuses.${p.status}`, p.status)}</Badge></li>
                           ))}
                         </ul>
                       )}
