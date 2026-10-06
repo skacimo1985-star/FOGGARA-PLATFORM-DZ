@@ -42,4 +42,7 @@ def test_readiness_reflects_ai_weather_and_automation_configuration(client, worl
     assert body["integrations"]["weather"]["status"] == "configured"
     assert body["integrations"]["weather"]["field_execution"] is False
     assert body["integrations"]["automation"]["web_runtime_enabled"] is True
-    assert body["integrations"]["satellite"]["status"] == "available"
+    assert body["integrations"]["satellite"]["status"] == "adapter-configured"
+    assert body["integrations"]["satellite"]["live_probe"] is False
+    assert body["integrations"]["weather"]["live_probe"] is False
+    assert body["integrations"]["ai"]["live_probe"] is False
