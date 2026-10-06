@@ -748,6 +748,48 @@ def main():
                                               status="active", is_demo=True))
         created["resources"] += c
 
+        proj2, c = get_or_create(
+            db, Project, org_id=org2.id,
+            title="برنامج ري تجريبي — تندوف",
+            defaults=dict(
+                description="مشروع اصطناعي للعرض واختبار سير العمل — ليس مشروعًا ميدانيًا أو إحصاءً رسميًا.",
+                domain="food", status="active", site_id=site2.id,
+                resource_id=res2.id, is_demo=True, created_by=member2.id,
+            ),
+        )
+        created["projects"] += c
+
+        _, c = get_or_create(
+            db, Measurement,
+            org_id=org2.id, project_id=proj2.id, parameter="flow_rate",
+            value=0.36, unit="L/s", source="SYNTHETIC-DEMO-WILAYA-37",
+            defaults=dict(
+                resource_id=res2.id,
+                measured_at=datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc),
+                method="Synthetic baseline generated for investor/expo demonstration",
+                source_type="manual", quality_status="pending",
+                verification_status="unverified", is_demo=True,
+                submitted_by=member2.id,
+            ),
+        )
+        created["measurements"] += c
+
+        _, c = get_or_create(
+            db, Evidence,
+            org_id=org2.id, project_id=proj2.id,
+            title="Baseline national demo — تندوف",
+            defaults=dict(
+                doc_type="report",
+                license="Synthetic demo data — internal demonstration",
+                content_note=(
+                    "DEMO_ONLY; wilaya_code=37; synthetic baseline for interface and workflow "
+                    "demonstration; not a field measurement, official statistic, or verified national dataset."
+                ),
+                status="submitted", is_demo=True, submitted_by=member2.id,
+            ),
+        )
+        created["evidences"] += c
+
         asset1, c = get_or_create(db, Asset, org_id=org1.id, resource_id=res1.id,
                                   name="المعرّف الرئيسي للفڨارة (تجريبي)",
                                   defaults=dict(kind="gallery", status="maintenance", is_demo=True))
