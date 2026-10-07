@@ -88,6 +88,53 @@ type RasterAnalysis = {
   };
 };
 
+type MapPoint = [number, number];
+
+function polygonPoints(feature: ParcelBoundaryFeature | null): MapPoint[] {
+  const raw = feature?.geometry?.coordinates;
+  if (!Array.isArray(raw) || !Array.isArray(raw[0])) return [];
+  return (raw[0] as unknown[]).filter((value): value is number[] =>
+    Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))
+  ).map((value) => [Number(value[0]), Number(value[1])]);
+}
+
+function bboxFromPoints(points: MapPoint[]): [number, number, number, number] | null {
+  if (points.length < 3) return null;
+  const lons = points.map((point) => point[0]);
+  const lats = points.map((point) => point[1]);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
+
+function boundaryMetrics(points: MapPoint[]) {
+  if (points.length < 3) return { areaHa: 0, perimeterM: 0, centroid: null as MapPoint | null };
+  const earth = 6_378_137;
+  const meanLat = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+  const cosLat = Math.cos(meanLat * Math.PI / 180);
+  const projected = points.map(([lon, lat]) => [
+    earth * lon * Math.PI / 180 * cosLat,
+    earth * lat * Math.PI / 180,
+  ] as const);
+  let twiceArea = 0;
+  let perimeterM = 0;
+  const radians = (value: number) => value * Math.PI / 180;
+  for (let index = 0; index < points.length; index += 1) {
+    const next = (index + 1) % points.length;
+    twiceArea += projected[index][0] * projected[next][1] - projected[next][0] * projected[index][1];
+    const [lon1, lat1] = points[index];
+    const [lon2, lat2] = points[next];
+    const dLat = radians(lat2 - lat1);
+    const dLon = radians(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2
+      + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
+    perimeterM += 2 * earth * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+  const centroid: MapPoint = [
+    points.reduce((sum, point) => sum + point[0], 0) / points.length,
+    points.reduce((sum, point) => sum + point[1], 0) / points.length,
+  ];
+  return { areaHa: Math.abs(twiceArea) / 2 / 10_000, perimeterM, centroid };
+}
+
 function rasterBudget(bbox: [number, number, number, number]) {
   const [west, south, east, north] = bbox;
   const valid = [west, south, east, north].every(Number.isFinite)
@@ -150,6 +197,13 @@ export default function Gis() {
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
   const [projectContext, setProjectContext] = useState<Project | null>(null);
+  const [drawMode, setDrawMode] = useState(false);
+  const [draftBoundary, setDraftBoundary] = useState<MapPoint[]>([]);
+  const [fieldName, setFieldName] = useState("");
+  const [fieldCrop, setFieldCrop] = useState("date_palm");
+  const [fieldSaving, setFieldSaving] = useState(false);
+  const [fieldMessage, setFieldMessage] = useState("");
+  const [fieldError, setFieldError] = useState<unknown>(null);
 
   useEffect(() => {
     if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) {
@@ -209,6 +263,12 @@ export default function Gis() {
       ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented." }
       : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI." };
 
+  const fieldCopy = lang === "fr"
+    ? { title: "Délimiter une parcelle", subtitle: "Activez le dessin puis cliquez autour de la parcelle. FOGGARA calcule la superficie et le périmètre avant l’enregistrement.", start: "Dessiner une parcelle", drawing: "Mode dessin actif", undo: "Annuler le dernier point", clear: "Effacer", name: "Nom de la parcelle", crop: "Culture", area: "Superficie", perimeter: "Périmètre", vertices: "Sommets", save: "Enregistrer la parcelle", saving: "Enregistrement…", saved: "Parcelle enregistrée. Vous pouvez maintenant lancer Sentinel et les services agricoles.", choose: "Sélectionnez au moins 3 points.", site: "Site lié", noSite: "Aucun site imposé", openAgri: "Ouvrir les services agricoles", crops: { date_palm: "Palmier dattier", wheat: "Blé", barley: "Orge", potato: "Pomme de terre", tomato: "Tomate", olive: "Olivier", other: "Autre" } }
+    : lang === "en"
+      ? { title: "Draw a field boundary", subtitle: "Turn on drawing, then click around the field. FOGGARA calculates area and perimeter before saving.", start: "Draw field", drawing: "Drawing mode active", undo: "Undo last point", clear: "Clear", name: "Field name", crop: "Crop", area: "Area", perimeter: "Perimeter", vertices: "Vertices", save: "Save field", saving: "Saving…", saved: "Field saved. Sentinel and agricultural services can now run on it.", choose: "Select at least 3 points.", site: "Linked site", noSite: "No site required", openAgri: "Open agricultural services", crops: { date_palm: "Date palm", wheat: "Wheat", barley: "Barley", potato: "Potato", tomato: "Tomato", olive: "Olive", other: "Other" } }
+      : { title: "حدد مساحة الأرض على الخريطة", subtitle: "فعّل الرسم ثم اضغط حول حدود الأرض. تحسب FOGGARA المساحة والمحيط قبل الحفظ.", start: "ابدأ تحديد الأرض", drawing: "وضع الرسم مفعل", undo: "تراجع عن آخر نقطة", clear: "مسح الحدود", name: "اسم القطعة", crop: "المحصول", area: "المساحة", perimeter: "المحيط", vertices: "النقاط", save: "حفظ القطعة", saving: "جارٍ الحفظ…", saved: "تم حفظ القطعة. يمكنك الآن تشغيل Sentinel والخدمات الزراعية عليها.", choose: "حدد 3 نقاط على الأقل.", site: "الموقع المرتبط", noSite: "لا يشترط موقع مسبق", openAgri: "فتح الخدمات الزراعية", crops: { date_palm: "نخيل التمر", wheat: "قمح", barley: "شعير", potato: "بطاطا", tomato: "طماطم", olive: "زيتون", other: "أخرى" } };
+
   const analysisCopy = lang === "fr"
     ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est enregistré ni déclaré vérifié." }
     : lang === "en"
@@ -245,6 +305,10 @@ export default function Gis() {
     () => parcelBoundaries.find((feature) => feature.id === selectedParcelId) ?? null,
     [parcelBoundaries, selectedParcelId],
   );
+  const draftMetrics = useMemo(() => boundaryMetrics(draftBoundary), [draftBoundary]);
+  const selectedParcelBbox = useMemo(() => bboxFromPoints(polygonPoints(selectedParcel)), [selectedParcel]);
+  const analysisTargetBbox = selectedParcelBbox ?? viewportBbox;
+
 
   useEffect(() => {
     const siteId = selectedParcel?.properties.site_id ?? null;
@@ -255,7 +319,7 @@ export default function Gis() {
     setSearchParams(nextParams, { replace: true });
   }, [selectedParcel, selectedSiteId, searchParams, setSearchParams]);
 
-  const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
+  const currentRasterBudget = useMemo(() => rasterBudget(analysisTargetBbox), [analysisTargetBbox]);
 
   useEffect(() => {
     setAnalysisResult(null);
@@ -274,7 +338,7 @@ export default function Gis() {
     setSatelliteLoading(true);
     setSatelliteError(null);
     try {
-      const bbox = viewportBbox.map((value) => Number(value.toFixed(6))).join(",");
+      const bbox = analysisTargetBbox.map((value) => Number(value.toFixed(6))).join(",");
       const params = new URLSearchParams({
         bbox,
         start: sceneStart,
@@ -304,7 +368,7 @@ export default function Gis() {
     try {
       const params = new URLSearchParams({
         index: selectedIndex,
-        bbox: viewportBbox.map((value) => Number(value.toFixed(6))).join(","),
+        bbox: analysisTargetBbox.map((value) => Number(value.toFixed(6))).join(","),
       });
       const result = await api.get<RasterAnalysis>(
         `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/statistics?${params.toString()}`,
@@ -336,6 +400,45 @@ export default function Gis() {
     if (feature?.properties.site_id) nextParams.set("site", String(feature.properties.site_id));
     setSearchParams(nextParams, { replace: true });
     if (feature?.properties.site_id) void selectSite(feature.properties.site_id, nextParams);
+  };
+
+  const saveDraftField = async () => {
+    if (draftBoundary.length < 3 || draftMetrics.areaHa <= 0 || fieldSaving) return;
+    setFieldSaving(true);
+    setFieldError(null);
+    setFieldMessage("");
+    try {
+      const fallbackName = lang === "fr" ? "Parcelle cartographiée" : lang === "en" ? "Mapped field" : "قطعة محددة على الخريطة";
+      const location = selectedSite
+        ? [selectedSite.site.commune, selectedSite.site.wilaya].filter(Boolean).join(" · ")
+        : draftMetrics.centroid
+          ? `${draftMetrics.centroid[1].toFixed(5)}, ${draftMetrics.centroid[0].toFixed(5)}`
+          : "MAP";
+      const parcel = await api.post<{ id: number }>("/agriculture/parcels", {
+        name: fieldName.trim() || fallbackName,
+        crop: fieldCrop,
+        area_ha: Number(draftMetrics.areaHa.toFixed(4)),
+        location,
+        site_id: selectedSiteId,
+        boundary_geojson: { type: "Polygon", coordinates: [[...draftBoundary, draftBoundary[0]]] },
+        stage: "initial",
+      });
+      const boundaries = await api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson");
+      setParcelBoundaries(boundaries.features);
+      setSelectedParcelId(parcel.id);
+      const next = new URLSearchParams(searchParams);
+      next.set("parcel", String(parcel.id));
+      if (selectedSiteId) next.set("site", String(selectedSiteId));
+      setSearchParams(next, { replace: true });
+      setDrawMode(false);
+      setDraftBoundary([]);
+      setFieldName("");
+      setFieldMessage(fieldCopy.saved);
+    } catch (err) {
+      setFieldError(err);
+    } finally {
+      setFieldSaving(false);
+    }
   };
 
   const selectSite = async (siteId: number, contextParams?: URLSearchParams) => {
@@ -455,6 +558,38 @@ export default function Gis() {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-emerald-600/20 bg-gradient-to-br from-emerald-500/10 via-background to-amber-500/5 p-4 shadow-sm" data-testid="gis-field-draw">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">FIELD / AREA SELECTION</p>
+            <h2 className="mt-1 text-xl font-bold">{fieldCopy.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{fieldCopy.subtitle}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={`rounded-md px-4 py-2 text-sm font-semibold ${drawMode ? "bg-amber-500 text-slate-950" : "bg-emerald-700 text-white"}`} onClick={() => { setDrawMode((value) => !value); setFieldMessage(""); }}>
+              {drawMode ? fieldCopy.drawing : fieldCopy.start}
+            </button>
+            <button type="button" className="rounded-md border bg-background px-3 py-2 text-sm font-semibold disabled:opacity-40" disabled={!draftBoundary.length} onClick={() => setDraftBoundary((points) => points.slice(0, -1))}>{fieldCopy.undo}</button>
+            <button type="button" className="rounded-md border bg-background px-3 py-2 text-sm font-semibold disabled:opacity-40" disabled={!draftBoundary.length} onClick={() => setDraftBoundary([])}>{fieldCopy.clear}</button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <label className="grid gap-1 text-xs font-medium xl:col-span-2"><span>{fieldCopy.name}</span><input className="rounded-md border bg-background px-3 py-2" value={fieldName} onChange={(event) => setFieldName(event.target.value)} placeholder={lang === "ar" ? "مثال: قطعة النخيل الشمالية" : "Field name"} /></label>
+          <label className="grid gap-1 text-xs font-medium"><span>{fieldCopy.crop}</span><select className="rounded-md border bg-background px-3 py-2" value={fieldCrop} onChange={(event) => setFieldCrop(event.target.value)}>{Object.entries(fieldCopy.crops).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <div className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{fieldCopy.area}</span><strong className="mt-1 block text-lg tabular-nums">{draftMetrics.areaHa > 0 ? `${draftMetrics.areaHa.toFixed(3)} ha` : "—"}</strong></div>
+          <div className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{fieldCopy.perimeter}</span><strong className="mt-1 block text-lg tabular-nums">{draftMetrics.perimeterM > 0 ? `${Math.round(draftMetrics.perimeterM).toLocaleString(locale)} m` : "—"}</strong></div>
+          <div className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{fieldCopy.vertices}</span><strong className="mt-1 block text-lg tabular-nums">{draftBoundary.length}</strong></div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Badge variant="outline">{fieldCopy.site}: {selectedSite?.site.name ?? fieldCopy.noSite}</Badge>
+          <button type="button" className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" disabled={draftBoundary.length < 3 || draftMetrics.areaHa <= 0 || fieldSaving} onClick={() => void saveDraftField()}>{fieldSaving ? fieldCopy.saving : fieldCopy.save}</button>
+          {draftBoundary.length > 0 && draftBoundary.length < 3 ? <span className="text-xs text-amber-700">{fieldCopy.choose}</span> : null}
+          {selectedParcel ? <Link className="rounded-md border bg-background px-4 py-2 text-sm font-semibold" to={`/app/agriculture?parcel=${selectedParcel.id}`}>{fieldCopy.openAgri}</Link> : null}
+        </div>
+        {fieldMessage ? <p className="mt-3 text-sm font-medium text-emerald-700" role="status">{fieldMessage}</p> : null}
+        <ErrorText error={fieldError} />
+      </section>
+
       {data === null && !error ? (
         <Skeleton className="h-[430px] w-full rounded-2xl" />
       ) : (
@@ -469,6 +604,9 @@ export default function Gis() {
           selectedSiteId={selectedSiteId}
           selectedParcelId={selectedParcelId}
           onViewportChange={setViewportBbox}
+          drawMode={drawMode}
+          draftBoundary={draftBoundary}
+          onDraftBoundaryChange={setDraftBoundary}
           onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
           onSelectParcel={(parcelId) => selectParcel(parcelId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
