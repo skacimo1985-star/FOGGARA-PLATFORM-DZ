@@ -63,18 +63,17 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
   };
 
   const active = parcels.filter(p => !p.archived);
-  const activeIds = active.map(p => p.id).join(",");
   const [parcelId, setParcelId] = useState<number | null>(active[0]?.id ?? null);
   const [result, setResult] = useState<Advisory | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (parcelId != null && !active.some(p => p.id === parcelId)) {
-      setParcelId(active[0]?.id ?? null);
+    if (parcelId != null && !parcels.some(p => !p.archived && p.id === parcelId)) {
+      setParcelId(parcels.find(p => !p.archived)?.id ?? null);
       setResult(null);
     }
-  }, [activeIds, parcelId]);
+  }, [parcels, parcelId]);
 
   const run = async () => {
     if (!parcelId || busy) return;
