@@ -63,6 +63,7 @@ type Props = {
   onDraftBoundaryChange?: (points: Point[]) => void;
   locale?: string;
   compact?: boolean;
+  minimal?: boolean;
 };
 
 type Point = [number, number];
@@ -218,6 +219,7 @@ export function NationalMap({
   onDraftBoundaryChange,
   locale = "ar",
   compact = false,
+  minimal = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
@@ -664,8 +666,8 @@ export function NationalMap({
   }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
 
   return (
-    <section className={`fg-national-map ${compact ? "compact" : ""}`} aria-label={labels.title}>
-      <div className="fg-national-map-head">
+    <section className={`fg-national-map ${compact ? "compact" : ""} ${minimal ? "minimal" : ""}`} aria-label={labels.title}>
+      {!minimal && <div className="fg-national-map-head">
         <div>
           <span className="fg-map-kicker">ALGERIA · {wilayas.length || 69} WILAYAS</span>
           <h2>{labels.title}</h2>
@@ -674,7 +676,7 @@ export function NationalMap({
           <span>{labels.source}</span>
           <strong>{plotted.length} {labels.sites} · {parcelBoundaries.length} {labels.parcels} · {satelliteScenes.length} {labels.scenes}</strong>
         </div>
-      </div>
+      </div>}
 
       <div className="fg-national-map-canvas">
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
@@ -689,13 +691,13 @@ export function NationalMap({
         )}
       </div>
 
-      <div className="fg-national-map-foot">
+      {!minimal && <div className="fg-national-map-foot">
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#178568" }} /> {labels.parcels}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
         {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
-      </div>
+      </div>}
     </section>
   );
 }
