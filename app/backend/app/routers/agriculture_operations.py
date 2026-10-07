@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
@@ -122,6 +123,9 @@ class PlanIn(Input):
     efficiency: float = Field(gt=0, le=1)
     days: int = Field(ge=1, le=30)
     input_source: str = Field(min_length=3, max_length=300)
+    forecast_precip_mm: float | None = Field(default=None, ge=0, le=2000)
+    forecast_date: date | None = None
+    weather_provenance: Literal['INFERRED'] | None = None
 
 class TaskIn(Input):
     parcel_id: int = Field(gt=0)
@@ -436,7 +440,11 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
                 parcel.boundary_geojson is not None
                 or (parcel.lat is not None and parcel.lon is not None)
             ),
-            'weather_live': False,
+            'weather_live': bool(
+                config.WEATHER_PROVIDER_ENABLED
+                and parcel.lat is not None
+                and parcel.lon is not None
+            ),
         },
         'provenance': 'RECORDED_AND_COMPUTED',
         'soil_provenance': soil_provenance,
