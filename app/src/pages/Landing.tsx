@@ -24,6 +24,28 @@ export default function Landing() {
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
   const heritage=lang==="fr"?{title:"Préserver nos ressources.",accent:"Cultiver notre avenir.",body:"De l’héritage des oasis à la décision éclairée : eau, énergie, agriculture, écosystèmes et santé.",discover:"Découvrir la plateforme",scroll:"Explorer FOGGARA",visit:"Accès visiteur"}:lang==="en"?{title:"Stewards of our resources.",accent:"Cultivating our future.",body:"From oasis heritage to informed decisions: water, energy, food, ecosystems and health.",discover:"Explore the platform",scroll:"Discover FOGGARA",visit:"Visitor access"}:{title:"نصون مواردنا.",accent:"ونزرع مستقبلنا.",body:"من إرث الواحات إلى القرار المستنير: المياه والطاقة والزراعة والنظم البيئية والصحة.",discover:"اكتشف المنصة",scroll:"استكشف فقارة",visit:"دخول الزوار"};
   const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe",operate:"Créer un espace opérationnel"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required",operate:"Create operational workspace"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور",operate:"إنشاء مساحة عمل حقيقية"};
+  const companyCopy=lang==="fr"?{
+    aboutTitle:"QUI SOMMES-NOUS",
+    aboutBody:"SIREP OASES NEXUS WEFEH-DZ est une entreprise algérienne multidisciplinaire qui réunit ingénierie, services numériques, énergie, agriculture, mesure, étalonnage, inspection et intelligence des ressources.",
+    platformBody:"FOGGARA-DZ en est le cœur numérique : une plateforme nationale intégrée qui relie terrain, données, preuves, analyses et décisions à travers l’Eau, l’Énergie, l’Alimentation, les Écosystèmes et la Santé.",
+    aboutAction:"Découvrir SIREP",contactAction:"Nous contacter",servicesTitle:"NOS SERVICES",servicesBody:"Des services de terrain et numériques reliés à une même chaîne de preuve et de décision.",
+    services:["EAU, IRRIGATION & POMPAGE","ÉNERGIE & EFFICACITÉ","AGRICULTURE & PRODUCTION DURABLE","MESURE, ÉTALONNAGE & INSPECTION","PLATEFORMES NUMÉRIQUES, SIG, IOT & IA"],
+    demoEyebrow:"FOGGARA-DZ / DÉMO OPÉRATIONNELLE",demoTitle:"UNE DÉMO QUI OUVRE SUR DE VRAIS OUTILS",demoBody:"Le visiteur peut entrer sans mot de passe, voir les compteurs réels du salon et accéder aux modules publics. Les espaces authentifiés conservent les flux SIG, agriculture, preuves et décisions existants.",demoOpen:"Ouvrir la démo",demoServices:"Services agricoles",demoWorkspace:"Espace opérationnel",live:"EN DIRECT"
+  }:lang==="en"?{
+    aboutTitle:"WHO WE ARE",
+    aboutBody:"SIREP OASES NEXUS WEFEH-DZ is an Algerian multidisciplinary company combining engineering, digital services, energy, agriculture, measurement, calibration, inspection and resource intelligence.",
+    platformBody:"FOGGARA-DZ is its digital core: a national integrated platform connecting field reality, data, evidence, analysis and decisions across Water, Energy, Food, Ecosystems and Health.",
+    aboutAction:"Discover SIREP",contactAction:"Contact us",servicesTitle:"OUR SERVICES",servicesBody:"Field and digital services connected through one evidence and decision chain.",
+    services:["WATER, IRRIGATION & PUMPING","ENERGY & EFFICIENCY","SUSTAINABLE AGRICULTURE & PRODUCTION","MEASUREMENT, CALIBRATION & INSPECTION","DIGITAL PLATFORMS, GIS, IOT & AI"],
+    demoEyebrow:"FOGGARA-DZ / OPERATIONAL DEMO",demoTitle:"A DEMO THAT OPENS REAL TOOLS",demoBody:"Visitors can enter without a password, see live expo counters and use public modules. Authenticated workspaces keep the existing GIS, agriculture, evidence and decision flows.",demoOpen:"Open demo",demoServices:"Agricultural services",demoWorkspace:"Operational workspace",live:"LIVE"
+  }:{
+    aboutTitle:"من نحن",
+    aboutBody:"SIREP OASES NEXUS WEFEH-DZ مؤسسة جزائرية متعددة التخصصات تجمع الهندسة والخدمات الرقمية والطاقة والزراعة والقياس والمعايرة والتفتيش وذكاء الموارد.",
+    platformBody:"FOGGARA-DZ هي القلب الرقمي للمؤسسة: منصة وطنية متكاملة تربط الواقع الميداني والبيانات والأدلة والتحليل والقرار عبر المياه والطاقة والغذاء والنظم البيئية والصحة.",
+    aboutAction:"تعرف على SIREP",contactAction:"تواصل معنا",servicesTitle:"خدماتنا",servicesBody:"خدمات ميدانية ورقمية مترابطة ضمن سلسلة واحدة للأدلة والتحليل والقرار.",
+    services:["المياه والري والضخ","الطاقة والكفاءة","الزراعة والإنتاج المستدام","القياس والمعايرة والتفتيش","المنصات الرقمية وGIS وIoT والذكاء الاصطناعي"],
+    demoEyebrow:"FOGGARA-DZ / ديمو تشغيلي",demoTitle:"ديمو يفتح أدوات حقيقية",demoBody:"يمكن للزائر الدخول بدون كلمة مرور ورؤية عدادات المعرض الحقيقية واستعمال الوحدات العامة، بينما تبقى مساحات GIS والزراعة والأدلة والقرار مرتبطة بمسارات العمل والمصادقة الحالية.",demoOpen:"فتح الديمو",demoServices:"الخدمات الزراعية",demoWorkspace:"مساحة العمل",live:"مباشر"
+  };
   const toolCopy=lang==="fr"?{
     eyebrow:"FOGGARA / TOOL DECK",title:"Choisissez un service. Commencez immédiatement.",body:"Une interface orientée outils : recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"Ouvrir",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond.",qrTitle:"Accès visiteur au salon",qrBody:"Scannez pour ouvrir directement le mode AGRITECH sans compte.",scan:"Ouvrir",copy:"Copier",copied:"Copié",download:"Télécharger SVG",quick:"Accès rapide"
   }:lang==="en"?{
@@ -104,7 +126,7 @@ export default function Landing() {
   }
   return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
     <nav className="fg-public-nav" aria-label={t("publicExperience.navigation")}>
-      <a href="#ecosystem">{t("publicExperience.ecosystem")}</a><a href="#collaboration">{t("publicExperience.collaboration")}</a>
+      <a href="#about">{t("publicExperience.about")}</a><a href="#tools">{companyCopy.servicesTitle}</a>
       <Link to="/presentation">{t("publicExperience.presentation")}</Link><Link to="/contact">{t("publicExperience.contact")}</Link>
     </nav>
     <section className="fg-landing-hero" aria-labelledby="foggara-title">
@@ -115,6 +137,39 @@ export default function Landing() {
         <div className="fg-hero-actions"><a className="fg-button fg-secondary" href="#tools">{heritage.discover}<ArrowUpRight size={17}/></a><Link className="fg-heritage-visitor" to={user?"/app":"/expo"}>{user?t("publicExperience.enter"):heritage.visit}<ArrowUpRight size={16}/></Link></div>
       </div>
       <div className="fg-heritage-bottom"><span dir="ltr">WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH</span><a href="#tools">{heritage.scroll}<ArrowDown size={16}/></a><span className="fg-heritage-image-notice">{t("demo.imageNotice")}</span></div>
+    </section>
+    <section className="fg-about-showcase" id="about" aria-labelledby="fg-about-title">
+      <div className="fg-about-copy">
+        <p className="fg-eyebrow">SIREP OASES NEXUS WEFEH-DZ</p>
+        <h2 id="fg-about-title">{companyCopy.aboutTitle}</h2>
+        <p className="fg-about-lede">{companyCopy.aboutBody}</p>
+        <p>{companyCopy.platformBody}</p>
+        <div className="fg-about-actions"><Link className="fg-button" to="/about">{companyCopy.aboutAction}<ArrowUpRight size={17}/></Link><Link className="fg-link" to="/contact">{companyCopy.contactAction}<ArrowUpRight size={16}/></Link></div>
+      </div>
+      <div className="fg-about-media" aria-label={companyCopy.aboutTitle}>
+        <figure className="fg-about-media-primary"><img src="/images/oasis-dawn.webp" alt="" loading="lazy" decoding="async"/></figure>
+        <figure className="fg-about-media-secondary"><img src="/images/oasis-hero.webp" alt="" loading="lazy" decoding="async"/></figure>
+        <div className="fg-about-brand-card"><img src="/sirep-brand.svg" alt="SIREP OASES NEXUS WEFEH-DZ" loading="lazy"/><span dir="ltr">ENGINEERING · DIGITAL · FIELD EVIDENCE · WEFEH</span></div>
+      </div>
+    </section>
+    <section className="fg-service-ribbon" aria-labelledby="fg-services-title">
+      <div className="fg-service-ribbon-copy"><p className="fg-eyebrow">SIREP / WEFEH</p><h2 id="fg-services-title">{companyCopy.servicesTitle}</h2><p>{companyCopy.servicesBody}</p></div>
+      <div className="fg-service-ribbon-grid">{companyCopy.services.map((service,index)=><article key={service}><span dir="ltr">0{index+1}</span><h3>{service}</h3></article>)}</div>
+    </section>
+    <section className="fg-live-demo" id="demo" aria-labelledby="fg-demo-title">
+      <div className="fg-demo-visual">
+        <img src="/images/oasis-hero.webp" alt="" loading="lazy" decoding="async"/>
+        <div className="fg-demo-live-badge"><span></span>{companyCopy.live}</div>
+        <div className="fg-demo-stats"><span><strong>{expoStats.visitors}</strong>{expoCopy.visitors}</span><span><strong>{expoStats.feedback}</strong>{expoCopy.feedback}</span><span><strong>{WILAYAS.length}</strong>{narrative.national}</span></div>
+      </div>
+      <div className="fg-demo-copy">
+        <p className="fg-eyebrow">{companyCopy.demoEyebrow}</p><h2 id="fg-demo-title">{companyCopy.demoTitle}</h2><p>{companyCopy.demoBody}</p>
+        <div className="fg-demo-actions"><Link className="fg-button" to="/expo">{companyCopy.demoOpen}<ArrowUpRight size={17}/></Link><Link className="fg-link" to="/agriculture-services">{companyCopy.demoServices}<ArrowUpRight size={16}/></Link><Link className="fg-link" to={user?"/app":"/register"}>{companyCopy.demoWorkspace}<ArrowUpRight size={16}/></Link></div>
+        <div className="fg-demo-qr">
+          <a href={expoUrl} target="_blank" rel="noreferrer" aria-label={toolCopy.scan}><img src="/expo-qr.svg" alt={toolCopy.qrTitle} width="124" height="124"/></a>
+          <div><strong>{toolCopy.qrTitle}</strong><p>{toolCopy.qrBody}</p><div className="fg-demo-qr-actions"><button type="button" onClick={()=>void copyExpoLink()}>{qrCopied?<Check size={15}/>:<Copy size={15}/>} {qrCopied?toolCopy.copied:toolCopy.copy}</button><a href="/expo-qr.svg" download="FOGGARA-AGRITECH-EXPO-QR.svg"><Download size={15}/>{toolCopy.download}</a></div></div>
+        </div>
+      </div>
     </section>
     <section className="fg-tool-hub" id="tools" aria-labelledby="fg-tool-title">
       <div className="fg-tool-panel">
@@ -128,24 +183,6 @@ export default function Landing() {
           {visibleTools.length===0&&<p className="fg-tool-empty">{toolCopy.noResults}</p>}
         </div>
       </div>
-    </section>
-    <section className="fg-heritage-expo" aria-label={toolCopy.qrTitle}>
-      <div><p className="fg-eyebrow">AGRITECH / FOGGARA</p><h2>{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p><Link className="fg-link" to={user?"/app":"/register"}>{user?t("publicExperience.enter"):expoCopy.operate}<ArrowUpRight size={16}/></Link><p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p></div>
-      <aside className="fg-hero-qr" aria-labelledby="fg-hero-qr-title">
-        <div className="fg-hero-qr-head"><div><p className="fg-eyebrow">AGRITECH EXPO / QR</p><h2 id="fg-hero-qr-title">{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p></div><QrCode size={24}/></div>
-        <a href={expoUrl} target="_blank" rel="noreferrer" className="fg-hero-qr-code" aria-label={toolCopy.scan}>
-          <img src="/expo-qr.svg" alt={toolCopy.qrTitle} width="220" height="220"/>
-        </a>
-        <div className="fg-hero-qr-actions">
-          <Link to="/expo" className="fg-hero-qr-primary">{toolCopy.scan}<ArrowUpRight size={15}/></Link>
-          <button type="button" onClick={()=>void copyExpoLink()}>{qrCopied?<Check size={15}/>:<Copy size={15}/>} {qrCopied?toolCopy.copied:toolCopy.copy}</button>
-          <a href="/expo-qr.svg" download="FOGGARA-AGRITECH-EXPO-QR.svg"><Download size={15}/>{toolCopy.download}</a>
-        </div>
-        <div className="fg-hero-qr-capabilities" aria-label={toolCopy.quick}>
-          <span>Sentinel-2</span><span>ET₀ / 15d</span><span>Ollama-ready</span>
-        </div>
-        <small dir="ltr">foggara-dz.onrender.com/expo</small>
-      </aside>
     </section>
     <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
     <section className="fg-platform-spine" aria-label="FOGGARA operating model">
