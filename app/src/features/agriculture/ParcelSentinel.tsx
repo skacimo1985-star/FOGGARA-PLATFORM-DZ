@@ -20,10 +20,15 @@ type Scene = {
   provider: string;
 };
 type SceneResult = { scenes: Scene[]; sample_geometry: string; sample_bbox_wgs84: number[] };
+type SatelliteIndex = "ndvi" | "lswi" | "ndmi" | "ndwi" | "bsi" | "savi" | "evi";
 type AnalysisResult = {
   created: boolean;
   observation: { id: number; metric: string; value: number; observed_at: string; evidence_status: string };
-  statistics?: { pixels: { valid_fraction: number }; processing_plan_fingerprint: string };
+  statistics?: {
+    pixels: { valid_fraction: number };
+    processing_plan_fingerprint: string;
+    grid?: { effective_source_resolution_m?: number | null; resampled?: boolean };
+  };
   sample_geometry: string;
   provenance: string;
 };
@@ -46,7 +51,7 @@ export default function ParcelSentinel({
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const text = lang === "fr" ? {
     heading: "Sentinel-2 réel · indices de parcelle",
-    intro: "Recherchez de vraies scènes L2A, calculez NDVI ou LSWI avec masque SCL, puis enregistrez la moyenne traçable dans votre parcelle.",
+    intro: "Recherchez de vraies scènes L2A, calculez les indices Sentinel avec masque SCL, puis enregistrez la moyenne traçable dans votre parcelle.",
     parcel: "Parcelle", from: "Début", to: "Fin", search: "Chercher les scènes",
     scene: "Scène satellite", index: "Indice", clouds: "Nuages", compute: "Calculer et enregistrer l’indice",
     coords: "Les coordonnées du centre sont requises.", lat: "Latitude", lon: "Longitude",
@@ -55,7 +60,7 @@ export default function ParcelSentinel({
     saved: "Indice enregistré", duplicate: "Scène déjà enregistrée pour cet indice", load: "Consultation du catalogue…",
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
   } : lang === "en" ? {
-    heading: "Real Sentinel-2 · parcel indices", intro: "Find real L2A scenes, compute SCL-masked NDVI or LSWI, and save the traceable mean to your parcel.",
+    heading: "Real Sentinel-2 · parcel indices", intro: "Find real L2A scenes, compute SCL-masked Sentinel indices, and save the traceable mean to your parcel.",
     parcel: "Parcel", from: "From", to: "To", search: "Search scenes",
     scene: "Satellite scene", index: "Index", clouds: "Clouds", compute: "Compute and save index",
     coords: "Parcel centre coordinates are required.", lat: "Latitude", lon: "Longitude",
@@ -64,7 +69,7 @@ export default function ParcelSentinel({
     saved: "Index saved", duplicate: "Scene already recorded for this index", load: "Checking satellite catalogue…",
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
   } : {
-    heading: "Sentinel-2 حقيقي · مؤشرات القطعة", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI أو LSWI مع حجب الغيوم ثم احفظ المتوسط القابل للتتبع في سجل القطعة.",
+    heading: "Sentinel-2 حقيقي · مؤشرات القطعة", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب المؤشرات الطيفية مع حجب الغيوم ثم احفظ المتوسط القابل للتتبع في سجل القطعة.",
     parcel: "القطعة الزراعية", from: "من", to: "إلى", search: "بحث عن المشاهد",
     scene: "المشهد الفضائي", index: "المؤشر", clouds: "الغيوم", compute: "حساب المؤشر وحفظه",
     coords: "يجب إدخال إحداثيات مركز القطعة.", lat: "خط العرض", lon: "خط الطول",
@@ -80,7 +85,7 @@ export default function ParcelSentinel({
   const [end, setEnd] = useState(today());
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [sceneId, setSceneId] = useState("");
-  const [index, setIndex] = useState<"ndvi" | "lswi">("ndvi");
+  const [index, setIndex] = useState<SatelliteIndex>("ndvi");
   const [busy, setBusy] = useState<"scenes" | "compute" | "coords" | null>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -174,9 +179,14 @@ export default function ParcelSentinel({
           <label className="fg-field"><span>{text.scene}</span><select value={sceneId} onChange={e => {setSceneId(e.target.value);setResult(null);}}>
             {scenes.map(s => <option key={s.id} value={s.id}>{s.datetime?.slice(0,10) ?? "—"} · {s.cloud_cover_pct ?? "?"}% {text.clouds} · {s.id}</option>)}
           </select></label>
-          <label className="fg-field"><span>{text.index}</span><select value={index} onChange={e => {setIndex(e.target.value as "ndvi" | "lswi");setResult(null);}}>
-            <option value="ndvi">NDVI · vegetation</option>
-            <option value="lswi">LSWI · surface water / moisture</option>
+          <label className="fg-field"><span>{text.index}</span><select value={index} onChange={e => {setIndex(e.target.value as SatelliteIndex);setResult(null);}}>
+            <option value="ndvi">NDVI · vegetation · 10 m</option>
+            <option value="evi">EVI · vegetation response · 10 m</option>
+            <option value="savi">SAVI · soil-adjusted vegetation · 10 m</option>
+            <option value="ndwi">NDWI · surface water signal · 10 m</option>
+            <option value="ndmi">NDMI · vegetation moisture · source 20 m</option>
+            <option value="lswi">LSWI · land-surface water · source 20 m</option>
+            <option value="bsi">BSI · bare-soil signal · source 20 m</option>
           </select></label>
           <button className="fg-primary" disabled={busy !== null || !sceneId} onClick={() => void handleAnalyze()} type="button"><Satellite size={17}/>{busy === "compute" ? text.busy : text.compute}</button>
         </div>}
@@ -186,7 +196,11 @@ export default function ParcelSentinel({
         <strong>{result.created ? text.saved : text.duplicate}</strong>
         <div>{result.observation.metric.toUpperCase()}: <strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong></div>
         <small>{new Date(result.observation.observed_at).toLocaleDateString()} · {result.observation.evidence_status}</small>
-        {result.statistics && <small>Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%</small>}
+        {result.statistics && <small>
+          Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%
+          {result.statistics.grid?.effective_source_resolution_m ? ` · source ${result.statistics.grid.effective_source_resolution_m} m` : ""}
+          {result.statistics.grid?.resampled ? " · resampled for analysis" : ""}
+        </small>}
       </div>}
       {error && <p className="fg-error" role="alert">{error}</p>}
       <p className="fg-footnote">{text.info} {parcel.boundary_geojson ? " · PARCEL_BOUNDARY_GEOJSON" : " · POINT_CENTERED_ESTIMATE"}</p>
