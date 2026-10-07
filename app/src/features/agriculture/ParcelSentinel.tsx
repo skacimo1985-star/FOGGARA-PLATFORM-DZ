@@ -58,7 +58,14 @@ export default function ParcelSentinel({
   onSaved: () => void | Promise<void>;
   selectedParcelId?: number | null;
   onRasterReady?: (overlay: { url: string; bbox: [number, number, number, number]; index: SatelliteIndex }) => void;
-  onTrueColorReady?: (overlay: { url: string; bbox: [number, number, number, number] }) => void;
+  onTrueColorReady?: (overlay: {
+    url: string;
+    bbox: [number, number, number, number];
+    scene_id: string;
+    acquired_at: string | null;
+    provider: string;
+    cloud_cover_pct: number | null;
+  }) => void;
 }) {
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
@@ -179,7 +186,15 @@ export default function ParcelSentinel({
             `/agriculture/parcels/${parcel.id}/remote-sensing/true-color.png?${new URLSearchParams({ scene_id: sceneId }).toString()}`,
             60_000,
           );
-          onTrueColorReady({ url: URL.createObjectURL(trueColor), bbox: stats.analysis_bbox_wgs84 });
+          const selectedScene = scenes.find(scene => scene.id === sceneId);
+          onTrueColorReady({
+            url: URL.createObjectURL(trueColor),
+            bbox: stats.analysis_bbox_wgs84,
+            scene_id: sceneId,
+            acquired_at: selectedScene?.datetime ?? null,
+            provider: selectedScene?.provider ?? "Element 84 Earth Search",
+            cloud_cover_pct: selectedScene?.cloud_cover_pct ?? null,
+          });
         }
       }
       if (value.created) await onSaved();
