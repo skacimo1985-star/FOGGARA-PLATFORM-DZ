@@ -6,7 +6,7 @@ services:
     region: frankfurt
     branch: main
     buildCommand: cd app && npm ci && npm run build && python -m compileall -q backend/app && pip install -r backend/requirements.lock
-    startCommand: cd app/backend && python -m alembic upgrade head && python seed.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
+    startCommand: cd app/backend && python -m alembic upgrade head && { [ "${SEED_DEMO:-false}" != "true" ] || python seed.py; } && exec python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION

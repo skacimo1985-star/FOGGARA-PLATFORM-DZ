@@ -12,7 +12,7 @@ and ESM-compatible Vite configuration.
   Never commit the URI or paste a password into a chat.
 - `ENV=prod`, `SEED_DEMO=false`; JWT and one-time setup secrets are generated
   in hosting settings. No demo users are created.
-- Startup runs Alembic and seeds only the default indicator, then starts FastAPI.
+- Startup runs Alembic and starts FastAPI directly when `SEED_DEMO=false`. The synthetic/demo seed path runs only when `SEED_DEMO=true`; production web availability must not depend on demo/catalog seeding.
 - Verify `/api/health` reports `db=up` and the expected Alembic revision.
 - Create the first administrator with `/api/setup/bootstrap` using the
   `X-Setup-Key` header privately; remove `SETUP_KEY` after setup.
