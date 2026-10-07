@@ -44,3 +44,21 @@ test('national identity and evidence chain remain visible',()=>{
   assert.ok(landing.includes('DATA → EVIDENCE → DECISION → MONITORING'));
   assert.ok(landing.includes('SIREP OASES NEXUS WEFEH-DZ'));
 });
+
+
+test('dedicated presentation page uses the same national visual language',()=>{
+  const presentation=readFileSync(new URL('../src/pages/Presentation.tsx',import.meta.url),'utf8');
+  const presentationCss=readFileSync(new URL('../src/pages/presentation.css',import.meta.url),'utf8');
+  const result=ts.transpileModule(presentation,{
+    compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX},
+    reportDiagnostics:true,
+    fileName:'Presentation.tsx'
+  });
+  const errors=(result.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error);
+  assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
+  assert.ok(presentation.includes('ALGERIAN NATIONAL INTEGRATED PLATFORM'));
+  assert.ok(presentation.includes('presentationPhotos=[10,8,6,1,11]'));
+  assert.ok(presentationCss.includes('/images/oasis-dawn.webp'));
+  assert.ok(presentationCss.includes('/images/foggara-sprite.webp'));
+  assert.ok(presentationCss.includes('FOGGARA-DZ NATIONAL PRESENTATION THEME'));
+});
