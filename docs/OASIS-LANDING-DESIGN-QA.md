@@ -59,3 +59,33 @@ Implemented after the original QA snapshot:
 - Existing local oasis/brand assets already in the repository are used by the continuation. Additional user-provided media is being treated as source material but is not claimed as committed until it is actually present in the branch.
 
 final result: implementation advanced; current-head verification pending
+
+
+## Moon template rebuild — current implementation
+
+The public FOGGARA landing has now been rebuilt around the user-supplied `moon-html.zip` visual system rather than the earlier oasis-only composition.
+
+Implemented:
+- Moon-style green institutional header and dark navigation band.
+- Large agriculture-style carousel hero with FOGGARA-specific messaging and working slide controls.
+- Two-column SIREP OASES "About" section.
+- Dark-green operational statistics strip using canonical wilaya count and live Expo visitor/feedback values.
+- Three Moon-style service/offer cards linked to existing FOGGARA routes.
+- Product-style documentary Foggara image gallery using the user-supplied photographs.
+- Heritage section using the approved generated "LA FOGGARA" visual.
+- Compact Expo QR card; QR no longer overlays or competes with the hero.
+- Existing tool search, WEFEH nexus, GIS/agriculture capability sections, workflow, automation, legal links and backend/API calls remain in place.
+- Arabic/French/English rendering remains supported; Latin headings/actions use uppercase/majuscule treatment.
+
+Assets committed in the branch:
+- `app/public/images/foggara-sprite.webp` — optimized composite of supplied Foggara photographs.
+- `app/public/images/foggara-heritage-poster.webp` — optimized approved heritage visual.
+
+Architecture:
+- The old Bootstrap/jQuery Moon template is NOT injected into the production runtime.
+- Its layout language is implemented in the existing React/Vite application, preserving routing, authentication, API behavior, backend and database boundaries.
+- No backend schema change or database migration is introduced by this UI rebuild.
+
+Verification gate:
+- PR #157 has been moved out of Draft specifically so the existing CI workflow will run on the next synchronize event.
+- Merge remains blocked until current-head frontend build/typecheck/lint/tests and repository security gates are observed.
