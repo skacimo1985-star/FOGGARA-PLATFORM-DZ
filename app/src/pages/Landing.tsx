@@ -6,7 +6,7 @@ import {
   FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
   BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
-  Building2, Waves, ScanLine
+  Building2, Waves, ScanLine, Pause, Play
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
@@ -42,6 +42,7 @@ export default function Landing() {
   const [toolQuery,setToolQuery]=useState("");
   const [heroSlide,setHeroSlide]=useState(0);
   const [heritageSlide,setHeritageSlide]=useState(0);
+  const [heritagePlaying,setHeritagePlaying]=useState(true);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -238,6 +239,17 @@ export default function Landing() {
   },[copy.hero.length]);
 
   useEffect(()=>{
+    if(!heritagePlaying)return;
+    const reduceMotion=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if(reduceMotion)return;
+    const timer=window.setInterval(
+      ()=>setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length),
+      8500
+    );
+    return()=>window.clearInterval(timer);
+  },[heritagePlaying,heritagePresentation.slides.length]);
+
+  useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
         event.preventDefault();
@@ -338,8 +350,13 @@ export default function Landing() {
 
       <div className="fg-heritage-presentation-stage">
         <div className="fg-heritage-visual">
-          <div className={`fg-moon-photo fg-photo-${String(heritageCurrent.photo).padStart(2,"0")}`} role="img" aria-label={heritageCurrent.title}/>
+          <div key={heritageCurrent.photo} className={`fg-moon-photo fg-photo-${String(heritageCurrent.photo).padStart(2,"0")}`} role="img" aria-label={heritageCurrent.title}/>
           <div className="fg-heritage-index" dir="ltr">{String(heritageSlide+1).padStart(2,"0")} / 05</div>
+          <div className="fg-heritage-visual-controls">
+            <button type="button" aria-label="Previous heritage slide" onClick={()=>{setHeritagePlaying(false);setHeritageSlide(value=>(value+heritagePresentation.slides.length-1)%heritagePresentation.slides.length);}}><ChevronLeft size={18}/></button>
+            <button type="button" aria-label={heritagePlaying?"Pause presentation":"Play presentation"} aria-pressed={!heritagePlaying} onClick={()=>setHeritagePlaying(value=>!value)}>{heritagePlaying?<Pause size={16}/>:<Play size={16}/>}</button>
+            <button type="button" aria-label="Next heritage slide" onClick={()=>{setHeritagePlaying(false);setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length);}}><ChevronRight size={18}/></button>
+          </div>
           <div className="fg-heritage-caption">
             <span>{heritageCurrent.eyebrow}</span>
             <h3>{heritageCurrent.title}</h3>
@@ -359,6 +376,7 @@ export default function Landing() {
         </div>
       </div>
 
+      <div className="fg-heritage-progress" aria-hidden="true"><span style={{width:`${((heritageSlide+1)/heritagePresentation.slides.length)*100}%`}}/></div>
       <div className="fg-heritage-thumbnails" role="tablist" aria-label={heritagePresentation.title}>
         {heritagePresentation.slides.map((slide,index)=><button
           type="button"
@@ -366,7 +384,7 @@ export default function Landing() {
           role="tab"
           aria-selected={heritageSlide===index}
           className={heritageSlide===index?"active":""}
-          onClick={()=>setHeritageSlide(index)}
+          onClick={()=>{setHeritagePlaying(false);setHeritageSlide(index);}}
         >
           <span className="fg-heritage-thumb-image"><i className={`fg-moon-photo fg-photo-${String(slide.photo).padStart(2,"0")}`}/><b dir="ltr">{index+1}</b></span>
           <span className="fg-heritage-thumb-copy"><small>{slide.eyebrow}</small><strong>{slide.title}</strong></span>
