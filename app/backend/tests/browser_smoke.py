@@ -357,6 +357,11 @@ def main():
                         expect(page.locator(".fg-service-console")).to_be_visible()
                         page.locator(".fg-analysis-tool-tabs button").filter(has_text="مياه الري").click()
                         expect(page.locator(".fg-service-console")).to_be_visible()
+                        page.locator(".fg-analysis-tool-tabs button").filter(has_text="الري").click()
+                        expect(page.get_by_test_id("analysis-irrigation-console")).to_be_visible()
+                        expect(page.get_by_test_id("analysis-irrigation-console").locator('input[type="number"]')).to_have_count(5)
+                        page.locator(".fg-analysis-tool-tabs button").filter(has_text="الطقس").click()
+                        expect(page.get_by_test_id("analysis-weather-console")).to_be_visible()
                         expect(page.locator(".fg-analysis-legacy")).not_to_be_visible()
                     if path == "/app/gis":
                         expect(page.get_by_test_id("gis-field-draw")).to_be_visible()
