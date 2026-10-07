@@ -145,6 +145,28 @@ export default function AnalysisCenter() {
     return()=>{cancelled=true;};
   },[]);
 
+  const visibleParcels=useMemo(
+    ()=>parcels.filter(row=>showDemo || !row.is_demo),
+    [parcels,showDemo],
+  );
+  const visibleIds=useMemo(()=>new Set(visibleParcels.map(row=>row.id)),[visibleParcels]);
+  const visibleBoundaries=useMemo(
+    ()=>boundaries.filter(feature=>visibleIds.has(feature.id)),
+    [boundaries,visibleIds],
+  );
+
+  useEffect(()=>{
+    const requestedAllowed=Number.isInteger(requested)&&requested>0&&visibleIds.has(requested);
+    const currentAllowed=parcelId!=null&&visibleIds.has(parcelId);
+    const next=requestedAllowed?requested:(currentAllowed?parcelId:(visibleParcels[0]?.id??null));
+    if(next!==parcelId)setParcelId(next);
+    const params=new URLSearchParams(searchParams);
+    if(next)params.set("parcel",String(next));else params.delete("parcel");
+    if(showDemo)params.set("demo","1");else params.delete("demo");
+    setSearchParams(params,{replace:true});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[parcels,showDemo]);
+
   useEffect(()=>{
     if(!parcelId){setSummary(null);setObservations([]);return;}
     let cancelled=false;
@@ -158,16 +180,27 @@ export default function AnalysisCenter() {
     return()=>{cancelled=true;};
   },[parcelId,reloadToken]);
 
-  const parcel=parcels.find(row=>row.id===parcelId)??null;
+  const parcel=visibleParcels.find(row=>row.id===parcelId)??null;
   const satelliteRows=useMemo(()=>observations.filter(row=>SATELLITE_METRICS.has(row.metric)).slice(0,12),[observations]);
   const soilRows=useMemo(()=>observations.filter(row=>SOIL_METRICS.has(row.metric)).slice(0,12),[observations]);
 
   const setParcel=(value:number)=>{
     setParcelId(value);
-    const params=new URLSearchParams(searchParams);params.set("parcel",String(value));setSearchParams(params,{replace:true});
+    const params=new URLSearchParams(searchParams);
+    params.set("parcel",String(value));
+    if(showDemo)params.set("demo","1");else params.delete("demo");
+    setSearchParams(params,{replace:true});
+  };
+  const toggleDemo=()=>{
+    const next=!showDemo;
+    setShowDemo(next);
+    const params=new URLSearchParams(searchParams);
+    if(next)params.set("demo","1");else params.delete("demo");
+    if(!next&&parcel?.is_demo)params.delete("parcel");
+    setSearchParams(params,{replace:true});
   };
 
-  if(!loading && parcels.length===0){
+  if(!loading && visibleParcels.length===0){
     return <div className="space-y-5" dir={i18n.dir()}>
       <header className="rounded-2xl border bg-card p-6"><p className="text-xs font-bold tracking-[.16em] text-emerald-700">{copy.eyebrow}</p><h1 className="mt-2 text-3xl font-bold">{copy.title}</h1><p className="mt-2 text-sm text-muted-foreground">{copy.intro}</p></header>
       <div className="rounded-2xl border bg-card p-8 text-center"><p>{copy.noParcels}</p><Link className="os-primary mt-5" to="/app/gis"><MapPinned size={17}/>{copy.draw}</Link></div>
