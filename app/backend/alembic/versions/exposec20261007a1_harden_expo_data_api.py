@@ -34,9 +34,25 @@ def upgrade():
         ).scalar()
     ]
 
+    # Keep zero-downtime deploys from blocking on an unnecessary ACCESS
+    # EXCLUSIVE lock when RLS is already enabled. If a table still needs RLS,
+    # fail fast on lock contention instead of waiting until Render's port-scan
+    # timeout kills the new instance.
+    bind.execute(sa.text("SET LOCAL lock_timeout = '5s'"))
+
     for name in TABLES:
         table = "public." + quote(name)
-        op.execute(sa.text("ALTER TABLE " + table + " ENABLE ROW LEVEL SECURITY"))
+        rls_enabled = bind.execute(
+            sa.text(
+                "SELECT c.relrowsecurity "
+                "FROM pg_class c "
+                "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                "WHERE n.nspname = 'public' AND c.relname = :table_name"
+            ),
+            {"table_name": name},
+        ).scalar()
+        if not rls_enabled:
+            op.execute(sa.text("ALTER TABLE " + table + " ENABLE ROW LEVEL SECURITY"))
         op.execute(sa.text("REVOKE ALL ON TABLE " + table + " FROM PUBLIC"))
         for role in existing_roles:
             op.execute(
