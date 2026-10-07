@@ -297,7 +297,8 @@ def scene_true_color_preview(
             "X-FOGGARA-Scene": str(metadata["scene_id"]),
             "X-FOGGARA-Product": "true_color",
             "X-FOGGARA-Display-Version": str(metadata["display_version"]),
-            "X-FOGGARA-Evidence": "OBSERVED_PROVIDER_RASTER_DISPLAY",
+            "X-FOGGARA-Evidence": "OBSERVED",
+            "X-FOGGARA-Display": "COMPUTED",
             "X-FOGGARA-Verified": "false",
         },
     )

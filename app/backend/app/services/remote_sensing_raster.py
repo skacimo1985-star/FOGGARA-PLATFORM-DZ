@@ -657,7 +657,11 @@ def _render_true_color_preview_png_unlocked(
         "effective_source_resolution_m": plan.get("effective_source_resolution_m"),
         "display_reflectance_range": [float(low), float(high)],
         "display_gamma": float(gamma),
-        "provenance": "OBSERVED_PROVIDER_RASTER_DISPLAY",
+        "provenance": {
+            "provider_raster": "OBSERVED",
+            "display_transform": "COMPUTED",
+            "verified": False,
+        },
         "verified": False,
         "persisted": False,
     }

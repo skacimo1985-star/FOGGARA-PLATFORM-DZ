@@ -377,7 +377,8 @@ def test_true_color_preview_uses_real_rgb_bands_scl_and_polygon(raster_assets):
     assert metadata["display_version"] == "foggara-true-color-v1"
     assert metadata["geometry_mask_applied"] is True
     assert metadata["effective_source_resolution_m"] == 10
-    assert metadata["provenance"] == "OBSERVED_PROVIDER_RASTER_DISPLAY"
+    assert metadata["provenance"]["provider_raster"] == "OBSERVED"
+    assert metadata["provenance"]["display_transform"] == "COMPUTED"
     assert metadata["verified"] is False
     assert 0 < metadata["valid_fraction"] < 1
 
@@ -421,7 +422,8 @@ def test_true_color_endpoint_returns_private_observed_raster(client, world, monk
     assert response.headers["content-type"] == "image/png"
     assert response.headers["cache-control"] == "private, no-store"
     assert response.headers["x-foggara-product"] == "true_color"
-    assert response.headers["x-foggara-evidence"] == "OBSERVED_PROVIDER_RASTER_DISPLAY"
+    assert response.headers["x-foggara-evidence"] == "OBSERVED"
+    assert response.headers["x-foggara-display"] == "COMPUTED"
     assert response.headers["x-foggara-verified"] == "false"
 
 

@@ -776,7 +776,8 @@ def test_parcel_true_color_preview_uses_owned_boundary(client, world, monkeypatc
     assert response.status_code == 200, response.text
     assert response.headers['content-type'] == 'image/png'
     assert response.headers['x-foggara-product'] == 'true_color'
-    assert response.headers['x-foggara-evidence'] == 'OBSERVED_PROVIDER_RASTER_DISPLAY'
+    assert response.headers['x-foggara-evidence'] == 'OBSERVED'
+    assert response.headers['x-foggara-display'] == 'COMPUTED'
     assert response.headers['x-foggara-verified'] == 'false'
     assert response.headers['x-foggara-geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
     assert captured['geometry']['type'] == 'Polygon'

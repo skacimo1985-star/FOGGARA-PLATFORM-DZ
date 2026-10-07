@@ -712,7 +712,7 @@ export function NationalMap({
       return;
     }
     if (satelliteOverlay) setMapMode("satellite");
-  }, [analysisOverlay?.url, satelliteOverlay?.url]);
+  }, [analysisOverlay, satelliteOverlay]);
 
   useEffect(() => {
     if (!analysisOverlay && mapMode === "analysis") setMapMode(satelliteOverlay ? "satellite" : "street");
