@@ -1,0 +1,54 @@
+name: Verify focused backend on self-hosted Windows
+
+on:
+  push:
+    branches:
+      - integration/foggara-a11y-phase6-20261007
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foggara-selfhosted-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-windows:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install backend test dependencies
+        working-directory: app/backend
+        run: python -m pip install -r requirements.lock -r requirements-dev.txt
+
+      - name: Run focused backend regression
+        working-directory: app/backend
+        env:
+          TEST_DATABASE_URL: sqlite+pysqlite:///./foggara-selfhosted-test.db
+          JWT_SECRET: selfhosted-ci-only-secret-0123456789abcdef
+        run: >
+          python -m pytest
+          tests/test_service_delivery_analysis.py
+          tests/test_agriculture_operations.py
+          tests/test_gis_infrastructure.py
+          tests/test_gis_iot_bindings.py
+          tests/test_telemetry_simulator.py
+          -q -ra --tb=short
+
+      - name: Remove disposable SQLite database
+        if: always()
+        working-directory: app/backend
+        shell: pwsh
+        run: |
+          if (Test-Path "./foggara-selfhosted-test.db") {
+            Remove-Item "./foggara-selfhosted-test.db" -Force
+          }
