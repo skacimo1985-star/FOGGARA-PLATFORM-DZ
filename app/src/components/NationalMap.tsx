@@ -7,6 +7,11 @@ export type AnalysisRasterOverlay = {
   index: "ndvi" | "evi" | "savi" | "ndwi" | "lswi";
 };
 
+export type SatelliteRasterOverlay = {
+  url: string;
+  bbox: [number, number, number, number];
+};
+
 export type ParcelBoundaryFeature = {
   type: "Feature";
   id: number;
@@ -49,6 +54,7 @@ type Props = {
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
   analysisOverlay?: AnalysisRasterOverlay | null;
+  satelliteOverlay?: SatelliteRasterOverlay | null;
   selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
@@ -109,6 +115,8 @@ type MapInstance = {
   getSource: (id: string) => unknown;
   getCanvas: () => HTMLCanvasElement;
   setPaintProperty: (layerId: string, name: string, value: unknown) => void;
+  setLayoutProperty: (layerId: string, name: string, value: unknown) => void;
+  setTerrain: (options: { source: string; exaggeration?: number } | null) => void;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
   getBounds: () => {
@@ -134,7 +142,13 @@ type MapLibreModule = {
 
 const MAPLIBRE_MODULE_URL = "/vendor/maplibre-gl.mjs";
 const MAPLIBRE_WORKER_URL = "/vendor/maplibre-gl-worker.mjs";
-const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_STYLES = {
+  map: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+  relief: "https://tiles.openfreemap.org/styles/bright",
+  satellite: "https://tiles.openfreemap.org/styles/liberty",
+} as const;
+const MAPTERHORN_TERRAIN = "https://tiles.mapterhorn.com/tilejson.json";
 const ALGERIA_BOUNDS: [Point, Point] = [[-8.8, 18.4], [12.2, 37.5]];
 const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/2m8pJwAAAABJRU5ErkJggg==";
 
@@ -205,6 +219,7 @@ export function NationalMap({
   satelliteScenes = [],
   parcelBoundaries = [],
   analysisOverlay = null,
+  satelliteOverlay = null,
   selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
@@ -235,7 +250,11 @@ export function NationalMap({
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
+  const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
+  const [baseMode, setBaseMode] = useState<"map" | "dark" | "relief" | "satellite">("map");
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, analysis: true });
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
@@ -246,6 +265,7 @@ export function NationalMap({
   draftBoundaryRef.current = draftBoundary;
   onDraftBoundaryChangeRef.current = onDraftBoundaryChange;
   analysisOverlayRef.current = analysisOverlay;
+  satelliteOverlayRef.current = satelliteOverlay;
 
   const plotted = useMemo(
     () => sites
@@ -320,6 +340,9 @@ export function NationalMap({
         source: "Open map",
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
+        mapMode: "Carte", darkMode: "Sombre", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Calques",
+        noSatellite: "Lancez une analyse Sentinel pour charger l’image RGB de la parcelle.",
+        traffic: "Trafic", trafficUnavailable: "Nécessite un fournisseur de trafic temps réel configuré.",
       }
     : locale === "en"
       ? {
@@ -332,6 +355,9 @@ export function NationalMap({
           source: "Open map",
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
+          mapMode: "Map", darkMode: "Dark", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Layers",
+          noSatellite: "Run a Sentinel analysis to load the parcel RGB image.",
+          traffic: "Traffic", trafficUnavailable: "Requires a configured real-time traffic provider.",
         }
       : {
           title: "الخريطة التشغيلية الوطنية",
@@ -343,6 +369,9 @@ export function NationalMap({
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
+          mapMode: "خريطة", darkMode: "داكن", reliefMode: "تضاريس", satelliteMode: "Sentinel", layers: "طبقات",
+          noSatellite: "شغّل تحليل Sentinel لتحميل صورة RGB الحقيقية للقطعة.",
+          traffic: "المرور", trafficUnavailable: "يحتاج مزود حركة مرور حي مهيأ.",
         };
 
   useEffect(() => {
@@ -358,7 +387,7 @@ export function NationalMap({
         module.setWorkerUrl?.(MAPLIBRE_WORKER_URL);
         map = new module.Map({
           container: containerRef.current,
-          style: OPENFREEMAP_STYLE,
+          style: OPENFREEMAP_STYLES[baseMode],
           center: [2.6, 28.2],
           zoom: compact ? 3.5 : 4.1,
           minZoom: 2,
@@ -378,6 +407,33 @@ export function NationalMap({
         map.on("load", () => {
           if (cancelled || !map) return;
           if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+
+          if (baseMode === "relief") {
+            map.addSource("terrain-dem", { type: "raster-dem", url: MAPTERHORN_TERRAIN, tileSize: 512 });
+            map.addLayer({
+              id: "terrain-hillshade",
+              type: "hillshade",
+              source: "terrain-dem",
+              paint: { "hillshade-exaggeration": 0.42, "hillshade-shadow-color": "#26382f" },
+            });
+            map.setTerrain({ source: "terrain-dem", exaggeration: 1.25 });
+          }
+
+          const initialSatellite = satelliteOverlayRef.current;
+          map.addSource("sentinel-rgb-overlay", {
+            type: "image",
+            url: initialSatellite?.url ?? TRANSPARENT_PIXEL,
+            coordinates: overlayCoordinates(initialSatellite?.bbox ?? [-8.8, 18.4, 12.2, 37.5]),
+          });
+          map.addLayer({
+            id: "sentinel-rgb-overlay",
+            type: "raster",
+            source: "sentinel-rgb-overlay",
+            paint: {
+              "raster-opacity": baseMode === "satellite" && initialSatellite ? 1 : 0,
+              "raster-fade-duration": 0,
+            },
+          });
 
           const initialOverlay = analysisOverlayRef.current;
           map.addSource("analysis-overlay", {
@@ -579,7 +635,7 @@ export function NationalMap({
       map?.remove();
       mapRef.current = null;
     };
-  }, [compact]);
+  }, [compact, baseMode]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("foggara-sites");
@@ -602,6 +658,18 @@ export function NationalMap({
     const canvas = mapRef.current?.getCanvas();
     if (canvas) canvas.style.cursor = drawMode ? "crosshair" : "";
   }, [draftBoundary, drawMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource("sentinel-rgb-overlay");
+    if (!map || !isImageSource(source)) return;
+    const bbox: [number, number, number, number] = satelliteOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5];
+    source.updateImage({
+      url: satelliteOverlay?.url ?? TRANSPARENT_PIXEL,
+      coordinates: overlayCoordinates(bbox),
+    });
+    map.setPaintProperty("sentinel-rgb-overlay", "raster-opacity", baseMode === "satellite" && satelliteOverlay ? 1 : 0);
+  }, [baseMode, satelliteOverlay]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -665,6 +733,22 @@ export function NationalMap({
     map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
   }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || engineState !== "ready") return;
+    for (const [id, visible] of [
+      ["agri-parcel-fill", layers.parcels],
+      ["agri-parcel-outline", layers.parcels],
+      ["satellite-scenes-fill", layers.scenes],
+      ["satellite-scenes-outline", layers.scenes],
+      ["foggara-site-halo", layers.sites],
+      ["foggara-sites", layers.sites],
+    ] as const) {
+      map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+    }
+    map.setPaintProperty("analysis-overlay", "raster-opacity", layers.analysis && analysisOverlay ? 0.78 : 0);
+  }, [analysisOverlay, engineState, layers]);
+
   return (
     <section className={`fg-national-map ${compact ? "compact" : ""} ${minimal ? "minimal" : ""}`} aria-label={labels.title}>
       {!minimal && <div className="fg-national-map-head">
@@ -679,6 +763,33 @@ export function NationalMap({
       </div>}
 
       <div className="fg-national-map-canvas">
+        <div className="fg-map-mode-switcher" role="toolbar" aria-label={labels.layers}>
+          {([
+            ["map", labels.mapMode],
+            ["dark", labels.darkMode],
+            ["relief", labels.reliefMode],
+            ["satellite", labels.satelliteMode],
+          ] as const).map(([mode,label]) => (
+            <button
+              type="button"
+              key={mode}
+              className={baseMode === mode ? "active" : ""}
+              onClick={() => setBaseMode(mode)}
+              title={mode === "satellite" && !satelliteOverlay ? labels.noSatellite : label}
+            >{label}</button>
+          ))}
+          <button type="button" className={layerMenuOpen ? "active" : ""} onClick={() => setLayerMenuOpen(v => !v)}>{labels.layers}</button>
+        </div>
+        {layerMenuOpen ? <div className="fg-map-layer-menu">
+          {([
+            ["parcels", labels.parcels],
+            ["scenes", labels.scenes],
+            ["sites", labels.sites],
+            ["analysis", analysisOverlay ? analysisOverlay.index.toUpperCase() : "NDVI / LSWI"],
+          ] as const).map(([key,label]) => <label key={key}><input type="checkbox" checked={layers[key]} onChange={e => setLayers(prev => ({...prev,[key]:e.target.checked}))}/><span>{label}</span></label>)}
+          <div className="fg-map-traffic-disabled" title={labels.trafficUnavailable}><span>{labels.traffic}</span><small>{labels.trafficUnavailable}</small></div>
+        </div> : null}
+        {baseMode === "satellite" && !satelliteOverlay ? <div className="fg-map-satellite-hint">{labels.noSatellite}</div> : null}
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
         {engineState === "loading" && (
           <div className="fg-map-engine-state" aria-live="polite">{labels.loading}</div>
