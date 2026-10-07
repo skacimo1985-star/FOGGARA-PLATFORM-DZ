@@ -121,6 +121,39 @@ if AI_EXTERNAL_ENABLED:
     if ENV == "prod" and _ai_url.scheme != "https":
         raise RuntimeError("ENV=prod requires HTTPS AI_BASE_URL")
 
+# Optional live agricultural weather provider. Open-Meteo free API is evaluation/non-commercial only.
+_WEATHER_FLAG = os.environ.get("WEATHER_PROVIDER_ENABLED", "false").strip().lower()
+if _WEATHER_FLAG not in ("true", "false"):
+    raise RuntimeError("WEATHER_PROVIDER_ENABLED must be true or false")
+WEATHER_PROVIDER_ENABLED = _WEATHER_FLAG == "true"
+WEATHER_BASE_URL = os.environ.get(
+    "WEATHER_BASE_URL",
+    "https://api.open-meteo.com/v1/forecast" if WEATHER_PROVIDER_ENABLED and ENV == "dev" else "",
+).strip().rstrip("/")
+WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "").strip()
+WEATHER_TIMEOUT_SECONDS = float(os.environ.get("WEATHER_TIMEOUT_SECONDS", "10"))
+if not 3 <= WEATHER_TIMEOUT_SECONDS <= 30:
+    raise RuntimeError("WEATHER_TIMEOUT_SECONDS must be between 3 and 30")
+
+if WEATHER_PROVIDER_ENABLED:
+    _weather_url = urlsplit(WEATHER_BASE_URL)
+    if not WEATHER_BASE_URL or not _weather_url.hostname or _weather_url.username or _weather_url.password:
+        raise RuntimeError("Weather provider requires a valid base URL without embedded credentials")
+    if _weather_url.scheme not in ("http", "https"):
+        raise RuntimeError("WEATHER_BASE_URL must use http or https")
+    if ENV == "prod":
+        if _weather_url.hostname == "api.open-meteo.com":
+            raise RuntimeError(
+                "Production must not use Open-Meteo free API; configure the commercial customer endpoint or self-hosted service"
+            )
+        if _weather_url.hostname == "customer-api.open-meteo.com" and not WEATHER_API_KEY:
+            raise RuntimeError("Open-Meteo customer API requires WEATHER_API_KEY")
+        if _weather_url.scheme != "https":
+            _trusted_internal_weather_hosts = {"localhost", "127.0.0.1", "::1", "weather", "foggara-weather"}
+            if _weather_url.hostname not in _trusted_internal_weather_hosts:
+                raise RuntimeError("Production weather over HTTP must use a trusted internal service hostname")
+
+
 if AI_LOCAL_ENABLED:
     _local_ai_url = urlsplit(AI_LOCAL_BASE_URL)
     if not AI_LOCAL_BASE_URL or not AI_LOCAL_MODEL:
