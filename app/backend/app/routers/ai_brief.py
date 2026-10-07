@@ -115,7 +115,7 @@ def _runtime_config() -> dict | None:
             "mode": "external",
             "base_url": config.AI_BASE_URL,
             "api_key": config.AI_API_KEY,
-            "model": runtime["model"],
+            "model": config.AI_MODEL,
         }
     return None
 
@@ -152,7 +152,7 @@ def _model_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
         "Treat satellite values as inferred. Return JSON only with keys headline, executive_summary, proof_points, gaps, next_actions."
     )
     payload = {
-        "model": config.AI_MODEL,
+        "model": runtime["model"],
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(safe_payload, ensure_ascii=False, separators=(",", ":"))}],
         "temperature": 0.2,
         "max_tokens": 900,
@@ -169,6 +169,155 @@ def _model_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
     except Exception:
         log.warning("External AI brief unavailable; deterministic fallback used", exc_info=False)
         return fallback, False
+
+
+
+def _parcel_ai_context(db: Session, user: User, parcel_id: int) -> dict:
+    parcel = db.scalar(select(AgriParcel).where(
+        AgriParcel.id == parcel_id,
+        AgriParcel.org_id == user.org_id,
+    ))
+    if parcel is None:
+        api_error(404, "NOT_FOUND", "Parcel not found")
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+
+    rows = list(db.scalars(
+        select(AgriObservation)
+        .where(
+            AgriObservation.org_id == user.org_id,
+            AgriObservation.parcel_id == parcel.id,
+        )
+        .order_by(AgriObservation.observed_at.desc(), AgriObservation.id.desc())
+        .limit(100)
+    ))
+    latest = {}
+    for row in rows:
+        if row.metric in latest:
+            continue
+        latest[row.metric] = {
+            "value": float(row.value),
+            "unit": row.unit,
+            "observed_at": row.observed_at.isoformat(),
+            "source_type": row.source_type,
+            "evidence_status": row.evidence_status,
+        }
+
+    return {
+        "parcel": {
+            "crop": parcel.crop,
+            "stage": parcel.stage,
+            "area_ha": float(parcel.area_ha),
+        },
+        "latest_metrics": latest,
+        "privacy": {
+            "coordinates_sent": False,
+            "parcel_name_sent": False,
+            "source_references_sent": False,
+        },
+    }
+
+
+def _clean_field_advisory(data: object) -> dict:
+    if not isinstance(data, dict):
+        raise ValueError("AI field advisory must be a JSON object")
+
+    summary = data.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValueError("AI field advisory has no summary")
+
+    result = {"summary": summary.strip()[:2000]}
+    for key in ("alerts", "recommended_actions", "missing_evidence"):
+        value = data.get(key)
+        if not isinstance(value, list):
+            raise ValueError(f"AI field advisory has invalid {key}")
+        result[key] = [
+            str(item).strip()[:500]
+            for item in value
+            if isinstance(item, str) and item.strip()
+        ][:8]
+    return result
+
+
+def _generate_field_advisory(locale: str, context: dict) -> tuple[dict, dict]:
+    runtime = _runtime_config()
+    if runtime is None:
+        api_error(503, "AI_PROVIDER_NOT_CONFIGURED", "No operational AI model runtime is configured")
+
+    system = (
+        "You are FOGGARA-DZ Field Advisory. Use only the supplied parcel metrics. "
+        "Never invent measurements, weather, soil chemistry, crop disease, or satellite values. "
+        "Satellite observations marked INFERRED are not field-verified measurements. "
+        "Do not calculate irrigation volumes or chemical application rates; deterministic FOGGARA services handle those calculations. "
+        "Identify evidence gaps and propose reviewable next actions. "
+        "Return JSON only with keys summary, alerts, recommended_actions, missing_evidence. "
+        f"Write user-facing text in locale {locale}."
+    )
+    request_payload = {
+        "model": runtime["model"],
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(context, ensure_ascii=False, separators=(",", ":"))},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 900,
+    }
+    headers = {"Content-Type": "application/json"}
+    if runtime["api_key"]:
+        headers["Authorization"] = f"Bearer {runtime['api_key']}"
+
+    try:
+        with httpx.Client(timeout=config.AI_TIMEOUT_SECONDS, follow_redirects=False) as client:
+            response = client.post(
+                runtime["base_url"] + "/chat/completions",
+                headers=headers,
+                json=request_payload,
+            )
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"].strip()
+        advisory = _clean_field_advisory(json.loads(content))
+    except Exception:
+        log.warning("Field advisory model runtime unavailable or returned invalid output", exc_info=False)
+        api_error(502, "AI_PROVIDER_UNAVAILABLE", "Configured AI model runtime did not return a valid advisory")
+
+    return advisory, {
+        "mode": runtime["mode"],
+        "model": runtime["model"],
+        "configured": True,
+    }
+
+
+@router.post("/field-advisory")
+def field_advisory(
+    payload: FieldAdvisoryIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    context = _parcel_ai_context(db, user, payload.parcel_id)
+    advisory, provider = _generate_field_advisory(payload.locale, context)
+    audit(
+        db,
+        user,
+        "generate",
+        "field_ai_advisory",
+        meta={
+            "parcel_id": payload.parcel_id,
+            "locale": payload.locale,
+            "provider_mode": provider["mode"],
+            "model": provider["model"],
+            "metric_keys": sorted(context["latest_metrics"]),
+        },
+    )
+    db.commit()
+    return {
+        "parcel_id": payload.parcel_id,
+        "provider": provider,
+        "analysis_input": context,
+        "advisory": advisory,
+        "provenance": "PROPOSED",
+        "verified": False,
+        "field_execution": False,
+    }
 
 
 @router.get("/status")
