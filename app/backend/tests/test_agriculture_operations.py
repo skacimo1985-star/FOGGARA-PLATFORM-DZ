@@ -570,6 +570,88 @@ def test_live_sentinel_workflow_can_persist_lswi(client, world, monkeypatch):
     assert body['computation'] == 'SENTINEL_SCL_MASKED_LSWI'
 
 
+
+@pytest.mark.parametrize(
+    "index,value",
+    [
+        ("ndvi", 0.61),
+        ("lswi", 0.21),
+        ("ndmi", 0.18),
+        ("ndwi", -0.22),
+        ("bsi", 0.12),
+        ("savi", 1.10),
+        ("evi", 1.20),
+    ],
+)
+def test_live_sentinel_workflow_persists_supported_index_suite(
+    client, world, monkeypatch, index, value
+):
+    import app.routers.satellite_parcels as satellite
+
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = f'S2A_{index.upper()}_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda scene: (
+        scene,
+        {'id': scene, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    monkeypatch.setattr(
+        satellite,
+        'build_processing_plan',
+        lambda item, requested_index: {'scene_id': item['id'], 'index': requested_index},
+    )
+    monkeypatch.setattr(
+        satellite,
+        'compute_index_statistics',
+        lambda plan, bbox, geometry_wgs84=None: {
+            'scene_id': scene_id,
+            'index': plan['index'],
+            'processing_plan_fingerprint': f'sha256:test-{index}-plan',
+            'statistics': {'mean': value, 'min': value - 0.01, 'max': value + 0.01},
+            'pixels': {'valid': 80, 'total': 100, 'valid_fraction': .8},
+            'grid': {
+                'effective_source_resolution_m': 20 if index in {'lswi', 'ndmi', 'bsi'} else 10,
+                'resampled': index in {'lswi', 'ndmi', 'bsi'},
+            },
+        },
+    )
+
+    response = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': scene_id, 'index': index},
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body['observation']['metric'] == index
+    assert float(body['observation']['value']) == pytest.approx(value)
+    assert body['observation']['unit'] == 'index'
+    assert body['observation']['evidence_status'] == 'INFERRED'
+    assert body['computation'] == f'SENTINEL_SCL_MASKED_{index.upper()}'
+
+    history = client.get(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing',
+        params={'metric': index},
+        headers=h,
+    )
+    assert history.status_code == 200, history.text
+    assert index in history.json()['supported_metrics']
+    assert [row['metric'] for row in history.json()['observations']] == [index]
+
+
+def test_live_sentinel_workflow_rejects_unsupported_persisted_index(client, world):
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    response = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': 'S2A_TEST_SCENE_2026', 'index': 'fake-index'},
+    )
+    assert response.status_code == 422
+
+
 def test_sentinel_rejects_missing_coordinates_and_low_quality(client, world, monkeypatch):
     import app.routers.satellite_parcels as satellite
     h = login(client, 'o1m@t.dz')

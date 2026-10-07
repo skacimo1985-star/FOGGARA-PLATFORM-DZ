@@ -46,10 +46,22 @@ MIN_VALID_FRACTION = 0.35
 MIN_VALID_PIXELS = 9
 
 
+PERSISTABLE_INDICES = ("ndvi", "lswi", "ndmi", "ndwi", "bsi", "savi", "evi")
+PERSISTABLE_INDEX_BOUNDS = {
+    "ndvi": (-1.0, 1.0),
+    "lswi": (-1.0, 1.0),
+    "ndmi": (-1.0, 1.0),
+    "ndwi": (-1.0, 1.0),
+    "bsi": (-1.0, 1.0),
+    "savi": (-1.5, 1.5),
+    "evi": (-2.5, 2.5),
+}
+
+
 class AnalyzeIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     scene_id: str = Field(min_length=3, max_length=120)
-    index: Literal["ndvi", "lswi"] = "ndvi"
+    index: Literal["ndvi", "lswi", "ndmi", "ndwi", "bsi", "savi", "evi"] = "ndvi"
 
 
 def _analysis_target(parcel: AgriParcel) -> tuple[list[float], dict | None, str, str]:
@@ -318,10 +330,11 @@ def analyze_parcel(
     mean = values.get("mean")
     fraction = float(pixels.get("valid_fraction") or 0)
     count = int(pixels.get("valid") or 0)
+    lower, upper = PERSISTABLE_INDEX_BOUNDS[index_key]
     if (
         count < MIN_VALID_PIXELS or fraction < MIN_VALID_FRACTION
         or not isinstance(mean, (float, int)) or not math.isfinite(mean)
-        or not (-1 <= mean <= 1)
+        or not (lower <= mean <= upper)
     ):
         api_error(422, "LOW_QUALITY_SATELLITE_SCENE", "Cloud or no-data mask leaves insufficient pixels")
 
@@ -346,6 +359,8 @@ def analyze_parcel(
               "computation_provenance": "COMPUTED",
               "evidence_status": "INFERRED",
               "field_validated": False,
+              "effective_source_resolution_m": (stats.get("grid") or {}).get("effective_source_resolution_m"),
+              "resampled": (stats.get("grid") or {}).get("resampled"),
           })
     db.commit()
     return {
