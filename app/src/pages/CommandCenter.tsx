@@ -74,7 +74,7 @@ export default function CommandCenter() {
     readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
     setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
     managedTitle: "Commencer par ce que vous gérez", managedIntro: "Choisissez l’objet opérationnel. FOGGARA ouvre ensuite ses données, analyses, décisions et actions dans le même contexte.", landAsset: "Parcelle / terrain", landBody: "Limites · satellite · sol · irrigation", waterAsset: "Ressource en eau", waterBody: "Puits · réservoir · pompage · qualité", projectAsset: "Projet", projectBody: "Données · preuves · décisions · actions", deviceAsset: "Équipement / capteur", deviceBody: "Appareils · capteurs · télémétrie · Edge",
-    actionsTitle: "Services opérationnels", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
+    actionsTitle: "Services opérationnels", analysisAction: "Centre d’analyses", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
     title: "Manage a resource. Prove its data. Decide and act.",
@@ -89,7 +89,7 @@ export default function CommandCenter() {
     readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
     setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
     managedTitle: "Start with what you manage", managedIntro: "Choose the operational object. FOGGARA then opens its data, analysis, decisions and actions in the same context.", landAsset: "Field / land", landBody: "Boundary · satellite · soil · irrigation", waterAsset: "Water resource", waterBody: "Well · reservoir · pumping · quality", projectAsset: "Project", projectBody: "Data · evidence · decisions · actions", deviceAsset: "Equipment / sensor", deviceBody: "Devices · sensors · telemetry · Edge",
-    actionsTitle: "Operational services", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
+    actionsTitle: "Operational services", analysisAction: "Analysis center", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
     title: "أدِر موردًا، أثبت بياناته، ثم قرّر ونفّذ.",
@@ -104,7 +104,7 @@ export default function CommandCenter() {
     readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
     setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
     managedTitle: "ابدأ بما تديره فعليًا", managedIntro: "اختر الأصل أو المورد؛ بعدها تفتح FOGGARA بياناته وتحليلاته وقراراته وإجراءاته في نفس السياق.", landAsset: "أرض / قطعة زراعية", landBody: "حدود · أقمار · تربة · ري", waterAsset: "مورد مائي", waterBody: "بئر · خزان · ضخ · جودة", projectAsset: "مشروع", projectBody: "بيانات · أدلة · قرارات · إجراءات", deviceAsset: "جهاز / حساس", deviceBody: "أجهزة · حساسات · Telemetry · Edge",
-    actionsTitle: "خدمات تشغيل مباشرة", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
+    actionsTitle: "خدمات تشغيل مباشرة", analysisAction: "مركز التحاليل", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
   };
 
   useEffect(() => {
@@ -237,6 +237,7 @@ export default function CommandCenter() {
   ];
 
   const operationalActions = [
+    { label: copy.analysisAction, to: "/app/analysis", icon: Gauge, code: "ANL" },
     { label: copy.drawField, to: "/app/gis", icon: MapPinned, code: "MAP" },
     { label: copy.satelliteAction, to: "/app/gis", icon: Satellite, code: "EO" },
     { label: copy.irrigationAction, to: "/app/agriculture?section=irrigation", icon: Droplets, code: "IRR" },
