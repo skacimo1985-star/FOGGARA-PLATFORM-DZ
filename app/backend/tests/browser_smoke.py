@@ -350,6 +350,7 @@ def main():
                         page.get_by_role("button", name="إظهار DEMO", exact=True).click()
                         expect(page.get_by_test_id("analysis-live-sentinel")).to_be_visible()
                         expect(page.get_by_test_id("parcel-sentinel-live")).to_be_visible()
+                        expect(page.locator('[data-testid="sentinel-map-provenance"]')).to_have_count(0)
                         expect(page.get_by_text("Sentinel-2 حقيقي", exact=False)).to_be_visible()
                         expect(page.locator(".fg-analysis-map-first")).to_be_visible()
                         expect(page.locator(".fg-analysis-tool-tabs button")).to_have_count(5)
