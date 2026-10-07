@@ -13,7 +13,7 @@ from ..db import get_db
 from ..deps import api_error, get_current_user
 from ..models import (
     AgriParcel, Asset, Indicator, IrrigationZone, Project, Pump, Reservoir,
-    Service, ServiceRequest, Site, User, Valve, WaterResource, Well,
+    Sensor, Service, ServiceRequest, Site, User, Valve, WaterResource, Well,
 )
 from ..wilayas import WILAYAS
 from ..platform_models import NexusResource
@@ -285,6 +285,94 @@ def gis_infrastructure_geojson(user: User = Depends(get_current_user), db: Sessi
             "geometry_type": "Point",
             "coordinate_scope": "site_coordinate_not_asset_coordinate",
             "exact_asset_coordinates": False,
+            "count_semantics": "registered_records_not_unique_physical_assets",
+        },
+    }
+
+
+@router.get("/gis/iot-bindings.geojson")
+def gis_iot_bindings_geojson(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Map only sensor bindings that resolve to owned infrastructure with a real site coordinate."""
+    site_by_id = {site.id: site for site in _candidate_sites(db, user.org_id)}
+    subject_models = {
+        "well": Well,
+        "reservoir": Reservoir,
+        "pump": Pump,
+        "valve": Valve,
+        "irrigation_zone": IrrigationZone,
+        "zone": IrrigationZone,
+    }
+    buckets: dict[int, dict] = {}
+    unresolved = 0
+
+    sensors = list(db.scalars(
+        select(Sensor).where(Sensor.org_id == user.org_id).order_by(Sensor.id)
+    ))
+    for sensor in sensors:
+        model = subject_models.get((sensor.subject_type or "").strip().lower())
+        if model is None or sensor.subject_id is None:
+            unresolved += 1
+            continue
+        subject = db.scalar(select(model).where(
+            model.id == sensor.subject_id,
+            model.org_id == user.org_id,
+        ))
+        if subject is None or subject.site_id not in site_by_id:
+            unresolved += 1
+            continue
+        bucket = buckets.setdefault(subject.site_id, {
+            "sensor_count": 0,
+            "simulated_sensor_count": 0,
+            "non_simulated_sensor_count": 0,
+            "active_sensor_count": 0,
+            "metrics": set(),
+            "subject_types": set(),
+        })
+        bucket["sensor_count"] += 1
+        bucket["simulated_sensor_count"] += int(bool(sensor.is_simulated))
+        bucket["non_simulated_sensor_count"] += int(not bool(sensor.is_simulated))
+        bucket["active_sensor_count"] += int(sensor.status == "active")
+        bucket["metrics"].add(sensor.metric)
+        bucket["subject_types"].add((sensor.subject_type or "").strip().lower())
+
+    features = []
+    for site_id, bucket in buckets.items():
+        site = site_by_id[site_id]
+        features.append({
+            "type": "Feature",
+            "id": site_id,
+            "geometry": {"type": "Point", "coordinates": [float(site.lon), float(site.lat)]},
+            "properties": {
+                "site_id": site.id,
+                "site_name": site.name,
+                "wilaya": site.wilaya,
+                "sensor_count": bucket["sensor_count"],
+                "simulated_sensor_count": bucket["simulated_sensor_count"],
+                "non_simulated_sensor_count": bucket["non_simulated_sensor_count"],
+                "active_sensor_count": bucket["active_sensor_count"],
+                "metrics": sorted(bucket["metrics"]),
+                "subject_types": sorted(bucket["subject_types"]),
+                "coordinate_scope": "RESOLVED_SUBJECT_SITE",
+                "exact_sensor_coordinates": False,
+                "live_telemetry_claim": False,
+                "is_demo": site.is_demo,
+            },
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "metadata": {
+            "organization_scoped": True,
+            "count": len(features),
+            "sensor_records": len(sensors),
+            "resolved_sensor_records": sum(item["properties"]["sensor_count"] for item in features),
+            "unresolved_sensor_records": unresolved,
+            "crs": "EPSG:4326",
+            "geometry_type": "Point",
+            "coordinate_scope": "resolved_subject_site_not_sensor_gps",
+            "exact_sensor_coordinates": False,
+            "live_telemetry_claim": False,
         },
     }
 
