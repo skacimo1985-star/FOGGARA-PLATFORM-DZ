@@ -302,6 +302,7 @@ export interface PlannedStatus {
   status: string;
   model: string[];
   warnings: string[];
+  capabilities?: Record<string, "available" | "not_implemented" | "not_configured" | string>;
 }
 
 // ---- Water Domain (Contract §4) ----
