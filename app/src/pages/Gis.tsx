@@ -205,10 +205,10 @@ export default function Gis() {
       : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة" };
 
   const analysisCopy = lang === "fr"
-    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
+    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", runParcel: "Analyser la parcelle", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
     : lang === "en"
-      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled" }
-      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات" };
+      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", runParcel: "Analyze selected parcel", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled" }
+      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", runParcel: "حلّل القطعة المحددة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات" };
 
   const summary = useMemo(() => {
     const rows = filtered ?? [];
@@ -251,6 +251,14 @@ export default function Gis() {
     setAnalysisOverlay(null);
     setAnalysisSaved(false);
   }, [selectedParcelId, selectedSceneId, selectedIndex]);
+
+  useEffect(() => {
+    setSatelliteScenes([]);
+    setSelectedSceneId(null);
+    setAnalysisResult(null);
+    setAnalysisOverlay(null);
+    setAnalysisSaved(false);
+  }, [selectedParcelId]);
 
   useEffect(() => {
     return () => {
@@ -505,7 +513,7 @@ export default function Gis() {
                 disabled={!selectedSceneId || !currentRasterBudget.allowed || analysisLoading}
                 onClick={() => void analyzeCurrentView()}
               >
-                {analysisLoading ? analysisCopy.running : analysisCopy.run}
+                {analysisLoading ? analysisCopy.running : selectedParcel ? analysisCopy.runParcel : analysisCopy.run}
               </button>
               {selectedParcelId && (selectedIndex === "ndvi" || selectedIndex === "lswi") && analysisResult ? (
                 <button
