@@ -363,6 +363,13 @@ def test_gis_meta_iot_vde(client, world, db):
         body = r.json()
         assert body["status"] == "planned" and body["model"] and body["warnings"]
 
+    iot = client.get("/api/iot/status", headers=member).json()
+    assert iot["capabilities"]["simulation_registry"] == "available"
+    assert iot["capabilities"]["deterministic_simulator"] == "available"
+    assert iot["capabilities"]["verified_device_provisioning"] == "not_implemented"
+    assert iot["capabilities"]["field_broker_connectivity"] == "not_configured"
+    assert "no_verified_device_provisioning" in iot["warnings"]
+
 
 # 10) عزل المؤسسات على endpoints المترولوجيا الجديدة
 def test_metrology_isolation(client, world, db):
