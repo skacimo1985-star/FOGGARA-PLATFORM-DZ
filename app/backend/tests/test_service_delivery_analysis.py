@@ -16,6 +16,8 @@ def test_soil_screening_exposes_nrcs_style_salinity_class_without_overclaiming_n
         "soc": 2.3,
     })
     assert result["derived"]["salinity_class"] == "slightly_saline"
+    assert any(item["message"] == "soil_salinity_slightly_saline" for item in result["findings"])
+    assert any(item["message"] == "salinity_risk" for item in result["findings"])
     assert any(item["metric"] == "ec" and item["level"] == "attention" for item in result["findings"])
     assert any(
         item["metric"] == "nitrogen"
