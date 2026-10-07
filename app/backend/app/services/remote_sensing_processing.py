@@ -180,6 +180,10 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
 
     public_assets = [asset.public_dict() for asset in resolved]
     public_scl = scl.public_dict()
+    effective_source_resolution_m = max(
+        [asset.gsd_m for asset in resolved if asset.gsd_m is not None] or [10.0]
+    )
+
     fingerprint_input = {
         "scene_id": scene_id,
         "collection": SENTINEL_COLLECTION,
@@ -189,6 +193,7 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
         "scl": public_scl,
         "masked_scl_classes": list(MASKED_SCL_CLASSES),
         "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
     }
     fingerprint = hashlib.sha256(
         json.dumps(fingerprint_input, sort_keys=True, separators=(",", ":")).encode()
@@ -204,6 +209,7 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
         "formula_version": definition.formula_version,
         "source_item_url": item_url(scene_id),
         "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
         "required_assets": public_assets,
         "cloud_mask": {
             "asset": public_scl,
