@@ -54,6 +54,35 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         display_range=(-1.0, 1.0),
         colormap_family="water",
     ),
+    "ndmi": IndexDefinition(
+        key="ndmi",
+        label="NDMI",
+        required_bands=("B08", "B11"),
+        stac_assets={"B08": ("nir", "B08"), "B11": ("swir16", "B11")},
+        display_range=(-1.0, 1.0),
+        colormap_family="water",
+    ),
+    "lswi": IndexDefinition(
+        key="lswi",
+        label="LSWI",
+        required_bands=("B08", "B11"),
+        stac_assets={"B08": ("nir", "B08"), "B11": ("swir16", "B11")},
+        display_range=(-1.0, 1.0),
+        colormap_family="water",
+    ),
+    "bsi": IndexDefinition(
+        key="bsi",
+        label="BSI",
+        required_bands=("B02", "B04", "B08", "B11"),
+        stac_assets={
+            "B02": ("blue", "B02"),
+            "B04": ("red", "B04"),
+            "B08": ("nir", "B08"),
+            "B11": ("swir16", "B11"),
+        },
+        display_range=(-1.0, 1.0),
+        colormap_family="soil",
+    ),
 }
 
 
@@ -120,6 +149,17 @@ def compute_index(
     if normalized == "ndwi":
         green, nir = values["B03"], values["B08"]
         return _safe_ratio(green - nir, green + nir)
+
+    if normalized in {"ndmi", "lswi"}:
+        nir, swir1 = values["B08"], values["B11"]
+        return _safe_ratio(nir - swir1, nir + swir1)
+
+    if normalized == "bsi":
+        blue, red, nir, swir1 = values["B02"], values["B04"], values["B08"], values["B11"]
+        return _safe_ratio(
+            (swir1 + red) - (nir + blue),
+            (swir1 + red) + (nir + blue),
+        )
 
     raise AssertionError(f"Unhandled index definition: {normalized}")
 
