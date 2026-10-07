@@ -73,6 +73,7 @@ export default function CommandCenter() {
     updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel",
     readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
     setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
+    actionsTitle: "Services opérationnels", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
     title: "From field reality to decision.",
@@ -86,6 +87,7 @@ export default function CommandCenter() {
     updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects",
     readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
     setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
+    actionsTitle: "Operational services", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
     title: "من الواقع الميداني إلى القرار.",
@@ -99,6 +101,7 @@ export default function CommandCenter() {
     updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية",
     readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
     setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
+    actionsTitle: "خدمات تشغيل مباشرة", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
   };
 
   useEffect(() => {
@@ -223,6 +226,17 @@ export default function CommandCenter() {
     { label: copy.ai, body: workspaceBody.ai, to: "/app/insights", icon: Bot },
   ];
 
+  const operationalActions = [
+    { label: copy.drawField, to: "/app/gis", icon: MapPinned, code: "MAP" },
+    { label: copy.satelliteAction, to: "/app/gis", icon: Satellite, code: "EO" },
+    { label: copy.irrigationAction, to: "/app/agriculture?section=irrigation", icon: Droplets, code: "IRR" },
+    { label: copy.iotAction, to: "/app/iot", icon: Radio, code: "IOT" },
+    { label: copy.projectData, to: "/app/projects", icon: FolderKanban, code: "DATA" },
+    { label: copy.decisionAction, to: "/app/studio", icon: ClipboardCheck, code: "DEC" },
+    { label: copy.serviceAction, to: "/app/services", icon: Workflow, code: "SRV" },
+    { label: copy.metrologyAction, to: "/app/metrology", icon: Gauge, code: "MET" },
+  ];
+
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
   const recentProjects = [...(snapshot.projects ?? [])]
     .filter((project) => project.status !== "closed")
@@ -265,6 +279,22 @@ export default function CommandCenter() {
             <ArrowUpRight size={15} />
           </Link>
         ))}
+      </section>
+
+      <section className="fg-command-actions" data-testid="operational-service-launcher" aria-label={copy.actionsTitle}>
+        <div className="fg-command-section-title">
+          <div><span>ACTION / SERVICE</span><h2>{copy.actionsTitle}</h2></div>
+          <Zap size={24}/>
+        </div>
+        <div className="fg-command-action-grid">
+          {operationalActions.map(({ label, to, icon: Icon, code }) => (
+            <Link key={code} to={to}>
+              <span><Icon size={18}/><b>{code}</b></span>
+              <strong>{label}</strong>
+              <ArrowUpRight size={15}/>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="fg-command-readiness" data-testid="runtime-readiness" aria-label={copy.readinessTitle}>
