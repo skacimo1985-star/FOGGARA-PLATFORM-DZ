@@ -304,7 +304,7 @@ def main():
                 assert page.request.get("http://127.0.0.1:8000/api/does-not-exist").status == 404
                 for path in ("/app", "/app/automation", "/app/projects", "/app/org", "/app/account", "/app/nexus",
                              "/app/studio", "/app/resources", "/app/opportunities", "/app/vde",
-                             "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis",
+                             "/app/agriculture", "/app/telemetry", "/app/simulator", "/app/gis", "/app/analysis",
                              "/app/decisions", "/app/services", "/app/metrology", "/app/water",
                              "/app/review", "/app/audit", "/app/explore", "/app/analytics", "/app/insights", "/app/iot",
                              f"/app/projects/{project_id}"):
@@ -336,6 +336,9 @@ def main():
                     if path == "/app/decisions":
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
+                    if path == "/app/analysis":
+                        expect(page.get_by_test_id("analysis-center")).to_be_visible()
+                        expect(page.get_by_role("heading", name="مركز تحليل المورد")).to_be_visible()
                     if path == "/app/gis":
                         expect(page.get_by_test_id("gis-field-draw")).to_be_visible()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
@@ -357,7 +360,7 @@ def main():
                         expect(page.get_by_test_id("managed-object-launcher")).to_be_visible()
                         expect(page.get_by_test_id("managed-object-launcher").locator("a")).to_have_count(4)
                         expect(page.get_by_test_id("operational-service-launcher")).to_be_visible()
-                        expect(page.get_by_test_id("operational-service-launcher").locator("a")).to_have_count(8)
+                        expect(page.get_by_test_id("operational-service-launcher").locator("a")).to_have_count(9)
                         expect(page.get_by_test_id("runtime-readiness")).to_be_visible()
                         expect(page.locator(".os-nav-advanced")).not_to_have_attribute("open", "")
                         expect(page.locator(".os-nav-advanced summary")).to_contain_text("أدوات متقدمة")
