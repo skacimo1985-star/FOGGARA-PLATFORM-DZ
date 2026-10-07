@@ -99,6 +99,8 @@ def test_verified_parcel_measurements_drive_soil_service_after_independent_revie
     assert {item["source"] for item in soil["measurement_sources"]} == {
         "SOIL-LAB-PH", "SOIL-LAB-EC", "SOIL-LAB-N", "SOIL-LAB-SOC"
     }
+    assert {item["unit"] for item in soil["measurement_sources"]} == {"pH", "dS/m", "mg/kg", "%"}
+    assert all(item["measured_at"] for item in soil["measurement_sources"])
 
     saved = client.post(
         f"/api/agriculture/parcels/{parcel_id}/service-summary/evidence",
