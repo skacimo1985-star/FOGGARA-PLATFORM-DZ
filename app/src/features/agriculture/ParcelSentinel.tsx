@@ -194,7 +194,7 @@ export default function ParcelSentinel({
       setBusy(null);
     }
   };
-  return <section className="fg-panel" aria-label={text.heading}>
+  return <section className="fg-panel" aria-label={text.heading} data-testid="parcel-sentinel-live">
     <div className="fg-panel-title"><h2><Satellite size={21}/> {text.heading}</h2><span className="fg-badge inferred">COMPUTED → INFERRED</span></div>
     <p className="fg-muted">{text.intro}</p>
     <div className="fg-form">
