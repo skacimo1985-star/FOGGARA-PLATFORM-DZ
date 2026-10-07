@@ -81,14 +81,20 @@ def test_expo_guest_entry_is_public_optional_and_idempotent(client):
 
 
 def test_expo_feedback_is_public_and_persistent(client):
+    session_key = "expo_feedback_123456"
     visit = client.post(
         "/api/expo/visit",
-        json={"session_key": "expo_feedback_123456", "name": "", "visitor_role": ""},
+        json={"session_key": session_key, "name": "", "visitor_role": ""},
     ).json()
 
     response = client.post(
         "/api/expo/feedback",
-        json={"visit_id": visit["visit_id"], "rating": 5, "suggestion": "Add irrigation alerts"},
+        json={
+            "visit_id": visit["visit_id"],
+            "session_key": session_key,
+            "rating": 5,
+            "suggestion": "Add irrigation alerts",
+        },
     )
     assert response.status_code == 201, response.text
     assert response.json()["status"] == "received"
@@ -99,13 +105,57 @@ def test_expo_feedback_is_public_and_persistent(client):
 
 
 def test_expo_feedback_requires_content(client):
+    session_key = "expo_empty_feedback_123456"
     visit = client.post(
         "/api/expo/visit",
-        json={"session_key": "expo_empty_feedback_123456", "name": None, "visitor_role": None},
+        json={"session_key": session_key, "name": None, "visitor_role": None},
     ).json()
     response = client.post(
         "/api/expo/feedback",
-        json={"visit_id": visit["visit_id"], "rating": None, "suggestion": ""},
+        json={
+            "visit_id": visit["visit_id"],
+            "session_key": session_key,
+            "rating": None,
+            "suggestion": "",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_expo_feedback_rejects_another_visitor_session(client):
+    owner_key = "expo_feedback_owner_123456"
+    attacker_key = "expo_feedback_other_123456"
+    visit = client.post(
+        "/api/expo/visit",
+        json={"session_key": owner_key, "name": "Owner", "visitor_role": "Farmer"},
+    ).json()
+    client.post(
+        "/api/expo/visit",
+        json={"session_key": attacker_key, "name": "Other", "visitor_role": "Visitor"},
+    )
+
+    response = client.post(
+        "/api/expo/feedback",
+        json={
+            "visit_id": visit["visit_id"],
+            "session_key": attacker_key,
+            "rating": 1,
+            "suggestion": "forged feedback",
+        },
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "EXPO_VISIT_NOT_FOUND"
+    assert client.get("/api/expo/stats").json()["feedback"] == 0
+
+
+def test_expo_feedback_requires_session_proof(client):
+    visit = client.post(
+        "/api/expo/visit",
+        json={"session_key": "expo_feedback_proof_123456", "name": None, "visitor_role": None},
+    ).json()
+    response = client.post(
+        "/api/expo/feedback",
+        json={"visit_id": visit["visit_id"], "rating": 4, "suggestion": "Good"},
     )
     assert response.status_code == 422
 
@@ -174,11 +224,21 @@ def test_expo_insights_aggregate_feedback_without_session_keys(client, world):
     ).json()
     client.post(
         "/api/expo/feedback",
-        json={"visit_id": first["visit_id"], "rating": 5, "suggestion": "Add irrigation alerts"},
+        json={
+            "visit_id": first["visit_id"],
+            "session_key": "expo_insights_visitor_0001",
+            "rating": 5,
+            "suggestion": "Add irrigation alerts",
+        },
     )
     client.post(
         "/api/expo/feedback",
-        json={"visit_id": second["visit_id"], "rating": 3, "suggestion": "More local crop data"},
+        json={
+            "visit_id": second["visit_id"],
+            "session_key": "expo_insights_visitor_0002",
+            "rating": 3,
+            "suggestion": "More local crop data",
+        },
     )
 
     reviewer = login(client, world["o1_reviewer"].email)

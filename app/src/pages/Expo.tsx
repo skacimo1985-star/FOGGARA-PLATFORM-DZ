@@ -209,6 +209,7 @@ export default function Expo() {
     try {
       const result = await api.post<ExpoStats & { feedback_id: number; status: string }>("/expo/feedback", {
         visit_id: visitId,
+        session_key: sessionKey(),
         rating,
         suggestion: suggestion.trim() || null,
       });

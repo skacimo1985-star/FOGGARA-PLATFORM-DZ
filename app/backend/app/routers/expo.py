@@ -36,14 +36,21 @@ class ExpoInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+SessionKey = Annotated[
+    str,
+    StringConstraints(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"),
+]
+
+
 class VisitIn(ExpoInput):
-    session_key: Annotated[str, StringConstraints(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")]
+    session_key: SessionKey
     name: str | None = Field(default=None, max_length=120)
     visitor_role: str | None = Field(default=None, max_length=120)
 
 
 class FeedbackIn(ExpoInput):
     visit_id: int = Field(gt=0)
+    session_key: SessionKey
     rating: int | None = Field(default=None, ge=1, le=5)
     suggestion: str | None = Field(default=None, max_length=2000)
 
@@ -96,7 +103,15 @@ def expo_visit(payload: VisitIn, request: Request, db: Session = Depends(get_db)
 @router.post("/feedback", status_code=201)
 def expo_feedback(payload: FeedbackIn, request: Request, db: Session = Depends(get_db)):
     check_rate_limit(request, "expo:feedback", "RATE_LIMIT_EXPO_FEEDBACK_MAX", "RATE_LIMIT_EXPO_FEEDBACK_WINDOW", 5, 600)
-    visit = db.get(ExpoVisit, payload.visit_id)
+    # Bind feedback to the same browser session that created/refreshed the
+    # visit. Returning the same 404 for a missing ID or a mismatched key avoids
+    # leaking whether another visitor's numeric ID exists.
+    visit = db.scalar(
+        select(ExpoVisit).where(
+            ExpoVisit.id == payload.visit_id,
+            ExpoVisit.session_key == payload.session_key,
+        )
+    )
     if visit is None:
         api_error(404, "EXPO_VISIT_NOT_FOUND", "Expo visit not found")
     row = ExpoFeedback(
