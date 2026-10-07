@@ -354,6 +354,8 @@ def main():
                         page.get_by_role("tab", name="الذكاء الزراعي").click()
                         expect(page.get_by_test_id("live-weather-panel")).to_be_visible()
                     if path == "/app":
+                        expect(page.get_by_test_id("operational-service-launcher")).to_be_visible()
+                        expect(page.get_by_test_id("operational-service-launcher").locator("a")).to_have_count(8)
                         expect(page.get_by_test_id("runtime-readiness")).to_be_visible()
                         expect(page.locator(".fg-readiness-grid article")).to_have_count(6)
                         expect(page.locator(".fg-readiness-assurance li")).to_have_count(5)
