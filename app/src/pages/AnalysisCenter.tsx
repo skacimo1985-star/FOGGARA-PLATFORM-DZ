@@ -59,6 +59,46 @@ type Assessment = {
   guidelines?: string[];
 };
 
+type WeatherDay = {
+  day: string;
+  min_c: number;
+  max_c: number;
+  rain_mm: number;
+  precipitation_probability: number | null;
+  eto_mm: number | null;
+  wind_speed_kmh: number | null;
+  weather_code: number;
+};
+
+type WeatherForecast = {
+  project_id: number;
+  site: { id: number; name: string; wilaya: string; latitude: number; longitude: number };
+  provider: string;
+  attribution: string;
+  attribution_url: string;
+  model_name: string;
+  fetched_at: string;
+  days: WeatherDay[];
+  provenance: string;
+  verified: boolean;
+  field_execution: boolean;
+};
+
+type IrrigationPlanResult = {
+  id: number;
+  result: {
+    etc_mm: number;
+    net_mm: number;
+    gross_mm: number;
+    volume_m3: number;
+    evidence_status: string;
+    decision_status: string;
+    method: string;
+    formula: string;
+    limitations: string[];
+  };
+};
+
 type Summary = {
   latest_observations: Record<string, {
     value: number;
@@ -99,6 +139,141 @@ function AssessmentConsole({title,assessment,empty}:{title:string;assessment:Ass
     <div className="fg-service-coverage"><strong>Coverage</strong><span>{assessment.coverage.length?assessment.coverage.join(" · "):empty}</span></div>
     {(assessment.guidelines??[]).length?<div className="fg-service-guidelines">{assessment.guidelines!.map(item=><span key={item}>{item}</span>)}</div>:null}
     {assessment.limitations.length?<ul className="fg-service-limitations">{assessment.limitations.map(item=><li key={item}>{item.replaceAll("_"," ")}</li>)}</ul>:null}
+  </div>;
+}
+
+
+function WeatherConsole({projectId,enabled,lang}:{projectId:number|null;enabled:boolean;lang:"ar"|"fr"|"en"}) {
+  const tx = lang==="fr" ? {
+    load:"Charger 15 jours", unavailable:"Fournisseur météo non configuré", noProject:"Associez la parcelle à un projet/site géoréférencé.",
+    title:"Prévision agricole en direct", inferred:"Prévision fournisseur · non vérifiée terrain", rain:"Pluie", eto:"ET₀", wind:"Vent", temp:"Temp.", probability:"Prob.",
+    refresh:"Actualiser", loading:"Chargement…", failed:"Impossible de charger la météo en direct."
+  } : lang==="en" ? {
+    load:"Load 15 days", unavailable:"Weather provider not configured", noProject:"Link the field to a georeferenced project/site.",
+    title:"Live agricultural forecast", inferred:"Provider forecast · not field verified", rain:"Rain", eto:"ET₀", wind:"Wind", temp:"Temp.", probability:"Prob.",
+    refresh:"Refresh", loading:"Loading…", failed:"Could not load live weather."
+  } : {
+    load:"تحميل 15 يوماً", unavailable:"مزود الطقس غير مهيأ", noProject:"اربط القطعة بمشروع/موقع ذي إحداثيات.",
+    title:"التوقع الزراعي الحي", inferred:"توقع من المزود · غير متحقق ميدانياً", rain:"المطر", eto:"ET₀", wind:"الرياح", temp:"الحرارة", probability:"الاحتمال",
+    refresh:"تحديث", loading:"جارٍ التحميل…", failed:"تعذر تحميل الطقس الحي."
+  };
+  const [forecast,setForecast]=useState<WeatherForecast|null>(null);
+  const [busy,setBusy]=useState(false);
+  const [problem,setProblem]=useState("");
+  useEffect(()=>{setForecast(null);setProblem("");},[projectId]);
+  const load=async()=>{
+    if(!projectId||!enabled||busy)return;
+    setBusy(true);setProblem("");
+    try{setForecast(await api.get<WeatherForecast>(`/projects/${projectId}/agriculture/weather/live?days=15`));}
+    catch(err){setProblem(err instanceof Error?err.message:tx.failed);}
+    finally{setBusy(false);}
+  };
+  return <div className="fg-service-console" data-testid="analysis-weather-console">
+    <div className="fg-service-console-head"><CloudSun size={22}/><div><h2>{tx.title}</h2><p>{tx.inferred}</p></div></div>
+    {!projectId?<p className="fg-service-console-note">{tx.noProject}</p>:!enabled?<p className="fg-service-console-note">{tx.unavailable}</p>:null}
+    {projectId&&enabled?<button className="fg-service-console-action" type="button" onClick={()=>void load()} disabled={busy}>{busy?tx.loading:(forecast?tx.refresh:tx.load)}</button>:null}
+    {problem?<p className="fg-error" role="alert">{problem}</p>:null}
+    {forecast?<div className="fg-weather-console">
+      <div className="fg-weather-meta"><strong>{forecast.site.name} · {forecast.site.wilaya}</strong><span>{forecast.provider} · {forecast.provenance}</span></div>
+      <div className="fg-weather-days">{forecast.days.map(day=><article key={day.day}>
+        <strong>{new Date(day.day+"T12:00:00").toLocaleDateString(lang,{weekday:"short",day:"2-digit",month:"short"})}</strong>
+        <span><b>{tx.temp}</b> {day.min_c.toFixed(0)}–{day.max_c.toFixed(0)} °C</span>
+        <span><b>{tx.rain}</b> {day.rain_mm.toFixed(1)} mm</span>
+        <span><b>{tx.eto}</b> {day.eto_mm==null?"—":day.eto_mm.toFixed(2)} mm</span>
+        <span><b>{tx.wind}</b> {day.wind_speed_kmh==null?"—":day.wind_speed_kmh.toFixed(0)} km/h</span>
+        <span><b>{tx.probability}</b> {day.precipitation_probability==null?"—":day.precipitation_probability.toFixed(0)+"%"}</span>
+      </article>)}</div>
+      {forecast.attribution_url?<a className="fg-weather-attribution" href={forecast.attribution_url} target="_blank" rel="noreferrer">{forecast.attribution}</a>:<span className="fg-weather-attribution">{forecast.attribution}</span>}
+    </div>:null}
+  </div>;
+}
+
+function IrrigationConsole({
+  parcel,projectId,weatherEnabled,lang,onSaved,
+}:{
+  parcel:Parcel|null;projectId:number|null;weatherEnabled:boolean;lang:"ar"|"fr"|"en";onSaved:()=>void;
+}) {
+  const tx = lang==="fr" ? {
+    title:"Scénario d'irrigation", intro:"FAO-56 · scénario calculé, jamais commande terrain automatique.", eto:"ET₀ (mm/j)", kc:"Kc", rain:"Pluie efficace (mm)", efficiency:"Efficacité", days:"Jours",
+    calculate:"Calculer et enregistrer", loading:"Calcul…", loadWeather:"Charger météo", chooseDay:"Jour météo", volume:"Volume", gross:"Lame brute", net:"Lame nette", etc:"ETc",
+    forecastNote:"La pluie prévue est copiée comme point de départ; ajustez-la en pluie efficace selon le sol et le système.", missing:"Sélectionnez une parcelle.", failed:"Le calcul a échoué."
+  } : lang==="en" ? {
+    title:"Irrigation scenario", intro:"FAO-56 · computed scenario, never automatic field control.", eto:"ET₀ (mm/day)", kc:"Kc", rain:"Effective rain (mm)", efficiency:"Efficiency", days:"Days",
+    calculate:"Calculate & save", loading:"Calculating…", loadWeather:"Load weather", chooseDay:"Weather day", volume:"Volume", gross:"Gross depth", net:"Net depth", etc:"ETc",
+    forecastNote:"Forecast rain is copied as a starting point; adjust it to effective rain for the soil and system.", missing:"Select a field.", failed:"Irrigation calculation failed."
+  } : {
+    title:"سيناريو الري", intro:"FAO-56 · سيناريو محسوب وليس أمراً آلياً للتنفيذ الميداني.", eto:"ET₀ (مم/يوم)", kc:"Kc", rain:"المطر الفعال (مم)", efficiency:"الكفاءة", days:"الأيام",
+    calculate:"احسب واحفظ السيناريو", loading:"جارٍ الحساب…", loadWeather:"تحميل الطقس", chooseDay:"يوم التوقع", volume:"الحجم", gross:"العمق الإجمالي", net:"العمق الصافي", etc:"ETc",
+    forecastNote:"يُنسخ المطر المتوقع كنقطة بداية فقط؛ عدّله إلى المطر الفعال حسب التربة ونظام الري.", missing:"اختر قطعة زراعية.", failed:"فشل حساب سيناريو الري."
+  };
+  const [eto,setEto]=useState("5");
+  const [kc,setKc]=useState("0.85");
+  const [rain,setRain]=useState("0");
+  const [efficiency,setEfficiency]=useState("0.85");
+  const [days,setDays]=useState("1");
+  const [forecast,setForecast]=useState<WeatherForecast|null>(null);
+  const [weatherDay,setWeatherDay]=useState("");
+  const [result,setResult]=useState<IrrigationPlanResult["result"]|null>(null);
+  const [busy,setBusy]=useState<"weather"|"calc"|null>(null);
+  const [problem,setProblem]=useState("");
+  useEffect(()=>{setForecast(null);setWeatherDay("");setResult(null);setProblem("");},[parcel?.id,projectId]);
+
+  const applyDay=(value:string,nextForecast=forecast)=>{
+    setWeatherDay(value);
+    const day=nextForecast?.days.find(row=>row.day===value);
+    if(!day)return;
+    if(day.eto_mm!=null)setEto(String(day.eto_mm));
+    setRain(String(day.rain_mm));
+    setDays("1");
+  };
+  const loadWeather=async()=>{
+    if(!projectId||!weatherEnabled||busy)return;
+    setBusy("weather");setProblem("");
+    try{
+      const data=await api.get<WeatherForecast>(`/projects/${projectId}/agriculture/weather/live?days=7`);
+      setForecast(data);
+      if(data.days[0])applyDay(data.days[0].day,data);
+    }catch(err){setProblem(err instanceof Error?err.message:tx.failed);}
+    finally{setBusy(null);}
+  };
+  const calculate=async()=>{
+    if(!parcel||busy)return;
+    const values={eto:Number(eto),kc:Number(kc),rain:Number(rain),eff:Number(efficiency),days:Number(days)};
+    if(!Number.isFinite(values.eto)||!Number.isFinite(values.kc)||!Number.isFinite(values.rain)||!Number.isFinite(values.eff)||!Number.isInteger(values.days))return;
+    setBusy("calc");setProblem("");
+    try{
+      const source=weatherDay&&forecast?`live-weather:${forecast.provider}:${weatherDay}`:"analysis-console-manual";
+      const plan=await api.post<IrrigationPlanResult>("/agriculture/plans",{
+        parcel_id:parcel.id,eto_mm_day:values.eto,kc:values.kc,effective_rain_mm:values.rain,
+        efficiency:values.eff,days:values.days,input_source:source,
+      });
+      setResult(plan.result);onSaved();
+    }catch(err){setProblem(err instanceof Error?err.message:tx.failed);}
+    finally{setBusy(null);}
+  };
+  if(!parcel)return <div className="fg-service-console"><p className="fg-service-console-note">{tx.missing}</p></div>;
+  return <div className="fg-service-console" data-testid="analysis-irrigation-console">
+    <div className="fg-service-console-head"><Droplets size={22}/><div><h2>{tx.title}</h2><p>{tx.intro}</p></div></div>
+    {projectId&&weatherEnabled?<div className="fg-irrigation-weather-row"><button type="button" onClick={()=>void loadWeather()} disabled={busy!==null}>{busy==="weather"?tx.loading:tx.loadWeather}</button>
+      {forecast?<select aria-label={tx.chooseDay} value={weatherDay} onChange={e=>applyDay(e.target.value)}>{forecast.days.map(day=><option key={day.day} value={day.day}>{day.day} · ET₀ {day.eto_mm??"—"} · {day.rain_mm} mm</option>)}</select>:null}
+    </div>:null}
+    {forecast?<p className="fg-service-console-note">{tx.forecastNote}</p>:null}
+    <div className="fg-irrigation-grid">
+      <label><span>{tx.eto}</span><input type="number" min="0" max="30" step="0.01" value={eto} onChange={e=>setEto(e.target.value)}/></label>
+      <label><span>{tx.kc}</span><input type="number" min="0" max="2" step="0.01" value={kc} onChange={e=>setKc(e.target.value)}/></label>
+      <label><span>{tx.rain}</span><input type="number" min="0" max="2000" step="0.01" value={rain} onChange={e=>setRain(e.target.value)}/></label>
+      <label><span>{tx.efficiency}</span><input type="number" min="0.01" max="1" step="0.01" value={efficiency} onChange={e=>setEfficiency(e.target.value)}/></label>
+      <label><span>{tx.days}</span><input type="number" min="1" max="30" step="1" value={days} onChange={e=>setDays(e.target.value)}/></label>
+    </div>
+    <button className="fg-service-console-action" type="button" onClick={()=>void calculate()} disabled={busy!==null}>{busy==="calc"?tx.loading:tx.calculate}</button>
+    {problem?<p className="fg-error" role="alert">{problem}</p>:null}
+    {result?<div className="fg-irrigation-result">
+      <div><span>{tx.etc}</span><strong>{result.etc_mm.toFixed(2)} mm</strong></div>
+      <div><span>{tx.net}</span><strong>{result.net_mm.toFixed(2)} mm</strong></div>
+      <div><span>{tx.gross}</span><strong>{result.gross_mm.toFixed(2)} mm</strong></div>
+      <div><span>{tx.volume}</span><strong>{result.volume_m3.toFixed(1)} m³</strong></div>
+      <p>{result.evidence_status} · {result.decision_status} · {result.method}</p>
+    </div>:null}
   </div>;
 }
 
@@ -222,6 +397,10 @@ export default function AnalysisCenter() {
   },[parcelId,reloadToken,projects,visibleParcels]);
 
   const parcel=visibleParcels.find(row=>row.id===parcelId)??null;
+  const linkedProject=useMemo(
+    ()=>projects.find(project=>project.status!=="closed" && parcel?.site_id!=null && project.site_id===parcel.site_id)??null,
+    [projects,parcel?.site_id],
+  );
   const satelliteRows=useMemo(()=>observations.filter(row=>SATELLITE_METRICS.has(row.metric)).slice(0,12),[observations]);
   const soilRows=useMemo(()=>observations.filter(row=>SOIL_METRICS.has(row.metric)).slice(0,12),[observations]);
 
@@ -323,8 +502,18 @@ export default function AnalysisCenter() {
       /> : null}
       {analysisTool==="soil" ? <AssessmentConsole title={copy.soil} assessment={summary?.soil_assessment ?? null} empty={copy.missing} /> : null}
       {analysisTool==="water" ? <AssessmentConsole title={copy.water} assessment={summary?.irrigation_water_assessment ?? null} empty={copy.missing} /> : null}
-      {analysisTool==="irrigation" ? <div className="fg-service-console"><div className="fg-service-console-head"><Droplets size={22}/><div><h2>{copy.irrigation}</h2><p>FAO-56 · ET₀ × Kc · pluie efficace · rendement</p></div></div><p className="fg-service-console-note">{summary?.available_services.irrigation_planning?copy.available:copy.missing}</p>{parcelId?<Link className="fg-service-console-action" to={`/app/agriculture?parcel=${parcelId}&section=irrigation`}>{copy.openIrrigation}<ArrowUpRight size={15}/></Link>:null}</div> : null}
-      {analysisTool==="weather" ? <div className="fg-service-console"><div className="fg-service-console-head"><CloudSun size={22}/><div><h2>{copy.weather}</h2><p>Prévision · pluie · ET₀ · vent · température</p></div></div><p className="fg-service-console-note">{summary?.available_services.weather_live?copy.configured:copy.disabled}</p>{parcelId?<Link className="fg-service-console-action" to={`/app/agriculture?parcel=${parcelId}&section=intelligence`}>{copy.weather}<ArrowUpRight size={15}/></Link>:null}</div> : null}
+      {analysisTool==="irrigation" ? <IrrigationConsole
+        parcel={parcel}
+        projectId={linkedProject?.id??null}
+        weatherEnabled={Boolean(summary?.available_services.weather_live)}
+        lang={lang}
+        onSaved={()=>setReloadToken(value=>value+1)}
+      /> : null}
+      {analysisTool==="weather" ? <WeatherConsole
+        projectId={linkedProject?.id??null}
+        enabled={Boolean(summary?.available_services.weather_live)}
+        lang={lang}
+      /> : null}
     </section>
 
     {parcel ? <section className="fg-analysis-legacy grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
