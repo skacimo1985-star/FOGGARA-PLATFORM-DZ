@@ -298,7 +298,7 @@ export default function AnalysisCenter() {
     </section>
 
     <section className="fg-analysis-live-console" data-testid="analysis-live-sentinel">
-      <div className="fg-analysis-tool-tabs" role="tablist" aria-label={copy.analysisAction ?? copy.title}>
+      <div className="fg-analysis-tool-tabs" role="tablist" aria-label={copy.title}>
         {([
           ["satellite", copy.satellite, Satellite],
           ["soil", copy.soil, FlaskConical],
