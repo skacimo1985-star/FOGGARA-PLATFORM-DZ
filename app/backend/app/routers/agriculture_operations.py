@@ -40,6 +40,7 @@ class ParcelIn(Input):
                 raise ValueError(str(exc)) from exc
             self.boundary_geojson = normalized
             self.lon, self.lat = meta['centroid']
+            self.area_ha = meta['estimated_area_ha']
         elif (self.lat is None) != (self.lon is None):
             raise ValueError('Latitude and longitude must be supplied together')
         return self
@@ -267,6 +268,7 @@ def update_parcel(identity: int, payload: ParcelUpdate, user: User = Depends(get
         meta = None
         if row.boundary_geojson is not None:
             _normalized, meta = normalize_parcel_boundary(row.boundary_geojson)
+            row.area_ha = meta['estimated_area_ha']
         audit(db, user, 'boundary_update', 'agri_parcels', entity_id=row.id,
               meta={'has_boundary': row.boundary_geojson is not None, 'geometry': meta})
     return record(db, user, row, 'update')
