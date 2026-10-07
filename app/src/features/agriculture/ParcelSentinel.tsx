@@ -51,10 +51,12 @@ export default function ParcelSentinel({
   parcels,
   onSaved,
   selectedParcelId = null,
+  onRasterReady,
 }: {
   parcels: Parcel[];
   onSaved: () => void | Promise<void>;
   selectedParcelId?: number | null;
+  onRasterReady?: (overlay: { url: string; bbox: [number, number, number, number]; index: SatelliteIndex }) => void;
 }) {
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
@@ -168,6 +170,9 @@ export default function ParcelSentinel({
       setResult(value);
       setRasterStats(stats);
       setPreviewUrl(url);
+      if (stats?.analysis_bbox_wgs84) {
+        onRasterReady?.({ url, bbox: stats.analysis_bbox_wgs84, index: indexKey });
+      }
       if (value.created) await onSaved();
     } catch {
       setError(text.error);
