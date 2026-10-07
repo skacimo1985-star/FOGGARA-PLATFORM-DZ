@@ -62,6 +62,38 @@ def _series(client, h, sensor_id):
                                                "limit": 1000}, headers=h).json()
 
 
+def test_organization_simulation_is_not_demo(admins, client):
+    reviewer = login(client, "o1r@t.dz")
+    admin = login(client, "o1a@t.dz")
+    dev = _device(client, reviewer)
+    assert dev["is_simulated"] is True
+    assert dev["is_demo"] is False
+
+    sensor = _sensor(client, reviewer, dev["id"])
+    assert sensor["is_simulated"] is True
+    assert sensor["is_demo"] is False
+
+    rule = client.post(RULES, json={
+        "name": "Simulation rule",
+        "domain": "water",
+        "metric": "water_level",
+        "operator": "LT",
+        "threshold": 1.0,
+        "unit": "m",
+        "decision_type": "simulation_review",
+    }, headers=admin)
+    assert rule.status_code == 201, rule.text
+    assert rule.json()["is_demo"] is False
+
+    run = _run(client, reviewer, dev["id"], steps=2)
+    assert run["is_demo"] is False
+    result = _exec(client, reviewer, run["id"])
+    assert result.status_code == 200, result.text
+    rows = _series(client, reviewer, sensor["id"])
+    assert rows
+    assert all(row["is_demo"] is False for row in rows)
+
+
 # ---------- المحاكي ----------
 def test_simulator_determinism_same_seed(admins, client):
     h = login(client, "o1r@t.dz")
