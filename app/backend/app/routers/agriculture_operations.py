@@ -208,11 +208,13 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
         Measurement.verification_status == 'verified',
     ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(100)))
     latest = {}
+    units = {}
     ids = []
     sources = []
     for row in rows:
         if row.parameter not in latest:
             latest[row.parameter] = float(row.value)
+            units[row.parameter] = row.unit
             ids.append(row.id)
             sources.append({'measurement_id': row.id, 'parameter': row.parameter, 'source': row.source, 'method': row.method})
     if not latest:
@@ -220,10 +222,11 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
                 'measurement_ids': [], 'measurement_sources': [], 'resource_id': project.resource_id,
                 'limitations': ['VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
-    result = irrigation_water_assessment(latest)
+    result = irrigation_water_assessment(latest, units=units)
     result['evidence_status'] = 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
     result['measurement_ids'] = ids
     result['measurement_sources'] = sources
+    result['measurement_units'] = units
     result['resource_id'] = project.resource_id
     return result
 
