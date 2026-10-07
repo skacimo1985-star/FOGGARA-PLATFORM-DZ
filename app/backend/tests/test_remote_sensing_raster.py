@@ -361,3 +361,29 @@ def test_polygon_geometry_masks_statistics_to_field_boundary(raster_assets):
     assert 0 < clipped["pixels"]["total"] < full["pixels"]["total"]
     assert 0 <= clipped["pixels"]["valid"] <= clipped["pixels"]["total"]
     assert clipped["statistics"]["mean"] == pytest.approx(0.5, abs=1e-5)
+
+
+
+def test_preview_png_applies_parcel_polygon_mask(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    full_png, full_meta = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"), TEST_BBOX,
+    )
+    clipped_png, clipped_meta = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"), TEST_BBOX, geometry_wgs84=geometry,
+    )
+    assert full_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert clipped_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert clipped_meta["geometry_mask_applied"] is True
+    assert full_meta["geometry_mask_applied"] is False
+    assert clipped_png != full_png
+    assert 0 < clipped_meta["valid_fraction"] <= 1
