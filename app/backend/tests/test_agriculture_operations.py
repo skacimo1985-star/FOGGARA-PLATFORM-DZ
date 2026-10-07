@@ -250,6 +250,59 @@ def test_service_summary_evidence_requires_data_and_org_project(client, world, f
                        headers=h2, json={'project_id': project2['id']}).status_code == 404
 
 
+def test_verified_soil_ece_method_flows_into_usda_service_summary(client, world, farm):
+    h, pid = farm
+    reviewer = login(client, 'o1r@t.dz')
+    from tests.test_acceptance import make_project
+    project = make_project(client, h)
+
+    pending = client.post('/api/measurements', headers=h, json={
+        'project_id': project['id'],
+        'parcel_id': pid,
+        'parameter': 'soil_ec',
+        'value': 9.0,
+        'unit': 'dS/m',
+        'measured_at': (datetime.now(timezone.utc)-timedelta(hours=1)).isoformat(),
+        'source': 'LAB-SOIL-EC-ECE',
+        'method': 'saturated paste ECe',
+    })
+    assert pending.status_code == 201, pending.text
+
+    before = client.get(
+        f'/api/agriculture/parcels/{pid}/service-summary',
+        headers=h,
+    )
+    assert before.status_code == 200, before.text
+    assert before.json()['soil_assessment']['evidence_status'] != 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
+
+    review = client.post('/api/reviews', headers=reviewer, json={
+        'target_type': 'measurement',
+        'target_id': pending.json()['id'],
+        'decision': 'accepted',
+        'note': 'soil EC method and result checked',
+        'reason': 'valid saturated-paste laboratory result',
+    })
+    assert review.status_code == 201, review.text
+
+    after = client.get(
+        f'/api/agriculture/parcels/{pid}/service-summary',
+        headers=h,
+    )
+    assert after.status_code == 200, after.text
+    soil = after.json()['soil_assessment']
+    assert soil['evidence_status'] == 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
+    assert soil['decision_status'] == 'PROPOSED'
+    assert soil['methods']['ec'] == 'saturated paste ECe'
+    assert soil['measurement_ids'] == [pending.json()['id']]
+    assert soil['measurement_sources'][0]['method'] == 'saturated paste ECe'
+    ec = next(row for row in soil['findings'] if row['metric'] == 'ec')
+    assert ec['message'] == 'usda_ece_salinity_class'
+    assert ec['classification'] == 'moderately_saline'
+    assert ec['basis'] == 'saturated_paste_ECe_dS_m'
+    assert ec['reference'] == 'USDA-NRCS-FIELD-BOOK-V4-2024'
+    assert soil['references'][0]['code'] == 'USDA-NRCS-FIELD-BOOK-V4-2024'
+
+
 def test_irrigation_water_screening_requires_verified_resource_measurements(client, world, farm):
     h, pid = farm
     reviewer = login(client, 'o1r@t.dz')
