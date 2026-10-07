@@ -715,10 +715,10 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "satellite-scenes-fill", (event) => {
             if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
@@ -727,10 +727,10 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "agri-parcel-fill", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "agri-parcel-fill", () => {
-            if (map) map.getCanvas().style.cursor = "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "agri-parcel-fill", (event) => {
             if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
@@ -741,10 +741,10 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "foggara-sites", (event) => {
             if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
