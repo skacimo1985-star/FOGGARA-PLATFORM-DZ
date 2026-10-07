@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
@@ -46,6 +46,43 @@ type SitesGeoJSON = {
     spatial_engine: string;
   };
 };
+
+type PolygonGeometry = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
+type ParcelRecord = {
+  id: number;
+  name: string;
+  crop: string;
+  area_ha: number;
+  location: string;
+  site_id: number | null;
+  lat: number | null;
+  lon: number | null;
+  boundary_geojson: PolygonGeometry | null;
+  archived: boolean;
+  is_demo: boolean;
+};
+
+function extractPolygonGeometry(value: unknown): PolygonGeometry | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (record.type === "Polygon" && Array.isArray(record.coordinates)) {
+    return record as unknown as PolygonGeometry;
+  }
+  if (record.type === "Feature") {
+    return extractPolygonGeometry(record.geometry);
+  }
+  if (record.type === "FeatureCollection" && Array.isArray(record.features)) {
+    for (const feature of record.features) {
+      const polygon = extractPolygonGeometry(feature);
+      if (polygon) return polygon;
+    }
+  }
+  return null;
+}
 
 type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi" | "ndmi" | "lswi" | "bsi";
 
@@ -141,6 +178,9 @@ export default function Gis() {
   const wilayaFilter = searchParams.get("wilaya") || "";
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
+  const [parcels, setParcels] = useState<ParcelRecord[]>([]);
+  const boundaryImportRef = useRef<HTMLInputElement | null>(null);
+  const [boundaryBusy, setBoundaryBusy] = useState(false);
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
@@ -182,6 +222,9 @@ export default function Gis() {
     api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson")
       .then((r) => setParcelBoundaries(r.features))
       .catch(() => setParcelBoundaries([]));
+    api.get<ParcelRecord[]>("/agriculture/parcels")
+      .then((rows) => setParcels(rows.filter((row) => !row.archived)))
+      .catch(setError);
   }, []);
 
   const filtered = useMemo(() => {
@@ -212,6 +255,12 @@ export default function Gis() {
       ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", runParcel: "Analyze selected parcel", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled" }
       : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", runParcel: "حلّل القطعة المحددة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات" };
 
+  const parcelCopy = lang === "fr"
+    ? { title: "Espace parcellaire", select: "Choisir une parcelle", none: "Aucune parcelle", mapped: "Limite cartographiée", unmapped: "Limite à définir", importGeoJson: "Importer GeoJSON", exportGeoJson: "Exporter GeoJSON", clearBoundary: "Supprimer la limite", clearConfirm: "Supprimer la limite cartographique de cette parcelle ?", importError: "Le fichier doit contenir un Polygon GeoJSON.", hint: "Sélectionnez une parcelle, puis dessinez sa limite sur la carte ou importez un Polygon GeoJSON. La validation finale est effectuée par le serveur." }
+    : lang === "en"
+      ? { title: "Parcel workspace", select: "Select parcel", none: "No parcel selected", mapped: "Boundary mapped", unmapped: "Boundary required", importGeoJson: "Import GeoJSON", exportGeoJson: "Export GeoJSON", clearBoundary: "Clear boundary", clearConfirm: "Remove the mapped boundary from this parcel?", importError: "The file must contain a GeoJSON Polygon.", hint: "Select any parcel, then draw its boundary on the map or import a GeoJSON Polygon. Final geometry validation is server-side." }
+      : { title: "مساحة عمل القطعة", select: "اختر قطعة", none: "لم تُحدد قطعة", mapped: "الحدود مرسومة", unmapped: "تحتاج إلى حدود", importGeoJson: "استيراد GeoJSON", exportGeoJson: "تصدير GeoJSON", clearBoundary: "مسح الحدود", clearConfirm: "هل تريد إزالة الحدود المكانية لهذه القطعة؟", importError: "يجب أن يحتوي الملف على Polygon بصيغة GeoJSON.", hint: "اختر أي قطعة ثم ارسم حدودها على الخريطة أو استورد Polygon بصيغة GeoJSON. التحقق النهائي من الهندسة يتم في الخادم." };
+
   const summary = useMemo(() => {
     const rows = filtered ?? [];
     return {
@@ -237,6 +286,10 @@ export default function Gis() {
   const selectedParcel = useMemo(
     () => parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId) ?? null,
     [parcelBoundaries, selectedParcelId],
+  );
+  const selectedParcelRecord = useMemo(
+    () => parcels.find((parcel) => parcel.id === selectedParcelId) ?? null,
+    [parcels, selectedParcelId],
   );
   const selectedParcelBbox = useMemo(() => parcelBbox(selectedParcel), [selectedParcel]);
   const analysisBbox = selectedParcelBbox ?? viewportBbox;
@@ -400,23 +453,97 @@ export default function Gis() {
     }
   };
 
-  const saveParcelBoundary = async (geometry: { type: "Polygon"; coordinates: [number, number][][] }) => {
+  const refreshParcelSpatialData = async () => {
+    const [boundaries, parcelRows] = await Promise.all([
+      api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson"),
+      api.get<ParcelRecord[]>("/agriculture/parcels"),
+    ]);
+    setParcelBoundaries(boundaries.features);
+    setParcels(parcelRows.filter((row) => !row.archived));
+  };
+
+  const resetParcelAnalysis = () => {
+    setSatelliteScenes([]);
+    setSelectedSceneId(null);
+    setAnalysisResult(null);
+    setAnalysisOverlay(null);
+    setSatelliteOverlay(null);
+    setAnalysisSaved(false);
+  };
+
+  const saveParcelBoundary = async (geometry: PolygonGeometry) => {
     if (!selectedParcelId) return;
+    setBoundaryBusy(true);
     setAnalysisError(null);
     try {
       await api.patch(
         `/agriculture/parcels/${selectedParcelId}`,
         { boundary_geojson: geometry },
       );
-      const updated = await api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson");
-      setParcelBoundaries(updated.features);
-      setSatelliteScenes([]);
-      setSelectedSceneId(null);
-      setAnalysisResult(null);
-      setAnalysisOverlay(null);
-      setSatelliteOverlay(null);
+      await refreshParcelSpatialData();
+      resetParcelAnalysis();
     } catch (err) {
       setAnalysisError(err);
+    } finally {
+      setBoundaryBusy(false);
+    }
+  };
+
+  const importParcelBoundary = async (file: File | null) => {
+    if (!file || !selectedParcelId) return;
+    setAnalysisError(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      const geometry = extractPolygonGeometry(parsed);
+      if (!geometry) throw new Error(parcelCopy.importError);
+      await saveParcelBoundary(geometry);
+    } catch (err) {
+      setAnalysisError(err);
+    } finally {
+      if (boundaryImportRef.current) boundaryImportRef.current.value = "";
+    }
+  };
+
+  const exportParcelBoundary = () => {
+    if (!selectedParcelRecord?.boundary_geojson) return;
+    const feature = {
+      type: "Feature",
+      properties: {
+        id: selectedParcelRecord.id,
+        name: selectedParcelRecord.name,
+        crop: selectedParcelRecord.crop,
+        area_ha: selectedParcelRecord.area_ha,
+        location: selectedParcelRecord.location,
+      },
+      geometry: selectedParcelRecord.boundary_geojson,
+    };
+    const blob = new Blob([JSON.stringify(feature, null, 2)], { type: "application/geo+json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `foggara-parcel-${selectedParcelRecord.id}.geojson`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearParcelBoundary = async () => {
+    if (!selectedParcelId || !selectedParcelRecord?.boundary_geojson) return;
+    if (!window.confirm(parcelCopy.clearConfirm)) return;
+    setBoundaryBusy(true);
+    setAnalysisError(null);
+    try {
+      await api.patch(
+        `/agriculture/parcels/${selectedParcelId}`,
+        { boundary_geojson: null },
+      );
+      await refreshParcelSpatialData();
+      resetParcelAnalysis();
+    } catch (err) {
+      setAnalysisError(err);
+    } finally {
+      setBoundaryBusy(false);
     }
   };
 
@@ -469,7 +596,84 @@ export default function Gis() {
         <div className="fg-command-kpi"><div><span>{t("gis.assets")}</span></div><strong>{filtered === null ? "—" : summary.assets}</strong></div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
+      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={parcelCopy.title}>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-bold">{parcelCopy.title}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{parcelCopy.hint}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[minmax(240px,1fr)_auto]">
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{parcelCopy.select}</span>
+              <select
+                className="rounded-md border bg-background px-3 py-2"
+                value={selectedParcelId ?? ""}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSelectedParcelId(Number.isFinite(next) && next > 0 ? next : null);
+                  setSelectedSiteId(null);
+                }}
+              >
+                <option value="">{parcelCopy.none}</option>
+                {parcels.map((parcel) => (
+                  <option key={parcel.id} value={parcel.id}>
+                    #{parcel.id} · {parcel.name} · {parcel.location}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex flex-wrap items-end gap-2">
+              <input
+                ref={boundaryImportRef}
+                type="file"
+                accept=".geojson,.json,application/geo+json,application/json"
+                className="hidden"
+                onChange={(event) => void importParcelBoundary(event.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                className="rounded-md border bg-background px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedParcelId || boundaryBusy}
+                onClick={() => boundaryImportRef.current?.click()}
+              >
+                {parcelCopy.importGeoJson}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border bg-background px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedParcelRecord?.boundary_geojson || boundaryBusy}
+                onClick={exportParcelBoundary}
+              >
+                {parcelCopy.exportGeoJson}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedParcelRecord?.boundary_geojson || boundaryBusy}
+                onClick={() => void clearParcelBoundary()}
+              >
+                {parcelCopy.clearBoundary}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          {selectedParcelRecord ? (
+            <>
+              <Badge variant="outline">#{selectedParcelRecord.id}</Badge>
+              <Badge variant="outline">{selectedParcelRecord.name}</Badge>
+              <Badge variant="outline">{selectedParcelRecord.area_ha} ha</Badge>
+              <Badge variant="outline">
+                {selectedParcelRecord.boundary_geojson ? parcelCopy.mapped : parcelCopy.unmapped}
+              </Badge>
+            </>
+          ) : (
+            <span className="text-muted-foreground">{parcelCopy.none}</span>
+          )}
+        </div>
+      </section>
+
+            <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600">{satelliteCopy.provider}</p>
@@ -502,7 +706,7 @@ export default function Gis() {
         <ErrorText error={satelliteError} />
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline">LIVE STAC</Badge>
-          <Badge variant="outline">{selectedParcel ? `${satelliteCopy.parcelScope}: ${selectedParcel.properties.name}` : satelliteCopy.viewScope}</Badge>
+          <Badge variant="outline">{selectedParcelRecord ? `${satelliteCopy.parcelScope}: ${selectedParcelRecord.name}` : satelliteCopy.viewScope}</Badge>
           <span>{satelliteScenes.length} {satelliteCopy.found}</span>
           {satelliteScenes.length === 0 && !satelliteLoading ? <span>{satelliteCopy.empty}</span> : null}
         </div>
@@ -590,7 +794,7 @@ export default function Gis() {
                 disabled={!selectedSceneId || !currentRasterBudget.allowed || analysisLoading}
                 onClick={() => void analyzeCurrentView()}
               >
-                {analysisLoading ? analysisCopy.running : selectedParcel ? analysisCopy.runParcel : analysisCopy.run}
+                {analysisLoading ? analysisCopy.running : selectedParcelRecord ? analysisCopy.runParcel : analysisCopy.run}
               </button>
               {selectedParcelId && (selectedIndex === "ndvi" || selectedIndex === "lswi") && analysisResult ? (
                 <button
@@ -610,7 +814,7 @@ export default function Gis() {
           <Badge variant="outline">
             {currentRasterBudget.allowed ? analysisCopy.ready : analysisCopy.zoom}
           </Badge>
-          {selectedParcel ? <Badge variant="outline">{selectedParcel.properties.name} · {selectedParcel.properties.area_ha} ha</Badge> : null}
+          {selectedParcelRecord ? <Badge variant="outline">{selectedParcelRecord.name} · {selectedParcelRecord.area_ha} ha</Badge> : null}
           <span className="rounded-md border px-2 py-1 text-muted-foreground">
             {analysisCopy.area}: {currentRasterBudget.areaKm2.toFixed(2)} km²
           </span>
