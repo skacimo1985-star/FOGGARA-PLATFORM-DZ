@@ -5,11 +5,12 @@ import {
   Activity, ArrowUpRight, CloudSun, Droplets, Eye, FlaskConical, Leaf,
   MapPinned, Satellite, ShieldCheck, Sprout,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, type Paged } from "@/lib/api";
+import type { Project } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { ErrorText } from "@/components/common";
 import ParcelSentinel from "@/features/agriculture/ParcelSentinel";
-import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay } from "@/components/NationalMap";
 import "./field-intelligence.css";
 
 type Parcel = {
@@ -21,6 +22,7 @@ type Parcel = {
   stage: string;
   archived: boolean;
   is_demo: boolean;
+  site_id?: number | null;
   lat?: number | null;
   lon?: number | null;
   boundary_geojson?: { type: "Polygon"; coordinates: [number, number][][] } | null;
@@ -49,6 +51,10 @@ type Assessment = {
   decision_status: string;
   coverage: string[];
   limitations: string[];
+  inputs?: Record<string, number>;
+  findings?: Array<{ metric: string; level: string; message: string }>;
+  actions?: string[];
+  measurement_ids?: number[];
 };
 
 type Summary = {
@@ -74,6 +80,20 @@ type Summary = {
 
 const SATELLITE_METRICS = new Set(["ndvi","evi","savi","ndwi","lswi","moisture"]);
 const SOIL_METRICS = new Set(["ph","nitrogen","phosphorus","potassium","soc","ec","moisture"]);
+
+
+function AssessmentConsole({title,assessment,empty}:{title:string;assessment:Assessment|null;empty:string}) {
+  if(!assessment) return <div className="fg-service-console"><h2>{title}</h2><p className="fg-service-console-note">{empty}</p></div>;
+  const inputs=Object.entries(assessment.inputs??{});
+  return <div className="fg-service-console">
+    <div className="fg-service-console-head"><FlaskConical size={22}/><div><h2>{title}</h2><p>{assessment.evidence_status} · {assessment.decision_status}</p></div></div>
+    {inputs.length?<div className="fg-service-input-grid">{inputs.map(([metric,value])=><div key={metric}><span>{metric.toUpperCase()}</span><strong dir="ltr">{Number(value).toFixed(3)}</strong></div>)}</div>:<p className="fg-service-console-note">{empty}</p>}
+    {(assessment.findings??[]).length?<div className="fg-service-findings">{assessment.findings!.map((finding,index)=><article key={`${finding.metric}-${index}`} className={finding.level}><span>{finding.metric.toUpperCase()}</span><strong>{finding.message.replaceAll("_"," ")}</strong><small>{finding.level}</small></article>)}</div>:null}
+    {(assessment.actions??[]).length?<div className="fg-service-actions-list">{assessment.actions!.map((action,index)=><p key={index}>{action}</p>)}</div>:null}
+    <div className="fg-service-coverage"><strong>Coverage</strong><span>{assessment.coverage.length?assessment.coverage.join(" · "):empty}</span></div>
+    {assessment.limitations.length?<ul className="fg-service-limitations">{assessment.limitations.map(item=><li key={item}>{item.replaceAll("_"," ")}</li>)}</ul>:null}
+  </div>;
+}
 
 export default function AnalysisCenter() {
   const { i18n } = useTranslation();
@@ -121,6 +141,7 @@ export default function AnalysisCenter() {
 
   const [parcels,setParcels]=useState<Parcel[]>([]);
   const [boundaries,setBoundaries]=useState<ParcelBoundaryFeature[]>([]);
+  const [projects,setProjects]=useState<Project[]>([]);
   const [showDemo,setShowDemo]=useState(searchParams.get("demo")==="1");
   const [parcelId,setParcelId]=useState<number|null>(Number.isInteger(requested)&&requested>0?requested:null);
   const [summary,setSummary]=useState<Summary|null>(null);
@@ -129,6 +150,8 @@ export default function AnalysisCenter() {
   const [error,setError]=useState<unknown>(null);
   const [reloadToken,setReloadToken]=useState(0);
   const [analysisOverlay,setAnalysisOverlay]=useState<AnalysisRasterOverlay|null>(null);
+  const [satelliteOverlay,setSatelliteOverlay]=useState<SatelliteRasterOverlay|null>(null);
+  const [analysisTool,setAnalysisTool]=useState<"satellite"|"soil"|"water"|"irrigation"|"weather">("satellite");
 
   useEffect(()=>{
     let cancelled=false;
@@ -136,11 +159,13 @@ export default function AnalysisCenter() {
     Promise.all([
       api.get<Parcel[]>("/agriculture/parcels"),
       api.get<ParcelBoundaryResponse>("/gis/parcels.geojson"),
+      api.get<Paged<Project>>("/projects?page_size=100"),
     ])
-      .then(([rows,geo])=>{
+      .then(([rows,geo,projectPage])=>{
         if(cancelled)return;
         setParcels(rows.filter(row=>!row.archived));
         setBoundaries(geo.features);
+        setProjects(projectPage.items.filter(project=>!project.is_demo));
       })
       .catch(err=>{if(!cancelled)setError(err);})
       .finally(()=>{if(!cancelled)setLoading(false);});
@@ -171,17 +196,23 @@ export default function AnalysisCenter() {
 
   useEffect(()=>{
     setAnalysisOverlay(null);
+    setSatelliteOverlay(prev=>{if(prev?.url)URL.revokeObjectURL(prev.url);return null;});
     if(!parcelId){setSummary(null);setObservations([]);return;}
     let cancelled=false;
     setLoading(true);setError(null);
+    const selectedParcel=visibleParcels.find(row=>row.id===parcelId);
+    const linkedProject=projects.find(project=>project.status!=="closed" && selectedParcel?.site_id!=null && project.site_id===selectedParcel.site_id);
+    const summaryUrl=linkedProject
+      ? `/agriculture/parcels/${parcelId}/service-summary?project_id=${linkedProject.id}`
+      : `/agriculture/parcels/${parcelId}/service-summary`;
     Promise.all([
-      api.get<Summary>(`/agriculture/parcels/${parcelId}/service-summary`),
+      api.get<Summary>(summaryUrl),
       api.get<Observation[]>(`/agriculture/observations?parcel_id=${parcelId}`),
     ]).then(([s,o])=>{if(!cancelled){setSummary(s);setObservations(o);}})
       .catch(err=>{if(!cancelled)setError(err);})
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  },[parcelId,reloadToken]);
+  },[parcelId,reloadToken,projects,visibleParcels]);
 
   const parcel=visibleParcels.find(row=>row.id===parcelId)??null;
   const satelliteRows=useMemo(()=>observations.filter(row=>SATELLITE_METRICS.has(row.metric)).slice(0,12),[observations]);
@@ -258,6 +289,7 @@ export default function AnalysisCenter() {
           selectedParcelId={parcelId}
           onSelectParcel={setParcel}
           analysisOverlay={analysisOverlay}
+          satelliteOverlay={satelliteOverlay}
           locale={lang}
           minimal
         />
@@ -266,12 +298,26 @@ export default function AnalysisCenter() {
     </section>
 
     <section className="fg-analysis-live-console" data-testid="analysis-live-sentinel">
-      <ParcelSentinel
+      <div className="fg-analysis-tool-tabs" role="tablist" aria-label={copy.analysisAction ?? copy.title}>
+        {([
+          ["satellite", copy.satellite, Satellite],
+          ["soil", copy.soil, FlaskConical],
+          ["water", copy.water, Droplets],
+          ["irrigation", copy.irrigation, Sprout],
+          ["weather", copy.weather, CloudSun],
+        ] as const).map(([key,label,Icon])=><button key={key} type="button" role="tab" aria-selected={analysisTool===key} className={analysisTool===key?"active":""} onClick={()=>setAnalysisTool(key)}><Icon size={15}/><span>{label}</span></button>)}
+      </div>
+      {analysisTool==="satellite" ? <ParcelSentinel
         parcels={visibleParcels}
         selectedParcelId={parcelId}
         onSaved={() => setReloadToken(value => value + 1)}
         onRasterReady={setAnalysisOverlay}
-      />
+        onTrueColorReady={setSatelliteOverlay}
+      /> : null}
+      {analysisTool==="soil" ? <AssessmentConsole title={copy.soil} assessment={summary?.soil_assessment ?? null} empty={copy.missing} /> : null}
+      {analysisTool==="water" ? <AssessmentConsole title={copy.water} assessment={summary?.irrigation_water_assessment ?? null} empty={copy.missing} /> : null}
+      {analysisTool==="irrigation" ? <div className="fg-service-console"><div className="fg-service-console-head"><Droplets size={22}/><div><h2>{copy.irrigation}</h2><p>FAO-56 · ET₀ × Kc · pluie efficace · rendement</p></div></div><p className="fg-service-console-note">{summary?.available_services.irrigation_planning?copy.available:copy.missing}</p>{parcelId?<Link className="fg-service-console-action" to={`/app/agriculture?parcel=${parcelId}&section=irrigation`}>{copy.openIrrigation}<ArrowUpRight size={15}/></Link>:null}</div> : null}
+      {analysisTool==="weather" ? <div className="fg-service-console"><div className="fg-service-console-head"><CloudSun size={22}/><div><h2>{copy.weather}</h2><p>Prévision · pluie · ET₀ · vent · température</p></div></div><p className="fg-service-console-note">{summary?.available_services.weather_live?copy.configured:copy.disabled}</p>{parcelId?<Link className="fg-service-console-action" to={`/app/agriculture?parcel=${parcelId}&section=intelligence`}>{copy.weather}<ArrowUpRight size={15}/></Link>:null}</div> : null}
     </section>
 
     {parcel ? <section className="fg-analysis-legacy grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
