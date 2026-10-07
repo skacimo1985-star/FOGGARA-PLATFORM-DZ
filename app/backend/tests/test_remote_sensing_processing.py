@@ -36,6 +36,7 @@ def stac_item():
             "green": cog("B03"),
             "red": cog("B04"),
             "nir": cog("B08"),
+            "swir16": cog("B11", gsd=20),
             "scl": cog("SCL", gsd=20, scale=None, offset=None),
             "red-jp2": {
                 "href": "https://example.invalid/B04.jp2",
@@ -113,6 +114,15 @@ def test_processing_plan_fingerprint_is_deterministic():
     first = build_processing_plan(stac_item(), "evi")
     second = build_processing_plan(stac_item(), "evi")
     assert first["fingerprint_sha256"] == second["fingerprint_sha256"]
+
+
+def test_processing_plan_supports_moisture_and_soil_indices():
+    lswi = build_processing_plan(stac_item(), "lswi")
+    assert {row["band"] for row in lswi["required_assets"]} == {"B08", "B11"}
+    assert next(row for row in lswi["required_assets"] if row["band"] == "B11")["asset_key"] == "swir16"
+
+    bsi = build_processing_plan(stac_item(), "bsi")
+    assert {row["band"] for row in bsi["required_assets"]} == {"B02", "B04", "B08", "B11"}
 
 
 def test_processing_plan_fails_closed_on_untrusted_asset_host():
