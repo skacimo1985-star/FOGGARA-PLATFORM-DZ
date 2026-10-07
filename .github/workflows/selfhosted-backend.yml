@@ -42,6 +42,7 @@ jobs:
           tests/test_gis_infrastructure.py
           tests/test_gis_iot_bindings.py
           tests/test_telemetry_simulator.py
+          tests/test_system_readiness.py
           -q -ra --tb=short
 
       - name: Remove disposable SQLite database
