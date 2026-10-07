@@ -127,6 +127,17 @@ class PlanIn(Input):
     forecast_date: date | None = None
     weather_provenance: Literal['INFERRED'] | None = None
 
+    @model_validator(mode='after')
+    def weather_context_complete(self):
+        supplied = (
+            self.forecast_precip_mm is not None,
+            self.forecast_date is not None,
+            self.weather_provenance is not None,
+        )
+        if any(supplied) and not all(supplied):
+            raise ValueError('Forecast precipitation, date and provenance must be supplied together')
+        return self
+
 class TaskIn(Input):
     parcel_id: int = Field(gt=0)
     title: str = Field(min_length=1, max_length=200)
@@ -513,7 +524,7 @@ def create_plan(payload: PlanIn, user: User = Depends(get_current_user), db: Ses
     parcel = own(db, AgriParcel, payload.parcel_id, user)
     if parcel.archived:
         api_error(409, 'PARCEL_ARCHIVED', 'Parcel is archived')
-    inputs = payload.model_dump()
+    inputs = payload.model_dump(mode='json')
     inputs['area_ha'] = float(parcel.area_ha)
     result = irrigation_scenario(float(parcel.area_ha), payload.eto_mm_day, payload.kc,
                                  payload.effective_rain_mm, payload.efficiency, payload.days)
