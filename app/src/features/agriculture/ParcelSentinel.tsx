@@ -21,10 +21,21 @@ type Scene = {
 };
 type SceneResult = { scenes: Scene[]; sample_geometry: string; sample_bbox_wgs84: number[] };
 type SatelliteIndex = "ndvi" | "evi" | "savi" | "ndwi";
+type RasterStatistics = {
+  scene_id: string;
+  index: SatelliteIndex;
+  analysis_bbox_wgs84: [number, number, number, number];
+  grid: { crs: string; width: number; height: number; resolution_m: number };
+  pixels: { total: number; valid: number; masked: number; valid_fraction: number };
+  statistics: { min: number | null; max: number | null; mean: number | null; median: number | null };
+  mask: { cloud_masked_pixel_count: number; geometry_mask_applied: boolean };
+  sample_geometry?: string;
+  evidence_status?: string;
+};
 type AnalysisResult = {
   created: boolean;
   observation: { id: number; value: number; observed_at: string; evidence_status: string };
-  statistics?: { pixels: { valid_fraction: number }; processing_plan_fingerprint: string };
+  statistics?: RasterStatistics;
   sample_geometry: string;
   provenance: string;
 };
@@ -57,6 +68,7 @@ export default function ParcelSentinel({
     missing: "Ajoutez une parcelle réelle d’abord.", info: "Sans contour, l’analyse utilise un carré estimé autour du centre. Avec un contour enregistré, les statistiques sont masquées au polygone réel. Résultat INFÉRÉ et non vérifié sur le terrain.",
     saved: "Indice enregistré", duplicate: "Scène/indice déjà enregistré", load: "Consultation du catalogue…",
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
+    rasterTitle: "Raster Sentinel calculé sur la parcelle", min: "Min", mean: "Moyenne", median: "Médiane", max: "Max", valid: "Pixels valides", resolution: "Résolution", acquired: "Acquisition", realRaster: "COG Sentinel-2 réel · masque SCL · contour parcelle",
   } : lang === "en" ? {
     heading: "Real Sentinel-2 · saved field indices", intro: "Find real L2A scenes, compute SCL-masked NDVI/EVI/SAVI/NDWI, and save the mean to your parcel.",
     parcel: "Parcel", from: "From", to: "To", search: "Search scenes",
@@ -66,6 +78,7 @@ export default function ParcelSentinel({
     missing: "Add a real parcel first.", info: "Without a boundary, analysis uses an approximate square around the centre. With a saved boundary, statistics are masked to the real polygon. Result remains INFERRED, not ground verified.",
     saved: "Index saved", duplicate: "Scene/index already recorded", load: "Checking satellite catalogue…",
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
+    rasterTitle: "Sentinel raster computed for this field", min: "Min", mean: "Mean", median: "Median", max: "Max", valid: "Valid pixels", resolution: "Resolution", acquired: "Acquired", realRaster: "Real Sentinel-2 COG · SCL mask · parcel boundary",
   } : {
     heading: "Sentinel-2 حقيقي · سجل مؤشرات الحقل", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI/EVI/SAVI/NDWI مع حجب الغيوم ثم احفظ المتوسط في سجل القطعة.",
     parcel: "القطعة الزراعية", from: "من", to: "إلى", search: "بحث عن المشاهد",
@@ -75,6 +88,7 @@ export default function ParcelSentinel({
     missing: "أنشئ قطعة زراعية حقيقية أولاً.", info: "بدون حدود مرسومة يستخدم التحليل مربعًا تقديريًا حول المركز؛ وعند حفظ الحدود تُقص الإحصاءات على البوليغون الحقيقي. تبقى النتيجة INFERRED وليست قياسًا ميدانيًا متحققًا.",
     saved: "تم حفظ المؤشر", duplicate: "هذا المشهد/المؤشر محفوظ سابقًا", load: "جاري البحث في فهرس الأقمار…",
     busy: "جاري تحليل الصورة…", error: "فشلت العملية. تحقق من الإحداثيات وتوفر المزود وجودة المشهد.",
+    rasterTitle: "Raster Sentinel محسوب على حدود القطعة", min: "الأدنى", mean: "المتوسط", median: "الوسيط", max: "الأعلى", valid: "البكسلات الصالحة", resolution: "الدقة", acquired: "تاريخ الالتقاط", realRaster: "Sentinel-2 COG حقيقي · قناع SCL · حدود القطعة",
   };
   const active = parcels.filter(p => !p.archived);
   const [parcelId, setParcelId] = useState<number | null>(selectedParcelId);
@@ -87,6 +101,8 @@ export default function ParcelSentinel({
   const [busy, setBusy] = useState<"scenes" | "compute" | "coords" | null>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [rasterStats, setRasterStats] = useState<RasterStatistics | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
 
@@ -100,8 +116,16 @@ export default function ParcelSentinel({
     setScenes([]);
     setSceneId("");
     setResult(null);
+    setRasterStats(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setError("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parcel?.id]);
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   if (!parcel) {
     return <section className="fg-panel"><h2>{text.heading}</h2><p>{text.missing}</p></section>;
@@ -125,10 +149,25 @@ export default function ParcelSentinel({
 
   const handleAnalyze = async () => {
     if (!sceneId || busy) return;
-    setBusy("compute"); setError(""); setResult(null);
+    setBusy("compute"); setError(""); setResult(null); setRasterStats(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     try {
       const value = await api.post<AnalysisResult>(`/agriculture/parcels/${parcel.id}/remote-sensing/analyze`, {scene_id: sceneId, index: indexKey});
+      let stats = value.statistics ?? null;
+      if (!stats) {
+        const params = new URLSearchParams({ scene_id: sceneId, index: indexKey });
+        stats = await api.get<RasterStatistics>(`/agriculture/parcels/${parcel.id}/remote-sensing/statistics?${params.toString()}`);
+      }
+      const previewParams = new URLSearchParams({ scene_id: sceneId, index: indexKey });
+      const preview = await api.getBlob(
+        `/agriculture/parcels/${parcel.id}/remote-sensing/preview.png?${previewParams.toString()}`,
+        60_000,
+      );
+      const url = URL.createObjectURL(preview);
       setResult(value);
+      setRasterStats(stats);
+      setPreviewUrl(url);
       if (value.created) await onSaved();
     } catch {
       setError(text.error);
@@ -196,8 +235,29 @@ export default function ParcelSentinel({
         <strong>{result.created ? text.saved : text.duplicate}</strong>
         <div>{indexKey.toUpperCase()}: <strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong></div>
         <small>{new Date(result.observation.observed_at).toLocaleDateString()} · {result.observation.evidence_status}</small>
-        {result.statistics && <small>Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%</small>}
       </div>}
+      {previewUrl && rasterStats && <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4" data-testid="sentinel-real-raster">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div><strong>{text.rasterTitle}</strong><p className="text-xs text-muted-foreground">{text.realRaster}</p></div>
+          <span className="fg-badge inferred">COMPUTED · {indexKey.toUpperCase()}</span>
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,.7fr)]">
+          <div className="overflow-hidden rounded-xl border bg-slate-950/5">
+            <img src={previewUrl} alt={`${indexKey.toUpperCase()} Sentinel-2 raster`} className="block aspect-video h-auto w-full object-contain [image-rendering:auto]" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 content-start">
+            {[
+              [text.min, rasterStats.statistics.min],
+              [text.mean, rasterStats.statistics.mean],
+              [text.median, rasterStats.statistics.median],
+              [text.max, rasterStats.statistics.max],
+            ].map(([label,value]) => <div key={String(label)} className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{label}</span><strong className="mt-1 block text-lg tabular-nums" dir="ltr">{typeof value==="number"?value.toFixed(4):"—"}</strong></div>)}
+            <div className="col-span-2 rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{text.valid}</span><strong className="mt-1 block" dir="ltr">{(rasterStats.pixels.valid_fraction*100).toFixed(1)}% · {rasterStats.pixels.valid}/{rasterStats.pixels.total}</strong></div>
+            <div className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{text.resolution}</span><strong className="mt-1 block" dir="ltr">{rasterStats.grid.resolution_m} m</strong></div>
+            <div className="rounded-xl border bg-background p-3"><span className="text-xs text-muted-foreground">{text.acquired}</span><strong className="mt-1 block text-sm">{scenes.find(s=>s.id===sceneId)?.datetime?.slice(0,10) ?? "—"}</strong></div>
+          </div>
+        </div>
+      </section>}
       {error && <p className="fg-error" role="alert">{error}</p>}
       <p className="fg-footnote">{text.info} {parcel.boundary_geojson ? " · PARCEL_BOUNDARY_GEOJSON" : " · POINT_CENTERED_ESTIMATE"}</p>
     </div>
