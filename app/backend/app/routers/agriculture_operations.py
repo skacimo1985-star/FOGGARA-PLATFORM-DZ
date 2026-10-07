@@ -153,6 +153,7 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
         Measurement.verification_status == "verified",
     ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(300)))
     latest = {}
+    methods = {}
     ids = []
     sources = []
     for row in rows:
@@ -160,6 +161,7 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
         if metric in latest:
             continue
         latest[metric] = float(row.value)
+        methods[metric] = row.method
         ids.append(row.id)
         sources.append({
             "measurement_id": row.id,
@@ -183,7 +185,9 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
             "limitations": ["VERIFIED_PARCEL_SOIL_MEASUREMENTS_REQUIRED"],
         }
     result = soil_assessment_values(
-        latest, evidence_status="COMPUTED_FROM_VERIFIED_MEASUREMENTS"
+        latest,
+        evidence_status="COMPUTED_FROM_VERIFIED_MEASUREMENTS",
+        methods=methods,
     )
     result["measurement_ids"] = ids
     result["measurement_sources"] = sources
