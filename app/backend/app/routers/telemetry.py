@@ -14,9 +14,10 @@ from sqlalchemy.orm import Session
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import (Device, Sensor, TELEMETRY_QUERY_MAX_DAYS,
-                      TELEMETRY_QUERY_MAX_LIMIT, TELEMETRY_UNITS,
-                      TelemetryReading, User)
+from ..models import (
+    Device, IrrigationZone, Pump, Reservoir, Sensor, TELEMETRY_QUERY_MAX_DAYS,
+    TELEMETRY_QUERY_MAX_LIMIT, TELEMETRY_UNITS, TelemetryReading, User, Valve, Well,
+)
 from ..schemas import (DeviceIn, DeviceOut, SensorIn, SensorOut,
                        EdgeTelemetryIn, TelemetryAggregateOut, TelemetryIngestIn, TelemetryOut,
                        TelemetryValidateOut)
@@ -37,6 +38,39 @@ def _owned_device(db: Session, org_id: int, device_id: int) -> Device:
     if d is None or d.org_id != org_id:
         api_error(404, "NOT_FOUND", "Device not found")
     return d
+
+
+SPATIAL_SUBJECT_MODELS = {
+    "well": Well,
+    "reservoir": Reservoir,
+    "pump": Pump,
+    "valve": Valve,
+    "irrigation_zone": IrrigationZone,
+    "zone": IrrigationZone,
+}
+
+
+def _validate_subject_reference(
+    db: Session,
+    org_id: int,
+    subject_type: Optional[str],
+    subject_id: Optional[int],
+) -> tuple[Optional[str], Optional[int]]:
+    if (subject_type is None) != (subject_id is None):
+        api_error(422, "SUBJECT_REFERENCE_INCOMPLETE", "subject_type and subject_id must be provided together")
+    if subject_type is None or subject_id is None:
+        return None, None
+
+    normalized = subject_type.strip().lower()
+    if not normalized:
+        api_error(422, "SUBJECT_TYPE_EMPTY", "subject_type must not be empty")
+
+    model = SPATIAL_SUBJECT_MODELS.get(normalized)
+    if model is not None:
+        subject = db.get(model, subject_id)
+        if subject is None or subject.org_id != org_id:
+            api_error(404, "SUBJECT_NOT_FOUND", "Referenced subject was not found in this organization")
+    return normalized, subject_id
 
 
 def _range(from_: Optional[datetime], to: Optional[datetime]):
@@ -61,8 +95,14 @@ def list_devices(user: User = Depends(get_current_user), db: Session = Depends(g
 @router.post("/devices", response_model=DeviceOut, status_code=201)
 def create_device(payload: DeviceIn, user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
+    data = payload.model_dump()
+    subject_type, subject_id = _validate_subject_reference(
+        db, user.org_id, data.get("subject_type"), data.get("subject_id")
+    )
+    data["subject_type"] = subject_type
+    data["subject_id"] = subject_id
     d = Device(org_id=user.org_id, protocol="simulated", is_simulated=True,
-               is_demo=True, **payload.model_dump())
+               is_demo=True, **data)
     db.add(d)
     db.flush()
     audit(db, user, "create", "device", entity_id=d.id)
@@ -92,8 +132,14 @@ def create_sensor(payload: SensorIn, user: User = Depends(get_current_user),
             and payload.max_value <= payload.min_value:
         api_error(422, "RANGE_ORDER", "max_value must exceed min_value")
     data = payload.model_dump()
-    data.setdefault("subject_type", device.subject_type)
-    data.setdefault("subject_id", device.subject_id)
+    if data.get("subject_type") is None and data.get("subject_id") is None:
+        data["subject_type"] = device.subject_type
+        data["subject_id"] = device.subject_id
+    subject_type, subject_id = _validate_subject_reference(
+        db, user.org_id, data.get("subject_type"), data.get("subject_id")
+    )
+    data["subject_type"] = subject_type
+    data["subject_id"] = subject_id
     s = Sensor(org_id=user.org_id, is_simulated=True, is_demo=True, **data)
     db.add(s)
     db.flush()
