@@ -311,9 +311,10 @@ def main():
                     authenticated_visit(path)
                     expect(page.locator("#main-content")).to_be_visible()
                     if path == "/app/iot":
-                        # This planned module deliberately shows one field-control safety notice.
-                        expect(page.get_by_role("alert")).to_have_count(1)
-                        expect(page.get_by_role("alert")).to_contain_text("الأوامر الميدانية حساسة وممنوعة")
+                        expect(page.get_by_test_id("iot-operational-center")).to_be_visible()
+                        expect(page.get_by_role("heading", name="مركز IoT وEdge")).to_be_visible()
+                        expect(page.get_by_text("/api/telemetry/edge/ingest", exact=False)).to_be_visible()
+                        assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     else:
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path == "/app/agriculture":
@@ -336,6 +337,7 @@ def main():
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/gis":
+                        expect(page.get_by_test_id("gis-field-draw")).to_be_visible()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
                         expect(page.locator(".fg-maplibre-host")).to_be_visible()
                         expect(page.locator(".fg-gis-register tbody tr")).to_have_count(2)
