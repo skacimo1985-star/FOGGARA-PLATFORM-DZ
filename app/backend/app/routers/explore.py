@@ -343,14 +343,25 @@ def list_wilayas(user: User = Depends(get_current_user)):
 # ---------- IoT / VDE — وصفي فقط، بلا محاكاة ----------
 @router.get("/iot/status")
 def iot_status(user: User = Depends(get_current_user)):
+    # Be explicit about what exists today: deterministic simulation and
+    # authenticated telemetry APIs are implemented, but field-device identity
+    # provisioning and live broker credentials are not.
     return {
         "status": "planned",
         "model": ["Device", "Gateway", "TelemetryMessage", "DeviceProvisioning",
                   "IngestionPipeline(measurement source_type=instrument)"],
+        "capabilities": {
+            "simulation_registry": "available",
+            "deterministic_simulator": "available",
+            "authenticated_telemetry_api": "available",
+            "vendor_neutral_edge_envelope": "available",
+            "verified_device_provisioning": "not_implemented",
+            "field_broker_connectivity": "not_configured",
+        },
         "warnings": [
-            "no_real_devices_connected",
-            "no_simulated_telemetry",
-            "ingestion_requires_verified_device_identity",
+            "no_verified_device_provisioning",
+            "no_field_device_credentials",
+            "edge_ingestion_requires_authenticated_user_and_owned_sensor",
         ],
     }
 
