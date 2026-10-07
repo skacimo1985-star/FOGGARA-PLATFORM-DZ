@@ -37,3 +37,25 @@ No comparison iteration claimed; screenshot acquisition failed before visual QA.
 - Check console errors and fix visual P0/P1/P2 findings before production merge.
 
 final result: blocked
+
+
+## Continuation batch — SIREP institutional landing
+
+Current head after continuation: `ca61266503518d465b37a7cf44d0931a565c5a30`.
+
+Implemented after the original QA snapshot:
+- Added a trilingual SIREP OASES NEXUS WEFEH-DZ "Who we are / Qui sommes-nous / من نحن" section.
+- Added a five-domain company services band covering water/irrigation/pumping, energy, sustainable agriculture, measurement/calibration/inspection, and digital/GIS/IoT/AI services.
+- Added an operational demo section that keeps the existing `/expo/stats` backend integration for visitor and feedback counters and links into the existing Expo, agriculture-services and authenticated workspace routes.
+- Replaced the large dedicated Expo QR composition with a compact QR block inside the demo so it no longer competes with or covers the main oasis visual.
+- Applied uppercase/majuscule treatment to Latin-script headings/actions while preserving Arabic typography.
+- Preserved the existing backend, authentication, GIS/agriculture modules, APIs, database schema and migrations; this continuation changes landing-page presentation only.
+
+### Current verification state
+
+- The latest GitHub Actions run for this head was **skipped**, so the earlier build/lint/test result must not be treated as validation of this continuation batch.
+- No new browser-rendered desktop/mobile AR/FR/EN comparison has been completed for the continuation batch.
+- PR #157 remains a **draft** and must not be merged to `main` until a current build plus visual/interaction QA passes.
+- Existing local oasis/brand assets already in the repository are used by the continuation. Additional user-provided media is being treated as source material but is not claimed as committed until it is actually present in the branch.
+
+final result: implementation advanced; current-head verification pending
