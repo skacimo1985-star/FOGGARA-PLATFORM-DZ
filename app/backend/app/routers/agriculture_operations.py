@@ -13,7 +13,13 @@ from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, Site, User
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
-from ..services.service_delivery import irrigation_water_assessment, soil_assessment, soil_assessment_values
+from ..services.service_delivery import (
+    irrigation_water_assessment,
+    soil_assessment,
+    soil_assessment_values,
+    soil_data_gaps,
+    water_data_gaps,
+)
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -181,6 +187,7 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
             "findings": [],
             "actions": [],
             "coverage": [],
+            "data_gaps": soil_data_gaps({}),
             "measurement_ids": [],
             "measurement_sources": [],
             "limitations": ["VERIFIED_PARCEL_SOIL_MEASUREMENTS_REQUIRED"],
@@ -197,6 +204,7 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
     if project is None or project.resource_id is None:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'data_gaps': water_data_gaps({}),
                 'measurement_ids': [], 'measurement_sources': [], 'resource_id': None,
                 'limitations': ['PROJECT_WATER_RESOURCE_REQUIRED', 'VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
     rows = list(db.scalars(select(Measurement).where(
@@ -220,6 +228,7 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
     if not latest:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'data_gaps': water_data_gaps({}),
                 'measurement_ids': [], 'measurement_sources': [], 'resource_id': project.resource_id,
                 'limitations': ['VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
     result = irrigation_water_assessment(latest, units=units)
