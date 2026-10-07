@@ -4,7 +4,7 @@ import type { GisSite, WilayaMeta } from "@/types";
 export type AnalysisRasterOverlay = {
   url: string;
   bbox: [number, number, number, number];
-  index: "ndvi" | "evi" | "savi" | "ndwi";
+  index: "ndvi" | "evi" | "savi" | "ndwi" | "ndmi" | "lswi" | "bsi";
 };
 
 export type ParcelBoundaryFeature = {
@@ -22,6 +22,7 @@ export type ParcelBoundaryFeature = {
     location: string;
     site_id: number | null;
     is_demo: boolean;
+    selected?: boolean;
   };
 };
 
@@ -52,8 +53,10 @@ type Props = {
   selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
+  selectedParcelId?: number | null;
   onSelectWilaya?: (code: string) => void;
   onSelectSite?: (siteId: number) => void;
+  onSelectParcel?: (parcelId: number) => void;
   onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
   locale?: string;
@@ -102,6 +105,8 @@ type MapInstance = {
   getSource: (id: string) => unknown;
   getCanvas: () => HTMLCanvasElement;
   setPaintProperty: (layerId: string, name: string, value: unknown) => void;
+  setLayoutProperty: (layerId: string, name: string, value: unknown) => void;
+  setTerrain: (terrain: Record<string, unknown> | null) => void;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
   getBounds: () => {
@@ -128,6 +133,7 @@ type MapLibreModule = {
 const MAPLIBRE_MODULE_URL = "/vendor/maplibre-gl.mjs";
 const MAPLIBRE_WORKER_URL = "/vendor/maplibre-gl-worker.mjs";
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const TERRAIN_TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
 const ALGERIA_BOUNDS: [Point, Point] = [[-8.8, 18.4], [12.2, 37.5]];
 const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/2m8pJwAAAABJRU5ErkJggg==";
 
@@ -151,6 +157,19 @@ function isGeoJsonSource(value: unknown): value is GeoJsonSource {
 function isImageSource(value: unknown): value is ImageSource {
   if (typeof value !== "object" || value === null || !("updateImage" in value)) return false;
   return typeof (value as { updateImage?: unknown }).updateImage === "function";
+}
+
+function polygonPoints(feature: ParcelBoundaryFeature): Point[] {
+  const coordinates = feature.geometry.coordinates;
+  if (!Array.isArray(coordinates) || !Array.isArray(coordinates[0])) return [];
+  return coordinates[0]
+    .filter((point): point is [number, number] =>
+      Array.isArray(point)
+      && point.length >= 2
+      && Number.isFinite(Number(point[0]))
+      && Number.isFinite(Number(point[1]))
+    )
+    .map((point) => [Number(point[0]), Number(point[1])] as Point);
 }
 
 function boundsFor(points: Point[]): [Point, Point] | null {
@@ -177,8 +196,10 @@ export function NationalMap({
   selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
+  selectedParcelId = null,
   onSelectWilaya,
   onSelectSite,
+  onSelectParcel,
   onSelectScene,
   onViewportChange,
   locale = "ar",
@@ -187,6 +208,7 @@ export function NationalMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
   const onSelectSiteRef = useRef(onSelectSite);
+  const onSelectParcelRef = useRef(onSelectParcel);
   const onSelectWilayaRef = useRef(onSelectWilaya);
   const onSelectSceneRef = useRef(onSelectScene);
   const onViewportChangeRef = useRef(onViewportChange);
@@ -195,8 +217,16 @@ export function NationalMap({
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
+  const [mapMode, setMapMode] = useState<"street" | "relief" | "analysis">("street");
+  const [visibleLayers, setVisibleLayers] = useState({
+    sites: true,
+    parcels: true,
+    scenes: true,
+    analysis: true,
+  });
 
   onSelectSiteRef.current = onSelectSite;
+  onSelectParcelRef.current = onSelectParcel;
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
   onViewportChangeRef.current = onViewportChange;
@@ -254,8 +284,14 @@ export function NationalMap({
 
   const parcelFeatureCollection = useMemo(() => ({
     type: "FeatureCollection" as const,
-    features: parcelBoundaries,
-  }), [parcelBoundaries]);
+    features: parcelBoundaries.map((feature) => ({
+      ...feature,
+      properties: {
+        ...feature.properties,
+        selected: feature.properties.id === selectedParcelId,
+      },
+    })),
+  }), [parcelBoundaries, selectedParcelId]);
   parcelFeaturesRef.current = parcelFeatureCollection;
 
   const labels = locale === "fr"
@@ -269,6 +305,9 @@ export function NationalMap({
         source: "Open map",
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
+        street: "Plan", relief: "Relief", analysis: "Analyse",
+        layerSites: "Sites", layerParcels: "Parcelles", layerScenes: "Sentinel", layerAnalysis: "Résultat",
+        modes: "Vue", layers: "Couches",
       }
     : locale === "en"
       ? {
@@ -281,6 +320,9 @@ export function NationalMap({
           source: "Open map",
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
+          street: "Street", relief: "Relief", analysis: "Analysis",
+          layerSites: "Sites", layerParcels: "Parcels", layerScenes: "Sentinel", layerAnalysis: "Result",
+          modes: "View", layers: "Layers",
         }
       : {
           title: "الخريطة التشغيلية الوطنية",
@@ -292,6 +334,9 @@ export function NationalMap({
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
+          street: "شوارع", relief: "تضاريس", analysis: "تحليل",
+          layerSites: "المواقع", layerParcels: "القطع", layerScenes: "Sentinel", layerAnalysis: "النتيجة",
+          modes: "الرؤية", layers: "الطبقات",
         };
 
   useEffect(() => {
@@ -327,6 +372,26 @@ export function NationalMap({
         map.on("load", () => {
           if (cancelled || !map) return;
           if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+
+          map.addSource("terrain-dem", {
+            type: "raster-dem",
+            tiles: [TERRAIN_TILE_URL],
+            tileSize: 256,
+            encoding: "terrarium",
+            maxzoom: 15,
+            attribution: "Terrain Tiles · Mapzen / AWS Open Data",
+          });
+          map.addLayer({
+            id: "terrain-hillshade",
+            type: "hillshade",
+            source: "terrain-dem",
+            layout: { visibility: "none" },
+            paint: {
+              "hillshade-exaggeration": 0.34,
+              "hillshade-shadow-color": "#26352f",
+              "hillshade-highlight-color": "#f3ead7",
+            },
+          });
 
           const initialOverlay = analysisOverlayRef.current;
           map.addSource("analysis-overlay", {
@@ -377,8 +442,8 @@ export function NationalMap({
             type: "fill",
             source: "agri-parcel-boundaries",
             paint: {
-              "fill-color": "#178568",
-              "fill-opacity": 0.17,
+              "fill-color": ["case", ["boolean", ["get", "selected"], false], "#f59e0b", "#178568"],
+              "fill-opacity": ["case", ["boolean", ["get", "selected"], false], 0.3, 0.17],
             },
           });
           map.addLayer({
@@ -386,8 +451,8 @@ export function NationalMap({
             type: "line",
             source: "agri-parcel-boundaries",
             paint: {
-              "line-color": "#0f6f56",
-              "line-width": 2.2,
+              "line-color": ["case", ["boolean", ["get", "selected"], false], "#d97706", "#0f6f56"],
+              "line-width": ["case", ["boolean", ["get", "selected"], false], 3.4, 2.2],
               "line-opacity": 0.92,
             },
           });
@@ -429,6 +494,19 @@ export function NationalMap({
           map.on("click", "satellite-scenes-fill", (event) => {
             const sceneId = String(event.features?.[0]?.properties?.sceneId ?? "");
             if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
+          });
+
+          map.on("mouseenter", "agri-parcel-fill", () => {
+            if (map) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "agri-parcel-fill", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "agri-parcel-fill", (event) => {
+            const parcelId = Number(event.features?.[0]?.properties?.id);
+            if (Number.isFinite(parcelId) && onSelectParcelRef.current) {
+              onSelectParcelRef.current(parcelId);
+            }
           });
 
           map.on("mouseenter", "foggara-sites", () => {
@@ -506,6 +584,43 @@ export function NationalMap({
     const map = mapRef.current;
     if (!map || engineState !== "ready") return;
 
+    const visibility = (visible: boolean) => visible ? "visible" : "none";
+    map.setLayoutProperty("foggara-sites", "visibility", visibility(visibleLayers.sites));
+    map.setLayoutProperty("foggara-site-halo", "visibility", visibility(visibleLayers.sites));
+    map.setLayoutProperty("agri-parcel-fill", "visibility", visibility(visibleLayers.parcels));
+    map.setLayoutProperty("agri-parcel-outline", "visibility", visibility(visibleLayers.parcels));
+    map.setLayoutProperty("satellite-scenes-fill", "visibility", visibility(visibleLayers.scenes));
+    map.setLayoutProperty("satellite-scenes-outline", "visibility", visibility(visibleLayers.scenes));
+
+    const overlayOpacity = !analysisOverlay || !visibleLayers.analysis
+      ? 0
+      : mapMode === "analysis" ? 0.9 : mapMode === "relief" ? 0.58 : 0.72;
+    map.setPaintProperty("analysis-overlay", "raster-opacity", overlayOpacity);
+
+    if (mapMode === "relief") {
+      map.setLayoutProperty("terrain-hillshade", "visibility", "visible");
+      map.setTerrain({ source: "terrain-dem", exaggeration: 1.15 });
+    } else {
+      map.setLayoutProperty("terrain-hillshade", "visibility", "none");
+      map.setTerrain(null);
+    }
+  }, [analysisOverlay, engineState, mapMode, visibleLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || engineState !== "ready") return;
+
+    const selectedParcel = parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId);
+    const parcelBounds = selectedParcel ? boundsFor(polygonPoints(selectedParcel)) : null;
+    if (parcelBounds) {
+      map.fitBounds(parcelBounds, {
+        padding: compact ? 42 : 78,
+        maxZoom: compact ? 14 : 16,
+        duration: 650,
+      });
+      return;
+    }
+
     const selectedSite = plotted.find((entry) => entry.site.id === selectedSiteId);
     if (selectedSite) {
       map.flyTo({
@@ -532,7 +647,7 @@ export function NationalMap({
     }
 
     map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
-  }, [compact, engineState, plotted, selectedSiteId, selectedWilaya]);
+  }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
 
   return (
     <section className={`fg-national-map ${compact ? "compact" : ""}`} aria-label={labels.title}>
@@ -549,6 +664,49 @@ export function NationalMap({
 
       <div className="fg-national-map-canvas">
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
+        <div className="fg-map-control-stack">
+          <div className="fg-map-control-card" aria-label={labels.modes}>
+            <small>{labels.modes}</small>
+            <div>
+              {([
+                ["street", labels.street],
+                ["relief", labels.relief],
+                ...(analysisOverlay ? [["analysis", labels.analysis]] : []),
+              ] as Array<["street" | "relief" | "analysis", string]>).map(([mode, label]) => (
+                <button
+                  type="button"
+                  key={mode}
+                  className={mapMode === mode ? "active" : ""}
+                  aria-pressed={mapMode === mode}
+                  onClick={() => setMapMode(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="fg-map-control-card" aria-label={labels.layers}>
+            <small>{labels.layers}</small>
+            <div className="fg-map-layer-buttons">
+              {([
+                ["sites", labels.layerSites],
+                ["parcels", labels.layerParcels],
+                ["scenes", labels.layerScenes],
+                ...(analysisOverlay ? [["analysis", labels.layerAnalysis]] : []),
+              ] as Array<[keyof typeof visibleLayers, string]>).map(([key, label]) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={visibleLayers[key] ? "active" : ""}
+                  aria-pressed={visibleLayers[key]}
+                  onClick={() => setVisibleLayers((current) => ({ ...current, [key]: !current[key] }))}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         {engineState === "loading" && (
           <div className="fg-map-engine-state" aria-live="polite">{labels.loading}</div>
         )}
