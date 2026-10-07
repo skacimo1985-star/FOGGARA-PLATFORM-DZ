@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { NationalMap, type AnalysisRasterOverlay, type InfrastructureFeature, type ParcelBoundaryFeature, type SatelliteScene } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type InfrastructureFeature, type IotBindingFeature, type ParcelBoundaryFeature, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -21,6 +21,23 @@ type SpatialFeature = {
     commune: string | null;
     is_demo: boolean;
     distance_m?: number;
+  };
+};
+
+type IotBindingsGeoJSON = {
+  type: "FeatureCollection";
+  features: IotBindingFeature[];
+  metadata: {
+    organization_scoped: boolean;
+    count: number;
+    sensor_records: number;
+    resolved_sensor_records: number;
+    unresolved_sensor_records: number;
+    crs: string;
+    geometry_type: string;
+    coordinate_scope: string;
+    exact_sensor_coordinates: boolean;
+    live_telemetry_claim: boolean;
   };
 };
 
@@ -220,6 +237,7 @@ export default function Gis() {
   const [satelliteScenes, setSatelliteScenes] = useState<SatelliteScene[]>([]);
   const [parcelBoundaries, setParcelBoundaries] = useState<ParcelBoundaryFeature[]>([]);
   const [infrastructureClusters, setInfrastructureClusters] = useState<InfrastructureFeature[]>([]);
+  const [iotBindings, setIotBindings] = useState<IotBindingFeature[]>([]);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
@@ -281,6 +299,9 @@ export default function Gis() {
     api.get<InfrastructureGeoJSON>("/gis/infrastructure.geojson")
       .then((r) => setInfrastructureClusters(r.features))
       .catch(() => setInfrastructureClusters([]));
+    api.get<IotBindingsGeoJSON>("/gis/iot-bindings.geojson")
+      .then((r) => setIotBindings(r.features))
+      .catch(() => setIotBindings([]));
   }, []);
 
   const filtered = useMemo(() => {
@@ -670,6 +691,7 @@ export default function Gis() {
           satelliteScenes={satelliteScenes}
           parcelBoundaries={parcelBoundaries}
           infrastructureClusters={infrastructureClusters}
+          iotBindings={iotBindings}
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
