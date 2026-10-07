@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map, Copy, Download, Check } from "lucide-react";
@@ -16,6 +16,7 @@ const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"
 export default function Landing() {
   const {user}=useAuth(); const {t,i18n}=useTranslation(); const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
+  const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
   const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
@@ -79,6 +80,19 @@ export default function Landing() {
   const normalizedToolQuery=toolQuery.trim().toLocaleLowerCase();
   const visibleTools=toolDeck.filter(tool=>!normalizedToolQuery||`${tool.title} ${tool.body}`.toLocaleLowerCase().includes(normalizedToolQuery));
   useEffect(()=>{let cancelled=false;api.get<{visitors:number;feedback:number}>("/expo/stats").then(value=>{if(!cancelled)setExpoStats(value);}).catch(()=>undefined);return()=>{cancelled=true;};},[]);
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
+        event.preventDefault();
+        toolSearchRef.current?.focus();
+      }else if(event.key==="Escape"&&document.activeElement===toolSearchRef.current){
+        setToolQuery("");
+        toolSearchRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown",onKey);
+    return()=>window.removeEventListener("keydown",onKey);
+  },[]);
   async function copyExpoLink(){
     try{
       await navigator.clipboard.writeText(expoUrl);
@@ -123,7 +137,7 @@ export default function Landing() {
     <section className="fg-tool-hub" id="tools" aria-labelledby="fg-tool-title">
       <div className="fg-tool-panel">
         <div className="fg-tool-heading"><div><p className="fg-eyebrow">{toolCopy.eyebrow}</p><h2 id="fg-tool-title">{toolCopy.title}</h2><p>{toolCopy.body}</p></div><span className="fg-tool-count" dir="ltr">{visibleTools.length}/{toolDeck.length}</span></div>
-        <label className="fg-tool-command"><Search size={20}/><input value={toolQuery} onChange={e=>setToolQuery(e.target.value)} placeholder={toolCopy.search} aria-label={toolCopy.search}/><kbd dir="ltr">⌘ K</kbd></label>
+        <label className="fg-tool-command"><Search size={20}/><input ref={toolSearchRef} value={toolQuery} onChange={e=>setToolQuery(e.target.value)} placeholder={toolCopy.search} aria-label={toolCopy.search}/><kbd dir="ltr">Ctrl/⌘ K</kbd></label>
         <div className="fg-tool-grid">
           {visibleTools.map(({key,Icon,to,scope,title,body})=><Link to={to} className="fg-tool-card" key={key}>
             <span className="fg-tool-icon"><Icon size={22}/></span><span className="fg-tool-meta">{scope==="public"?toolCopy.public:toolCopy.workspace}</span>
