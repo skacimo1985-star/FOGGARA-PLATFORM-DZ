@@ -60,6 +60,7 @@ type Props = {
   selectedWilaya?: string;
   selectedSiteId?: number | null;
   selectedParcelId?: number | null;
+  selectedParcelPoint?: { lat: number; lon: number } | null;
   onSelectWilaya?: (code: string) => void;
   onSelectSite?: (siteId: number) => void;
   onSelectParcel?: (parcelId: number) => void;
@@ -312,6 +313,7 @@ export function NationalMap({
   selectedWilaya = "",
   selectedSiteId = null,
   selectedParcelId = null,
+  selectedParcelPoint = null,
   onSelectWilaya,
   onSelectSite,
   onSelectParcel,
@@ -918,6 +920,20 @@ export function NationalMap({
       return;
     }
 
+    if (
+      selectedParcelId
+      && selectedParcelPoint
+      && Number.isFinite(selectedParcelPoint.lat)
+      && Number.isFinite(selectedParcelPoint.lon)
+    ) {
+      map.flyTo({
+        center: [selectedParcelPoint.lon, selectedParcelPoint.lat],
+        zoom: compact ? 12 : 14,
+        duration: 650,
+      });
+      return;
+    }
+
     const selectedSite = plotted.find((entry) => entry.site.id === selectedSiteId);
     if (selectedSite) {
       map.flyTo({
@@ -944,7 +960,7 @@ export function NationalMap({
     }
 
     map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
-  }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
+  }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedParcelPoint, selectedSiteId, selectedWilaya]);
 
   const measuredDistance = pathDistanceMeters(measurePoints);
   const measuredArea = measureMode === "area" ? polygonAreaSquareMeters(measurePoints) : 0;
