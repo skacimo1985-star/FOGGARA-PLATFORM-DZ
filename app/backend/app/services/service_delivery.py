@@ -18,6 +18,52 @@ SOIL_SCREEN_METRICS = {
 FAO_IRRIGATION_GUIDELINE = "FAO Irrigation and Drainage Paper 29 Rev. 1"
 NRCS_SOIL_SALINITY_GUIDELINE = "USDA NRCS soil salinity classes"
 
+SOIL_GAP_SPEC = (
+    ("ph", "pH", "core", "acidity_alkalinity"),
+    ("ec", "dS/m", "core", "salinity"),
+    ("nitrogen", "mg/kg", "nutrient", "crop_specific_nitrogen_context"),
+    ("phosphorus", "mg/kg", "nutrient", "crop_specific_phosphorus_context"),
+    ("potassium", "mg/kg", "nutrient", "crop_specific_potassium_context"),
+    ("soc", "%", "soil_health", "soil_organic_carbon_context"),
+    ("moisture", "% VWC", "water_balance", "soil_water_status"),
+)
+
+WATER_GAP_SPEC = (
+    ("ph", "pH", "core", "acidity_alkalinity"),
+    ("ec", "dS/m", "core", "salinity"),
+    ("tds", "mg/L", "core", "dissolved_solids"),
+    ("chloride", "mg/L", "extended", "specific_ion_toxicity"),
+    ("bicarbonate", "mg/L", "extended", "alkalinity_context"),
+)
+
+
+def soil_data_gaps(values):
+    present = {key for key, value in (values or {}).items() if _finite(value)}
+    return [
+        {"metric": metric, "unit": unit, "priority": priority, "purpose": purpose}
+        for metric, unit, priority, purpose in SOIL_GAP_SPEC
+        if metric not in present
+    ]
+
+
+def water_data_gaps(values):
+    present = {key for key, value in (values or {}).items() if _finite(value)}
+    gaps = [
+        {"metric": metric, "unit": unit, "priority": priority, "purpose": purpose}
+        for metric, unit, priority, purpose in WATER_GAP_SPEC
+        if metric not in present
+    ]
+    has_sar_path = "sar" in present or {"sodium", "calcium", "magnesium"}.issubset(present)
+    if not has_sar_path:
+        gaps.insert(3, {
+            "metric": "sar_or_na_ca_mg",
+            "unit": "index or mg/L",
+            "priority": "core",
+            "purpose": "sodicity_and_infiltration_risk",
+            "alternatives": ["sar", "sodium+calcium+magnesium"],
+        })
+    return gaps
+
 
 def _soil_salinity_class(ec):
     if ec < 2:
@@ -147,6 +193,7 @@ def soil_assessment_values(values, *, evidence_status="COMPUTED"):
         "findings": findings,
         "actions": list(dict.fromkeys(actions)),
         "coverage": sorted(latest),
+        "data_gaps": soil_data_gaps(latest),
         "guidelines": [NRCS_SOIL_SALINITY_GUIDELINE],
         "limitations": limitations,
     }
@@ -275,6 +322,7 @@ def irrigation_water_assessment(measurements, *, units=None):
         "findings": findings,
         "actions": list(dict.fromkeys(actions)),
         "coverage": sorted(latest),
+        "data_gaps": water_data_gaps(latest),
         "guidelines": [FAO_IRRIGATION_GUIDELINE],
         "limitations": limitations,
     }
