@@ -55,6 +55,8 @@ type Assessment = {
   findings?: Array<{ metric: string; level: string; message: string }>;
   actions?: string[];
   measurement_ids?: number[];
+  derived?: Record<string, string | number>;
+  guidelines?: string[];
 };
 
 type Summary = {
@@ -89,8 +91,13 @@ function AssessmentConsole({title,assessment,empty}:{title:string;assessment:Ass
     <div className="fg-service-console-head"><FlaskConical size={22}/><div><h2>{title}</h2><p>{assessment.evidence_status} · {assessment.decision_status}</p></div></div>
     {inputs.length?<div className="fg-service-input-grid">{inputs.map(([metric,value])=><div key={metric}><span>{metric.toUpperCase()}</span><strong dir="ltr">{Number(value).toFixed(3)}</strong></div>)}</div>:<p className="fg-service-console-note">{empty}</p>}
     {(assessment.findings??[]).length?<div className="fg-service-findings">{assessment.findings!.map((finding,index)=><article key={`${finding.metric}-${index}`} className={finding.level}><span>{finding.metric.toUpperCase()}</span><strong>{finding.message.replaceAll("_"," ")}</strong><small>{finding.level}</small></article>)}</div>:null}
+    {assessment.derived && Object.keys(assessment.derived).length ? <div className="fg-service-derived">
+      <strong>DERIVED</strong>
+      <div>{Object.entries(assessment.derived).map(([key,value])=><span key={key}><small>{key.replaceAll("_"," ")}</small><b dir="ltr">{String(value).replaceAll("_"," ")}</b></span>)}</div>
+    </div> : null}
     {(assessment.actions??[]).length?<div className="fg-service-actions-list">{assessment.actions!.map((action,index)=><p key={index}>{action}</p>)}</div>:null}
     <div className="fg-service-coverage"><strong>Coverage</strong><span>{assessment.coverage.length?assessment.coverage.join(" · "):empty}</span></div>
+    {(assessment.guidelines??[]).length?<div className="fg-service-guidelines">{assessment.guidelines!.map(item=><span key={item}>{item}</span>)}</div>:null}
     {assessment.limitations.length?<ul className="fg-service-limitations">{assessment.limitations.map(item=><li key={item}>{item.replaceAll("_"," ")}</li>)}</ul>:null}
   </div>;
 }
