@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run verify && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:matrix": "node --test tests/presentation-matrix.test.mjs",
     "typecheck": "tsc -b",
     "test": "node --test tests/*.test.mjs",
-    "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high"
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high",
+    "verify": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {
     "@fontsource/hanken-grotesk": "^5.3.0",
