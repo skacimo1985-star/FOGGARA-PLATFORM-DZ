@@ -63,6 +63,7 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
   };
 
   const active = parcels.filter(p => !p.archived);
+  const activeIds = active.map(p => p.id).join(",");
   const [parcelId, setParcelId] = useState<number | null>(active[0]?.id ?? null);
   const [result, setResult] = useState<Advisory | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,7 +74,7 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
       setParcelId(active[0]?.id ?? null);
       setResult(null);
     }
-  }, [active, parcelId]);
+  }, [activeIds, parcelId]);
 
   const run = async () => {
     if (!parcelId || busy) return;
@@ -124,3 +125,4 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
       <p className="fg-footnote"><ShieldCheck size={15}/> PROPOSED · NOT VERIFIED · NO FIELD EXECUTION</p>
     </div>}
   </section>;
+}
