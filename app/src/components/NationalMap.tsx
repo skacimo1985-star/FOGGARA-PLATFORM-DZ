@@ -707,6 +707,14 @@ export function NationalMap({
   }, [draftPoints, drawingBoundary]);
 
   useEffect(() => {
+    if (analysisOverlay) {
+      setMapMode("analysis");
+      return;
+    }
+    if (satelliteOverlay) setMapMode("satellite");
+  }, [analysisOverlay?.url, satelliteOverlay?.url]);
+
+  useEffect(() => {
     if (!analysisOverlay && mapMode === "analysis") setMapMode(satelliteOverlay ? "satellite" : "street");
     if (!satelliteOverlay && mapMode === "satellite") setMapMode("street");
   }, [analysisOverlay, mapMode, satelliteOverlay]);

@@ -382,6 +382,49 @@ def test_true_color_preview_uses_real_rgb_bands_scl_and_polygon(raster_assets):
     assert 0 < metadata["valid_fraction"] < 1
 
 
+def test_true_color_endpoint_requires_authentication(client):
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/true-color.png"
+        "?bbox=3,0,3.00035,0.00035"
+    )
+    assert response.status_code == 401
+
+
+def test_true_color_endpoint_returns_private_observed_raster(client, world, monkeypatch):
+    monkeypatch.setattr(
+        remote_sensing_catalog.httpx,
+        "Client",
+        lambda **_kwargs: FakeClient(provider_item()),
+    )
+
+    def fake_true_color(plan, bbox):
+        assert plan["scene_id"] == "S2A_TEST_L2A"
+        assert plan["product"] == "true_color"
+        assert bbox == [3.0, 0.0, 3.00035, 0.00035]
+        return b"\x89PNG\r\n\x1a\nRGB", {
+            "scene_id": plan["scene_id"],
+            "display_version": plan["display_version"],
+        }
+
+    monkeypatch.setattr(
+        remote_sensing_catalog,
+        "render_true_color_preview_png",
+        fake_true_color,
+    )
+    headers = login(client, "o1m@t.dz")
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/true-color.png"
+        "?bbox=3,0,3.00035,0.00035",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-foggara-product"] == "true_color"
+    assert response.headers["x-foggara-evidence"] == "OBSERVED_PROVIDER_RASTER_DISPLAY"
+    assert response.headers["x-foggara-verified"] == "false"
+
+
 def test_preview_png_endpoint_requires_authentication(client):
     response = client.get(
         "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/preview.png"
