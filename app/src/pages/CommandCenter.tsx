@@ -311,7 +311,7 @@ export default function CommandCenter() {
         <Link to="/app/setup" className="fg-command-workspace"><Sprout size={23}/><div><strong>{copy.setupAction}</strong><small>Site · Project · Water · Parcel</small></div><ArrowUpRight size={15}/></Link>
       </section>}
 
-      <section className="fg-command-kpis" aria-label={copy.activity}>
+      <section className="fg-command-kpis fg-command-kpis-secondary" aria-label={copy.activity}>
         {cards.map(({ label, value, to, icon: Icon }) => (
           <Link to={to} className="fg-command-kpi" key={label}>
             <div><Icon size={18} /><span>{label}</span></div>
