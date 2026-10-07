@@ -376,6 +376,7 @@ export function NationalMap({
 
   useEffect(() => {
     let cancelled = false;
+    setEngineState("loading");
     let map: MapInstance | null = null;
     let loadTimeout: number | null = null;
 
@@ -747,7 +748,7 @@ export function NationalMap({
       map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
     map.setPaintProperty("analysis-overlay", "raster-opacity", layers.analysis && analysisOverlay ? 0.78 : 0);
-  }, [analysisOverlay, engineState, layers]);
+  }, [analysisOverlay, baseMode, engineState, layers]);
 
   return (
     <section className={`fg-national-map ${compact ? "compact" : ""} ${minimal ? "minimal" : ""}`} aria-label={labels.title}>
