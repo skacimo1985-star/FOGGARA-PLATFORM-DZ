@@ -47,7 +47,7 @@ type SitesGeoJSON = {
   };
 };
 
-type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi";
+type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi" | "lswi";
 
 type RasterAnalysis = {
   scene_id: string;
