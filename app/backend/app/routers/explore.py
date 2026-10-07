@@ -11,8 +11,10 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import (AgriParcel, Asset, Indicator, Project, Service, ServiceRequest, Site,
-                      User, WaterResource)
+from ..models import (
+    AgriParcel, Asset, Indicator, IrrigationZone, Project, Pump, Reservoir,
+    Service, ServiceRequest, Site, User, Valve, WaterResource, Well,
+)
 from ..wilayas import WILAYAS
 from ..platform_models import NexusResource
 
@@ -205,6 +207,84 @@ def gis_sites_geojson(user: User = Depends(get_current_user), db: Session = Depe
             "count": len(sites),
             "crs": "EPSG:4326",
             "spatial_engine": "portable_latlon",
+        },
+    }
+
+
+@router.get("/gis/infrastructure.geojson")
+def gis_infrastructure_geojson(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Site-anchored infrastructure counts; never pretends asset-level coordinates exist."""
+    sites = _candidate_sites(db, user.org_id)
+    site_ids = {site.id for site in sites}
+    counts = {
+        site_id: {
+            "water_resources": 0,
+            "wells": 0,
+            "reservoirs": 0,
+            "pumps": 0,
+            "irrigation_zones": 0,
+            "valves": 0,
+            "resource_types": {},
+        }
+        for site_id in site_ids
+    }
+
+    for row in db.scalars(select(WaterResource).where(
+        WaterResource.org_id == user.org_id,
+        WaterResource.site_id.in_(site_ids) if site_ids else False,
+    )):
+        bucket = counts[row.site_id]
+        bucket["water_resources"] += 1
+        bucket["resource_types"][row.type] = bucket["resource_types"].get(row.type, 0) + 1
+    for model, key in (
+        (Well, "wells"),
+        (Reservoir, "reservoirs"),
+        (Pump, "pumps"),
+        (IrrigationZone, "irrigation_zones"),
+        (Valve, "valves"),
+    ):
+        if not site_ids:
+            break
+        for row in db.scalars(select(model).where(
+            model.org_id == user.org_id,
+            model.site_id.in_(site_ids),
+        )):
+            counts[row.site_id][key] += 1
+
+    features = []
+    for site in sites:
+        bucket = counts[site.id]
+        total = sum(bucket[key] for key in (
+            "water_resources", "wells", "reservoirs", "pumps", "irrigation_zones", "valves"
+        ))
+        if total == 0:
+            continue
+        features.append({
+            "type": "Feature",
+            "id": site.id,
+            "geometry": {"type": "Point", "coordinates": [float(site.lon), float(site.lat)]},
+            "properties": {
+                "site_id": site.id,
+                "site_name": site.name,
+                "wilaya": site.wilaya,
+                "total": total,
+                **bucket,
+                "coordinate_scope": "SITE",
+                "exact_asset_coordinates": False,
+                "is_demo": site.is_demo,
+            },
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "metadata": {
+            "organization_scoped": True,
+            "count": len(features),
+            "crs": "EPSG:4326",
+            "geometry_type": "Point",
+            "coordinate_scope": "site_coordinate_not_asset_coordinate",
+            "exact_asset_coordinates": False,
         },
     }
 
