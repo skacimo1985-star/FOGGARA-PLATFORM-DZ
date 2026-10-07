@@ -35,6 +35,7 @@ def processing_plan(index="ndvi"):
         "index": index,
         "formula_version": "foggara-rs-v1",
         "fingerprint_sha256": "a" * 64,
+        "effective_source_resolution_m": 20 if index in {"ndmi", "lswi", "bsi"} else 10,
         "required_assets": [required[key] for key in needed],
         "cloud_mask": {
             "asset": {
@@ -126,6 +127,10 @@ def test_all_indices_produce_finite_statistics(raster_assets, index):
     assert result["grid"]["resolution_m"] == 10.0
     assert result["grid"]["width"] <= remote_sensing_raster.MAX_AXIS_PIXELS
     assert result["grid"]["height"] <= remote_sensing_raster.MAX_AXIS_PIXELS
+    assert result["grid"]["effective_source_resolution_m"] == (
+        20 if index in {"ndmi", "lswi", "bsi"} else 10
+    )
+    assert result["grid"]["resampled"] is (index in {"ndmi", "lswi", "bsi"})
 
 
 def test_analysis_bbox_budget_fails_before_raster_io(monkeypatch):
