@@ -254,8 +254,8 @@ export default function Landing() {
         <p>{copy.aboutBody}</p>
         <Link className="fg-moon-btn fg-moon-btn-dark" to="/about">{copy.readMore}<ArrowUpRight size={17}/></Link>
       </div>
-      <div className="fg-moon-about-visual" aria-label={copy.gallery[1]}>
-        <div className="fg-moon-photo fg-photo-03"/>
+      <div className="fg-moon-about-visual" aria-label="FOGGARA-DZ oasis">
+        <img className="fg-moon-about-oasis" src="/images/oasis-hero.webp" alt="" loading="lazy" decoding="async"/>
         <div className="fg-moon-about-badge"><Waves size={24}/><strong>FOGGARA</strong><span>HERITAGE → DATA → DECISION</span></div>
       </div>
     </section>
@@ -271,33 +271,28 @@ export default function Landing() {
       <header><h2>{copy.offerTitle} <strong>{copy.offerStrong}</strong></h2><p>{copy.offerBody}</p></header>
       <div className="fg-moon-offer-grid">
         {copy.offers.map(([title,body,to],index)=><article key={title} className={`fg-moon-offer-card fg-offer-${index+1}`}>
-          <div className={`fg-moon-photo fg-photo-${["05","04","10"][index]}`}/>
+          <div className="fg-moon-offer-mark" aria-hidden="true">{index===0?<Droplets size={40}/>:index===1?<Satellite size={40}/>:<ShieldCheck size={40}/>}</div>
           <div><span dir="ltr">0{index+1}</span><h3>{title}</h3><p>{body}</p><Link to={to}>{copy.open}<ArrowUpRight size={15}/></Link></div>
         </article>)}
       </div>
     </section>
 
-    <section className="fg-moon-gallery" aria-labelledby="fg-gallery-title">
-      <header><h2 id="fg-gallery-title">{copy.galleryTitle} <strong>{copy.galleryStrong}</strong></h2><p>{copy.galleryBody}</p></header>
-      <div className="fg-moon-gallery-grid">
-        {[1,3,4,5,6,11].map((photo,index)=><figure key={photo} className={`fg-moon-gallery-card fg-gallery-${index+1}`}>
-          <div className={`fg-moon-photo fg-photo-${String(photo).padStart(2,"0")}`} role="img" aria-label={copy.gallery[index]}/>
-          <figcaption>{copy.gallery[index]}</figcaption>
-        </figure>)}
-      </div>
-    </section>
-
-    <section className="fg-moon-heritage" id="heritage">
-      <div className="fg-moon-heritage-poster">
-        <img src="/images/foggara-heritage-poster.webp" alt="La Foggara — système traditionnel de partage des eaux" loading="lazy" decoding="async"/>
-      </div>
+    <section className="fg-moon-heritage fg-foggara-visual-demo" id="heritage">
       <div className="fg-moon-heritage-copy">
-        <p className="fg-eyebrow">HERITAGE / ENGINEERING / WEFEH</p>
+        <p className="fg-eyebrow">DEMO / FOGGARA HERITAGE</p>
         <h2>{copy.heritageTitle}<br/><strong>{copy.heritageStrong}</strong></h2>
         <p>{copy.heritageBody}</p>
         <Link className="fg-moon-btn fg-moon-btn-dark" to="/app/nexus">{copy.heritageAction}<ArrowUpRight size={17}/></Link>
-        <div className="fg-moon-heritage-strip" aria-label="Foggara documentary images">
-          {[7,8,9,10].map(photo=><div key={photo} className={`fg-moon-photo fg-photo-${String(photo).padStart(2,"0")}`}/>)}
+      </div>
+      <div className="fg-foggara-demo-stage">
+        <figure className="fg-foggara-demo-feature">
+          <img src="/images/foggara-heritage-poster.webp" alt="La Foggara — système traditionnel de partage des eaux" loading="lazy" decoding="async"/>
+          <figcaption>LA FOGGARA · DEMO VISUEL</figcaption>
+        </figure>
+        <div className="fg-foggara-demo-photos" aria-label="Foggara documentary demo">
+          {[1,3,4,5,6,7,8,10,11].map((photo,index)=><figure key={photo}>
+            <div className={`fg-moon-photo fg-photo-${String(photo).padStart(2,"0")}`} role="img" aria-label={copy.gallery[index%copy.gallery.length]}/>
+          </figure>)}
         </div>
       </div>
     </section>
