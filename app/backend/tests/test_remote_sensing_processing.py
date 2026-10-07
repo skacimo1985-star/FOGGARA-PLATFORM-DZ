@@ -120,9 +120,12 @@ def test_processing_plan_supports_moisture_and_soil_indices():
     lswi = build_processing_plan(stac_item(), "lswi")
     assert {row["band"] for row in lswi["required_assets"]} == {"B08", "B11"}
     assert next(row for row in lswi["required_assets"] if row["band"] == "B11")["asset_key"] == "swir16"
+    assert lswi["target_resolution_m"] == 10
+    assert lswi["effective_source_resolution_m"] == 20
 
     bsi = build_processing_plan(stac_item(), "bsi")
     assert {row["band"] for row in bsi["required_assets"]} == {"B02", "B04", "B08", "B11"}
+    assert bsi["effective_source_resolution_m"] == 20
 
 
 def test_processing_plan_fails_closed_on_untrusted_asset_host():
