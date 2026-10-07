@@ -70,3 +70,20 @@
 .fg-map-draw-card{display:flex;align-items:center;gap:6px}
 .fg-map-draw-card>span{padding:0 4px;color:var(--muted-foreground);font-size:9px;font-weight:700}
 .fg-map-draw-card>button:disabled{cursor:not-allowed;opacity:.45;transform:none}
+
+
+/* GIS measurement, coordinate readout and raster opacity controls. */
+.fg-map-opacity-card{display:grid;gap:7px;min-width:210px}
+.fg-map-opacity-card label{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,1.2fr);align-items:center;gap:8px;color:var(--muted-foreground);font-size:9px;font-weight:700}
+.fg-map-opacity-card input[type=range]{width:100%;accent-color:#278064;cursor:pointer}
+.fg-map-readout{position:absolute;z-index:4;inset:auto auto 10px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:calc(100% - 20px);pointer-events:none}
+.fg-command-center[dir=rtl] .fg-map-readout{inset:auto 10px 10px auto}
+.fg-map-readout>span,.fg-map-readout>strong{padding:5px 8px;border:1px solid color-mix(in srgb,var(--border) 78%,transparent);border-radius:8px;background:color-mix(in srgb,var(--background) 92%,transparent);box-shadow:0 7px 20px #102b2218;backdrop-filter:blur(10px);font-size:9px}
+.fg-map-readout>strong{color:#155f9e;font-weight:800}
+.fg-maplibre-host .maplibregl-ctrl-scale{border-color:color-mix(in srgb,var(--foreground) 48%,transparent);background:color-mix(in srgb,var(--background) 78%,transparent);font-size:9px}
+@media(max-width:720px){
+  .fg-map-opacity-card{min-width:170px}
+  .fg-map-opacity-card label{grid-template-columns:1fr;font-size:8px}
+  .fg-map-readout{inset:auto 8px 8px 8px}
+  .fg-command-center[dir=rtl] .fg-map-readout{inset:auto 8px 8px 8px}
+}
