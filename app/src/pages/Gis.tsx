@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { MapPinned } from "lucide-react";
 import { api } from "@/lib/api";
 import type { GisSite, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
@@ -243,6 +245,30 @@ export default function Gis() {
     : lang === "en"
       ? { eyebrow: "NATIONAL GIS · FOGGARA-DZ", title: "Territory, resources and projects in one operational view.", sites: "Visible sites", projects: "Projects", resources: "Resources", layers: "Operational layers", table: "Spatial register", all: "All Algeria", selected: "Selected site", nearest: "Nearest sites", distance: "Distance", engine: "Spatial engine", noNearby: "No other nearby sites" }
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
+
+  const startCopy = lang === "fr"
+    ? {
+        title: "Ajoutez d’abord une géographie réelle",
+        body: "Le SIG reste national même sans données d’organisation. Pour exploiter les parcelles, la télédétection et les ressources, créez un site réel puis une parcelle.",
+        setup: "Créer le premier site",
+        agriculture: "Ouvrir l’espace agricole",
+        steps: ["Site avec wilaya et coordonnées", "Parcelle avec géométrie ou GeoJSON", "Recherche Sentinel-2 et analyse spatiale"],
+      }
+    : lang === "en"
+      ? {
+          title: "Add real geography first",
+          body: "The GIS remains a national map even when the organization has no records. To use parcels, remote sensing and resources, create a real site and then a parcel.",
+          setup: "Create first site",
+          agriculture: "Open agriculture workspace",
+          steps: ["Site with wilaya and coordinates", "Parcel geometry or GeoJSON", "Sentinel-2 search and spatial analysis"],
+        }
+      : {
+          title: "أضف جغرافيا حقيقية أولًا",
+          body: "يبقى GIS خريطة وطنية حتى عندما لا تملك المؤسسة سجلات بعد. لتشغيل القطع والاستشعار عن بعد والموارد، أنشئ موقعًا حقيقيًا ثم قطعة زراعية.",
+          setup: "إنشاء أول موقع",
+          agriculture: "فتح مساحة الزراعة",
+          steps: ["موقع بولاية وإحداثيات", "حدود قطعة أو GeoJSON", "بحث Sentinel-2 وتحليل مكاني"],
+        };
 
   const satelliteCopy = lang === "fr"
     ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante", trueColor: "Vue satellite réelle", trueColorLoading: "Chargement satellite…" }
@@ -589,6 +615,17 @@ export default function Gis() {
       </section>
 
       <ErrorText error={error} />
+
+      {data !== null && data.length === 0 && parcels.length === 0 ? (
+        <OperationalEmptyState
+          icon={MapPinned}
+          title={startCopy.title}
+          body={startCopy.body}
+          steps={startCopy.steps}
+          primary={{ label: startCopy.setup, to: "/app/setup" }}
+          secondary={{ label: startCopy.agriculture, to: "/app/agriculture" }}
+        />
+      ) : null}
 
       <section className="fg-command-kpis" aria-label={copy.layers}>
         <div className="fg-command-kpi"><div><span>{copy.sites}</span></div><strong>{filtered === null ? "—" : summary.sites}</strong></div>

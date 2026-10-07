@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { FolderKanban } from "lucide-react";
 import { api, type Paged } from "@/lib/api";
 import type { Asset, Project, Site, WaterResource } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorText, DemoBadge, Pager } from "@/components/common";
+import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 
 export default function Projects() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [resources, setResources] = useState<WaterResource[]>([]);
@@ -24,6 +26,30 @@ export default function Projects() {
 
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
+  const emptyCopy = lang === "fr"
+    ? {
+        title: "Créez votre premier projet opérationnel",
+        body: "Un projet FOGGARA peut être créé sans données fictives. Si votre organisation n’a encore aucun site réel, initialisez d’abord l’espace de travail.",
+        setup: "Initialiser l’espace",
+        create: "Créer le premier projet",
+        steps: ["Créer ou choisir un site réel", "Définir le domaine WEFEH", "Relier ressources et preuves au projet"],
+      }
+    : lang === "en"
+      ? {
+          title: "Create your first operational project",
+          body: "A FOGGARA project can be created without synthetic records. If your organization has no real site yet, initialize the workspace first.",
+          setup: "Initialize workspace",
+          create: "Create first project",
+          steps: ["Create or select a real site", "Choose the WEFEH domain", "Link resources and evidence to the project"],
+        }
+      : {
+          title: "أنشئ أول مشروع تشغيلي",
+          body: "يمكن إنشاء مشروع FOGGARA دون بيانات اصطناعية. إذا لم تكن مؤسستك تملك موقعًا حقيقيًا بعد، ابدأ بتهيئة مساحة العمل.",
+          setup: "تهيئة مساحة العمل",
+          create: "إنشاء أول مشروع",
+          steps: ["إنشاء أو اختيار موقع حقيقي", "تحديد مجال WEFEH", "ربط الموارد والأدلة بالمشروع"],
+        };
 
   const load = useCallback((p: number) => {
     api.get<Paged<Project>>(`/projects?page=${p}&page_size=12`)
@@ -122,7 +148,16 @@ export default function Projects() {
       {projects === null ? (
         <Skeleton className="h-40 w-full" />
       ) : projects.length === 0 ? (
-        <p className="rounded-md border border-dashed p-8 text-center text-muted-foreground">{t("project.empty")}</p>
+        <OperationalEmptyState
+          icon={FolderKanban}
+          title={emptyCopy.title}
+          body={emptyCopy.body}
+          steps={emptyCopy.steps}
+          primary={sites.length === 0
+            ? { label: emptyCopy.setup, to: "/app/setup" }
+            : { label: emptyCopy.create, onClick: () => setShowForm(true) }}
+          secondary={sites.length > 0 ? { label: emptyCopy.setup, to: "/app/setup" } : undefined}
+        />
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {projects.map((p) => (

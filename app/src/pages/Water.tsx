@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorText, DemoBadge } from "@/components/common";
+import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 import "./water-intelligence.css";
 
 // سلسلة المياه: مصدر → تخزين → ضخ → توزيع → سقي → تخصيص (Contract §4)
@@ -105,6 +106,30 @@ export default function Water() {
       ? { title: "Operational water chain", active: "Active infrastructure", pending: "Allocations to review", capacity: "Storage capacity", irrigated: "Irrigated area", sites: "Linked sites" }
       : { title: "سلسلة المياه التشغيلية", active: "البنية النشطة", pending: "تخصيصات تنتظر المراجعة", capacity: "سعة التخزين", irrigated: "المساحة المسقية", sites: "المواقع المرتبطة" };
 
+  const startCopy = language === "fr"
+    ? {
+        title: "Un site réel est requis avant l’infrastructure hydraulique",
+        body: "Les puits, réservoirs, pompes, vannes et zones d’irrigation sont rattachés à un site. Créez d’abord le site afin d’éviter des équipements orphelins.",
+        action: "Initialiser le site et le projet",
+        projects: "Voir les projets",
+        steps: ["Créer le site réel", "Ajouter la source ou le stockage", "Relier pompage, distribution et allocation"],
+      }
+    : language === "en"
+      ? {
+          title: "A real site is required before water infrastructure",
+          body: "Wells, reservoirs, pumps, valves and irrigation zones belong to a site. Create the site first so infrastructure records cannot become orphaned.",
+          action: "Initialize site and project",
+          projects: "View projects",
+          steps: ["Create the real site", "Add source or storage", "Connect pumping, distribution and allocation"],
+        }
+      : {
+          title: "يلزم موقع حقيقي قبل إنشاء البنية المائية",
+          body: "الآبار والخزانات والمضخات والصمامات ومناطق الري ترتبط بموقع. أنشئ الموقع أولًا حتى لا تُنشأ تجهيزات بلا سياق مكاني.",
+          action: "تهيئة الموقع والمشروع",
+          projects: "عرض المشاريع",
+          steps: ["إنشاء الموقع الحقيقي", "إضافة المصدر أو التخزين", "ربط الضخ والتوزيع والتخصيص"],
+        };
+
   const waterSummary = d ? {
     active: [...d.wells, ...d.reservoirs, ...d.pumps, ...d.vfds, ...d.valves]
       .filter((item) => item.status === "active").length,
@@ -127,6 +152,17 @@ export default function Water() {
         <p className="mt-1 text-sm text-muted-foreground">{t("water.subtitle")}</p>
       </div>
       <ErrorText error={error} />
+
+      {d && sites.length === 0 ? (
+        <OperationalEmptyState
+          icon={Droplets}
+          title={startCopy.title}
+          body={startCopy.body}
+          steps={startCopy.steps}
+          primary={{ label: startCopy.action, to: "/app/setup" }}
+          secondary={{ label: startCopy.projects, to: "/app/projects" }}
+        />
+      ) : null}
 
       {d && waterSummary && (
         <section className="fg-water-intelligence" aria-label={summaryCopy.title}>
@@ -165,7 +201,7 @@ export default function Water() {
         </section>
       )}
 
-      {d && (
+      {d && sites.length > 0 && (
         <Tabs defaultValue="wells">
           <TabsList className="flex-wrap">
             <TabsTrigger value="wells">{t("water.wells")} ({d.wells.length})</TabsTrigger>
