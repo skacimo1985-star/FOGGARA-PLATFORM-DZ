@@ -6,7 +6,7 @@ import {
   FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
   BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
-  Building2, Waves, ScanLine, Pause, Play
+  Building2, Waves, ScanLine, Pause, Play, Maximize2, Minimize2
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
@@ -43,6 +43,7 @@ export default function Landing() {
   const [heroSlide,setHeroSlide]=useState(0);
   const [heritageSlide,setHeritageSlide]=useState(0);
   const [heritagePlaying,setHeritagePlaying]=useState(true);
+  const [heritageFullscreen,setHeritageFullscreen]=useState(false);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -134,6 +135,7 @@ export default function Landing() {
     intro:"Le patrimoine hydraulique devient une présentation vivante du modèle FOGGARA : source → galerie → kasria → seguia → parcelle, puis données → preuves → décision → suivi.",
     legacyFlow:"SOURCE → GALERIE → KASRIA → SEGUIA → PARCELLE",
     digitalFlow:"DONNÉES → PREUVES → DÉCISION → SUIVI",
+    present:"MODE PRÉSENTATION",exit:"QUITTER LA PRÉSENTATION",
     slides:[
       {photo:10,title:"SOURCE / GALERIE MÈRE",eyebrow:"01 · CAPTAGE",body:"L’eau est captée dans la galerie souterraine et circule par gravité. Dans FOGGARA-DZ, cette étape correspond à l’origine de la ressource et à sa localisation traçable.",digital:"RESSOURCE → LOCALISATION → DONNÉE"},
       {photo:8,title:"KASRIA / PARTAGE DE L’EAU",eyebrow:"02 · RÉPARTITION",body:"La kasria répartit l’eau entre plusieurs branches. Le jumeau numérique traduit cette logique en règles, priorités, contraintes et scénarios de distribution.",digital:"RÈGLES → CONTRAINTES → ALLOCATION"},
@@ -149,6 +151,7 @@ export default function Landing() {
     intro:"The heritage system becomes a living presentation of the FOGGARA model: source → gallery → kasria → seguia → parcel, then data → evidence → decision → monitoring.",
     legacyFlow:"SOURCE → GALLERY → KASRIA → SEGUIA → PARCEL",
     digitalFlow:"DATA → EVIDENCE → DECISION → MONITORING",
+    present:"PRESENTATION MODE",exit:"EXIT PRESENTATION",
     slides:[
       {photo:10,title:"SOURCE / MOTHER GALLERY",eyebrow:"01 · CAPTURE",body:"Water is captured in the underground gallery and moves by gravity. In FOGGARA-DZ this becomes the traceable origin of the resource and its location.",digital:"RESOURCE → LOCATION → DATA"},
       {photo:8,title:"KASRIA / WATER SHARING",eyebrow:"02 · DISTRIBUTION",body:"The kasria divides water between branches. The digital twin translates that logic into rules, priorities, constraints and allocation scenarios.",digital:"RULES → CONSTRAINTS → ALLOCATION"},
@@ -164,6 +167,7 @@ export default function Landing() {
     intro:"يتحول نظام الفقارة إلى عرض حي لنموذج FOGGARA: المصدر ← المعرض ← الكسرية ← الساقية ← القطعة، ثم البيانات ← الأدلة ← القرار ← المتابعة.",
     legacyFlow:"المصدر ← المعرض ← الكسرية ← الساقية ← القطعة",
     digitalFlow:"البيانات ← الأدلة ← القرار ← المتابعة",
+    present:"وضع العرض",exit:"الخروج من العرض",
     slides:[
       {photo:10,title:"المصدر / المعرض الأم",eyebrow:"01 · الالتقاط",body:"يتم التقاط المياه داخل المعرض الجوفي وتتحرك بالجاذبية. في FOGGARA-DZ تصبح هذه المرحلة أصل المورد وموقعه القابل للتتبع.",digital:"المورد ← الموقع ← البيانات"},
       {photo:8,title:"الكسرية / تقاسم المياه",eyebrow:"02 · التوزيع",body:"تقسم الكسرية المياه بين عدة فروع. يترجم التوأم الرقمي هذا المنطق إلى قواعد وأولويات وقيود وسيناريوهات توزيع.",digital:"القواعد ← القيود ← التخصيص"},
@@ -251,6 +255,24 @@ export default function Landing() {
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
+      if(heritageFullscreen){
+        if(event.key==="Escape"){
+          setHeritageFullscreen(false);
+          return;
+        }
+        if(event.key==="ArrowLeft"){
+          event.preventDefault();
+          setHeritagePlaying(false);
+          setHeritageSlide(value=>(value+heritagePresentation.slides.length-1)%heritagePresentation.slides.length);
+          return;
+        }
+        if(event.key==="ArrowRight"){
+          event.preventDefault();
+          setHeritagePlaying(false);
+          setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length);
+          return;
+        }
+      }
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
         event.preventDefault();
         toolSearchRef.current?.focus();
@@ -261,7 +283,14 @@ export default function Landing() {
     };
     window.addEventListener("keydown",onKey);
     return()=>window.removeEventListener("keydown",onKey);
-  },[]);
+  },[heritageFullscreen,heritagePresentation.slides.length]);
+
+  useEffect(()=>{
+    if(!heritageFullscreen)return;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    return()=>{document.body.style.overflow=previous;};
+  },[heritageFullscreen]);
 
   async function copyExpoLink(){
     try{
@@ -339,13 +368,19 @@ export default function Landing() {
       </div>
     </section>
 
-    <section className="fg-heritage-presentation" id="heritage" aria-labelledby="fg-heritage-presentation-title">
+    <section className={`fg-heritage-presentation ${heritageFullscreen?"is-fullscreen":""}`} id="heritage" aria-labelledby="fg-heritage-presentation-title">
       <div className="fg-heritage-presentation-head">
         <div>
           <p className="fg-heritage-kicker">{heritagePresentation.kicker}</p>
           <h2 id="fg-heritage-presentation-title">{heritagePresentation.title}<br/><strong>{heritagePresentation.accent}</strong></h2>
         </div>
-        <p className="fg-heritage-intro">{heritagePresentation.intro}</p>
+        <div className="fg-heritage-head-side">
+          <p className="fg-heritage-intro">{heritagePresentation.intro}</p>
+          <button type="button" className="fg-heritage-present-button" aria-pressed={heritageFullscreen} onClick={()=>setHeritageFullscreen(value=>!value)}>
+            {heritageFullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}
+            {heritageFullscreen?heritagePresentation.exit:heritagePresentation.present}
+          </button>
+        </div>
       </div>
 
       <div className="fg-heritage-presentation-stage">
