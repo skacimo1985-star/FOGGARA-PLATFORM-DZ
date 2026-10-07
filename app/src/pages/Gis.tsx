@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteScene } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -163,6 +163,8 @@ export default function Gis() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
+  const [satelliteOverlay, setSatelliteOverlay] = useState<SatelliteRasterOverlay | null>(null);
+  const [satelliteViewLoading, setSatelliteViewLoading] = useState(false);
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
   const [analysisSaving, setAnalysisSaving] = useState(false);
   const [analysisSaved, setAnalysisSaved] = useState(false);
@@ -199,10 +201,10 @@ export default function Gis() {
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
 
   const satelliteCopy = lang === "fr"
-    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante" }
+    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante", trueColor: "Vue satellite réelle", trueColorLoading: "Chargement satellite…" }
     : lang === "en"
-      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented.", searchParcel: "Search selected parcel", searchView: "Search current view", parcelScope: "Selected parcel", viewScope: "Current view" }
-      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة" };
+      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented.", searchParcel: "Search selected parcel", searchView: "Search current view", parcelScope: "Selected parcel", viewScope: "Current view", trueColor: "Real satellite view", trueColorLoading: "Loading satellite…" }
+      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة", trueColor: "عرض فضائي حقيقي", trueColorLoading: "جارٍ تحميل الصورة الفضائية…" };
 
   const analysisCopy = lang === "fr"
     ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", runParcel: "Analyser la parcelle", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
@@ -250,13 +252,22 @@ export default function Gis() {
     setAnalysisError(null);
     setAnalysisOverlay(null);
     setAnalysisSaved(false);
-  }, [selectedParcelId, selectedSceneId, selectedIndex]);
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setAnalysisOverlay(null);
+    setSatelliteOverlay(null);
+    setAnalysisSaved(false);
+  }, [selectedSceneId]);
 
   useEffect(() => {
     setSatelliteScenes([]);
     setSelectedSceneId(null);
     setAnalysisResult(null);
     setAnalysisOverlay(null);
+    setSatelliteOverlay(null);
     setAnalysisSaved(false);
   }, [selectedParcelId]);
 
@@ -265,6 +276,12 @@ export default function Gis() {
       if (analysisOverlay?.url) URL.revokeObjectURL(analysisOverlay.url);
     };
   }, [analysisOverlay?.url]);
+
+  useEffect(() => {
+    return () => {
+      if (satelliteOverlay?.url) URL.revokeObjectURL(satelliteOverlay.url);
+    };
+  }, [satelliteOverlay?.url]);
 
 
   const searchSatelliteScenes = async () => {
@@ -289,11 +306,41 @@ export default function Gis() {
       setSelectedSceneId((current) => result.scenes.some((scene) => scene.id === current) ? current : null);
       setAnalysisResult(null);
       setAnalysisOverlay(null);
+      setSatelliteOverlay(null);
     } catch (err) {
       setSatelliteScenes([]);
       setSatelliteError(err);
     } finally {
       setSatelliteLoading(false);
+    }
+  };
+
+  const loadSatelliteView = async () => {
+    if (!selectedSceneId || !currentRasterBudget.allowed) return;
+    setSatelliteViewLoading(true);
+    setSatelliteError(null);
+    try {
+      let path: string;
+      if (selectedParcelId) {
+        const params = new URLSearchParams({ scene_id: selectedSceneId });
+        path = `/agriculture/parcels/${selectedParcelId}/remote-sensing/true-color.png?${params.toString()}`;
+      } else {
+        const params = new URLSearchParams({
+          bbox: analysisBbox.map((value) => Number(value.toFixed(6))).join(","),
+        });
+        path = `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/true-color.png?${params.toString()}`;
+      }
+      const image = await api.getBlob(path, 60_000);
+      const url = URL.createObjectURL(image);
+      setSatelliteOverlay({
+        url,
+        bbox: analysisBbox,
+      });
+    } catch (err) {
+      setSatelliteOverlay(null);
+      setSatelliteError(err);
+    } finally {
+      setSatelliteViewLoading(false);
     }
   };
 
@@ -367,6 +414,7 @@ export default function Gis() {
       setSelectedSceneId(null);
       setAnalysisResult(null);
       setAnalysisOverlay(null);
+      setSatelliteOverlay(null);
     } catch (err) {
       setAnalysisError(err);
     }
@@ -468,6 +516,7 @@ export default function Gis() {
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
           parcelBoundaries={parcelBoundaries}
+          satelliteOverlay={satelliteOverlay}
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
@@ -527,6 +576,14 @@ export default function Gis() {
               </select>
             </label>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedSceneId || !currentRasterBudget.allowed || satelliteViewLoading}
+                onClick={() => void loadSatelliteView()}
+              >
+                {satelliteViewLoading ? satelliteCopy.trueColorLoading : satelliteCopy.trueColor}
+              </button>
               <button
                 type="button"
                 className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"

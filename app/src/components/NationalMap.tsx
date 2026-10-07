@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GisSite, WilayaMeta } from "@/types";
 
+export type SatelliteRasterOverlay = {
+  url: string;
+  bbox: [number, number, number, number];
+};
+
 export type AnalysisRasterOverlay = {
   url: string;
   bbox: [number, number, number, number];
@@ -49,6 +54,7 @@ type Props = {
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
+  satelliteOverlay?: SatelliteRasterOverlay | null;
   analysisOverlay?: AnalysisRasterOverlay | null;
   selectedSceneId?: string | null;
   selectedWilaya?: string;
@@ -220,6 +226,7 @@ export function NationalMap({
   wilayas,
   satelliteScenes = [],
   parcelBoundaries = [],
+  satelliteOverlay = null,
   analysisOverlay = null,
   selectedSceneId = null,
   selectedWilaya = "",
@@ -245,9 +252,10 @@ export function NationalMap({
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
+  const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
-  const [mapMode, setMapMode] = useState<"street" | "relief" | "analysis">("street");
+  const [mapMode, setMapMode] = useState<"street" | "satellite" | "relief" | "analysis">("street");
   const [visibleLayers, setVisibleLayers] = useState({
     sites: true,
     parcels: true,
@@ -265,6 +273,7 @@ export function NationalMap({
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
   onViewportChangeRef.current = onViewportChange;
+  satelliteOverlayRef.current = satelliteOverlay;
   analysisOverlayRef.current = analysisOverlay;
 
   const plotted = useMemo(
@@ -340,7 +349,7 @@ export function NationalMap({
         source: "Open map",
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
-        street: "Plan", relief: "Relief", analysis: "Analyse",
+        street: "Plan", satellite: "Satellite", relief: "Relief", analysis: "Analyse",
         layerSites: "Sites", layerParcels: "Parcelles", layerScenes: "Sentinel", layerAnalysis: "Résultat",
         modes: "Vue", layers: "Couches", draw: "Redessiner", finish: "Enregistrer", cancel: "Annuler", vertices: "points",
       }
@@ -355,7 +364,7 @@ export function NationalMap({
           source: "Open map",
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
-          street: "Street", relief: "Relief", analysis: "Analysis",
+          street: "Street", satellite: "Satellite", relief: "Relief", analysis: "Analysis",
           layerSites: "Sites", layerParcels: "Parcels", layerScenes: "Sentinel", layerAnalysis: "Result",
           modes: "View", layers: "Layers", draw: "Redraw boundary", finish: "Save boundary", cancel: "Cancel", vertices: "points",
         }
@@ -369,7 +378,7 @@ export function NationalMap({
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
-          street: "شوارع", relief: "تضاريس", analysis: "تحليل",
+          street: "شوارع", satellite: "قمر صناعي", relief: "تضاريس", analysis: "تحليل",
           layerSites: "المواقع", layerParcels: "القطع", layerScenes: "Sentinel", layerAnalysis: "النتيجة",
           modes: "الرؤية", layers: "الطبقات", draw: "أعد رسم الحدود", finish: "احفظ الحدود", cancel: "إلغاء", vertices: "نقاط",
         };
@@ -425,6 +434,22 @@ export function NationalMap({
               "hillshade-exaggeration": 0.34,
               "hillshade-shadow-color": "#26352f",
               "hillshade-highlight-color": "#f3ead7",
+            },
+          });
+
+          const initialSatellite = satelliteOverlayRef.current;
+          map.addSource("satellite-true-color", {
+            type: "image",
+            url: initialSatellite?.url ?? TRANSPARENT_PIXEL,
+            coordinates: overlayCoordinates(initialSatellite?.bbox ?? [-8.8, 18.4, 12.2, 37.5]),
+          });
+          map.addLayer({
+            id: "satellite-true-color",
+            type: "raster",
+            source: "satellite-true-color",
+            paint: {
+              "raster-opacity": 0,
+              "raster-fade-duration": 0,
             },
           });
 
@@ -653,6 +678,17 @@ export function NationalMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    const source = map?.getSource("satellite-true-color");
+    if (!map || !isImageSource(source)) return;
+    const bbox: [number, number, number, number] = satelliteOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5];
+    source.updateImage({
+      url: satelliteOverlay?.url ?? TRANSPARENT_PIXEL,
+      coordinates: overlayCoordinates(bbox),
+    });
+  }, [satelliteOverlay]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     const source = map?.getSource("analysis-overlay");
     if (!map || !isImageSource(source)) return;
     const bbox: [number, number, number, number] = analysisOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5];
@@ -671,8 +707,9 @@ export function NationalMap({
   }, [draftPoints, drawingBoundary]);
 
   useEffect(() => {
-    if (!analysisOverlay && mapMode === "analysis") setMapMode("street");
-  }, [analysisOverlay, mapMode]);
+    if (!analysisOverlay && mapMode === "analysis") setMapMode(satelliteOverlay ? "satellite" : "street");
+    if (!satelliteOverlay && mapMode === "satellite") setMapMode("street");
+  }, [analysisOverlay, mapMode, satelliteOverlay]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -686,9 +723,18 @@ export function NationalMap({
     map.setLayoutProperty("satellite-scenes-fill", "visibility", visibility(visibleLayers.scenes));
     map.setLayoutProperty("satellite-scenes-outline", "visibility", visibility(visibleLayers.scenes));
 
-    const overlayOpacity = !analysisOverlay || !visibleLayers.analysis
+    const satelliteOpacity = !satelliteOverlay
       ? 0
-      : mapMode === "analysis" ? 0.9 : mapMode === "relief" ? 0.58 : 0.72;
+      : mapMode === "satellite"
+        ? 0.96
+        : mapMode === "analysis"
+          ? 0.56
+          : 0;
+    map.setPaintProperty("satellite-true-color", "raster-opacity", satelliteOpacity);
+
+    const overlayOpacity = !analysisOverlay || !visibleLayers.analysis || mapMode !== "analysis"
+      ? 0
+      : 0.9;
     map.setPaintProperty("analysis-overlay", "raster-opacity", overlayOpacity);
 
     if (mapMode === "relief") {
@@ -698,7 +744,7 @@ export function NationalMap({
       map.setLayoutProperty("terrain-hillshade", "visibility", "none");
       map.setTerrain(null);
     }
-  }, [analysisOverlay, engineState, mapMode, visibleLayers]);
+  }, [analysisOverlay, engineState, mapMode, satelliteOverlay, visibleLayers]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -764,9 +810,10 @@ export function NationalMap({
             <div>
               {([
                 ["street", labels.street],
+                ...(satelliteOverlay ? [["satellite", labels.satellite]] : []),
                 ["relief", labels.relief],
                 ...(analysisOverlay ? [["analysis", labels.analysis]] : []),
-              ] as Array<["street" | "relief" | "analysis", string]>).map(([mode, label]) => (
+              ] as Array<["street" | "satellite" | "relief" | "analysis", string]>).map(([mode, label]) => (
                 <button
                   type="button"
                   key={mode}
