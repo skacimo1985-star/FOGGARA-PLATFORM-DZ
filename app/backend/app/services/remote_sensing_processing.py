@@ -27,6 +27,12 @@ SCENE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{1,159}$")
 SCL_ASSET_ALIASES = ("scl", "SCL")
 MASKED_SCL_CLASSES = (0, 1, 3, 8, 9, 10, 11)
 PLAN_VERSION = "foggara-raster-plan-v1"
+TRUE_COLOR_VERSION = "foggara-true-color-v1"
+TRUE_COLOR_ASSETS = {
+    "B02": ("blue", "B02"),
+    "B03": ("green", "B03"),
+    "B04": ("red", "B04"),
+}
 
 
 class ProcessingPlanError(ValueError):
@@ -226,6 +232,81 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
         "provenance": {
             "provider_metadata": "OBSERVED",
             "derived_index": "COMPUTED",
+            "verified": False,
+        },
+    }
+
+
+
+def build_true_color_plan(item: Mapping) -> dict:
+    """Resolve a trusted Sentinel-2 true-colour visualization plan.
+
+    This is a display product from observed provider rasters, not a field
+    measurement or a derived biophysical estimate.
+    """
+    scene_id = validate_scene_id(str(item.get("id") or ""))
+    if item.get("collection") != SENTINEL_COLLECTION:
+        raise ProcessingPlanError("STAC item is not from the Sentinel-2 L2A collection")
+
+    assets = item.get("assets")
+    if not isinstance(assets, Mapping):
+        raise ProcessingPlanError("STAC item has no asset map")
+
+    resolved = [
+        _resolve_asset(
+            assets,
+            logical_band=band,
+            aliases=aliases,
+        )
+        for band, aliases in TRUE_COLOR_ASSETS.items()
+    ]
+    scl = _resolve_asset(
+        assets,
+        logical_band="SCL",
+        aliases=SCL_ASSET_ALIASES,
+    )
+
+    public_assets = [asset.public_dict() for asset in resolved]
+    public_scl = scl.public_dict()
+    effective_source_resolution_m = max(
+        [asset.gsd_m for asset in resolved if asset.gsd_m is not None] or [10.0]
+    )
+    fingerprint_input = {
+        "scene_id": scene_id,
+        "collection": SENTINEL_COLLECTION,
+        "product": "true_color",
+        "display_version": TRUE_COLOR_VERSION,
+        "assets": public_assets,
+        "scl": public_scl,
+        "masked_scl_classes": list(MASKED_SCL_CLASSES),
+        "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
+    }
+    fingerprint = hashlib.sha256(
+        json.dumps(fingerprint_input, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+    return {
+        "plan_version": PLAN_VERSION,
+        "fingerprint_sha256": fingerprint,
+        "provider": "Element 84 Earth Search",
+        "collection": SENTINEL_COLLECTION,
+        "scene_id": scene_id,
+        "product": "true_color",
+        "display_version": TRUE_COLOR_VERSION,
+        "source_item_url": item_url(scene_id),
+        "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
+        "required_assets": public_assets,
+        "cloud_mask": {
+            "asset": public_scl,
+            "method": "sentinel-2-scl",
+            "masked_classes": list(MASKED_SCL_CLASSES),
+            "resampling": "nearest",
+        },
+        "provenance": {
+            "provider_metadata": "OBSERVED",
+            "visualization": "COMPUTED",
             "verified": False,
         },
     }
