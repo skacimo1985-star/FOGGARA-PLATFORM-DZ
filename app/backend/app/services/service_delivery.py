@@ -151,6 +151,9 @@ def soil_assessment_values(values, *, evidence_status="COMPUTED"):
         derived["salinity_class"] = salinity_class
         findings.append({"metric": "ec", "level": level, "message": f"soil_salinity_{salinity_class}"})
         if float(ec) >= 2:
+            # Backward-compatible generic flag retained for existing clients while
+            # the detailed NRCS-style salinity class remains the primary finding.
+            findings.append({"metric": "ec", "level": level, "message": "salinity_risk"})
             actions.append("Confirm EC method, crop salt tolerance, irrigation-water salinity and drainage before intervention.")
 
     for metric in ("nitrogen", "phosphorus", "potassium"):
