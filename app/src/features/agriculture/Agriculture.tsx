@@ -28,9 +28,9 @@ type ServiceAssessment = {
 type ServiceSummary = { parcel: Parcel; soil_assessment: ServiceAssessment; irrigation_water_assessment: ServiceAssessment; available_services: Record<string, boolean>; provenance: string };
 type Section = 'overview' | 'parcels' | 'irrigation' | 'evidence' | 'calendar' | 'services' | 'economics' | 'readiness';
 const nav: { key: Section; icon: typeof Sprout }[] = [{ key: 'overview', icon: LayoutDashboard }, { key: 'parcels', icon: Sprout }, { key: 'irrigation', icon: Droplets }, { key: 'evidence', icon: FlaskConical }, { key: 'calendar', icon: CalendarDays }, { key: 'services', icon: Wrench }, { key: 'economics', icon: ChartNoAxesCombined }, { key: 'readiness', icon: ShieldCheck }];
-const metrics: TextKey[] = ['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','lswi','ec'];
-const units: Record<string,string> = { ph:'pH', nitrogen:'mg/kg', phosphorus:'mg/kg', potassium:'mg/kg', soc:'%', moisture:'% VWC', ndvi:'index', lswi:'index', ec:'dS/m' };
-const bounds: Record<string,[number,number]> = {ph:[0,14],nitrogen:[0,1000000],phosphorus:[0,1000000],potassium:[0,1000000],soc:[0,100],moisture:[0,100],ndvi:[-1,1],lswi:[-1,1],ec:[0,100]};
+const metrics: TextKey[] = ['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','evi','savi','ndwi','ndmi','lswi','bsi','ec'];
+const units: Record<string,string> = { ph:'pH', nitrogen:'mg/kg', phosphorus:'mg/kg', potassium:'mg/kg', soc:'%', moisture:'% VWC', ndvi:'index', evi:'index', savi:'index', ndwi:'index', ndmi:'index', lswi:'index', bsi:'index', ec:'dS/m' };
+const bounds: Record<string,[number,number]> = {ph:[0,14],nitrogen:[0,1000000],phosphorus:[0,1000000],potassium:[0,1000000],soc:[0,100],moisture:[0,100],ndvi:[-1,1],evi:[-2.5,2.5],savi:[-1.5,1.5],ndwi:[-1,1],ndmi:[-1,1],lswi:[-1,1],bsi:[-1,1],ec:[0,100]};
 const domains: {key: TextKey; icon: typeof Sprout; color: string}[] = [{key:'water',icon:Droplets,color:'#2a9bc1'},{key:'energy',icon:Zap,color:'#c08a25'},{key:'food',icon:Sprout,color:'#178568'},{key:'ecosystem',icon:Leaf,color:'#557f48'},{key:'health',icon:HeartPulse,color:'#b16480'}];
 const demoParcels: Parcel[] = [
  {id:1,name:'P-001',crop:'date_palm',area_ha:4.5,location:'DEMO',stage:'mid',archived:false},
