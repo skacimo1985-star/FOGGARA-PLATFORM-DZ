@@ -404,7 +404,11 @@ def _colorize_index(index_key: str, values: np.ndarray, valid_mask: np.ndarray) 
     return rgba
 
 
-def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict]:
+def _render_index_preview_png_unlocked(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
     analysis_bbox = validate_analysis_bbox(bbox)
     assets = plan.get("required_assets")
     cloud_mask = plan.get("cloud_mask")
@@ -461,8 +465,26 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
     cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
     combined_invalid = source_invalid | scl_invalid | cloud_invalid
 
+    analysis_mask = np.ones((height, width), dtype=bool)
+    if geometry_wgs84 is not None:
+        if not isinstance(geometry_wgs84, Mapping) or geometry_wgs84.get("type") != "Polygon":
+            raise RasterStatisticsError("analysis geometry must be a GeoJSON Polygon")
+        try:
+            projected_geometry = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+            analysis_mask = geometry_mask(
+                [projected_geometry],
+                out_shape=(height, width),
+                transform=target_transform,
+                invert=True,
+                all_touched=False,
+            )
+        except (RasterioError, ValueError, TypeError) as exc:
+            raise RasterStatisticsError("parcel polygon could not be projected onto the preview grid") from exc
+        if not np.any(analysis_mask):
+            raise RasterStatisticsError("parcel polygon does not cover any preview pixels")
+
     index_values = _compute_index_array(str(plan.get("index") or ""), band_arrays)
-    valid_mask = ~(combined_invalid | ~np.isfinite(index_values))
+    valid_mask = analysis_mask & ~(combined_invalid | ~np.isfinite(index_values))
     rgba = _colorize_index(str(plan.get("index") or ""), index_values, valid_mask)
     png = _encode_rgba_png(rgba)
     metadata = {
@@ -472,7 +494,8 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
         "analysis_bbox_wgs84": list(analysis_bbox),
         "width": width,
         "height": height,
-        "valid_fraction": float(np.count_nonzero(valid_mask) / max(width * height, 1)),
+        "valid_fraction": float(np.count_nonzero(valid_mask) / max(np.count_nonzero(analysis_mask), 1)),
+        "geometry_mask_applied": geometry_wgs84 is not None,
         "derived_index": "COMPUTED",
         "verified": False,
         "persisted": False,
@@ -480,10 +503,14 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
     return png, metadata
 
 
-def render_index_preview_png(plan: Mapping, bbox) -> tuple[bytes, dict]:
+def render_index_preview_png(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
     if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
         raise RasterCapacityError("raster analysis capacity is busy")
     try:
-        return _render_index_preview_png_unlocked(plan, bbox)
+        return _render_index_preview_png_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84)
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
