@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ErrorText } from "@/components/common";
 import ParcelSentinel from "@/features/agriculture/ParcelSentinel";
 import { NationalMap, type ParcelBoundaryFeature } from "@/components/NationalMap";
+import "./field-intelligence.css";
 
 type Parcel = {
   id: number;
