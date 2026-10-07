@@ -19,12 +19,17 @@ from ..db import get_db
 from ..deps import api_error, get_current_user
 from ..models import AgriObservation, AgriParcel, User
 from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
-from ..services.remote_sensing_processing import ProcessingPlanError, build_processing_plan
+from ..services.remote_sensing_processing import (
+    ProcessingPlanError,
+    build_processing_plan,
+    build_true_color_plan,
+)
 from ..services.remote_sensing_raster import (
     RasterCapacityError,
     RasterStatisticsError,
     compute_index_statistics,
     render_index_preview_png,
+    render_true_color_preview_png,
     validate_analysis_bbox,
 )
 from .agriculture_operations import METRICS, out, own
@@ -207,6 +212,54 @@ def parcel_index_preview(
             "X-FOGGARA-Scene": str(metadata["scene_id"]),
             "X-FOGGARA-Index": str(metadata["index"]),
             "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Verified": "false",
+            "X-FOGGARA-Geometry": sample_geometry,
+        },
+    )
+
+
+@router.get("/parcels/{identity}/remote-sensing/true-color.png")
+def parcel_true_color_preview(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, _analysis_fingerprint = _analysis_target(parcel)
+    from ..services.remote_sensing_processing import validate_scene_id
+    try:
+        safe_scene_id = validate_scene_id(scene_id)
+    except ProcessingPlanError:
+        api_error(422, "INVALID_SCENE_ID", "Scene ID is invalid")
+
+    _, item = _provider_item(safe_scene_id)
+    try:
+        plan = build_true_color_plan(item)
+        png, metadata = render_true_color_preview_png(
+            plan,
+            bounds,
+            geometry_wgs84=geometry,
+        )
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted true-color assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "True-color preview could not be completed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Parcel": str(parcel.id),
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Product": "true_color",
+            "X-FOGGARA-Evidence": "OBSERVED",
+            "X-FOGGARA-Display": "COMPUTED",
             "X-FOGGARA-Verified": "false",
             "X-FOGGARA-Geometry": sample_geometry,
         },

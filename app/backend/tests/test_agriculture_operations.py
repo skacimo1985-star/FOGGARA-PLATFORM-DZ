@@ -737,6 +737,59 @@ def test_parcel_readonly_satellite_analysis_uses_boundary_for_all_indices(client
     assert captured['preview']['geometry']['type'] == 'Polygon'
 
 
+def test_parcel_true_color_preview_uses_owned_boundary(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    boundary = {
+        'type':'Polygon',
+        'coordinates':[[[2.8695,33.7995],[2.8705,33.7995],[2.8705,33.8005],[2.8695,33.8005],[2.8695,33.7995]]],
+    }
+    parcel = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'RGB field','crop':'wheat','area_ha':1,'location':'Laghouat',
+        'boundary_geojson':boundary,
+    }).json()
+    scene_id = 'S2A_RGB_SCENE_2026'
+    captured = {}
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {}},
+    ))
+    monkeypatch.setattr(
+        satellite,
+        'build_true_color_plan',
+        lambda item: {'scene_id': item['id'], 'product': 'true_color'},
+    )
+    def render(plan, bbox, geometry_wgs84=None):
+        captured['bbox'] = bbox
+        captured['geometry'] = geometry_wgs84
+        return b'\x89PNG\r\n\x1a\nRGB', {
+            'scene_id': scene_id,
+            'display_version': 'foggara-true-color-v1',
+        }
+    monkeypatch.setattr(satellite, 'render_true_color_preview_png', render)
+
+    response = client.get(
+        f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/true-color.png",
+        headers=h,
+        params={'scene_id': scene_id},
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers['content-type'] == 'image/png'
+    assert response.headers['x-foggara-product'] == 'true_color'
+    assert response.headers['x-foggara-evidence'] == 'OBSERVED'
+    assert response.headers['x-foggara-display'] == 'COMPUTED'
+    assert response.headers['x-foggara-verified'] == 'false'
+    assert response.headers['x-foggara-geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
+    assert captured['geometry']['type'] == 'Polygon'
+
+    other = login(client, 'o2m@t.dz')
+    assert client.get(
+        f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/true-color.png",
+        headers=other,
+        params={'scene_id': scene_id},
+    ).status_code == 404
+
+
 def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):
     h1 = login(client, 'o1m@t.dz')
     h2 = login(client, 'o2m@t.dz')

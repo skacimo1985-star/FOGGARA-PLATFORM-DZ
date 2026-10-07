@@ -51,6 +51,32 @@ def processing_plan(index="ndvi"):
     }
 
 
+def true_color_plan():
+    required = {
+        "B02": {"band": "B02", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B02.tif", "scale": 0.0001, "offset": 0.0},
+        "B03": {"band": "B03", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B03.tif", "scale": 0.0001, "offset": 0.0},
+        "B04": {"band": "B04", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B04.tif", "scale": 0.0001, "offset": 0.0},
+    }
+    return {
+        "scene_id": "S2A_TEST_L2A",
+        "product": "true_color",
+        "display_version": "foggara-true-color-v1",
+        "effective_source_resolution_m": 10,
+        "required_assets": [required[key] for key in ("B02", "B03", "B04")],
+        "cloud_mask": {
+            "asset": {
+                "band": "SCL",
+                "host": TRUSTED_COG_HOST,
+                "path": f"{PATH_ROOT}/SCL.tif",
+                "scale": None,
+                "offset": None,
+            },
+            "method": "sentinel-2-scl",
+            "masked_classes": [0, 1, 3, 8, 9, 10, 11],
+        },
+    }
+
+
 def make_memfile(values, *, dtype):
     mem = MemoryFile()
     with mem.open(
@@ -328,6 +354,77 @@ def test_polygon_geometry_masks_preview_to_field_boundary(raster_assets):
     assert png.startswith(b"\x89PNG\r\n\x1a\n")
     assert metadata["geometry_mask_applied"] is True
     assert 0 < metadata["valid_fraction"] <= 1
+
+
+def test_true_color_preview_uses_real_rgb_bands_scl_and_polygon(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    png, metadata = remote_sensing_raster.render_true_color_preview_png(
+        true_color_plan(),
+        TEST_BBOX,
+        geometry_wgs84=geometry,
+    )
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert metadata["product"] == "true_color"
+    assert metadata["display_version"] == "foggara-true-color-v1"
+    assert metadata["geometry_mask_applied"] is True
+    assert metadata["effective_source_resolution_m"] == 10
+    assert metadata["provenance"]["provider_raster"] == "OBSERVED"
+    assert metadata["provenance"]["display_transform"] == "COMPUTED"
+    assert metadata["verified"] is False
+    assert 0 < metadata["valid_fraction"] < 1
+
+
+def test_true_color_endpoint_requires_authentication(client):
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/true-color.png"
+        "?bbox=3,0,3.00035,0.00035"
+    )
+    assert response.status_code == 401
+
+
+def test_true_color_endpoint_returns_private_observed_raster(client, world, monkeypatch):
+    monkeypatch.setattr(
+        remote_sensing_catalog.httpx,
+        "Client",
+        lambda **_kwargs: FakeClient(provider_item()),
+    )
+
+    def fake_true_color(plan, bbox):
+        assert plan["scene_id"] == "S2A_TEST_L2A"
+        assert plan["product"] == "true_color"
+        assert bbox == [3.0, 0.0, 3.00035, 0.00035]
+        return b"\x89PNG\r\n\x1a\nRGB", {
+            "scene_id": plan["scene_id"],
+            "display_version": plan["display_version"],
+        }
+
+    monkeypatch.setattr(
+        remote_sensing_catalog,
+        "render_true_color_preview_png",
+        fake_true_color,
+    )
+    headers = login(client, "o1m@t.dz")
+    response = client.get(
+        "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/true-color.png"
+        "?bbox=3,0,3.00035,0.00035",
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-foggara-product"] == "true_color"
+    assert response.headers["x-foggara-evidence"] == "OBSERVED"
+    assert response.headers["x-foggara-display"] == "COMPUTED"
+    assert response.headers["x-foggara-verified"] == "false"
 
 
 def test_preview_png_endpoint_requires_authentication(client):

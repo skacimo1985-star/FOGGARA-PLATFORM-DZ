@@ -5,6 +5,7 @@ from app.services.remote_sensing_processing import (
     MASKED_SCL_CLASSES,
     TRUSTED_COG_HOST,
     build_processing_plan,
+    build_true_color_plan,
 )
 from tests.conftest import login
 
@@ -126,6 +127,18 @@ def test_processing_plan_supports_moisture_and_soil_indices():
     bsi = build_processing_plan(stac_item(), "bsi")
     assert {row["band"] for row in bsi["required_assets"]} == {"B02", "B04", "B08", "B11"}
     assert bsi["effective_source_resolution_m"] == 20
+
+
+def test_true_color_plan_uses_visible_bands_and_scl():
+    plan = build_true_color_plan(stac_item())
+    assert plan["product"] == "true_color"
+    assert plan["display_version"] == "foggara-true-color-v1"
+    assert {row["band"] for row in plan["required_assets"]} == {"B02", "B03", "B04"}
+    assert plan["effective_source_resolution_m"] == 10
+    assert plan["cloud_mask"]["asset"]["asset_key"] == "scl"
+    assert plan["provenance"]["provider_metadata"] == "OBSERVED"
+    assert plan["provenance"]["visualization"] == "COMPUTED"
+    assert plan["provenance"]["verified"] is False
 
 
 def test_processing_plan_fails_closed_on_untrusted_asset_host():

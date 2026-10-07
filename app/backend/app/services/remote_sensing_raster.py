@@ -539,3 +539,147 @@ def render_index_preview_png(
         )
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
+
+
+
+def _render_true_color_preview_png_unlocked(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
+    analysis_bbox = validate_analysis_bbox(bbox)
+    assets = plan.get("required_assets")
+    cloud_mask = plan.get("cloud_mask")
+    if not isinstance(assets, list) or not assets or not isinstance(cloud_mask, Mapping):
+        raise RasterStatisticsError("true-color processing plan is incomplete")
+    scl_asset = cloud_mask.get("asset")
+    if not isinstance(scl_asset, Mapping):
+        raise RasterStatisticsError("true-color processing plan has no SCL asset")
+
+    try:
+        with rasterio.Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif,.TIF",
+            GDAL_HTTP_MAX_RETRY="1",
+            GDAL_HTTP_RETRY_DELAY="0.2",
+            GDAL_HTTP_TIMEOUT="10",
+            GDAL_HTTP_CONNECTTIMEOUT="5",
+            AWS_NO_SIGN_REQUEST="YES",
+        ):
+            target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
+            bands: dict[str, np.ndarray] = {}
+            source_invalid = np.zeros((height, width), dtype=bool)
+            for asset in assets:
+                band = asset.get("band") if isinstance(asset, Mapping) else None
+                if band not in {"B02", "B03", "B04"}:
+                    raise RasterStatisticsError("true-color plan contains an invalid band asset")
+                values, invalid = _read_aligned(
+                    asset,
+                    target_crs=target_crs,
+                    target_transform=target_transform,
+                    width=width,
+                    height=height,
+                    resampling=Resampling.bilinear,
+                )
+                scaled = _scaled(values, asset)
+                source_invalid |= invalid | ~np.isfinite(scaled)
+                bands[str(band)] = scaled
+
+            if set(bands) != {"B02", "B03", "B04"}:
+                raise RasterStatisticsError("true-color plan must contain B02, B03 and B04")
+
+            scl_values, scl_invalid = _read_aligned(
+                scl_asset,
+                target_crs=target_crs,
+                target_transform=target_transform,
+                width=width,
+                height=height,
+                resampling=Resampling.nearest,
+            )
+    except RasterStatisticsError:
+        raise
+    except (RasterioError, OSError, ValueError) as exc:
+        raise RasterStatisticsError("trusted Sentinel true-color raster could not be read") from exc
+
+    safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
+    rounded_scl = safe_scl.astype(np.int16, copy=False)
+    cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
+
+    analysis_mask = np.ones((height, width), dtype=bool)
+    if geometry_wgs84 is not None:
+        if not isinstance(geometry_wgs84, Mapping) or geometry_wgs84.get("type") != "Polygon":
+            raise RasterStatisticsError("analysis geometry must be a GeoJSON Polygon")
+        try:
+            projected_geometry = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+            analysis_mask = geometry_mask(
+                [projected_geometry],
+                out_shape=(height, width),
+                transform=target_transform,
+                invert=True,
+                all_touched=False,
+            )
+        except (RasterioError, ValueError, TypeError) as exc:
+            raise RasterStatisticsError("parcel polygon could not be projected onto the raster grid") from exc
+        if not np.any(analysis_mask):
+            raise RasterStatisticsError("parcel polygon does not cover any true-color pixels")
+
+    valid_mask = analysis_mask & ~(source_invalid | scl_invalid | cloud_invalid)
+
+    # Fixed and reproducible L2A reflectance display transform. This is only a
+    # visualization; the underlying reflectance is not modified or persisted.
+    low = np.float32(0.02)
+    high = np.float32(0.30)
+    gamma = np.float32(0.85)
+    rgb = np.stack([bands["B04"], bands["B03"], bands["B02"]], axis=-1)
+    normalized = np.clip((rgb - low) / (high - low), 0.0, 1.0)
+    display = np.power(normalized, gamma)
+    rgba = np.zeros((height, width, 4), dtype=np.uint8)
+    rgba[..., :3] = np.where(
+        valid_mask[..., None],
+        np.rint(display * np.float32(255.0)).astype(np.uint8),
+        0,
+    )
+    rgba[..., 3] = np.where(valid_mask, 255, 0).astype(np.uint8)
+
+    png = _encode_rgba_png(rgba)
+    metadata = {
+        "scene_id": plan.get("scene_id"),
+        "product": "true_color",
+        "display_version": plan.get("display_version"),
+        "analysis_bbox_wgs84": list(analysis_bbox),
+        "width": width,
+        "height": height,
+        "valid_fraction": float(
+            np.count_nonzero(valid_mask) / max(np.count_nonzero(analysis_mask), 1)
+        ),
+        "geometry_mask_applied": geometry_wgs84 is not None,
+        "grid_resolution_m": TARGET_RESOLUTION_M,
+        "effective_source_resolution_m": plan.get("effective_source_resolution_m"),
+        "display_reflectance_range": [float(low), float(high)],
+        "display_gamma": float(gamma),
+        "provenance": {
+            "provider_raster": "OBSERVED",
+            "display_transform": "COMPUTED",
+            "verified": False,
+        },
+        "verified": False,
+        "persisted": False,
+    }
+    return png, metadata
+
+
+def render_true_color_preview_png(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
+    if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
+        raise RasterCapacityError("raster analysis capacity is busy")
+    try:
+        return _render_true_color_preview_png_unlocked(
+            plan,
+            bbox,
+            geometry_wgs84=geometry_wgs84,
+        )
+    finally:
+        _RASTER_ANALYSIS_SEMAPHORE.release()
