@@ -64,10 +64,10 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  useEffect(()=>{
   if(demo||!Number.isInteger(requestedParcelId)||requestedParcelId<=0)return;
   if(parcels.some(p=>p.id===requestedParcelId)){
-   setSection('parcels');
+   setSection(requestedSection&&validSections.includes(requestedSection)?requestedSection:'parcels');
    setFilter(String(requestedParcelId));
   }
- },[demo,requestedParcelId,parcels]);
+ },[demo,requestedParcelId,requestedSection,parcels]);
  const workspaceRef = useRef({mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks});
  workspaceRef.current = {mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks};
  useEffect(()=>{
