@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, MessageSquareText, QrCode, Satellite, Star, Users } from "lucide-react";
+import { ArrowUpRight, MessageSquareText, QrCode, Satellite, Star, Users, Copy, Download, Check } from "lucide-react";
 
 import { ErrorText } from "@/components/common";
 import { NationalMap, type SatelliteScene } from "@/components/NationalMap";
@@ -73,6 +73,8 @@ export default function Expo() {
   const [feedbackBusy, setFeedbackBusy] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [feedbackError, setFeedbackError] = useState<unknown>(null);
+  const [qrCopied, setQrCopied] = useState(false);
+  const expoUrl = "https://foggara-dz.onrender.com/expo";
 
   const copy = lang === "fr" ? {
     badge: "AGRITECH EXPO · MODE VISITEUR",
@@ -96,7 +98,7 @@ export default function Expo() {
     services: "Services agricoles",
     about: "À propos de FOGGARA",
     guest: "Visiteur",
-    qrTitle: "Partager le mode visiteur", qrBody: "Scannez ce QR pour ouvrir FOGGARA sur un autre téléphone.", qrOpen: "Ouvrir le lien",
+    qrTitle: "Partager le mode visiteur", qrBody: "Scannez ce QR pour ouvrir FOGGARA sur un autre téléphone.", qrOpen: "Ouvrir le lien", qrCopy:"Copier", qrCopied:"Copié", qrDownload:"Télécharger SVG",
   } : lang === "en" ? {
     badge: "AGRITECH EXPO · VISITOR MODE",
     title: "Explore FOGGARA-DZ without an account.",
@@ -119,7 +121,7 @@ export default function Expo() {
     services: "Agriculture services",
     about: "About FOGGARA",
     guest: "Visitor",
-    qrTitle: "Share visitor mode", qrBody: "Scan this QR to open FOGGARA on another phone.", qrOpen: "Open link",
+    qrTitle: "Share visitor mode", qrBody: "Scan this QR to open FOGGARA on another phone.", qrOpen: "Open link", qrCopy:"Copy", qrCopied:"Copied", qrDownload:"Download SVG",
   } : {
     badge: "AGRITECH EXPO · وضع الزائر",
     title: "استكشف FOGGARA-DZ بدون حساب.",
@@ -142,7 +144,7 @@ export default function Expo() {
     services: "الخدمات الزراعية",
     about: "حول FOGGARA",
     guest: "زائر",
-    qrTitle: "شارك وضع الزائر", qrBody: "امسح QR لفتح FOGGARA على هاتف آخر.", qrOpen: "فتح الرابط",
+    qrTitle: "شارك وضع الزائر", qrBody: "امسح QR لفتح FOGGARA على هاتف آخر.", qrOpen: "فتح الرابط", qrCopy:"نسخ", qrCopied:"تم النسخ", qrDownload:"تحميل SVG",
   };
 
   useEffect(() => {
@@ -189,6 +191,14 @@ export default function Expo() {
     } finally {
       setSceneBusy(false);
     }
+  }
+
+  async function copyQrLink() {
+    try {
+      await navigator.clipboard.writeText(expoUrl);
+      setQrCopied(true);
+      window.setTimeout(() => setQrCopied(false), 1800);
+    } catch {/* Clipboard may be blocked by browser policy. */}
   }
 
   async function submitFeedback(e: FormEvent) {
@@ -278,10 +288,14 @@ export default function Expo() {
         <Link to="/about"><span>{copy.about}</span><ArrowUpRight size={17}/></Link>
         <div className="fg-expo-share-qr">
           <div className="fg-expo-share-head"><QrCode size={19}/><div><strong>{copy.qrTitle}</strong><small>{copy.qrBody}</small></div></div>
-          <a href="https://foggara-dz.onrender.com/expo" target="_blank" rel="noreferrer" className="fg-expo-qr-image" aria-label={copy.qrOpen}>
+          <a href={expoUrl} target="_blank" rel="noreferrer" className="fg-expo-qr-image" aria-label={copy.qrOpen}>
             <img src="/expo-qr.svg" width="190" height="190" alt={copy.qrTitle}/>
           </a>
-          <a href="https://foggara-dz.onrender.com/expo" target="_blank" rel="noreferrer"><span>{copy.qrOpen}</span><ArrowUpRight size={17}/></a>
+          <div className="fg-expo-qr-actions">
+            <a href={expoUrl} target="_blank" rel="noreferrer"><span>{copy.qrOpen}</span><ArrowUpRight size={16}/></a>
+            <button type="button" onClick={()=>void copyQrLink()}>{qrCopied?<Check size={15}/>:<Copy size={15}/>}<span>{qrCopied?copy.qrCopied:copy.qrCopy}</span></button>
+            <a href="/expo-qr.svg" download="FOGGARA-AGRITECH-EXPO-QR.svg"><Download size={15}/><span>{copy.qrDownload}</span></a>
+          </div>
         </div>
       </aside>
     </section>
