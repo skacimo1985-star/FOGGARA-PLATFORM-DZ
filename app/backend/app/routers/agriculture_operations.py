@@ -374,9 +374,7 @@ def ingest_remote_sensing(identity: int, payload: RemoteSensingIn,
 @operations_router.get('/parcels/{identity}/remote-sensing')
 def remote_sensing_history(
     identity: int,
-    metric: str | None = Query(
-        default=None,
-        pattern='^(ndvi|lswi|ndmi|ndwi|bsi|savi|evi|moisture)
+    metric: str | None = Query(default=None, pattern='^(ndvi|lswi|ndmi|ndwi|bsi|savi|evi|moisture)
     db: Session = Depends(get_db),
 ):
     parcel = own(db, AgriParcel, identity, user)
@@ -715,8 +713,7 @@ def update_task(identity: int, payload: TaskUpdate, user: User = Depends(get_cur
     row = own(db, AgriTask, identity, user)
     row.completed = payload.completed
     return record(db, user, row, 'complete' if payload.completed else 'reopen')
-,
-    ),
+),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
