@@ -378,10 +378,10 @@ def main():
                         expect(page.locator(".os-nav-advanced summary")).to_contain_text("أدوات متقدمة")
                         expect(page.locator(".fg-readiness-grid article")).to_have_count(6)
                         expect(page.locator(".fg-readiness-assurance li")).to_have_count(5)
+                        expect(page.locator(".fg-command-kpis-secondary")).not_to_be_visible()
                         expect(page.locator(".fg-command-project-board")).to_be_visible()
-                        expect(page.locator(".fg-command-project-list article")).to_have_count(1)
-                        expect(page.locator(".fg-command-project-list article").first).to_contain_text("واحة الاختبار")
-                        assert page.locator(".fg-command-project-actions a").first.evaluate("e => e.getBoundingClientRect().height >= 24")
+                        expect(page.locator(".fg-command-project-list article")).to_have_count(0)
+                        expect(page.get_by_text("ابدأ التشغيل ببيانات حقيقية", exact=True)).to_be_visible()
                     if path in ("/app", "/app/nexus", "/app/agriculture"):
                         page.screenshot(path=str(out / (path.split("/")[-1] + "-workspace.png")), full_page=True)
                     if path == "/app/account":
