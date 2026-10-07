@@ -3,7 +3,7 @@ WORKDIR /engine
 COPY engines/nexus-core/ ./
 RUN cargo build --release --locked
 
-FROM node:20-slim AS web
+FROM node:25-slim AS web
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
