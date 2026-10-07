@@ -82,7 +82,7 @@ export default function AnalysisCenter() {
   const requested = Number(searchParams.get("parcel"));
 
   const copy = lang === "fr" ? {
-    eyebrow:"FOGGARA / ANALYSES", title:"Centre d’analyse de la ressource",
+    eyebrow:"FOGGARA / SATELLITE", title:"Analyse satellite de terrain",
     intro:"Choisissez une parcelle et consultez dans un seul écran les observations, indices satellite, sol, eau d’irrigation et services calculables.",
     parcel:"Parcelle", area:"Superficie", crop:"Culture", location:"Localisation",
     satellite:"Indices satellite", soil:"Analyse du sol", water:"Eau d’irrigation",
@@ -94,7 +94,7 @@ export default function AnalysisCenter() {
     coverage:"Couverture", limitations:"Limites", demo:"DEMO", real:"RÉEL", latest:"Dernières valeurs",
     showDemo:"Afficher DEMO", hideDemo:"Masquer DEMO", demoHidden:"Les données DEMO sont masquées par défaut.", fields:"Parcelles réelles", mapFirst:"Carte terrain",
   } : lang === "en" ? {
-    eyebrow:"FOGGARA / ANALYSIS", title:"Resource analysis center",
+    eyebrow:"FOGGARA / SATELLITE", title:"Field satellite analysis",
     intro:"Choose a field and inspect observations, satellite indices, soil, irrigation water and computable services in one screen.",
     parcel:"Field", area:"Area", crop:"Crop", location:"Location",
     satellite:"Satellite indices", soil:"Soil analysis", water:"Irrigation water",
@@ -106,7 +106,7 @@ export default function AnalysisCenter() {
     coverage:"Coverage", limitations:"Limitations", demo:"DEMO", real:"REAL", latest:"Latest values",
     showDemo:"Show DEMO", hideDemo:"Hide DEMO", demoHidden:"DEMO data is hidden by default.", fields:"Real fields", mapFirst:"Field map",
   } : {
-    eyebrow:"FOGGARA / التحاليل", title:"مركز تحليل المورد",
+    eyebrow:"FOGGARA / الأقمار الصناعية", title:"تحليل الحقل بالأقمار الصناعية",
     intro:"اختر قطعة أرض وشاهد في شاشة واحدة القياسات والمؤشرات الفضائية والتربة ومياه الري والخدمات القابلة للحساب.",
     parcel:"القطعة", area:"المساحة", crop:"المحصول", location:"الموقع",
     satellite:"المؤشرات الفضائية", soil:"تحليل التربة", water:"مياه الري",
@@ -202,9 +202,24 @@ export default function AnalysisCenter() {
   };
 
   if(!loading && visibleParcels.length===0){
-    return <div className="space-y-5" dir={i18n.dir()}>
-      <header className="rounded-2xl border bg-card p-6"><p className="text-xs font-bold tracking-[.16em] text-emerald-700">{copy.eyebrow}</p><h1 className="mt-2 text-3xl font-bold">{copy.title}</h1><p className="mt-2 text-sm text-muted-foreground">{copy.intro}</p></header>
-      <div className="rounded-2xl border bg-card p-8 text-center"><p>{copy.noParcels}</p><Link className="os-primary mt-5" to="/app/gis"><MapPinned size={17}/>{copy.draw}</Link></div>
+    return <div className="fg-analysis-workspace" dir={i18n.dir()} data-testid="analysis-center">
+      <header className="fg-analysis-toolbar">
+        <div><p>{copy.eyebrow}</p><h1>{copy.title}</h1><span>{copy.demoHidden}</span></div>
+        <div className="fg-analysis-toolbar-actions">
+          <button type="button" onClick={toggleDemo} className={showDemo?"demo-on":""}><Eye size={15}/>{showDemo?copy.hideDemo:copy.showDemo}</button>
+          <Link to="/app/gis" className="primary"><MapPinned size={16}/>{copy.draw}</Link>
+        </div>
+      </header>
+      <section className="fg-analysis-map-first">
+        <aside className="fg-analysis-field-list">
+          <div className="fg-analysis-field-list-head"><div><span>{copy.fields}</span><strong>0</strong></div><MapPinned size={18}/></div>
+          <div className="p-5 text-sm text-muted-foreground"><p>{copy.noParcels}</p><p className="mt-2 text-xs">{copy.demoHidden}</p></div>
+        </aside>
+        <div className="fg-analysis-map-canvas">
+          <NationalMap sites={[]} wilayas={[]} parcelBoundaries={[]} locale={lang} minimal />
+          <div className="fg-analysis-map-caption"><div><strong>{copy.noParcels}</strong><span>{copy.demoHidden}</span></div><Link to="/app/gis">{copy.draw}<ArrowUpRight size={14}/></Link></div>
+        </div>
+      </section>
     </div>;
   }
 
