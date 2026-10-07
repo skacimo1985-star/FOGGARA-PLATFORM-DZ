@@ -392,6 +392,8 @@ def main():
                         expect(page.get_by_test_id("operational-service-launcher")).to_be_visible()
                         expect(page.get_by_test_id("operational-service-launcher").locator("a")).to_have_count(9)
                         expect(page.get_by_test_id("runtime-readiness")).to_be_visible()
+                        expect(page.get_by_test_id("runtime-release-identity")).to_be_visible()
+                        expect(page.get_by_test_id("runtime-release-identity")).to_contain_text("الإصدار المنشور")
                         expect(page.locator(".os-nav-advanced")).not_to_have_attribute("open", "")
                         expect(page.locator(".os-nav-advanced summary")).to_contain_text("أدوات متقدمة")
                         expect(page.locator(".fg-readiness-grid article")).to_have_count(6)
