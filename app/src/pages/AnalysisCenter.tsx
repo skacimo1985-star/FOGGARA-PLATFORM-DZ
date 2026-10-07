@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { ErrorText } from "@/components/common";
 import ParcelSentinel from "@/features/agriculture/ParcelSentinel";
-import { NationalMap, type ParcelBoundaryFeature } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature } from "@/components/NationalMap";
 import "./field-intelligence.css";
 
 type Parcel = {
@@ -128,6 +128,7 @@ export default function AnalysisCenter() {
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState<unknown>(null);
   const [reloadToken,setReloadToken]=useState(0);
+  const [analysisOverlay,setAnalysisOverlay]=useState<AnalysisRasterOverlay|null>(null);
 
   useEffect(()=>{
     let cancelled=false;
@@ -169,6 +170,7 @@ export default function AnalysisCenter() {
   },[parcels,showDemo]);
 
   useEffect(()=>{
+    setAnalysisOverlay(null);
     if(!parcelId){setSummary(null);setObservations([]);return;}
     let cancelled=false;
     setLoading(true);setError(null);
@@ -255,6 +257,7 @@ export default function AnalysisCenter() {
           parcelBoundaries={visibleBoundaries}
           selectedParcelId={parcelId}
           onSelectParcel={setParcel}
+          analysisOverlay={analysisOverlay}
           locale={lang}
           minimal
         />
@@ -267,6 +270,7 @@ export default function AnalysisCenter() {
         parcels={visibleParcels}
         selectedParcelId={parcelId}
         onSaved={() => setReloadToken(value => value + 1)}
+        onRasterReady={setAnalysisOverlay}
       />
     </section>
 
