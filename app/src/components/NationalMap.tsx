@@ -10,6 +10,10 @@ export type AnalysisRasterOverlay = {
 export type SatelliteRasterOverlay = {
   url: string;
   bbox: [number, number, number, number];
+  scene_id: string;
+  acquired_at: string | null;
+  provider: string;
+  cloud_cover_pct: number | null;
 };
 
 export type ParcelBoundaryFeature = {
@@ -789,6 +793,11 @@ export function NationalMap({
             ["analysis", analysisOverlay ? analysisOverlay.index.toUpperCase() : "NDVI / LSWI"],
           ] as const).map(([key,label]) => <label key={key}><input type="checkbox" checked={layers[key]} onChange={e => setLayers(prev => ({...prev,[key]:e.target.checked}))}/><span>{label}</span></label>)}
           <div className="fg-map-traffic-disabled" title={labels.trafficUnavailable}><span>{labels.traffic}</span><small>{labels.trafficUnavailable}</small></div>
+        </div> : null}
+        {baseMode === "satellite" && satelliteOverlay ? <div className="fg-map-satellite-meta" data-testid="sentinel-map-provenance">
+          <strong>Sentinel-2 L2A</strong>
+          <span>{satelliteOverlay.acquired_at?.slice(0,10) ?? "—"} · {satelliteOverlay.provider}</span>
+          <small>{satelliteOverlay.scene_id} · {satelliteOverlay.cloud_cover_pct==null?"?":satelliteOverlay.cloud_cover_pct.toFixed(1)}% cloud · COMPUTED RGB</small>
         </div> : null}
         {baseMode === "satellite" && !satelliteOverlay ? <div className="fg-map-satellite-hint">{labels.noSatellite}</div> : null}
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
