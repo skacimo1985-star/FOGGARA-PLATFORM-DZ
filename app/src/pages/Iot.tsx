@@ -78,6 +78,54 @@ export default function Iot() {
           },
         };
 
+  const labCopy = lang === "fr"
+    ? {
+        title: "Laboratoire de simulation",
+        note: "Créez des appareils et capteurs synthétiques appartenant à votre organisation. Ils alimentent uniquement le simulateur et ne représentent pas une connexion terrain.",
+        newDevice: "Nouvel appareil simulé",
+        deviceName: "Nom de l’appareil",
+        deviceType: "Type",
+        newSensor: "Nouveau capteur simulé",
+        sensorName: "Nom du capteur",
+        measurement: "Mesure",
+        create: "Créer",
+        noDevice: "Créez d’abord un appareil simulé.",
+        inventory: "Inventaire simulation",
+        devices: "appareils",
+        sensors: "capteurs",
+      }
+    : lang === "en"
+      ? {
+          title: "Simulation lab",
+          note: "Create synthetic devices and sensors owned by your organization. They feed only the simulator and do not represent a field connection.",
+          newDevice: "New simulated device",
+          deviceName: "Device name",
+          deviceType: "Type",
+          newSensor: "New simulated sensor",
+          sensorName: "Sensor name",
+          measurement: "Measurement",
+          create: "Create",
+          noDevice: "Create a simulated device first.",
+          inventory: "Simulation inventory",
+          devices: "devices",
+          sensors: "sensors",
+        }
+      : {
+          title: "مختبر المحاكاة",
+          note: "أنشئ أجهزة وحساسات اصطناعية تخص مؤسستك وتغذي المحاكي فقط. هذه السجلات لا تعني وجود اتصال ميداني.",
+          newDevice: "جهاز محاكاة جديد",
+          deviceName: "اسم الجهاز",
+          deviceType: "النوع",
+          newSensor: "حساس محاكى جديد",
+          sensorName: "اسم الحساس",
+          measurement: "القياس",
+          create: "إنشاء",
+          noDevice: "أنشئ جهاز محاكاة أولًا.",
+          inventory: "مخزون المحاكاة",
+          devices: "أجهزة",
+          sensors: "حساسات",
+        };
+
   const load = useCallback(async () => {
     try {
       const [nextStatus, nextDevices, nextSensors] = await Promise.all([
