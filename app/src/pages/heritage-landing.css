@@ -1057,3 +1057,65 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-heritage-digital-card strong{font-size:23px}
   .fg-heritage-thumbnails{grid-template-columns:repeat(5,155px)}
 }
+
+
+/* Presentation controls and motion */
+.fg-heritage-visual>.fg-moon-photo{
+  animation:fgHeritageFrameIn .55s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes fgHeritageFrameIn{
+  from{opacity:.35;transform:scale(1.018)}
+  to{opacity:1;transform:scale(1)}
+}
+.fg-heritage-visual-controls{
+  position:absolute;
+  z-index:4;
+  top:20px;
+  inset-inline-end:20px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.fg-heritage-visual-controls button{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border:1px solid #ffffff73;
+  border-radius:50%;
+  background:#1c0e08a6;
+  color:#fff;
+  backdrop-filter:blur(8px);
+  cursor:pointer;
+  transition:background .2s ease,color .2s ease,transform .2s ease;
+}
+.fg-heritage-visual-controls button:hover{
+  background:#fff;
+  color:var(--national-green);
+  transform:translateY(-1px);
+}
+.fg-heritage-progress{
+  position:relative;
+  height:3px;
+  margin-top:14px;
+  overflow:hidden;
+  background:#e4ded2;
+}
+.fg-heritage-progress span{
+  position:absolute;
+  inset:0 auto 0 0;
+  display:block;
+  background:linear-gradient(90deg,var(--national-terracotta),var(--national-green));
+  transition:width .45s ease;
+}
+.fg-moon-landing[dir="rtl"] .fg-heritage-progress span{
+  inset:0 0 0 auto;
+}
+@media(prefers-reduced-motion:reduce){
+  .fg-heritage-visual>.fg-moon-photo{animation:none}
+  .fg-heritage-progress span{transition:none}
+}
+@media(max-width:700px){
+  .fg-heritage-visual-controls{top:14px;inset-inline-end:14px}
+  .fg-heritage-visual-controls button{width:34px;height:34px}
+}
