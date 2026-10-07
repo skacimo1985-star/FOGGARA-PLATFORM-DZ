@@ -84,3 +84,43 @@
 
 /* Production UX: raw counters are secondary; the primary home is task/resource driven. */
 .fg-command-kpis-secondary{display:none!important}
+
+
+/* Google-Maps-like basemap/layer controls for the shared MapLibre canvas. */
+.fg-map-mode-switcher{
+  position:absolute;z-index:8;inset:12px 12px auto auto;display:flex;gap:4px;padding:4px;
+  border:1px solid color-mix(in srgb,var(--border) 78%,transparent);border-radius:12px;
+  background:color-mix(in srgb,var(--background) 91%,transparent);backdrop-filter:blur(12px);
+  box-shadow:0 12px 32px -26px #0b2d24;
+}
+.fg-map-mode-switcher button{
+  min-height:32px;padding:6px 9px;border:0;border-radius:8px;background:transparent;
+  color:var(--muted-foreground);font-size:9px;font-weight:800;white-space:nowrap;
+}
+.fg-map-mode-switcher button:hover{background:color-mix(in srgb,#2f8d6d 9%,var(--background));color:var(--foreground)}
+.fg-map-mode-switcher button.active{background:#276f58;color:#fff;box-shadow:0 4px 14px #0e3d2d26}
+.fg-map-layer-menu{
+  position:absolute;z-index:9;inset:56px 12px auto auto;width:min(260px,calc(100% - 24px));
+  padding:10px;border:1px solid color-mix(in srgb,var(--border) 78%,transparent);border-radius:13px;
+  background:color-mix(in srgb,var(--background) 95%,transparent);backdrop-filter:blur(14px);
+  box-shadow:0 18px 50px -34px #08281f;
+}
+.fg-map-layer-menu label{
+  display:flex;align-items:center;gap:9px;min-height:36px;padding:7px 6px;border-radius:8px;
+  font-size:10px;font-weight:700;
+}
+.fg-map-layer-menu label:hover{background:var(--muted)}
+.fg-map-layer-menu input{width:16px;height:16px;accent-color:#2f8063}
+.fg-map-traffic-disabled{margin-top:6px;padding:9px;border-top:1px solid var(--border);opacity:.62}
+.fg-map-traffic-disabled span,.fg-map-traffic-disabled small{display:block}
+.fg-map-traffic-disabled span{font-size:10px;font-weight:800}.fg-map-traffic-disabled small{margin-top:3px;font-size:8px;color:var(--muted-foreground);line-height:1.45}
+.fg-map-satellite-hint{
+  position:absolute;z-index:7;inset:auto 14px 56px 14px;padding:8px 10px;border:1px solid #ffffff59;
+  border-radius:10px;background:#0f2822c7;color:#e9fff5;backdrop-filter:blur(10px);
+  font-size:9px;font-weight:700;text-align:center;pointer-events:none;
+}
+@media(max-width:720px){
+  .fg-map-mode-switcher{inset:8px 8px auto 8px;overflow-x:auto;justify-content:flex-start}
+  .fg-map-mode-switcher button{flex:0 0 auto}
+  .fg-map-layer-menu{inset:52px 8px auto 8px;width:auto}
+}
