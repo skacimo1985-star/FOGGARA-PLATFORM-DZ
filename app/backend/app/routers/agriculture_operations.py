@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
@@ -122,6 +123,20 @@ class PlanIn(Input):
     efficiency: float = Field(gt=0, le=1)
     days: int = Field(ge=1, le=30)
     input_source: str = Field(min_length=3, max_length=300)
+    forecast_precip_mm: float | None = Field(default=None, ge=0, le=2000)
+    forecast_date: date | None = None
+    weather_provenance: Literal['INFERRED'] | None = None
+
+    @model_validator(mode='after')
+    def weather_context_complete(self):
+        supplied = (
+            self.forecast_precip_mm is not None,
+            self.forecast_date is not None,
+            self.weather_provenance is not None,
+        )
+        if any(supplied) and not all(supplied):
+            raise ValueError('Forecast precipitation, date and provenance must be supplied together')
+        return self
 
 class TaskIn(Input):
     parcel_id: int = Field(gt=0)
@@ -436,7 +451,11 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
                 parcel.boundary_geojson is not None
                 or (parcel.lat is not None and parcel.lon is not None)
             ),
-            'weather_live': False,
+            'weather_live': bool(
+                config.WEATHER_PROVIDER_ENABLED
+                and parcel.lat is not None
+                and parcel.lon is not None
+            ),
         },
         'provenance': 'RECORDED_AND_COMPUTED',
         'soil_provenance': soil_provenance,
@@ -505,7 +524,7 @@ def create_plan(payload: PlanIn, user: User = Depends(get_current_user), db: Ses
     parcel = own(db, AgriParcel, payload.parcel_id, user)
     if parcel.archived:
         api_error(409, 'PARCEL_ARCHIVED', 'Parcel is archived')
-    inputs = payload.model_dump()
+    inputs = payload.model_dump(mode='json')
     inputs['area_ha'] = float(parcel.area_ha)
     result = irrigation_scenario(float(parcel.area_ha), payload.eto_mm_day, payload.kc,
                                  payload.effective_rain_mm, payload.efficiency, payload.days)

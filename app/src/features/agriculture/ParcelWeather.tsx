@@ -43,7 +43,21 @@ type WeatherResponse = {
   };
 };
 
-export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
+type IrrigationWeatherPreset = {
+  parcelId: number;
+  date: string;
+  et0: number;
+  precipitation: number;
+  source: string;
+};
+
+export default function ParcelWeather({
+  parcels,
+  onUseDay,
+}: {
+  parcels: Parcel[];
+  onUseDay?: (preset: IrrigationWeatherPreset) => void;
+}) {
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const copy = lang === "fr" ? {
@@ -55,6 +69,7 @@ export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
     unavailable: "Le fournisseur météo n’est pas configuré ou n’est pas disponible.",
     coords: "Ajoutez les coordonnées ou dessinez le contour de la parcelle.",
     et0: "ET₀", rain: "Pluie", wind: "Vent max", radiation: "Rayonnement",
+    use: "Utiliser ET₀ pour l’irrigation",
     inferred: "Prévision de modèle · pas une mesure terrain",
   } : lang === "en" ? {
     title: "Live agricultural weather",
@@ -65,6 +80,7 @@ export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
     unavailable: "The weather provider is not configured or is unavailable.",
     coords: "Add parcel coordinates or draw its boundary first.",
     et0: "ET₀", rain: "Rain", wind: "Max wind", radiation: "Radiation",
+    use: "Use ET₀ for irrigation",
     inferred: "Model forecast · not a field measurement",
   } : {
     title: "الطقس الزراعي الحي",
@@ -75,6 +91,7 @@ export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
     unavailable: "مزود الطقس غير مهيأ أو غير متاح.",
     coords: "أضف إحداثيات القطعة أو ارسم حدودها أولًا.",
     et0: "ET₀", rain: "المطر", wind: "أقصى رياح", radiation: "الإشعاع",
+    use: "استخدم ET₀ في سيناريو الري",
     inferred: "توقع نموذجي · ليس قياسًا ميدانيًا",
   };
 
@@ -136,7 +153,7 @@ export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
     {error && <p className="fg-error" role="alert">{error}</p>}
     {data && <div className="fg-table-scroll">
       <table>
-        <thead><tr><th>Date</th><th>°C</th><th>{copy.et0}</th><th>{copy.rain}</th><th>{copy.wind}</th><th>{copy.radiation}</th></tr></thead>
+        <thead><tr><th>Date</th><th>°C</th><th>{copy.et0}</th><th>{copy.rain}</th><th>{copy.wind}</th><th>{copy.radiation}</th>{onUseDay&&<th/>}</tr></thead>
         <tbody>{data.forecast.forecast_days.map(day => <tr key={day.date}>
           <td>{day.date}</td>
           <td dir="ltr">{day.temperature_min_c.toFixed(1)} → {day.temperature_max_c.toFixed(1)}</td>
@@ -144,6 +161,13 @@ export default function ParcelWeather({ parcels }: { parcels: Parcel[] }) {
           <td dir="ltr">{day.precipitation_mm.toFixed(1)} mm · {day.precipitation_probability_max_pct.toFixed(0)}%</td>
           <td dir="ltr">{day.wind_speed_max_m_s.toFixed(1)} m/s</td>
           <td dir="ltr">{day.shortwave_radiation_mj_m2.toFixed(1)} MJ/m²</td>
+          {onUseDay&&<td><button type="button" className="fg-link" onClick={()=>onUseDay({
+            parcelId: parcel.id,
+            date: day.date,
+            et0: day.et0_fao_mm,
+            precipitation: day.precipitation_mm,
+            source: `weather:${data.forecast.provider.provider}:${day.date}:INFERRED`,
+          })}>{copy.use}</button></td>}
         </tr>)}</tbody>
       </table>
       <p className="fg-footnote"><ShieldCheck size={15}/> {copy.inferred} · {data.forecast.provider.attribution ?? ""}</p>
