@@ -57,6 +57,13 @@ type Assessment = {
   measurement_ids?: number[];
   derived?: Record<string, string | number>;
   guidelines?: string[];
+  data_gaps?: Array<{
+    metric: string;
+    unit: string;
+    priority: string;
+    purpose: string;
+    alternatives?: string[];
+  }>;
 };
 
 type WeatherDay = {
@@ -124,7 +131,11 @@ const SATELLITE_METRICS = new Set(["ndvi","evi","savi","ndwi","lswi","moisture"]
 const SOIL_METRICS = new Set(["ph","nitrogen","phosphorus","potassium","soc","ec","moisture"]);
 
 
-function AssessmentConsole({title,assessment,empty}:{title:string;assessment:Assessment|null;empty:string}) {
+function AssessmentConsole({
+  title,assessment,empty,dataHref,gapActionLabel,
+}:{
+  title:string;assessment:Assessment|null;empty:string;dataHref?:string;gapActionLabel?:string;
+}) {
   if(!assessment) return <div className="fg-service-console"><h2>{title}</h2><p className="fg-service-console-note">{empty}</p></div>;
   const inputs=Object.entries(assessment.inputs??{});
   return <div className="fg-service-console">
@@ -137,6 +148,14 @@ function AssessmentConsole({title,assessment,empty}:{title:string;assessment:Ass
     </div> : null}
     {(assessment.actions??[]).length?<div className="fg-service-actions-list">{assessment.actions!.map((action,index)=><p key={index}>{action}</p>)}</div>:null}
     <div className="fg-service-coverage"><strong>Coverage</strong><span>{assessment.coverage.length?assessment.coverage.join(" · "):empty}</span></div>
+    {(assessment.data_gaps??[]).length?<div className="fg-service-gaps" data-testid="analysis-data-gaps">
+      <div className="fg-service-gaps-head"><strong>NEXT DATA</strong><span>{assessment.data_gaps!.length}</span></div>
+      <div className="fg-service-gap-list">{assessment.data_gaps!.map(gap=><article key={gap.metric}>
+        <div><strong>{gap.metric.replaceAll("_"," ").toUpperCase()}</strong><small>{gap.purpose.replaceAll("_"," ")}</small></div>
+        <span>{gap.unit}</span><b>{gap.priority}</b>
+      </article>)}</div>
+      {dataHref&&gapActionLabel?<Link className="fg-service-console-action" to={dataHref}>{gapActionLabel}<ArrowUpRight size={14}/></Link>:null}
+    </div>:null}
     {(assessment.guidelines??[]).length?<div className="fg-service-guidelines">{assessment.guidelines!.map(item=><span key={item}>{item}</span>)}</div>:null}
     {assessment.limitations.length?<ul className="fg-service-limitations">{assessment.limitations.map(item=><li key={item}>{item.replaceAll("_"," ")}</li>)}</ul>:null}
   </div>;
@@ -500,8 +519,20 @@ export default function AnalysisCenter() {
         onRasterReady={setAnalysisOverlay}
         onTrueColorReady={setSatelliteOverlay}
       /> : null}
-      {analysisTool==="soil" ? <AssessmentConsole title={copy.soil} assessment={summary?.soil_assessment ?? null} empty={copy.missing} /> : null}
-      {analysisTool==="water" ? <AssessmentConsole title={copy.water} assessment={summary?.irrigation_water_assessment ?? null} empty={copy.missing} /> : null}
+      {analysisTool==="soil" ? <AssessmentConsole
+        title={copy.soil}
+        assessment={summary?.soil_assessment ?? null}
+        empty={copy.missing}
+        dataHref={parcelId?`/app/agriculture?parcel=${parcelId}&section=evidence`:undefined}
+        gapActionLabel={lang==="fr"?"Ajouter les mesures":lang==="en"?"Add measurements":"إضافة القياسات"}
+      /> : null}
+      {analysisTool==="water" ? <AssessmentConsole
+        title={copy.water}
+        assessment={summary?.irrigation_water_assessment ?? null}
+        empty={copy.missing}
+        dataHref={linkedProject?`/app/projects/${linkedProject.id}?tab=data`:undefined}
+        gapActionLabel={lang==="fr"?"Ouvrir les mesures du projet":lang==="en"?"Open project measurements":"فتح قياسات المشروع"}
+      /> : null}
       {analysisTool==="irrigation" ? <IrrigationConsole
         parcel={parcel}
         projectId={linkedProject?.id??null}
