@@ -343,6 +343,9 @@ def main():
                     if path == "/app/analysis":
                         expect(page.get_by_test_id("analysis-center")).to_be_visible()
                         expect(page.get_by_role("heading", name="مركز تحليل المورد")).to_be_visible()
+                        expect(page.get_by_test_id("analysis-live-sentinel")).to_be_visible()
+                        expect(page.get_by_test_id("parcel-sentinel-live")).to_be_visible()
+                        expect(page.get_by_text("Sentinel-2 حقيقي", exact=False)).to_be_visible()
                     if path == "/app/gis":
                         expect(page.get_by_test_id("gis-field-draw")).to_be_visible()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
