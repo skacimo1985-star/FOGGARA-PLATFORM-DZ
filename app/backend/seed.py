@@ -806,7 +806,7 @@ def main():
                               status=w["resource_status"], is_demo=True))
             created["resources"] += c
 
-            project_x, c = get_or_create(db, Project, org_id=org_x.id, title=w["project_title"],
+            project_x, c = get_or_create(db, Project, org_id=org_x.id, title=f"مساحة تشغيل تجريبية — {w['site_name'].replace(' (تجريبي)', '')}",
                 defaults=dict(description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
                               domain=w["project_domain"], status="active",
                               site_id=site_x.id, resource_id=res_x.id, is_demo=True,
@@ -877,7 +877,7 @@ def main():
 
         proj2, c = get_or_create(
             db, Project, org_id=org2.id,
-            title="برنامج ري تجريبي — تندوف",
+            title="مساحة تشغيل تجريبية — منطقة أم العسل — تندوف",
             defaults=dict(
                 description="مشروع اصطناعي للعرض واختبار سير العمل — ليس مشروعًا ميدانيًا أو إحصاءً رسميًا.",
                 domain="food", status="active", site_id=site2.id,
@@ -923,7 +923,7 @@ def main():
         created["assets"] += c
 
         proj, c = get_or_create(db, Project, org_id=org1.id,
-                                title="إعادة تأهيل فڨارة أولف الشرقية (تجريبي)",
+                                title="مساحة تشغيل تجريبية — واحة أولف — أدرار",
                                 defaults=dict(
                                     description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
                                     domain="water", status="active", site_id=site1.id,
