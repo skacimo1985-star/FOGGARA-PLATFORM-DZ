@@ -466,6 +466,42 @@ def test_live_sentinel_workflow_persists_real_ndvi_and_audit(client, world, monk
     assert calls == {'provider': 1, 'raster': 1}
 
 
+
+def test_live_sentinel_workflow_can_persist_lswi(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = 'S2A_TEST_LSWI_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    monkeypatch.setattr(satellite, 'build_processing_plan',
+                        lambda item, index: {'scene_id': item['id'], 'index': index})
+    monkeypatch.setattr(satellite, 'compute_index_statistics',
+                        lambda plan, bbox, geometry_wgs84=None: {
+                            'scene_id': scene_id,
+                            'index': plan['index'],
+                            'processing_plan_fingerprint': 'sha256:test-lswi-plan',
+                            'statistics': {'mean': 0.24, 'min': -0.1, 'max': 0.5},
+                            'pixels': {'valid': 80, 'total': 100, 'valid_fraction': .8},
+                        })
+
+    url = f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze'
+    result = client.post(url, headers=h, json={'scene_id': scene_id, 'index': 'lswi'})
+    assert result.status_code == 201, result.text
+    body = result.json()
+    assert body['created'] is True
+    assert body['observation']['metric'] == 'lswi'
+    assert float(body['observation']['value']) == .24
+    assert body['observation']['evidence_status'] == 'INFERRED'
+    assert body['observation']['source_ref'].startswith(
+        f'element84-earth-search:{scene_id}:lswi:'
+    )
+    assert body['computation'] == 'SENTINEL_SCL_MASKED_LSWI'
+
+
 def test_sentinel_rejects_missing_coordinates_and_low_quality(client, world, monkeypatch):
     import app.routers.satellite_parcels as satellite
     h = login(client, 'o1m@t.dz')
