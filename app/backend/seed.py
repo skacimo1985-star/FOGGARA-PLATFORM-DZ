@@ -1201,3 +1201,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if _env_flag("RELEASE_GATE"):
+        from app.release_gate import run_release_gate
+        run_release_gate()
