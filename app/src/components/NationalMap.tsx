@@ -4,7 +4,7 @@ import type { GisSite, WilayaMeta } from "@/types";
 export type AnalysisRasterOverlay = {
   url: string;
   bbox: [number, number, number, number];
-  index: "ndvi" | "evi" | "savi" | "ndwi";
+  index: "ndvi" | "evi" | "savi" | "ndwi" | "lswi";
 };
 
 export type ParcelBoundaryFeature = {
