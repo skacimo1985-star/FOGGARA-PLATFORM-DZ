@@ -181,6 +181,7 @@ export default function Gis() {
   const [parcels, setParcels] = useState<ParcelRecord[]>([]);
   const boundaryImportRef = useRef<HTMLInputElement | null>(null);
   const [boundaryBusy, setBoundaryBusy] = useState(false);
+  const [boundaryError, setBoundaryError] = useState<unknown>(null);
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
@@ -474,7 +475,7 @@ export default function Gis() {
   const saveParcelBoundary = async (geometry: PolygonGeometry) => {
     if (!selectedParcelId) return;
     setBoundaryBusy(true);
-    setAnalysisError(null);
+    setBoundaryError(null);
     try {
       await api.patch(
         `/agriculture/parcels/${selectedParcelId}`,
@@ -483,7 +484,7 @@ export default function Gis() {
       await refreshParcelSpatialData();
       resetParcelAnalysis();
     } catch (err) {
-      setAnalysisError(err);
+      setBoundaryError(err);
     } finally {
       setBoundaryBusy(false);
     }
@@ -491,14 +492,14 @@ export default function Gis() {
 
   const importParcelBoundary = async (file: File | null) => {
     if (!file || !selectedParcelId) return;
-    setAnalysisError(null);
+    setBoundaryError(null);
     try {
       const parsed = JSON.parse(await file.text()) as unknown;
       const geometry = extractPolygonGeometry(parsed);
       if (!geometry) throw new Error(parcelCopy.importError);
       await saveParcelBoundary(geometry);
     } catch (err) {
-      setAnalysisError(err);
+      setBoundaryError(err);
     } finally {
       if (boundaryImportRef.current) boundaryImportRef.current.value = "";
     }
@@ -532,7 +533,7 @@ export default function Gis() {
     if (!selectedParcelId || !selectedParcelRecord?.boundary_geojson) return;
     if (!window.confirm(parcelCopy.clearConfirm)) return;
     setBoundaryBusy(true);
-    setAnalysisError(null);
+    setBoundaryError(null);
     try {
       await api.patch(
         `/agriculture/parcels/${selectedParcelId}`,
@@ -541,7 +542,7 @@ export default function Gis() {
       await refreshParcelSpatialData();
       resetParcelAnalysis();
     } catch (err) {
-      setAnalysisError(err);
+      setBoundaryError(err);
     } finally {
       setBoundaryBusy(false);
     }
@@ -671,9 +672,10 @@ export default function Gis() {
             <span className="text-muted-foreground">{parcelCopy.none}</span>
           )}
         </div>
+        <ErrorText error={boundaryError} />
       </section>
 
-            <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
+      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600">{satelliteCopy.provider}</p>
@@ -726,6 +728,9 @@ export default function Gis() {
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
           selectedParcelId={selectedParcelId}
+          selectedParcelPoint={selectedParcelRecord?.lat != null && selectedParcelRecord?.lon != null
+            ? { lat: selectedParcelRecord.lat, lon: selectedParcelRecord.lon }
+            : null}
           onViewportChange={setViewportBbox}
           onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
