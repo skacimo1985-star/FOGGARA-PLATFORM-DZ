@@ -20,8 +20,7 @@ from app.models import (VFD, Asset, Calibration, Certificate, Evidence,
                         WaterResource, Well, AgriParcel, AgriObservation,
                         AgriPlan, AgriTask)
 from app.security import hash_password
-from app.services.indicators import ensure_default_indicator
-from app.services.catalog import ensure_service_catalog
+from app.services.reference_data import ensure_reference_data
 from app.services.agriculture_operations import irrigation_scenario
 
 def get_or_create(db, model_cls, defaults=None, **lookup):
@@ -171,11 +170,11 @@ def main():
                "services": 0, "service_requests": 0, "water": 0, "decisions": 0, "iot": 0,
                "agri_parcels": 0, "agri_observations": 0, "agri_plans": 0, "agri_tasks": 0}
     try:
-        created["services"] += ensure_service_catalog(db)
+        reference_created = ensure_reference_data(db)
+        created["services"] += reference_created["services"]
         if not seed_demo:
-            ensure_default_indicator(db)
             db.commit()
-            print("SEED_DEMO=false — no demo data inserted (indicator and authored service catalog ensured).")
+            print("SEED_DEMO=false — no demo data inserted (production references ensured).")
             return
         # ---- Organizations ----
         org1, c = get_or_create(db, Organization, code="DEMO-ADRAR-ADE", defaults=dict(
@@ -1185,7 +1184,6 @@ def main():
                                  is_demo=True))
         created["iot"] += c
 
-        ensure_default_indicator(db)
         db.commit()
 
         total = sum(created.values())
