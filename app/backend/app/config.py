@@ -84,17 +84,31 @@ if not 1 <= LIST_MAX_LIMIT <= 1000:
     raise RuntimeError("LIST_MAX_LIMIT must be between 1 and 1000")
 
 
-# Optional external AI for investor-facing summaries. The UI never calls providers directly.
+# Optional AI runtime. The frontend never calls model providers directly.
+# Exactly one mode may be enabled:
+# - external: OpenAI-compatible HTTPS endpoint with an API key.
+# - local: sovereign/self-hosted OpenAI-compatible endpoint (Ollama/vLLM gateway).
 _AI_EXTERNAL_FLAG = os.environ.get("AI_EXTERNAL_ENABLED", "false").strip().lower()
+_AI_LOCAL_FLAG = os.environ.get("AI_LOCAL_ENABLED", "false").strip().lower()
 if _AI_EXTERNAL_FLAG not in ("true", "false"):
     raise RuntimeError("AI_EXTERNAL_ENABLED must be true or false")
+if _AI_LOCAL_FLAG not in ("true", "false"):
+    raise RuntimeError("AI_LOCAL_ENABLED must be true or false")
 AI_EXTERNAL_ENABLED = _AI_EXTERNAL_FLAG == "true"
+AI_LOCAL_ENABLED = _AI_LOCAL_FLAG == "true"
+if AI_EXTERNAL_ENABLED and AI_LOCAL_ENABLED:
+    raise RuntimeError("Enable only one of AI_EXTERNAL_ENABLED or AI_LOCAL_ENABLED")
+
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "").strip().rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_MODEL = os.environ.get("AI_MODEL", "").strip()
+AI_LOCAL_BASE_URL = os.environ.get("AI_LOCAL_BASE_URL", "").strip().rstrip("/")
+AI_LOCAL_API_KEY = os.environ.get("AI_LOCAL_API_KEY", "").strip()
+AI_LOCAL_MODEL = os.environ.get("AI_LOCAL_MODEL", "").strip()
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 if not 3 <= AI_TIMEOUT_SECONDS <= 60:
     raise RuntimeError("AI_TIMEOUT_SECONDS must be between 3 and 60")
+
 if AI_EXTERNAL_ENABLED:
     _ai_url = urlsplit(AI_BASE_URL)
     if not AI_BASE_URL or not AI_API_KEY or not AI_MODEL:
@@ -103,3 +117,18 @@ if AI_EXTERNAL_ENABLED:
         raise RuntimeError("AI_BASE_URL must be a provider base URL without embedded credentials")
     if ENV == "prod" and _ai_url.scheme != "https":
         raise RuntimeError("ENV=prod requires HTTPS AI_BASE_URL")
+
+if AI_LOCAL_ENABLED:
+    _local_ai_url = urlsplit(AI_LOCAL_BASE_URL)
+    if not AI_LOCAL_BASE_URL or not AI_LOCAL_MODEL:
+        raise RuntimeError("Local AI requires AI_LOCAL_BASE_URL and AI_LOCAL_MODEL")
+    if not _local_ai_url.hostname or _local_ai_url.username or _local_ai_url.password:
+        raise RuntimeError("AI_LOCAL_BASE_URL must be a model-service base URL without embedded credentials")
+    if _local_ai_url.scheme not in ("http", "https"):
+        raise RuntimeError("AI_LOCAL_BASE_URL must use http or https")
+    if ENV == "prod" and _local_ai_url.scheme == "http":
+        _allowed_internal_ai_hosts = {"localhost", "127.0.0.1", "::1", "ollama", "foggara-ai", "ai"}
+        if _local_ai_url.hostname not in _allowed_internal_ai_hosts:
+            raise RuntimeError(
+                "Production local AI over HTTP must use an explicitly trusted internal service hostname"
+            )
