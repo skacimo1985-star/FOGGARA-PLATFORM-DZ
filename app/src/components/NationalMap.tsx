@@ -58,6 +58,9 @@ type Props = {
   onSelectParcel?: (parcelId: number) => void;
   onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
+  drawMode?: boolean;
+  draftBoundary?: Point[];
+  onDraftBoundaryChange?: (points: Point[]) => void;
   locale?: string;
   compact?: boolean;
 };
@@ -94,6 +97,7 @@ type ImageSource = {
 
 type MapEvent = {
   features?: Array<{ properties?: Record<string, unknown> }>;
+  lngLat?: { lng: number; lat: number };
   error?: unknown;
 };
 
@@ -155,6 +159,30 @@ function isImageSource(value: unknown): value is ImageSource {
   return typeof (value as { updateImage?: unknown }).updateImage === "function";
 }
 
+function draftCollection(points: Point[]) {
+  const features: unknown[] = points.map((point, index) => ({
+    type: "Feature",
+    id: `draft-${index}`,
+    properties: { kind: "vertex", order: index + 1 },
+    geometry: { type: "Point", coordinates: point },
+  }));
+  if (points.length >= 2) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "edge" },
+      geometry: { type: "LineString", coordinates: points },
+    });
+  }
+  if (points.length >= 3) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "polygon" },
+      geometry: { type: "Polygon", coordinates: [[...points, points[0]]] },
+    });
+  }
+  return { type: "FeatureCollection", features };
+}
+
 function boundsFor(points: Point[]): [Point, Point] | null {
   if (points.length === 0) return null;
   let minLon = points[0][0];
@@ -185,6 +213,9 @@ export function NationalMap({
   onSelectParcel,
   onSelectScene,
   onViewportChange,
+  drawMode = false,
+  draftBoundary = [],
+  onDraftBoundaryChange,
   locale = "ar",
   compact = false,
 }: Props) {
@@ -195,6 +226,9 @@ export function NationalMap({
   const onSelectSceneRef = useRef(onSelectScene);
   const onSelectParcelRef = useRef(onSelectParcel);
   const onViewportChangeRef = useRef(onViewportChange);
+  const drawModeRef = useRef(drawMode);
+  const draftBoundaryRef = useRef<Point[]>(draftBoundary);
+  const onDraftBoundaryChangeRef = useRef(onDraftBoundaryChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
@@ -206,6 +240,9 @@ export function NationalMap({
   onSelectSceneRef.current = onSelectScene;
   onSelectParcelRef.current = onSelectParcel;
   onViewportChangeRef.current = onViewportChange;
+  drawModeRef.current = drawMode;
+  draftBoundaryRef.current = draftBoundary;
+  onDraftBoundaryChangeRef.current = onDraftBoundaryChange;
   analysisOverlayRef.current = analysisOverlay;
 
   const plotted = useMemo(
@@ -404,6 +441,37 @@ export function NationalMap({
             },
           });
 
+          map.addSource("field-draft", {
+            type: "geojson",
+            data: draftCollection(draftBoundaryRef.current),
+          });
+          map.addLayer({
+            id: "field-draft-fill",
+            type: "fill",
+            source: "field-draft",
+            filter: ["==", ["geometry-type"], "Polygon"],
+            paint: { "fill-color": "#f59e0b", "fill-opacity": 0.22 },
+          });
+          map.addLayer({
+            id: "field-draft-line",
+            type: "line",
+            source: "field-draft",
+            filter: ["in", ["geometry-type"], ["literal", ["LineString", "Polygon"]]],
+            paint: { "line-color": "#d97706", "line-width": 3.2, "line-dasharray": [1.4, 1] },
+          });
+          map.addLayer({
+            id: "field-draft-points",
+            type: "circle",
+            source: "field-draft",
+            filter: ["==", ["geometry-type"], "Point"],
+            paint: {
+              "circle-radius": 5.5,
+              "circle-color": "#f59e0b",
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 2,
+            },
+          });
+
           map.addSource("foggara-sites", {
             type: "geojson",
             data: featuresRef.current,
@@ -432,13 +500,24 @@ export function NationalMap({
             },
           });
 
+          map.on("click", (event) => {
+            if (!drawModeRef.current || !event.lngLat || !onDraftBoundaryChangeRef.current) return;
+            if (draftBoundaryRef.current.length >= 500) return;
+            const next: Point = [
+              Number(event.lngLat.lng.toFixed(8)),
+              Number(event.lngLat.lat.toFixed(8)),
+            ];
+            onDraftBoundaryChangeRef.current([...draftBoundaryRef.current, next]);
+          });
+
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map && onSelectSceneRef.current) map.getCanvas().style.cursor = "pointer";
+            if (map && onSelectSceneRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "satellite-scenes-fill", (event) => {
+            if (drawModeRef.current) return;
             const sceneId = String(event.features?.[0]?.properties?.sceneId ?? "");
             if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
           });
@@ -450,6 +529,7 @@ export function NationalMap({
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "agri-parcel-fill", (event) => {
+            if (drawModeRef.current) return;
             const parcelId = Number(event.features?.[0]?.properties?.id);
             if (Number.isFinite(parcelId) && onSelectParcelRef.current) onSelectParcelRef.current(parcelId);
           });
@@ -461,6 +541,7 @@ export function NationalMap({
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "foggara-sites", (event) => {
+            if (drawModeRef.current) return;
             const properties = event.features?.[0]?.properties;
             const siteId = Number(properties?.siteId);
             const code = String(properties?.wilayaCode ?? "");
@@ -512,6 +593,13 @@ export function NationalMap({
     const source = mapRef.current?.getSource("agri-parcel-boundaries");
     if (isGeoJsonSource(source)) source.setData(parcelFeatureCollection);
   }, [parcelFeatureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("field-draft");
+    if (isGeoJsonSource(source)) source.setData(draftCollection(draftBoundary));
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = drawMode ? "crosshair" : "";
+  }, [draftBoundary, drawMode]);
 
   useEffect(() => {
     const map = mapRef.current;
