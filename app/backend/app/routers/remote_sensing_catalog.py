@@ -17,6 +17,7 @@ from ..services.remote_sensing_indices import public_index_definitions
 from ..services.remote_sensing_processing import (
     ProcessingPlanError,
     build_processing_plan,
+    build_true_color_plan,
     item_url,
     validate_scene_id,
 )
@@ -25,6 +26,7 @@ from ..services.remote_sensing_raster import (
     RasterStatisticsError,
     compute_index_statistics,
     render_index_preview_png,
+    render_true_color_preview_png,
     validate_analysis_bbox,
 )
 
@@ -255,6 +257,47 @@ def scene_index_preview(
             "X-FOGGARA-Index": str(metadata["index"]),
             "X-FOGGARA-Formula-Version": str(metadata["formula_version"]),
             "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Verified": "false",
+        },
+    )
+
+
+@router.get("/catalog/scenes/{scene_id}/true-color.png")
+def scene_true_color_preview(
+    scene_id: str,
+    bbox: str = Query(..., min_length=7, max_length=160),
+    _user: User = Depends(get_current_user),
+):
+    raw_bbox = _parse_bbox(bbox)
+    try:
+        validate_analysis_bbox(raw_bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", str(exc))
+
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_true_color_plan(item)
+        png, metadata = render_true_color_preview_png(plan, raw_bbox)
+    except ProcessingPlanError:
+        api_error(
+            502,
+            "REMOTE_PROVIDER_INVALID_RESPONSE",
+            "Satellite catalogue item cannot produce a trusted true-color plan",
+        )
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster analysis capacity is busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Trusted Sentinel true-color preview failed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Product": "true_color",
+            "X-FOGGARA-Display-Version": str(metadata["display_version"]),
+            "X-FOGGARA-Evidence": "OBSERVED_PROVIDER_RASTER_DISPLAY",
             "X-FOGGARA-Verified": "false",
         },
     )
