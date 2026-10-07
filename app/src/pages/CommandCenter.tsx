@@ -20,6 +20,14 @@ type Readiness = {
   core: {
     database: { status: string; latency_ms: number; schema_revision: string; engine: string };
     environment: { mode: string; production_mode: boolean; app_version: string };
+    deployment: {
+      provider: string;
+      release_id: string;
+      git_commit: string | null;
+      service_name: string | null;
+      public_hostname: string | null;
+      source: string;
+    };
   };
   integrations: {
     satellite: { status: string; provenance: string };
@@ -71,7 +79,7 @@ export default function CommandCenter() {
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
     decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
     updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel",
-    readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
+    readinessTitle: "Préparation d’exécution", release: "Version déployée", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
     setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
     managedTitle: "Commencer par ce que vous gérez", managedIntro: "Choisissez l’objet opérationnel. FOGGARA ouvre ensuite ses données, analyses, décisions et actions dans le même contexte.", landAsset: "Parcelle / terrain", landBody: "Limites · satellite · sol · irrigation", waterAsset: "Ressource en eau", waterBody: "Puits · réservoir · pompage · qualité", projectAsset: "Projet", projectBody: "Données · preuves · décisions · actions", deviceAsset: "Équipement / capteur", deviceBody: "Appareils · capteurs · télémétrie · Edge",
     actionsTitle: "Services opérationnels", analysisAction: "Centre d’analyses", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
@@ -86,7 +94,7 @@ export default function CommandCenter() {
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
     decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
     updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects",
-    readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
+    readinessTitle: "Runtime readiness", release: "Deployed release", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
     setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
     managedTitle: "Start with what you manage", managedIntro: "Choose the operational object. FOGGARA then opens its data, analysis, decisions and actions in the same context.", landAsset: "Field / land", landBody: "Boundary · satellite · soil · irrigation", waterAsset: "Water resource", waterBody: "Well · reservoir · pumping · quality", projectAsset: "Project", projectBody: "Data · evidence · decisions · actions", deviceAsset: "Equipment / sensor", deviceBody: "Devices · sensors · telemetry · Edge",
     actionsTitle: "Operational services", analysisAction: "Analysis center", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
@@ -101,7 +109,7 @@ export default function CommandCenter() {
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
     decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
     updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية",
-    readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
+    readinessTitle: "جاهزية التشغيل", release: "الإصدار المنشور", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
     setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
     managedTitle: "ابدأ بما تديره فعليًا", managedIntro: "اختر الأصل أو المورد؛ بعدها تفتح FOGGARA بياناته وتحليلاته وقراراته وإجراءاته في نفس السياق.", landAsset: "أرض / قطعة زراعية", landBody: "حدود · أقمار · تربة · ري", waterAsset: "مورد مائي", waterBody: "بئر · خزان · ضخ · جودة", projectAsset: "مشروع", projectBody: "بيانات · أدلة · قرارات · إجراءات", deviceAsset: "جهاز / حساس", deviceBody: "أجهزة · حساسات · Telemetry · Edge",
     actionsTitle: "خدمات تشغيل مباشرة", analysisAction: "مركز التحاليل", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
@@ -343,6 +351,19 @@ export default function CommandCenter() {
           <ShieldCheck size={26}/>
         </div>
         {readiness ? <>
+          <div className="fg-readiness-release" data-testid="runtime-release-identity">
+            <div>
+              <span>{copy.release}</span>
+              <strong dir="ltr">{readiness.core.deployment.release_id}</strong>
+            </div>
+            <div>
+              <b>{readiness.core.deployment.provider.toUpperCase()}</b>
+              <small dir="ltr">
+                {readiness.core.deployment.service_name ?? "FOGGARA-DZ"}
+                {readiness.core.deployment.public_hostname ? ` · ${readiness.core.deployment.public_hostname}` : ""}
+              </small>
+            </div>
+          </div>
           <div className="fg-readiness-grid">
             <article className={readiness.runtime_status === "healthy" ? "ok" : "warn"}>
               <span>{copy.runtime}</span><strong>{readinessLabel(readiness.runtime_status)}</strong>
