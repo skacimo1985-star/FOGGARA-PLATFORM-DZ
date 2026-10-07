@@ -135,3 +135,41 @@ if AI_LOCAL_ENABLED:
             raise RuntimeError(
                 "Production local AI over HTTP must use an explicitly trusted internal service hostname"
             )
+
+
+
+# Optional live weather provider. In development the public Open-Meteo endpoint
+# is enabled for evaluation/prototyping only. Production commercial use must
+# use the paid customer endpoint and API key.
+_WEATHER_FLAG = os.environ.get("WEATHER_LIVE_ENABLED", "").strip().lower()
+if _WEATHER_FLAG not in ("", "true", "false"):
+    raise RuntimeError("WEATHER_LIVE_ENABLED must be true or false")
+WEATHER_LIVE_ENABLED = (_WEATHER_FLAG == "true") if _WEATHER_FLAG else ENV == "dev"
+WEATHER_BASE_URL = os.environ.get(
+    "WEATHER_BASE_URL",
+    "https://api.open-meteo.com/v1" if WEATHER_LIVE_ENABLED and ENV == "dev" else "",
+).strip().rstrip("/")
+WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "").strip()
+WEATHER_TIMEOUT_SECONDS = float(os.environ.get("WEATHER_TIMEOUT_SECONDS", "12"))
+if not 3 <= WEATHER_TIMEOUT_SECONDS <= 30:
+    raise RuntimeError("WEATHER_TIMEOUT_SECONDS must be between 3 and 30")
+
+if WEATHER_LIVE_ENABLED:
+    _weather_url = urlsplit(WEATHER_BASE_URL)
+    if (
+        _weather_url.scheme != "https"
+        or not _weather_url.hostname
+        or _weather_url.username
+        or _weather_url.password
+        or _weather_url.query
+        or _weather_url.fragment
+    ):
+        raise RuntimeError("WEATHER_BASE_URL must be a credential-free HTTPS provider base URL")
+    _weather_hosts = {"api.open-meteo.com", "customer-api.open-meteo.com"}
+    if _weather_url.hostname not in _weather_hosts:
+        raise RuntimeError("WEATHER_BASE_URL host is not an approved weather provider")
+    if ENV == "prod":
+        if _weather_url.hostname != "customer-api.open-meteo.com" or not WEATHER_API_KEY:
+            raise RuntimeError(
+                "ENV=prod live weather requires the Open-Meteo customer endpoint and API key"
+            )

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user, require_reviewer
@@ -13,6 +14,7 @@ from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, 
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
 from ..services.service_delivery import irrigation_water_assessment, soil_assessment, soil_assessment_values
+from ..services.weather_provider import WeatherProviderError, fetch_forecast, provider_status
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -392,6 +394,36 @@ def verify_observation(identity: int, user: User = Depends(require_reviewer), db
     row.verified_at = datetime.now(timezone.utc)
     return record(db, user, row, 'verify')
 
+@operations_router.get('/weather/status')
+def weather_status(user: User = Depends(get_current_user)):
+    return provider_status()
+
+
+@operations_router.get('/parcels/{identity}/weather/forecast')
+def parcel_weather_forecast(
+    identity: int,
+    days: int = Query(default=15, ge=1, le=16),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, 'PARCEL_ARCHIVED', 'Parcel is archived')
+    if parcel.lat is None or parcel.lon is None:
+        api_error(422, 'PARCEL_COORDINATES_REQUIRED', 'Parcel coordinates or boundary are required for weather')
+    try:
+        result = fetch_forecast(float(parcel.lat), float(parcel.lon), days=days)
+    except WeatherProviderError as exc:
+        if not config.WEATHER_LIVE_ENABLED:
+            api_error(503, 'WEATHER_PROVIDER_NOT_CONFIGURED', str(exc))
+        api_error(502, 'WEATHER_PROVIDER_UNAVAILABLE', str(exc))
+    return {
+        'parcel_id': parcel.id,
+        'parcel_crop': parcel.crop,
+        **result,
+    }
+
+
 @operations_router.get('/parcels/{identity}/service-summary')
 def service_summary(identity: int, project_id: int | None = Query(default=None, gt=0), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     parcel = own(db, AgriParcel, identity, user)
@@ -431,7 +463,11 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
                 parcel.boundary_geojson is not None
                 or (parcel.lat is not None and parcel.lon is not None)
             ),
-            'weather_live': False,
+            'weather_live': bool(
+                config.WEATHER_LIVE_ENABLED
+                and parcel.lat is not None
+                and parcel.lon is not None
+            ),
         },
         'provenance': 'RECORDED_AND_COMPUTED',
         'soil_provenance': soil_provenance,
