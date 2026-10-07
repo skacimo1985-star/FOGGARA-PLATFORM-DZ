@@ -143,18 +143,31 @@ export default function CommandCenter() {
     void load();
   }, [user?.role]);
 
+  const realProjects = useMemo(
+    () => snapshot.projects?.filter((project) => !project.is_demo) ?? null,
+    [snapshot.projects],
+  );
+  const realSites = useMemo(
+    () => snapshot.sites?.filter((entry) => !entry.site.is_demo) ?? null,
+    [snapshot.sites],
+  );
+  const realDecisions = useMemo(
+    () => snapshot.decisions?.filter((decision) => !decision.is_demo) ?? null,
+    [snapshot.decisions],
+  );
+
   const counts = useMemo(() => ({
-    projects: snapshot.projects?.length,
-    sites: snapshot.sites?.length,
+    projects: realProjects?.length,
+    sites: realSites?.length,
     telemetry: snapshot.telemetry?.length,
-    decisions: snapshot.decisions?.length,
+    decisions: realDecisions?.length,
     evidence: snapshot.pending
       ? snapshot.pending.measurements.length + snapshot.pending.evidences.length
       : undefined,
     infrastructure: snapshot.devices && snapshot.sensors
       ? snapshot.devices.length + snapshot.sensors.length
       : undefined,
-  }), [snapshot]);
+  }), [snapshot.telemetry, snapshot.pending, snapshot.devices, snapshot.sensors, realProjects, realSites, realDecisions]);
 
   const cards = [
     { label: copy.projects, value: counts.projects, to: "/app/projects", icon: FolderKanban },
@@ -249,13 +262,13 @@ export default function CommandCenter() {
   ];
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
-  const recentProjects = [...(snapshot.projects ?? [])]
+  const recentProjects = [...(realProjects ?? [])]
     .filter((project) => project.status !== "closed")
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
   const projectSite = (project: Project) =>
-    project.site_id == null ? null : snapshot.sites?.find((row) => row.site.id === project.site_id)?.site ?? null;
-  const needsSetup = snapshot.projects !== null && snapshot.sites !== null && snapshot.projects.length === 0 && snapshot.sites.length === 0;
+    project.site_id == null ? null : realSites?.find((row) => row.site.id === project.site_id)?.site ?? null;
+  const needsSetup = realProjects !== null && realSites !== null && realProjects.length === 0 && realSites.length === 0;
 
   return (
     <div className="fg-command-center" dir={i18n.dir()}>
@@ -392,7 +405,7 @@ export default function CommandCenter() {
 
       <section className="fg-command-grid">
         <NationalMap
-          sites={snapshot.sites ?? []}
+          sites={realSites ?? []}
           wilayas={wilayas}
           onSelectSite={(siteId) => navigate(`/app/gis?site=${siteId}`)}
           locale={lang}
