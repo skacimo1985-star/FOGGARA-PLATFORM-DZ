@@ -49,6 +49,12 @@ def create_run(payload: SimulationRunIn, user: User = Depends(get_current_user),
     device = db.get(Device, payload.device_id)
     if device is None or device.org_id != user.org_id:
         api_error(404, "NOT_FOUND", "Device not found")
+    if not device.is_simulated:
+        api_error(
+            422,
+            "SIMULATED_DEVICE_REQUIRED",
+            "Simulation runs require a simulated device",
+        )
     start = payload.start_time or datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc)
     run = SimulationRun(org_id=user.org_id, device_id=device.id,
                         scenario=payload.scenario, seed=payload.seed,
@@ -154,7 +160,9 @@ def list_rules(user: User = Depends(get_current_user), db: Session = Depends(get
 def create_rule(payload: TelemetryRuleIn, user: User = Depends(get_current_user),
                 db: Session = Depends(get_db)):
     _require_admin(user)
-    r = TelemetryRule(org_id=user.org_id, is_demo=True, **payload.model_dump())
+    # User-authored deterministic rules are operational organization data,
+    # even when they are exercised against synthetic simulation readings.
+    r = TelemetryRule(org_id=user.org_id, is_demo=False, **payload.model_dump())
     db.add(r)
     db.flush()
     audit(db, user, "create", "telemetry_rule", entity_id=r.id,
