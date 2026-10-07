@@ -70,6 +70,17 @@ def _projected(points: list[tuple[float, float]]):
     ], cos_lat
 
 
+def _perimeter_m(points: list[tuple[float, float]]) -> float:
+    total = 0.0
+    for (lon1, lat1), (lon2, lat2) in zip(points, points[1:]):
+        phi1, phi2 = math.radians(lat1), math.radians(lat2)
+        d_phi = math.radians(lat2 - lat1)
+        d_lam = math.radians(lon2 - lon1)
+        a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lam / 2) ** 2
+        total += 2 * EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(a)))
+    return total
+
+
 def _area_centroid(points: list[tuple[float, float]]) -> tuple[float, float, float]:
     projected, cos_lat = _projected(points)
     twice_area = 0.0
@@ -124,5 +135,6 @@ def normalize_parcel_boundary(value: Any) -> tuple[dict, dict]:
         "bbox": bbox,
         "centroid": [centroid_lon, centroid_lat],
         "estimated_area_ha": area_ha,
+        "estimated_perimeter_m": _perimeter_m(points),
         "vertex_count": len(points) - 1,
     }
