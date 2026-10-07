@@ -62,8 +62,8 @@ export default function CommandCenter() {
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const copy = lang === "fr" ? {
     eyebrow: "CENTRE DE COMMANDE NATIONAL · WEFEH",
-    title: "Du terrain à la décision.",
-    intro: "Une vue opérationnelle unique des projets, ressources, télémétrie, preuves et décisions de FOGGARA-DZ.",
+    title: "Gérer une ressource. Prouver ses données. Décider et agir.",
+    intro: "FOGGARA-DZ relie territoire, ressources WEFEH, données vérifiables, analyse, décision, action et suivi dans un même contexte opérationnel.",
     live: "Données connectées", projects: "Projets", sites: "Sites", telemetry: "Lectures récentes",
     decisions: "Décisions à revoir", evidence: "Éléments à revoir", infrastructure: "Appareils & capteurs",
     open: "Ouvrir", domains: "Espaces opérationnels", flow: "Chaîne de décision FOGGARA",
@@ -73,11 +73,12 @@ export default function CommandCenter() {
     updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel",
     readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
     setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
+    managedTitle: "Commencer par ce que vous gérez", managedIntro: "Choisissez l’objet opérationnel. FOGGARA ouvre ensuite ses données, analyses, décisions et actions dans le même contexte.", landAsset: "Parcelle / terrain", landBody: "Limites · satellite · sol · irrigation", waterAsset: "Ressource en eau", waterBody: "Puits · réservoir · pompage · qualité", projectAsset: "Projet", projectBody: "Données · preuves · décisions · actions", deviceAsset: "Équipement / capteur", deviceBody: "Appareils · capteurs · télémétrie · Edge",
     actionsTitle: "Services opérationnels", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
-    title: "From field reality to decision.",
-    intro: "One operational view of FOGGARA-DZ projects, resources, telemetry, evidence and decisions.",
+    title: "Manage a resource. Prove its data. Decide and act.",
+    intro: "FOGGARA-DZ connects territory, WEFEH resources, verifiable data, analysis, decision, action and monitoring in one operational context.",
     live: "Connected data", projects: "Projects", sites: "Sites", telemetry: "Recent readings",
     decisions: "Decisions to review", evidence: "Evidence to review", infrastructure: "Devices & sensors",
     open: "Open", domains: "Operational workspaces", flow: "FOGGARA decision chain",
@@ -87,11 +88,12 @@ export default function CommandCenter() {
     updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects",
     readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
     setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
+    managedTitle: "Start with what you manage", managedIntro: "Choose the operational object. FOGGARA then opens its data, analysis, decisions and actions in the same context.", landAsset: "Field / land", landBody: "Boundary · satellite · soil · irrigation", waterAsset: "Water resource", waterBody: "Well · reservoir · pumping · quality", projectAsset: "Project", projectBody: "Data · evidence · decisions · actions", deviceAsset: "Equipment / sensor", deviceBody: "Devices · sensors · telemetry · Edge",
     actionsTitle: "Operational services", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
-    title: "من الواقع الميداني إلى القرار.",
-    intro: "رؤية تشغيلية موحدة لمشاريع وموارد وقياسات وأدلة وقرارات FOGGARA-DZ.",
+    title: "أدِر موردًا، أثبت بياناته، ثم قرّر ونفّذ.",
+    intro: "FOGGARA-DZ تربط الإقليم وموارد WEFEH والبيانات الموثقة والتحليل والقرار والتنفيذ والمتابعة داخل سياق تشغيلي واحد.",
     live: "بيانات مترابطة", projects: "المشاريع", sites: "المواقع", telemetry: "القياسات الأخيرة",
     decisions: "قرارات تنتظر المراجعة", evidence: "أدلة تنتظر المراجعة", infrastructure: "الأجهزة والحساسات",
     open: "فتح", domains: "مساحات العمل التشغيلية", flow: "سلسلة القرار في FOGGARA",
@@ -101,6 +103,7 @@ export default function CommandCenter() {
     updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية",
     readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
     setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
+    managedTitle: "ابدأ بما تديره فعليًا", managedIntro: "اختر الأصل أو المورد؛ بعدها تفتح FOGGARA بياناته وتحليلاته وقراراته وإجراءاته في نفس السياق.", landAsset: "أرض / قطعة زراعية", landBody: "حدود · أقمار · تربة · ري", waterAsset: "مورد مائي", waterBody: "بئر · خزان · ضخ · جودة", projectAsset: "مشروع", projectBody: "بيانات · أدلة · قرارات · إجراءات", deviceAsset: "جهاز / حساس", deviceBody: "أجهزة · حساسات · Telemetry · Edge",
     actionsTitle: "خدمات تشغيل مباشرة", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
   };
 
@@ -226,6 +229,13 @@ export default function CommandCenter() {
     { label: copy.ai, body: workspaceBody.ai, to: "/app/insights", icon: Bot },
   ];
 
+  const managedObjects = [
+    { label: copy.landAsset, body: copy.landBody, to: "/app/gis", icon: MapPinned, code: "LAND" },
+    { label: copy.waterAsset, body: copy.waterBody, to: "/app/water", icon: Droplets, code: "WATER" },
+    { label: copy.projectAsset, body: copy.projectBody, to: "/app/projects", icon: FolderKanban, code: "PROJECT" },
+    { label: copy.deviceAsset, body: copy.deviceBody, to: "/app/iot", icon: Radio, code: "IOT" },
+  ];
+
   const operationalActions = [
     { label: copy.drawField, to: "/app/gis", icon: MapPinned, code: "MAP" },
     { label: copy.satelliteAction, to: "/app/gis", icon: Satellite, code: "EO" },
@@ -263,6 +273,22 @@ export default function CommandCenter() {
           <div className="fg-command-orbit-core"><Zap size={28} /><b>WEFEH</b></div>
           <span className="o1">W</span><span className="o2">E</span><span className="o3">F</span>
           <span className="o4">E</span><span className="o5">H</span>
+        </div>
+      </section>
+
+      <section className="fg-command-managed" data-testid="managed-object-launcher" aria-label={copy.managedTitle}>
+        <div className="fg-command-section-title">
+          <div><span>RESOURCE / ASSET FIRST</span><h2>{copy.managedTitle}</h2><p>{copy.managedIntro}</p></div>
+          <Layers3 size={24}/>
+        </div>
+        <div className="fg-command-managed-grid">
+          {managedObjects.map(({ label, body, to, icon: Icon, code }) => (
+            <Link key={code} to={to} className="fg-command-managed-card">
+              <span className="fg-command-managed-icon"><Icon size={21}/></span>
+              <div><strong>{label}</strong><small>{body}</small></div>
+              <ArrowUpRight size={16}/>
+            </Link>
+          ))}
         </div>
       </section>
 
