@@ -66,3 +66,7 @@
   .fg-map-control-card button{min-height:28px;padding:4px 7px;font-size:9px}
   .fg-map-control-card>small{display:none}
 }
+
+.fg-map-draw-card{display:flex;align-items:center;gap:6px}
+.fg-map-draw-card>span{padding:0 4px;color:var(--muted-foreground);font-size:9px;font-weight:700}
+.fg-map-draw-card>button:disabled{cursor:not-allowed;opacity:.45;transform:none}

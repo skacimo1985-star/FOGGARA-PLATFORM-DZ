@@ -353,6 +353,25 @@ export default function Gis() {
     }
   };
 
+  const saveParcelBoundary = async (geometry: { type: "Polygon"; coordinates: [number, number][][] }) => {
+    if (!selectedParcelId) return;
+    setAnalysisError(null);
+    try {
+      await api.patch(
+        `/agriculture/parcels/${selectedParcelId}`,
+        { boundary_geojson: geometry },
+      );
+      const updated = await api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson");
+      setParcelBoundaries(updated.features);
+      setSatelliteScenes([]);
+      setSelectedSceneId(null);
+      setAnalysisResult(null);
+      setAnalysisOverlay(null);
+    } catch (err) {
+      setAnalysisError(err);
+    }
+  };
+
   const selectSite = async (siteId: number) => {
     setSelectedSiteId(siteId);
     const entry = (data ?? []).find((row) => row.site.id === siteId);
@@ -462,6 +481,7 @@ export default function Gis() {
             setSelectedParcelId((current) => current === parcelId ? null : parcelId);
             setSelectedSiteId(null);
           }}
+          onDrawParcelBoundary={(geometry) => void saveParcelBoundary(geometry)}
           locale={lang}
         />
       )}
