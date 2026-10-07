@@ -20,7 +20,7 @@ type Scene = {
   provider: string;
 };
 type SceneResult = { scenes: Scene[]; sample_geometry: string; sample_bbox_wgs84: number[] };
-type SatelliteIndex = "ndvi" | "evi" | "savi" | "ndwi";
+type SatelliteIndex = "ndvi" | "evi" | "savi" | "ndwi" | "lswi";
 type RasterStatistics = {
   scene_id: string;
   index: SatelliteIndex;
@@ -60,7 +60,7 @@ export default function ParcelSentinel({
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const text = lang === "fr" ? {
     heading: "Sentinel-2 réel · indices enregistrés",
-    intro: "Recherchez de vraies scènes L2A, calculez NDVI/EVI/SAVI/NDWI avec masque SCL, puis enregistrez la moyenne dans votre parcelle.",
+    intro: "Recherchez de vraies scènes L2A, calculez NDVI/EVI/SAVI/NDWI/LSWI avec masque SCL, puis enregistrez la moyenne dans votre parcelle.",
     parcel: "Parcelle", from: "Début", to: "Fin", search: "Chercher les scènes",
     scene: "Scène satellite", index: "Indice", clouds: "Nuages", compute: "Calculer et enregistrer",
     coords: "Les coordonnées du centre sont requises.", lat: "Latitude", lon: "Longitude",
@@ -70,7 +70,7 @@ export default function ParcelSentinel({
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
     rasterTitle: "Raster Sentinel calculé sur la parcelle", min: "Min", mean: "Moyenne", median: "Médiane", max: "Max", valid: "Pixels valides", resolution: "Résolution", acquired: "Acquisition", realRaster: "COG Sentinel-2 réel · masque SCL · contour parcelle",
   } : lang === "en" ? {
-    heading: "Real Sentinel-2 · saved field indices", intro: "Find real L2A scenes, compute SCL-masked NDVI/EVI/SAVI/NDWI, and save the mean to your parcel.",
+    heading: "Real Sentinel-2 · saved field indices", intro: "Find real L2A scenes, compute SCL-masked NDVI/EVI/SAVI/NDWI/LSWI, and save the mean to your parcel.",
     parcel: "Parcel", from: "From", to: "To", search: "Search scenes",
     scene: "Satellite scene", index: "Index", clouds: "Clouds", compute: "Compute and save",
     coords: "Parcel centre coordinates are required.", lat: "Latitude", lon: "Longitude",
@@ -80,7 +80,7 @@ export default function ParcelSentinel({
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
     rasterTitle: "Sentinel raster computed for this field", min: "Min", mean: "Mean", median: "Median", max: "Max", valid: "Valid pixels", resolution: "Resolution", acquired: "Acquired", realRaster: "Real Sentinel-2 COG · SCL mask · parcel boundary",
   } : {
-    heading: "Sentinel-2 حقيقي · سجل مؤشرات الحقل", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI/EVI/SAVI/NDWI مع حجب الغيوم ثم احفظ المتوسط في سجل القطعة.",
+    heading: "Sentinel-2 حقيقي · سجل مؤشرات الحقل", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI/EVI/SAVI/NDWI/LSWI مع حجب الغيوم ثم احفظ المتوسط في سجل القطعة.",
     parcel: "القطعة الزراعية", from: "من", to: "إلى", search: "بحث عن المشاهد",
     scene: "المشهد الفضائي", index: "المؤشر", clouds: "الغيوم", compute: "حساب المؤشر وحفظه",
     coords: "يجب إدخال إحداثيات مركز القطعة.", lat: "خط العرض", lon: "خط الطول",
@@ -224,7 +224,7 @@ export default function ParcelSentinel({
               {scenes.map(s => <option key={s.id} value={s.id}>{s.datetime?.slice(0,10) ?? "—"} · {s.cloud_cover_pct ?? "?"}% {text.clouds} · {s.id}</option>)}
             </select></label>
             <label className="fg-field"><span>{text.index}</span><select value={indexKey} onChange={e => {setIndexKey(e.target.value as SatelliteIndex);setResult(null);}}>
-              {(["ndvi","evi","savi","ndwi"] as SatelliteIndex[]).map(index => <option key={index} value={index}>{index.toUpperCase()}</option>)}
+              {(["ndvi","evi","savi","ndwi","lswi"] as SatelliteIndex[]).map(index => <option key={index} value={index}>{index.toUpperCase()}</option>)}
             </select></label>
           </div>
           <button className="fg-primary" disabled={busy !== null || !sceneId} onClick={() => void handleAnalyze()} type="button"><Satellite size={17}/>{busy === "compute" ? text.busy : text.compute}</button>
