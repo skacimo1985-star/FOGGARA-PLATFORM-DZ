@@ -90,7 +90,8 @@ export default function AnalysisCenter() {
     runSatellite:"Lancer Sentinel", openIrrigation:"Calculer l’irrigation", soilWater:"Sol & eau",
     map:"Voir sur la carte", noParcels:"Aucune parcelle. Délimitez d’abord une parcelle sur la carte.",
     draw:"Délimiter une parcelle", metric:"Indicateur", value:"Valeur", source:"Source", evidence:"Preuve", date:"Date",
-    coverage:"Couverture", limitations:"Limites", demo:"DEMO", real:"ORG", latest:"Dernières valeurs",
+    coverage:"Couverture", limitations:"Limites", demo:"DEMO", real:"RÉEL", latest:"Dernières valeurs",
+    showDemo:"Afficher DEMO", hideDemo:"Masquer DEMO", demoHidden:"Les données DEMO sont masquées par défaut.", fields:"Parcelles réelles", mapFirst:"Carte terrain",
   } : lang === "en" ? {
     eyebrow:"FOGGARA / ANALYSIS", title:"Resource analysis center",
     intro:"Choose a field and inspect observations, satellite indices, soil, irrigation water and computable services in one screen.",
@@ -101,7 +102,8 @@ export default function AnalysisCenter() {
     runSatellite:"Run Sentinel", openIrrigation:"Calculate irrigation", soilWater:"Soil & water",
     map:"View on map", noParcels:"No fields yet. Draw a field boundary first.",
     draw:"Draw a field", metric:"Metric", value:"Value", source:"Source", evidence:"Evidence", date:"Date",
-    coverage:"Coverage", limitations:"Limitations", demo:"DEMO", real:"ORG", latest:"Latest values",
+    coverage:"Coverage", limitations:"Limitations", demo:"DEMO", real:"REAL", latest:"Latest values",
+    showDemo:"Show DEMO", hideDemo:"Hide DEMO", demoHidden:"DEMO data is hidden by default.", fields:"Real fields", mapFirst:"Field map",
   } : {
     eyebrow:"FOGGARA / التحاليل", title:"مركز تحليل المورد",
     intro:"اختر قطعة أرض وشاهد في شاشة واحدة القياسات والمؤشرات الفضائية والتربة ومياه الري والخدمات القابلة للحساب.",
@@ -112,10 +114,13 @@ export default function AnalysisCenter() {
     runSatellite:"تشغيل Sentinel", openIrrigation:"حساب الري", soilWater:"تحليل التربة والمياه",
     map:"عرض على الخريطة", noParcels:"لا توجد قطعة. حدّد حدود الأرض أولًا على الخريطة.",
     draw:"تحديد أرض", metric:"المؤشر", value:"القيمة", source:"المصدر", evidence:"الدليل", date:"التاريخ",
-    coverage:"التغطية", limitations:"الحدود", demo:"DEMO", real:"ORG", latest:"أحدث القيم",
+    coverage:"التغطية", limitations:"الحدود", demo:"DEMO", real:"حقيقي", latest:"أحدث القيم",
+    showDemo:"إظهار DEMO", hideDemo:"إخفاء DEMO", demoHidden:"بيانات DEMO مخفية افتراضيًا.", fields:"القطع الحقيقية", mapFirst:"خريطة الحقول",
   };
 
   const [parcels,setParcels]=useState<Parcel[]>([]);
+  const [boundaries,setBoundaries]=useState<ParcelBoundaryFeature[]>([]);
+  const [showDemo,setShowDemo]=useState(searchParams.get("demo")==="1");
   const [parcelId,setParcelId]=useState<number|null>(Number.isInteger(requested)&&requested>0?requested:null);
   const [summary,setSummary]=useState<Summary|null>(null);
   const [observations,setObservations]=useState<Observation[]>([]);
@@ -126,24 +131,18 @@ export default function AnalysisCenter() {
   useEffect(()=>{
     let cancelled=false;
     setLoading(true);
-    api.get<Parcel[]>("/agriculture/parcels")
-      .then(rows=>{
+    Promise.all([
+      api.get<Parcel[]>("/agriculture/parcels"),
+      api.get<ParcelBoundaryResponse>("/gis/parcels.geojson"),
+    ])
+      .then(([rows,geo])=>{
         if(cancelled)return;
-        const active=rows.filter(row=>!row.archived);
-        setParcels(active);
-        const requestedExists=Number.isInteger(requested)&&requested>0&&active.some(row=>row.id===requested);
-        const next=requestedExists?requested:(active[0]?.id??null);
-        setParcelId(next);
-        if(next && next!==requested){
-          const params=new URLSearchParams(searchParams);
-          params.set("parcel",String(next));
-          setSearchParams(params,{replace:true});
-        }
+        setParcels(rows.filter(row=>!row.archived));
+        setBoundaries(geo.features);
       })
       .catch(err=>{if(!cancelled)setError(err);})
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   useEffect(()=>{
