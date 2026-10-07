@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 import hashlib
 import json
 import math
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
@@ -38,6 +39,7 @@ MIN_VALID_PIXELS = 9
 class AnalyzeIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     scene_id: str = Field(min_length=3, max_length=120)
+    index: Literal["ndvi", "lswi"] = "ndvi"
 
 
 def _analysis_target(parcel: AgriParcel) -> tuple[list[float], dict | None, str, str]:
@@ -136,25 +138,27 @@ def analyze_parcel(
         scene_id = validate_scene_id(payload.scene_id)
     except ProcessingPlanError:
         api_error(422, "INVALID_SCENE_ID", "Scene ID is invalid")
-    source_ref = f"{PROVIDER}:{scene_id}:ndvi:{analysis_fingerprint}"
+    index_key = payload.index
+    computation = f"SENTINEL_SCL_MASKED_{index_key.upper()}"
+    source_ref = f"{PROVIDER}:{scene_id}:{index_key}:{analysis_fingerprint}"
     prior = db.scalar(select(AgriObservation).where(
         AgriObservation.org_id == user.org_id,
         AgriObservation.parcel_id == parcel.id,
-        AgriObservation.metric == "ndvi",
+        AgriObservation.metric == index_key,
         AgriObservation.source_type == "satellite",
         AgriObservation.source_ref == source_ref,
     ))
     if prior is not None:
         return {
             "created": False, "observation": out(prior),
-            "provenance": "INFERRED", "computation": "SENTINEL_SCL_MASKED_NDVI",
+            "provenance": "INFERRED", "computation": computation,
             "sample_geometry": sample_geometry, "analysis_fingerprint": analysis_fingerprint,
         }
 
     _, item = _provider_item(scene_id)
     acquired_at = _scene_time(item)
     try:
-        plan = build_processing_plan(item, "ndvi")
+        plan = build_processing_plan(item, index_key)
         stats = compute_index_statistics(plan, bounds, geometry_wgs84=geometry)
     except ProcessingPlanError:
         api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
@@ -176,8 +180,8 @@ def analyze_parcel(
         api_error(422, "LOW_QUALITY_SATELLITE_SCENE", "Cloud or no-data mask leaves insufficient pixels")
 
     row = AgriObservation(
-        org_id=user.org_id, parcel_id=parcel.id, metric="ndvi",
-        value=round(float(mean), 6), unit=METRICS["ndvi"][0],
+        org_id=user.org_id, parcel_id=parcel.id, metric=index_key,
+        value=round(float(mean), 6), unit=METRICS[index_key][0],
         source_type="satellite", source_ref=source_ref, observed_at=acquired_at,
         evidence_status="INFERRED", created_by=user.id, is_demo=False,
     )
@@ -186,7 +190,7 @@ def analyze_parcel(
     audit(db, user, "sentinel_index_computed", "agri_observations", entity_id=row.id,
           meta={
               "parcel_id": parcel.id, "scene_id": scene_id, "provider": PROVIDER,
-              "index": "ndvi", "algorithm": "SENTINEL_SCL_MASKED_NDVI",
+              "index": index_key, "algorithm": computation,
               "processing_plan_fingerprint": stats.get("processing_plan_fingerprint"),
               "valid_fraction": fraction, "valid_pixels": count,
               "total_pixels": int(pixels.get("total") or 0),
@@ -200,6 +204,6 @@ def analyze_parcel(
     db.commit()
     return {
         "created": True, "observation": out(row), "statistics": stats,
-        "provenance": "INFERRED", "computation": "SENTINEL_SCL_MASKED_NDVI",
+        "provenance": "INFERRED", "computation": computation,
         "sample_geometry": sample_geometry, "analysis_fingerprint": analysis_fingerprint,
     }
