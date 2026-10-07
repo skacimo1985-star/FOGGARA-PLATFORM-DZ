@@ -19,7 +19,7 @@ from .routers import (audit, auth, core, decisions, energy, explore, insight,
                         workflow)
 from .routers.setup import router as setup_router
 from .routers.operations import router as operations_router
-from .routers import agriculture, agriculture_operations, collaboration, intelligence, analytics, ai_brief, stac, ogc_features, remote_sensing_catalog, expo, workspace_setup, satellite_parcels
+from .routers import agriculture, agriculture_operations, collaboration, intelligence, analytics, ai_brief, stac, ogc_features, remote_sensing_catalog, expo, workspace_setup, satellite_parcels, weather_parcels
 
 # --- سجلات بنيوية: مستوى من LOG_LEVEL، سطر واحد لكل طلب API ---
 logging.basicConfig(
@@ -169,6 +169,7 @@ app.include_router(stac.router)
 app.include_router(ogc_features.router)
 app.include_router(remote_sensing_catalog.router)
 app.include_router(satellite_parcels.router)
+app.include_router(weather_parcels.router)
 app.include_router(expo.router)
 app.include_router(workspace_setup.router)
 
