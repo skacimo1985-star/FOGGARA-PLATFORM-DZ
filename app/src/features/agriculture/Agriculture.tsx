@@ -45,7 +45,9 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  const {i18n}=useTranslation(); const lang: Lang=['ar','fr','en'].includes(i18n.language)?i18n.language as Lang:'ar';
  const t=(key:TextKey)=>translate(lang,key); const {user}=useAuth(); const navigate=useNavigate(); const [searchParams]=useSearchParams();
  const requestedParcelId=Number(searchParams.get('parcel'));
- const [section,setSection]=useState<Section>(()=>Number.isInteger(requestedParcelId)&&requestedParcelId>0?'parcels':'overview');
+ const requestedSection=searchParams.get('section') as Section | null;
+ const validSections:Section[]=['overview','parcels','irrigation','evidence','calendar','services','economics','readiness'];
+ const [section,setSection]=useState<Section>(()=>requestedSection&&validSections.includes(requestedSection)?requestedSection:(Number.isInteger(requestedParcelId)&&requestedParcelId>0?'parcels':'overview'));
  const [parcels,setParcels]=useState<Parcel[]>(demo?demoParcels:[]); const [observations,setObs]=useState<Observation[]>(demo?demoObs:[]);
  const [plans,setPlans]=useState<Plan[]>([]); const [tasks,setTasks]=useState<Task[]>([]); const [requests,setRequests]=useState<RequestRow[]>([]); const [projects,setProjects]=useState<ProjectRef[]>([]);
  const [loading,setLoading]=useState(!demo); const [error,setError]=useState(''); const [toast,setToast]=useState('');
