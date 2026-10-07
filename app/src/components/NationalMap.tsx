@@ -37,6 +37,27 @@ export type InfrastructureFeature = {
   };
 };
 
+export type IotBindingFeature = {
+  type: "Feature";
+  id: number;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    site_id: number;
+    site_name: string;
+    wilaya: string;
+    sensor_count: number;
+    simulated_sensor_count: number;
+    non_simulated_sensor_count: number;
+    active_sensor_count: number;
+    metrics: string[];
+    subject_types: string[];
+    coordinate_scope: "RESOLVED_SUBJECT_SITE";
+    exact_sensor_coordinates: false;
+    live_telemetry_claim: false;
+    is_demo: boolean;
+  };
+};
+
 export type ParcelBoundaryFeature = {
   type: "Feature";
   id: number;
@@ -79,6 +100,7 @@ type Props = {
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
   infrastructureClusters?: InfrastructureFeature[];
+  iotBindings?: IotBindingFeature[];
   analysisOverlay?: AnalysisRasterOverlay | null;
   satelliteOverlay?: SatelliteRasterOverlay | null;
   selectedSceneId?: string | null;
@@ -245,6 +267,7 @@ export function NationalMap({
   satelliteScenes = [],
   parcelBoundaries = [],
   infrastructureClusters = [],
+  iotBindings = [],
   analysisOverlay = null,
   satelliteOverlay = null,
   selectedSceneId = null,
@@ -277,12 +300,13 @@ export function NationalMap({
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
   const infrastructureFeaturesRef = useRef({ type: "FeatureCollection", features: [] as InfrastructureFeature[] });
+  const iotFeaturesRef = useRef({ type: "FeatureCollection", features: [] as IotBindingFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
   const [baseMode, setBaseMode] = useState<"map" | "dark" | "relief" | "satellite">("map");
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
-  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, infrastructure: true, analysis: true });
+  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, infrastructure: true, iot: true, analysis: true });
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
@@ -363,6 +387,12 @@ export function NationalMap({
   }), [infrastructureClusters]);
   infrastructureFeaturesRef.current = infrastructureFeatureCollection;
 
+  const iotFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: iotBindings,
+  }), [iotBindings]);
+  iotFeaturesRef.current = iotFeatureCollection;
+
   const labels = locale === "fr"
     ? {
         title: "Carte opérationnelle nationale",
@@ -375,6 +405,7 @@ export function NationalMap({
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
         infrastructure: "infrastructure eau · ancrée au site",
+        iot: "capteurs IoT · liaison résolue",
         mapMode: "Carte", darkMode: "Sombre", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Calques",
         noSatellite: "Lancez une analyse Sentinel pour charger l’image RGB de la parcelle.",
         traffic: "Trafic", trafficUnavailable: "Nécessite un fournisseur de trafic temps réel configuré.",
@@ -391,6 +422,7 @@ export function NationalMap({
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
           infrastructure: "water infrastructure · site anchored",
+          iot: "IoT sensors · resolved binding",
           mapMode: "Map", darkMode: "Dark", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Layers",
           noSatellite: "Run a Sentinel analysis to load the parcel RGB image.",
           traffic: "Traffic", trafficUnavailable: "Requires a configured real-time traffic provider.",
@@ -406,6 +438,7 @@ export function NationalMap({
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
           infrastructure: "بنية المياه · مرتبطة بالموقع",
+          iot: "حساسات IoT · ربط متحقق",
           mapMode: "خريطة", darkMode: "داكن", reliefMode: "تضاريس", satelliteMode: "Sentinel", layers: "طبقات",
           noSatellite: "شغّل تحليل Sentinel لتحميل صورة RGB الحقيقية للقطعة.",
           traffic: "المرور", trafficUnavailable: "يحتاج مزود حركة مرور حي مهيأ.",
@@ -568,6 +601,38 @@ export function NationalMap({
             },
           });
 
+          map.addSource("site-iot-bindings", {
+            type: "geojson",
+            data: iotFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "site-iot-halo",
+            type: "circle",
+            source: "site-iot-bindings",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "sensor_count"], 1, 7, 10, 14, 50, 20],
+              "circle-color": "#7c3aed",
+              "circle-opacity": 0.13,
+              "circle-blur": 0.28,
+            },
+          });
+          map.addLayer({
+            id: "site-iot-bindings",
+            type: "circle",
+            source: "site-iot-bindings",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "sensor_count"], 1, 4, 10, 7, 50, 11],
+              "circle-color": [
+                "case",
+                [">", ["get", "non_simulated_sensor_count"], 0], "#7c3aed",
+                "#9ca3af"
+              ],
+              "circle-stroke-color": "#f5f3ff",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": 0.94,
+            },
+          });
+
           map.addSource("site-infrastructure", {
             type: "geojson",
             data: infrastructureFeaturesRef.current,
@@ -658,6 +723,18 @@ export function NationalMap({
             if (Number.isFinite(parcelId) && onSelectParcelRef.current) onSelectParcelRef.current(parcelId);
           });
 
+          map.on("mouseenter", "site-iot-bindings", () => {
+            if (map && onSelectSiteRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "site-iot-bindings", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "site-iot-bindings", (event) => {
+            if (drawModeRef.current) return;
+            const siteId = Number(event.features?.[0]?.properties?.site_id);
+            if (Number.isFinite(siteId) && onSelectSiteRef.current) onSelectSiteRef.current(siteId);
+          });
+
           map.on("mouseenter", "site-infrastructure", () => {
             if (map && onSelectSiteRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
           });
@@ -724,6 +801,11 @@ export function NationalMap({
     const source = mapRef.current?.getSource("site-infrastructure");
     if (isGeoJsonSource(source)) source.setData(infrastructureFeatureCollection);
   }, [infrastructureFeatureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("site-iot-bindings");
+    if (isGeoJsonSource(source)) source.setData(iotFeatureCollection);
+  }, [iotFeatureCollection]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("satellite-scenes");
@@ -828,6 +910,8 @@ export function NationalMap({
       ["foggara-sites", layers.sites],
       ["site-infrastructure-halo", layers.infrastructure],
       ["site-infrastructure", layers.infrastructure],
+      ["site-iot-halo", layers.iot],
+      ["site-iot-bindings", layers.iot],
     ] as const) {
       map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
@@ -871,6 +955,7 @@ export function NationalMap({
             ["scenes", labels.scenes],
             ["sites", labels.sites],
             ["infrastructure", labels.infrastructure],
+            ["iot", labels.iot],
             ["analysis", analysisOverlay ? analysisOverlay.index.toUpperCase() : "NDVI / LSWI"],
           ] as const).map(([key,label]) => <label key={key}><input type="checkbox" checked={layers[key]} onChange={e => setLayers(prev => ({...prev,[key]:e.target.checked}))}/><span>{label}</span></label>)}
           <div className="fg-map-traffic-disabled" title={labels.trafficUnavailable}><span>{labels.traffic}</span><small>{labels.trafficUnavailable}</small></div>
@@ -898,6 +983,7 @@ export function NationalMap({
         <span><i className="fg-map-legend-dot" style={{ background: "#178568" }} /> {labels.parcels}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
         {infrastructureClusters.length ? <span><i className="fg-map-legend-dot" style={{ background: "#1578b8" }} /> {labels.infrastructure} · SITE-ANCHORED</span> : null}
+        {iotBindings.length ? <span><i className="fg-map-legend-dot" style={{ background: "#7c3aed" }} /> {labels.iot} · NO SENSOR GPS CLAIM</span> : null}
         {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
       </div>}
