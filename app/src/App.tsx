@@ -37,6 +37,7 @@ const Decisions = lazy(() => import("@/pages/Decisions"));
 const Telemetry = lazy(() => import("@/pages/Telemetry"));
 const Simulator = lazy(() => import("@/pages/Simulator"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
+const AnalysisCenter = lazy(() => import("@/pages/AnalysisCenter"));
 const Gis = lazy(() => import("@/pages/Gis"));
 const Iot = lazy(() => import("@/pages/Iot"));
 const Vde = lazy(() => import("@/pages/Vde"));
@@ -116,6 +117,7 @@ export default function App() {
             <Route path="/app/telemetry" element={<Protected><Telemetry /></Protected>} />
             <Route path="/app/simulator" element={<Protected><Simulator /></Protected>} />
             <Route path="/app/analytics" element={<Protected><Analytics /></Protected>} />
+            <Route path="/app/analysis" element={<Protected><AnalysisCenter /></Protected>} />
             <Route path="/app/gis" element={<Protected><Gis /></Protected>} />
             <Route path="/app/iot" element={<Protected><Iot /></Protected>} />
             <Route path="/app/vde" element={<Protected><Vde /></Protected>} />
