@@ -20,6 +20,7 @@ type Scene = {
   provider: string;
 };
 type SceneResult = { scenes: Scene[]; sample_geometry: string; sample_bbox_wgs84: number[] };
+type SatelliteIndex = "ndvi" | "evi" | "savi" | "ndwi";
 type AnalysisResult = {
   created: boolean;
   observation: { id: number; value: number; observed_at: string; evidence_status: string };
@@ -47,32 +48,32 @@ export default function ParcelSentinel({
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const text = lang === "fr" ? {
-    heading: "Sentinel-2 réel · NDVI enregistré",
-    intro: "Recherchez de vraies scènes L2A, calculez le NDVI masqué par SCL, puis enregistrez la moyenne dans votre parcelle.",
+    heading: "Sentinel-2 réel · indices enregistrés",
+    intro: "Recherchez de vraies scènes L2A, calculez NDVI/EVI/SAVI/NDWI avec masque SCL, puis enregistrez la moyenne dans votre parcelle.",
     parcel: "Parcelle", from: "Début", to: "Fin", search: "Chercher les scènes",
-    scene: "Scène satellite", clouds: "Nuages", compute: "Calculer et enregistrer le NDVI",
+    scene: "Scène satellite", index: "Indice", clouds: "Nuages", compute: "Calculer et enregistrer",
     coords: "Les coordonnées du centre sont requises.", lat: "Latitude", lon: "Longitude",
     saveCoords: "Enregistrer la position", noScenes: "Aucune scène trouvée pour la période.",
     missing: "Ajoutez une parcelle réelle d’abord.", info: "Sans contour, l’analyse utilise un carré estimé autour du centre. Avec un contour enregistré, les statistiques sont masquées au polygone réel. Résultat INFÉRÉ et non vérifié sur le terrain.",
-    saved: "NDVI enregistré", duplicate: "Scène déjà enregistrée", load: "Consultation du catalogue…",
+    saved: "Indice enregistré", duplicate: "Scène/indice déjà enregistré", load: "Consultation du catalogue…",
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
   } : lang === "en" ? {
-    heading: "Real Sentinel-2 · saved NDVI", intro: "Find real L2A scenes, compute SCL-masked NDVI, and save the mean to your parcel.",
+    heading: "Real Sentinel-2 · saved field indices", intro: "Find real L2A scenes, compute SCL-masked NDVI/EVI/SAVI/NDWI, and save the mean to your parcel.",
     parcel: "Parcel", from: "From", to: "To", search: "Search scenes",
-    scene: "Satellite scene", clouds: "Clouds", compute: "Compute and save NDVI",
+    scene: "Satellite scene", index: "Index", clouds: "Clouds", compute: "Compute and save",
     coords: "Parcel centre coordinates are required.", lat: "Latitude", lon: "Longitude",
     saveCoords: "Save location", noScenes: "No scenes found for this period.",
     missing: "Add a real parcel first.", info: "Without a boundary, analysis uses an approximate square around the centre. With a saved boundary, statistics are masked to the real polygon. Result remains INFERRED, not ground verified.",
-    saved: "NDVI saved", duplicate: "Scene already recorded", load: "Checking satellite catalogue…",
+    saved: "Index saved", duplicate: "Scene/index already recorded", load: "Checking satellite catalogue…",
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
   } : {
-    heading: "Sentinel-2 حقيقي · حفظ NDVI", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI مع حجب الغيوم ثم احفظ المتوسط في سجل القطعة.",
+    heading: "Sentinel-2 حقيقي · سجل مؤشرات الحقل", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب NDVI/EVI/SAVI/NDWI مع حجب الغيوم ثم احفظ المتوسط في سجل القطعة.",
     parcel: "القطعة الزراعية", from: "من", to: "إلى", search: "بحث عن المشاهد",
-    scene: "المشهد الفضائي", clouds: "الغيوم", compute: "حساب NDVI وحفظه",
+    scene: "المشهد الفضائي", index: "المؤشر", clouds: "الغيوم", compute: "حساب المؤشر وحفظه",
     coords: "يجب إدخال إحداثيات مركز القطعة.", lat: "خط العرض", lon: "خط الطول",
     saveCoords: "حفظ الموقع", noScenes: "لا توجد مشاهد ضمن هذه الفترة.",
     missing: "أنشئ قطعة زراعية حقيقية أولاً.", info: "بدون حدود مرسومة يستخدم التحليل مربعًا تقديريًا حول المركز؛ وعند حفظ الحدود تُقص الإحصاءات على البوليغون الحقيقي. تبقى النتيجة INFERRED وليست قياسًا ميدانيًا متحققًا.",
-    saved: "تم حفظ NDVI", duplicate: "هذا المشهد محفوظ سابقًا", load: "جاري البحث في فهرس الأقمار…",
+    saved: "تم حفظ المؤشر", duplicate: "هذا المشهد/المؤشر محفوظ سابقًا", load: "جاري البحث في فهرس الأقمار…",
     busy: "جاري تحليل الصورة…", error: "فشلت العملية. تحقق من الإحداثيات وتوفر المزود وجودة المشهد.",
   };
   const active = parcels.filter(p => !p.archived);
@@ -82,6 +83,7 @@ export default function ParcelSentinel({
   const [end, setEnd] = useState(today());
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [sceneId, setSceneId] = useState("");
+  const [indexKey, setIndexKey] = useState<SatelliteIndex>("ndvi");
   const [busy, setBusy] = useState<"scenes" | "compute" | "coords" | null>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -125,7 +127,7 @@ export default function ParcelSentinel({
     if (!sceneId || busy) return;
     setBusy("compute"); setError(""); setResult(null);
     try {
-      const value = await api.post<AnalysisResult>(`/agriculture/parcels/${parcel.id}/remote-sensing/analyze`, {scene_id: sceneId});
+      const value = await api.post<AnalysisResult>(`/agriculture/parcels/${parcel.id}/remote-sensing/analyze`, {scene_id: sceneId, index: indexKey});
       setResult(value);
       if (value.created) await onSaved();
     } catch {
@@ -178,16 +180,21 @@ export default function ParcelSentinel({
           <button className="fg-secondary" type="submit" disabled={busy !== null}><RefreshCw size={16}/> {busy === "scenes" ? text.load : text.search}</button>
         </form>
         {scenes.length > 0 && <div className="fg-form">
-          <label className="fg-field"><span>{text.scene}</span><select value={sceneId} onChange={e => {setSceneId(e.target.value);setResult(null);}}>
-            {scenes.map(s => <option key={s.id} value={s.id}>{s.datetime?.slice(0,10) ?? "—"} · {s.cloud_cover_pct ?? "?"}% {text.clouds} · {s.id}</option>)}
-          </select></label>
+          <div className="fg-form-grid">
+            <label className="fg-field"><span>{text.scene}</span><select value={sceneId} onChange={e => {setSceneId(e.target.value);setResult(null);}}>
+              {scenes.map(s => <option key={s.id} value={s.id}>{s.datetime?.slice(0,10) ?? "—"} · {s.cloud_cover_pct ?? "?"}% {text.clouds} · {s.id}</option>)}
+            </select></label>
+            <label className="fg-field"><span>{text.index}</span><select value={indexKey} onChange={e => {setIndexKey(e.target.value as SatelliteIndex);setResult(null);}}>
+              {(["ndvi","evi","savi","ndwi"] as SatelliteIndex[]).map(index => <option key={index} value={index}>{index.toUpperCase()}</option>)}
+            </select></label>
+          </div>
           <button className="fg-primary" disabled={busy !== null || !sceneId} onClick={() => void handleAnalyze()} type="button"><Satellite size={17}/>{busy === "compute" ? text.busy : text.compute}</button>
         </div>}
         {!busy && !error && scenes.length === 0 && <small className="fg-muted">{text.noScenes}</small>}
       </>}
       {result && <div role="status" className="fg-result">
         <strong>{result.created ? text.saved : text.duplicate}</strong>
-        <div>NDVI: <strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong></div>
+        <div>{indexKey.toUpperCase()}: <strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong></div>
         <small>{new Date(result.observation.observed_at).toLocaleDateString()} · {result.observation.evidence_status}</small>
         {result.statistics && <small>Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%</small>}
       </div>}
