@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map } from "lucide-react";
+import { Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse, FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database, BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map, Copy, Download, Check } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
 import { NexusKasria } from "@/components/NexusKasria";
@@ -16,15 +16,17 @@ const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"
 export default function Landing() {
   const {user}=useAuth(); const {t,i18n}=useTranslation(); const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
+  const [qrCopied,setQrCopied]=useState(false);
+  const expoUrl="https://foggara-dz.onrender.com/expo";
   const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
   const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe",operate:"Créer un espace opérationnel"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required",operate:"Create operational workspace"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور",operate:"إنشاء مساحة عمل حقيقية"};
   const toolCopy=lang==="fr"?{
-    eyebrow:"FOGGARA / TOOL DECK",title:"Choisissez un service. Commencez immédiatement.",body:"Une interface orientée outils : recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"Ouvrir",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond.",qrTitle:"Accès visiteur au salon",qrBody:"Scannez pour ouvrir directement le mode AGRITECH sans compte.",scan:"Scanner ou ouvrir"
+    eyebrow:"FOGGARA / TOOL DECK",title:"Choisissez un service. Commencez immédiatement.",body:"Une interface orientée outils : recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"Ouvrir",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond.",qrTitle:"Accès visiteur au salon",qrBody:"Scannez pour ouvrir directement le mode AGRITECH sans compte.",scan:"Ouvrir",copy:"Copier",copied:"Copié",download:"Télécharger SVG",quick:"Accès rapide"
   }:lang==="en"?{
-    eyebrow:"FOGGARA / TOOL DECK",title:"Pick a service. Start immediately.",body:"A tool-first interface: fast search, direct entry and traceable results.",search:"Search satellite, weather, soil, GIS, AI…",open:"Open",public:"PUBLIC",workspace:"WORKSPACE",noResults:"No matching service.",qrTitle:"Expo visitor access",qrBody:"Scan to open AGRITECH visitor mode directly without an account.",scan:"Scan or open"
+    eyebrow:"FOGGARA / TOOL DECK",title:"Pick a service. Start immediately.",body:"A tool-first interface: fast search, direct entry and traceable results.",search:"Search satellite, weather, soil, GIS, AI…",open:"Open",public:"PUBLIC",workspace:"WORKSPACE",noResults:"No matching service.",qrTitle:"Expo visitor access",qrBody:"Scan to open AGRITECH visitor mode directly without an account.",scan:"Open",copy:"Copy link",copied:"Copied",download:"Download SVG",quick:"Quick access"
   }:{
-    eyebrow:"FOGGARA / TOOL DECK",title:"اختر الخدمة وابدأ مباشرة.",body:"واجهة موجهة للأدوات: بحث سريع، دخول مباشر، ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة.",qrTitle:"دخول زوار المعرض",qrBody:"امسح الرمز لفتح وضع AGRITECH مباشرة بدون حساب.",scan:"امسح أو افتح"
+    eyebrow:"FOGGARA / TOOL DECK",title:"اختر الخدمة وابدأ مباشرة.",body:"واجهة موجهة للأدوات: بحث سريع، دخول مباشر، ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة.",qrTitle:"دخول زوار المعرض",qrBody:"امسح الرمز لفتح وضع AGRITECH مباشرة بدون حساب.",scan:"فتح",copy:"نسخ الرابط",copied:"تم النسخ",download:"تحميل SVG",quick:"دخول سريع"
   };
 
   const narrative=lang==="fr"?{
@@ -77,6 +79,13 @@ export default function Landing() {
   const normalizedToolQuery=toolQuery.trim().toLocaleLowerCase();
   const visibleTools=toolDeck.filter(tool=>!normalizedToolQuery||`${tool.title} ${tool.body}`.toLocaleLowerCase().includes(normalizedToolQuery));
   useEffect(()=>{let cancelled=false;api.get<{visitors:number;feedback:number}>("/expo/stats").then(value=>{if(!cancelled)setExpoStats(value);}).catch(()=>undefined);return()=>{cancelled=true;};},[]);
+  async function copyExpoLink(){
+    try{
+      await navigator.clipboard.writeText(expoUrl);
+      setQrCopied(true);
+      window.setTimeout(()=>setQrCopied(false),1800);
+    }catch{/* Clipboard can be unavailable in restricted browser contexts. */}
+  }
   return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
     <nav className="fg-public-nav" aria-label={t("publicExperience.navigation")}>
       <a href="#ecosystem">{t("publicExperience.ecosystem")}</a><a href="#collaboration">{t("publicExperience.collaboration")}</a>
@@ -95,6 +104,21 @@ export default function Landing() {
         <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
         <p className="fg-oasis-caption">{t("demo.imageNotice")}</p>
       </div>
+      <aside className="fg-hero-qr" aria-labelledby="fg-hero-qr-title">
+        <div className="fg-hero-qr-head"><div><p className="fg-eyebrow">AGRITECH EXPO / QR</p><h2 id="fg-hero-qr-title">{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p></div><QrCode size={24}/></div>
+        <a href={expoUrl} target="_blank" rel="noreferrer" className="fg-hero-qr-code" aria-label={toolCopy.scan}>
+          <img src="/expo-qr.svg" alt={toolCopy.qrTitle} width="220" height="220"/>
+        </a>
+        <div className="fg-hero-qr-actions">
+          <Link to="/expo" className="fg-hero-qr-primary">{toolCopy.scan}<ArrowUpRight size={15}/></Link>
+          <button type="button" onClick={()=>void copyExpoLink()}>{qrCopied?<Check size={15}/>:<Copy size={15}/>} {qrCopied?toolCopy.copied:toolCopy.copy}</button>
+          <a href="/expo-qr.svg" download="FOGGARA-AGRITECH-EXPO-QR.svg"><Download size={15}/>{toolCopy.download}</a>
+        </div>
+        <div className="fg-hero-qr-capabilities" aria-label={toolCopy.quick}>
+          <span>Sentinel-2</span><span>ET₀ / 15d</span><span>Ollama-ready</span>
+        </div>
+        <small dir="ltr">foggara-dz.onrender.com/expo</small>
+      </aside>
     </section>
     <section className="fg-tool-hub" id="tools" aria-labelledby="fg-tool-title">
       <div className="fg-tool-panel">
@@ -108,14 +132,6 @@ export default function Landing() {
           {visibleTools.length===0&&<p className="fg-tool-empty">{toolCopy.noResults}</p>}
         </div>
       </div>
-      <aside className="fg-expo-qr-card" id="expo-qr">
-        <div><p className="fg-eyebrow">AGRITECH EXPO / QR</p><h2>{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p></div>
-        <a href="https://foggara-dz.onrender.com/expo" target="_blank" rel="noreferrer" className="fg-qr-frame" aria-label={toolCopy.scan}>
-          <img src="/expo-qr.svg" alt={toolCopy.qrTitle} width="220" height="220"/>
-        </a>
-        <Link to="/expo" className="fg-button">{toolCopy.scan}<QrCode size={17}/></Link>
-        <small dir="ltr">foggara-dz.onrender.com/expo</small>
-      </aside>
     </section>
     <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
     <section className="fg-platform-spine" aria-label="FOGGARA operating model">
