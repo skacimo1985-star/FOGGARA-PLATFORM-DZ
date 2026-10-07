@@ -61,11 +61,21 @@ def list_devices(user: User = Depends(get_current_user), db: Session = Depends(g
 @router.post("/devices", response_model=DeviceOut, status_code=201)
 def create_device(payload: DeviceIn, user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
-    d = Device(org_id=user.org_id, protocol="simulated", is_simulated=True,
-               is_demo=True, **payload.model_dump())
+    # This endpoint registers an organization-owned simulation asset.
+    # Synthetic does not mean DEMO: DEMO is reserved for seeded showcase data.
+    d = Device(
+        org_id=user.org_id,
+        protocol="simulated",
+        is_simulated=True,
+        is_demo=False,
+        **payload.model_dump(),
+    )
     db.add(d)
     db.flush()
-    audit(db, user, "create", "device", entity_id=d.id)
+    audit(
+        db, user, "create", "device", entity_id=d.id,
+        meta={"mode": "simulation", "protocol": d.protocol, "is_demo": False},
+    )
     db.commit()
     return d
 
@@ -94,10 +104,22 @@ def create_sensor(payload: SensorIn, user: User = Depends(get_current_user),
     data = payload.model_dump()
     data.setdefault("subject_type", device.subject_type)
     data.setdefault("subject_id", device.subject_id)
-    s = Sensor(org_id=user.org_id, is_simulated=True, is_demo=True, **data)
+    s = Sensor(
+        org_id=user.org_id,
+        is_simulated=device.is_simulated,
+        is_demo=device.is_demo,
+        **data,
+    )
     db.add(s)
     db.flush()
-    audit(db, user, "create", "sensor", entity_id=s.id)
+    audit(
+        db, user, "create", "sensor", entity_id=s.id,
+        meta={
+            "device_id": device.id,
+            "mode": "simulation" if s.is_simulated else "registered",
+            "is_demo": s.is_demo,
+        },
+    )
     db.commit()
     return s
 
