@@ -36,6 +36,7 @@ def stac_item():
             "green": cog("B03"),
             "red": cog("B04"),
             "nir": cog("B08"),
+            "swir16": cog("B11", gsd=20),
             "scl": cog("SCL", gsd=20, scale=None, offset=None),
             "red-jp2": {
                 "href": "https://example.invalid/B04.jp2",
@@ -247,3 +248,14 @@ def test_processing_plan_rejects_traversal_and_bad_port():
         assert False, "invalid port must be rejected"
     except ValueError as exc:
         assert "invalid port" in str(exc)
+
+
+
+def test_processing_plan_resolves_lswi_nir_and_swir():
+    plan = build_processing_plan(stac_item(), "lswi")
+    bands = {row["band"]: row for row in plan["required_assets"]}
+    assert set(bands) == {"B08", "B11"}
+    assert bands["B08"]["asset_key"] == "nir"
+    assert bands["B11"]["asset_key"] == "swir16"
+    assert bands["B11"]["gsd_m"] == 20
+    assert plan["target_resolution_m"] == 10
