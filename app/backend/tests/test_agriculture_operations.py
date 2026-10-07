@@ -152,6 +152,51 @@ def test_plan_snapshots(client,world,farm):
     client.patch(f'/api/agriculture/parcels/{pid}',headers=h,json={'archived':True})
     assert client.post('/api/agriculture/plans',headers=h,json=body).status_code==409
 
+
+def test_irrigation_plan_preserves_weather_context_without_assuming_effective_rain(client, world, farm):
+    h, pid = farm
+    body = {
+        'parcel_id': pid,
+        'eto_mm_day': 5.4,
+        'kc': .8,
+        'effective_rain_mm': 0.5,
+        'efficiency': .8,
+        'days': 1,
+        'input_source': 'weather:open-meteo-compatible:2026-10-08:INFERRED',
+        'forecast_precip_mm': 7.2,
+        'forecast_date': '2026-10-08',
+        'weather_provenance': 'INFERRED',
+    }
+    response = client.post('/api/agriculture/plans', headers=h, json=body)
+    assert response.status_code == 201, response.text
+    plan = response.json()
+    assert plan['inputs']['eto_mm_day'] == 5.4
+    assert plan['inputs']['forecast_precip_mm'] == 7.2
+    assert plan['inputs']['forecast_date'] == '2026-10-08'
+    assert plan['inputs']['weather_provenance'] == 'INFERRED'
+    assert plan['inputs']['effective_rain_mm'] == 0.5
+    # The deterministic calculation uses explicitly reviewed effective rain,
+    # not raw forecast precipitation.
+    assert plan['result']['net_mm'] == pytest.approx(3.82)
+    assert plan['result']['volume_m3'] == pytest.approx(95.5)
+
+
+def test_irrigation_plan_rejects_partial_weather_context(client, world, farm):
+    h, pid = farm
+    body = {
+        'parcel_id': pid,
+        'eto_mm_day': 5.4,
+        'kc': .8,
+        'effective_rain_mm': 0,
+        'efficiency': .8,
+        'days': 1,
+        'input_source': 'weather-test',
+        'forecast_precip_mm': 7.2,
+    }
+    response = client.post('/api/agriculture/plans', headers=h, json=body)
+    assert response.status_code == 422
+
+
 def test_tasks(client,world,farm):
     h,pid=farm; task=client.post('/api/agriculture/tasks',headers=h,json={'parcel_id':pid,'title':'Inspect irrigation','due_date':'2026-10-12'}).json()
     url=f"/api/agriculture/tasks/{task['id']}"
