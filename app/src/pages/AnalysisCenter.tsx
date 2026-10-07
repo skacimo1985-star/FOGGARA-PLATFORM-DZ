@@ -222,11 +222,43 @@ export default function AnalysisCenter() {
 
     <ErrorText error={error}/>
 
-    {parcel ? <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="fg-analysis-map-first" data-testid="analysis-map-first">
+      <aside className="fg-analysis-field-list">
+        <div className="fg-analysis-field-list-head"><div><span>{copy.fields}</span><strong>{visibleParcels.length}</strong></div><MapPinned size={18}/></div>
+        <div className="fg-analysis-field-items">
+          {visibleParcels.map(row=><button key={row.id} type="button" className={row.id===parcelId?"active":""} onClick={()=>setParcel(row.id)}>
+            <div><strong>{row.name}</strong><small>{row.crop||"—"} · {Number(row.area_ha).toFixed(2)} ha</small></div>
+            <Badge variant="outline">{row.is_demo?copy.demo:copy.real}</Badge>
+          </button>)}
+        </div>
+      </aside>
+      <div className="fg-analysis-map-canvas">
+        <NationalMap
+          sites={[]}
+          wilayas={[]}
+          parcelBoundaries={visibleBoundaries}
+          selectedParcelId={parcelId}
+          onSelectParcel={setParcel}
+          locale={lang}
+          minimal
+        />
+        {parcel?<div className="fg-analysis-map-caption"><div><strong>{parcel.name}</strong><span>{parcel.location||"—"} · {Number(parcel.area_ha).toFixed(2)} ha</span></div><Link to={`/app/gis?parcel=${parcel.id}`}>{copy.map}<ArrowUpRight size={14}/></Link></div>:null}
+      </div>
+    </section>
+
+    <section className="fg-analysis-live-console" data-testid="analysis-live-sentinel">
+      <ParcelSentinel
+        parcels={visibleParcels}
+        selectedParcelId={parcelId}
+        onSaved={() => setReloadToken(value => value + 1)}
+      />
+    </section>
+
+    {parcel ? <section className="fg-analysis-legacy grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {[[copy.area,`${parcel.area_ha.toFixed(2)} ha`],[copy.crop,parcel.crop],[copy.location,parcel.location],[copy.parcel,parcel.is_demo?copy.demo:copy.real]].map(([label,value])=><article key={label} className="rounded-xl border bg-card p-4"><span className="text-xs text-muted-foreground">{label}</span><strong className="mt-1 block text-base">{value}</strong></article>)}
     </section>:null}
 
-    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <section className="fg-analysis-legacy grid gap-3 md:grid-cols-2 xl:grid-cols-5">
       {[
         [copy.satellite,summary?.available_services.satellite_live,Satellite,"LIVE STAC"],
         [copy.soil,summary?.available_services.soil_screening,FlaskConical,summary?.soil_assessment.evidence_status],
@@ -239,15 +271,7 @@ export default function AnalysisCenter() {
       })}
     </section>
 
-    <section className="rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/5 via-background to-emerald-500/5 p-4" data-testid="analysis-live-sentinel">
-      <ParcelSentinel
-        parcels={parcels}
-        selectedParcelId={parcelId}
-        onSaved={() => setReloadToken(value => value + 1)}
-      />
-    </section>
-
-    <section className="grid gap-4 xl:grid-cols-2">
+    <section className="fg-analysis-legacy grid gap-4 xl:grid-cols-2">
       <article className="rounded-2xl border bg-card p-5">
         <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold text-emerald-700">SATELLITE / EO</p><h2 className="mt-1 text-xl font-bold">{copy.satellite}</h2></div><Satellite size={22}/></div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -262,14 +286,14 @@ export default function AnalysisCenter() {
       </article>
     </section>
 
-    {summary ? <section className="grid gap-4 xl:grid-cols-2">
+    {summary ? <section className="fg-analysis-legacy grid gap-4 xl:grid-cols-2">
       {[ [copy.soil,summary.soil_assessment],[copy.water,summary.irrigation_water_assessment] ].map(([label,assessment])=>{
         const a=assessment as Assessment;
         return <article key={String(label)} className="rounded-2xl border bg-card p-5"><div className="flex items-center justify-between"><h2 className="text-lg font-bold">{String(label)}</h2><Badge variant="outline">{a.evidence_status}</Badge></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><span className="text-xs text-muted-foreground">{copy.coverage}</span><div className="mt-2 flex flex-wrap gap-1">{a.coverage.length?a.coverage.map(x=><Badge key={x} variant="outline">{x}</Badge>):<span className="text-sm">{copy.missing}</span>}</div></div><div><span className="text-xs text-muted-foreground">{copy.limitations}</span><ul className="mt-2 list-inside list-disc text-xs text-muted-foreground">{a.limitations.map(x=><li key={x}>{x}</li>)}</ul></div></div></article>;
       })}
     </section>:null}
 
-    <section className="rounded-2xl border bg-card p-5">
+    <section className="fg-analysis-legacy rounded-2xl border bg-card p-5">
       <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold text-emerald-700">TIMELINE / EVIDENCE</p><h2 className="mt-1 text-xl font-bold">{copy.observations}</h2></div><Activity size={22}/></div>
       <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><thead><tr className="border-b text-start text-xs text-muted-foreground"><th className="p-2 text-start">{copy.metric}</th><th className="p-2 text-start">{copy.value}</th><th className="p-2 text-start">{copy.source}</th><th className="p-2 text-start">{copy.evidence}</th><th className="p-2 text-start">{copy.date}</th></tr></thead><tbody>{observations.slice(0,30).map(row=><tr key={row.id} className="border-b last:border-0"><td className="p-2 font-semibold uppercase">{row.metric}</td><td className="p-2" dir="ltr">{Number(row.value).toFixed(3)} {row.unit}</td><td className="p-2">{row.source_type}</td><td className="p-2"><Badge variant="outline">{row.evidence_status}</Badge></td><td className="p-2 text-xs text-muted-foreground">{new Date(row.observed_at).toLocaleString(i18n.language)}</td></tr>)}</tbody></table></div>
     </section>
