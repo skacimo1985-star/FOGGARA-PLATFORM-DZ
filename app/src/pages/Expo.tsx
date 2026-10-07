@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, MessageSquareText, Satellite, Star, Users } from "lucide-react";
+import { ArrowUpRight, MessageSquareText, QrCode, Satellite, Star, Users } from "lucide-react";
 
 import { ErrorText } from "@/components/common";
 import { NationalMap, type SatelliteScene } from "@/components/NationalMap";
@@ -96,6 +96,7 @@ export default function Expo() {
     services: "Services agricoles",
     about: "À propos de FOGGARA",
     guest: "Visiteur",
+    qrTitle: "Partager le mode visiteur", qrBody: "Scannez ce QR pour ouvrir FOGGARA sur un autre téléphone.", qrOpen: "Ouvrir le lien",
   } : lang === "en" ? {
     badge: "AGRITECH EXPO · VISITOR MODE",
     title: "Explore FOGGARA-DZ without an account.",
@@ -118,6 +119,7 @@ export default function Expo() {
     services: "Agriculture services",
     about: "About FOGGARA",
     guest: "Visitor",
+    qrTitle: "Share visitor mode", qrBody: "Scan this QR to open FOGGARA on another phone.", qrOpen: "Open link",
   } : {
     badge: "AGRITECH EXPO · وضع الزائر",
     title: "استكشف FOGGARA-DZ بدون حساب.",
@@ -140,6 +142,7 @@ export default function Expo() {
     services: "الخدمات الزراعية",
     about: "حول FOGGARA",
     guest: "زائر",
+    qrTitle: "شارك وضع الزائر", qrBody: "امسح QR لفتح FOGGARA على هاتف آخر.", qrOpen: "فتح الرابط",
   };
 
   useEffect(() => {
@@ -273,6 +276,13 @@ export default function Expo() {
         <Link to="/presentation"><span>{copy.presentation}</span><ArrowUpRight size={17}/></Link>
         <Link to="/agriculture-services"><span>{copy.services}</span><ArrowUpRight size={17}/></Link>
         <Link to="/about"><span>{copy.about}</span><ArrowUpRight size={17}/></Link>
+        <div className="fg-expo-share-qr">
+          <div className="fg-expo-share-head"><QrCode size={19}/><div><strong>{copy.qrTitle}</strong><small>{copy.qrBody}</small></div></div>
+          <a href="https://foggara-dz.onrender.com/expo" target="_blank" rel="noreferrer" className="fg-expo-qr-image" aria-label={copy.qrOpen}>
+            <img src="/expo-qr.svg" width="190" height="190" alt={copy.qrTitle}/>
+          </a>
+          <a href="https://foggara-dz.onrender.com/expo" target="_blank" rel="noreferrer"><span>{copy.qrOpen}</span><ArrowUpRight size={17}/></a>
+        </div>
       </aside>
     </section>
   </div>;
