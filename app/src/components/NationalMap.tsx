@@ -16,6 +16,27 @@ export type SatelliteRasterOverlay = {
   cloud_cover_pct: number | null;
 };
 
+export type InfrastructureFeature = {
+  type: "Feature";
+  id: number;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    site_id: number;
+    site_name: string;
+    wilaya: string;
+    total: number;
+    water_resources: number;
+    wells: number;
+    reservoirs: number;
+    pumps: number;
+    irrigation_zones: number;
+    valves: number;
+    coordinate_scope: "SITE";
+    exact_asset_coordinates: false;
+    is_demo: boolean;
+  };
+};
+
 export type ParcelBoundaryFeature = {
   type: "Feature";
   id: number;
@@ -57,6 +78,7 @@ type Props = {
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
+  infrastructureClusters?: InfrastructureFeature[];
   analysisOverlay?: AnalysisRasterOverlay | null;
   satelliteOverlay?: SatelliteRasterOverlay | null;
   selectedSceneId?: string | null;
@@ -222,6 +244,7 @@ export function NationalMap({
   wilayas,
   satelliteScenes = [],
   parcelBoundaries = [],
+  infrastructureClusters = [],
   analysisOverlay = null,
   satelliteOverlay = null,
   selectedSceneId = null,
@@ -253,12 +276,13 @@ export function NationalMap({
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
+  const infrastructureFeaturesRef = useRef({ type: "FeatureCollection", features: [] as InfrastructureFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
   const [baseMode, setBaseMode] = useState<"map" | "dark" | "relief" | "satellite">("map");
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
-  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, analysis: true });
+  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, infrastructure: true, analysis: true });
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
@@ -333,6 +357,12 @@ export function NationalMap({
   }), [parcelBoundaries, selectedParcelId]);
   parcelFeaturesRef.current = parcelFeatureCollection;
 
+  const infrastructureFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: infrastructureClusters,
+  }), [infrastructureClusters]);
+  infrastructureFeaturesRef.current = infrastructureFeatureCollection;
+
   const labels = locale === "fr"
     ? {
         title: "Carte opérationnelle nationale",
@@ -344,6 +374,7 @@ export function NationalMap({
         source: "Open map",
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
+        infrastructure: "infrastructure eau · ancrée au site",
         mapMode: "Carte", darkMode: "Sombre", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Calques",
         noSatellite: "Lancez une analyse Sentinel pour charger l’image RGB de la parcelle.",
         traffic: "Trafic", trafficUnavailable: "Nécessite un fournisseur de trafic temps réel configuré.",
@@ -359,6 +390,7 @@ export function NationalMap({
           source: "Open map",
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
+          infrastructure: "water infrastructure · site anchored",
           mapMode: "Map", darkMode: "Dark", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Layers",
           noSatellite: "Run a Sentinel analysis to load the parcel RGB image.",
           traffic: "Traffic", trafficUnavailable: "Requires a configured real-time traffic provider.",
@@ -373,6 +405,7 @@ export function NationalMap({
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
+          infrastructure: "بنية المياه · مرتبطة بالموقع",
           mapMode: "خريطة", darkMode: "داكن", reliefMode: "تضاريس", satelliteMode: "Sentinel", layers: "طبقات",
           noSatellite: "شغّل تحليل Sentinel لتحميل صورة RGB الحقيقية للقطعة.",
           traffic: "المرور", trafficUnavailable: "يحتاج مزود حركة مرور حي مهيأ.",
@@ -535,6 +568,34 @@ export function NationalMap({
             },
           });
 
+          map.addSource("site-infrastructure", {
+            type: "geojson",
+            data: infrastructureFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "site-infrastructure-halo",
+            type: "circle",
+            source: "site-infrastructure",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "total"], 1, 8, 10, 15, 50, 22],
+              "circle-color": "#1578b8",
+              "circle-opacity": 0.16,
+              "circle-blur": 0.22,
+            },
+          });
+          map.addLayer({
+            id: "site-infrastructure",
+            type: "circle",
+            source: "site-infrastructure",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "total"], 1, 4.5, 10, 8, 50, 12],
+              "circle-color": "#1578b8",
+              "circle-stroke-color": "#dff4ff",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": 0.92,
+            },
+          });
+
           map.addSource("foggara-sites", {
             type: "geojson",
             data: featuresRef.current,
@@ -597,6 +658,18 @@ export function NationalMap({
             if (Number.isFinite(parcelId) && onSelectParcelRef.current) onSelectParcelRef.current(parcelId);
           });
 
+          map.on("mouseenter", "site-infrastructure", () => {
+            if (map && onSelectSiteRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "site-infrastructure", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "site-infrastructure", (event) => {
+            if (drawModeRef.current) return;
+            const siteId = Number(event.features?.[0]?.properties?.site_id);
+            if (Number.isFinite(siteId) && onSelectSiteRef.current) onSelectSiteRef.current(siteId);
+          });
+
           map.on("mouseenter", "foggara-sites", () => {
             if (map && (onSelectSiteRef.current || onSelectWilayaRef.current)) map.getCanvas().style.cursor = "pointer";
           });
@@ -646,6 +719,11 @@ export function NationalMap({
     const source = mapRef.current?.getSource("foggara-sites");
     if (isGeoJsonSource(source)) source.setData(featureCollection);
   }, [featureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("site-infrastructure");
+    if (isGeoJsonSource(source)) source.setData(infrastructureFeatureCollection);
+  }, [infrastructureFeatureCollection]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("satellite-scenes");
@@ -748,6 +826,8 @@ export function NationalMap({
       ["satellite-scenes-outline", layers.scenes],
       ["foggara-site-halo", layers.sites],
       ["foggara-sites", layers.sites],
+      ["site-infrastructure-halo", layers.infrastructure],
+      ["site-infrastructure", layers.infrastructure],
     ] as const) {
       map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
@@ -790,6 +870,7 @@ export function NationalMap({
             ["parcels", labels.parcels],
             ["scenes", labels.scenes],
             ["sites", labels.sites],
+            ["infrastructure", labels.infrastructure],
             ["analysis", analysisOverlay ? analysisOverlay.index.toUpperCase() : "NDVI / LSWI"],
           ] as const).map(([key,label]) => <label key={key}><input type="checkbox" checked={layers[key]} onChange={e => setLayers(prev => ({...prev,[key]:e.target.checked}))}/><span>{label}</span></label>)}
           <div className="fg-map-traffic-disabled" title={labels.trafficUnavailable}><span>{labels.traffic}</span><small>{labels.trafficUnavailable}</small></div>
@@ -816,6 +897,7 @@ export function NationalMap({
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#178568" }} /> {labels.parcels}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
+        {infrastructureClusters.length ? <span><i className="fg-map-legend-dot" style={{ background: "#1578b8" }} /> {labels.infrastructure} · SITE-ANCHORED</span> : null}
         {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
       </div>}
