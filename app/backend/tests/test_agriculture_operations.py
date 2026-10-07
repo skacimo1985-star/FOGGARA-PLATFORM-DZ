@@ -689,3 +689,51 @@ def test_parcel_boundary_is_authoritative_for_area_and_centroid(client, world):
     assert patched.status_code == 200, patched.text
     assert float(patched.json()['area_ha']) == pytest.approx(meta2['estimated_area_ha'], rel=1e-6)
     assert float(patched.json()['area_ha']) > float(body['area_ha'])
+
+
+
+def test_live_sentinel_can_persist_non_ndvi_index(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = 'S2A_MULTI_INDEX_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    seen = {}
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value,
+        {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    def build(item, index):
+        seen['index'] = index
+        return {'scene_id': item['id'], 'index': index}
+    monkeypatch.setattr(satellite, 'build_processing_plan', build)
+    monkeypatch.setattr(satellite, 'compute_index_statistics', lambda plan, bbox, geometry_wgs84=None: {
+        'scene_id': scene_id,
+        'index': plan['index'],
+        'processing_plan_fingerprint': 'sha256:multi-index',
+        'statistics': {'mean': 0.41, 'min': 0.1, 'max': 0.7},
+        'pixels': {'valid': 90, 'total': 100, 'valid_fraction': .9},
+    })
+
+    response = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': scene_id, 'index': 'evi'},
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert seen['index'] == 'evi'
+    assert body['observation']['metric'] == 'evi'
+    assert body['observation']['evidence_status'] == 'INFERRED'
+    assert body['computation'] == 'SENTINEL_SCL_MASKED_EVI'
+    assert ':evi:' in body['observation']['source_ref']
+
+    duplicate = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': scene_id, 'index': 'evi'},
+    )
+    assert duplicate.status_code == 201
+    assert duplicate.json()['created'] is False
+    assert duplicate.json()['observation']['id'] == body['observation']['id']
