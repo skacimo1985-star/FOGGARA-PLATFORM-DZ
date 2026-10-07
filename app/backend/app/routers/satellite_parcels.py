@@ -40,7 +40,7 @@ MIN_VALID_PIXELS = 9
 class AnalyzeIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     scene_id: str = Field(min_length=3, max_length=120)
-    index: Literal["ndvi", "evi", "savi", "ndwi"] = "ndvi"
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = "ndvi"
 
 
 def _analysis_target(parcel: AgriParcel) -> tuple[list[float], dict | None, str, str]:
@@ -125,7 +125,7 @@ def parcel_scenes(
 def parcel_index_statistics(
     identity: int,
     scene_id: str = Query(..., min_length=3, max_length=120),
-    index: Literal["ndvi", "evi", "savi", "ndwi"] = Query(default="ndvi"),
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = Query(default="ndvi"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -157,7 +157,7 @@ def parcel_index_statistics(
 def parcel_index_preview(
     identity: int,
     scene_id: str = Query(..., min_length=3, max_length=120),
-    index: Literal["ndvi", "evi", "savi", "ndwi"] = Query(default="ndvi"),
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = Query(default="ndvi"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
