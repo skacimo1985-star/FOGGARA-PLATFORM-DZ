@@ -1,17 +1,34 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, Network, ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
-import type { PlannedStatus } from "@/types";
+import type { Device, PlannedStatus, Sensor } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ErrorText } from "@/components/common";
+
+const SIM_SENSOR_PRESETS = [
+  { key: "water_level", sensor_type: "water_level", metric: "water_level", unit: "m", min: 0, max: 20, base: 5 },
+  { key: "flow_rate", sensor_type: "flow_rate", metric: "flow_rate", unit: "L/s", min: 0, max: 100, base: 12 },
+  { key: "pressure", sensor_type: "pressure", metric: "pressure", unit: "bar", min: 0, max: 25, base: 3 },
+  { key: "temperature", sensor_type: "temperature", metric: "temperature", unit: "°C", min: -20, max: 80, base: 25 },
+  { key: "energy", sensor_type: "energy", metric: "energy", unit: "kWh", min: 0, max: 10000, base: 100 },
+  { key: "voltage", sensor_type: "voltage", metric: "voltage", unit: "V", min: 0, max: 500, base: 230 },
+  { key: "current", sensor_type: "current", metric: "current", unit: "A", min: 0, max: 200, base: 10 },
+  { key: "frequency", sensor_type: "frequency", metric: "frequency", unit: "Hz", min: 0, max: 100, base: 50 },
+] as const;
 
 export default function Iot() {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<PlannedStatus | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [sensors, setSensors] = useState<Sensor[]>([]);
   const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const copy = lang === "fr"
     ? {
@@ -61,9 +78,74 @@ export default function Iot() {
           },
         };
 
-  useEffect(() => {
-    api.get<PlannedStatus>("/iot/status").then(setStatus).catch(setError);
+  const load = useCallback(async () => {
+    try {
+      const [nextStatus, nextDevices, nextSensors] = await Promise.all([
+        api.get<PlannedStatus>("/iot/status"),
+        api.get<Device[]>("/telemetry/devices"),
+        api.get<Sensor[]>("/telemetry/sensors"),
+      ]);
+      setStatus(nextStatus);
+      setDevices(nextDevices);
+      setSensors(nextSensors);
+    } catch (err) {
+      setError(err);
+    }
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function createSimulationDevice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    const form = new FormData(event.currentTarget);
+    try {
+      await api.post<Device>("/telemetry/devices", {
+        name: String(form.get("name") || ""),
+        device_type: String(form.get("device_type") || "generic_sensor_node"),
+        configuration: {},
+      });
+      event.currentTarget.reset();
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createSimulationSensor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    const form = new FormData(event.currentTarget);
+    const preset = SIM_SENSOR_PRESETS.find((item) => item.key === form.get("preset"));
+    if (!preset) {
+      setBusy(false);
+      return;
+    }
+    try {
+      await api.post<Sensor>("/telemetry/sensors", {
+        device_id: Number(form.get("device_id")),
+        name: String(form.get("name") || ""),
+        sensor_type: preset.sensor_type,
+        metric: preset.metric,
+        unit: preset.unit,
+        min_value: preset.min,
+        max_value: preset.max,
+        configuration: { base_value: preset.base },
+      });
+      event.currentTarget.reset();
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const simulationDevices = devices.filter((device) => device.is_simulated);
 
   return (
     <div className="space-y-6">
