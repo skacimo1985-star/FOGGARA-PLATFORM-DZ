@@ -704,7 +704,7 @@ def test_parcel_readonly_satellite_analysis_uses_boundary_for_all_indices(client
 
     def preview(plan, bbox, geometry_wgs84=None):
         captured['preview'] = {'plan': plan, 'bbox': bbox, 'geometry': geometry_wgs84}
-        return b'\\x89PNG\\r\\n\\x1a\\nFAKE', {
+        return b'\x89PNG\r\n\x1a\nFAKE', {
             'scene_id': scene_id,
             'index': plan['index'],
             'formula_version': 'test-v1',

@@ -325,7 +325,7 @@ def test_polygon_geometry_masks_preview_to_field_boundary(raster_assets):
         TEST_BBOX,
         geometry_wgs84=geometry,
     )
-    assert png.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
     assert metadata["geometry_mask_applied"] is True
     assert 0 < metadata["valid_fraction"] <= 1
 
