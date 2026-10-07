@@ -342,10 +342,15 @@ def main():
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/analysis":
                         expect(page.get_by_test_id("analysis-center")).to_be_visible()
-                        expect(page.get_by_role("heading", name="مركز تحليل المورد")).to_be_visible()
+                        expect(page.get_by_role("heading", name="تحليل الحقل بالأقمار الصناعية")).to_be_visible()
+                        expect(page.get_by_test_id("analysis-live-sentinel")).to_have_count(0)
+                        expect(page.get_by_text("بيانات DEMO مخفية افتراضيًا.")).to_be_visible()
+                        page.get_by_role("button", name="إظهار DEMO", exact=True).click()
                         expect(page.get_by_test_id("analysis-live-sentinel")).to_be_visible()
                         expect(page.get_by_test_id("parcel-sentinel-live")).to_be_visible()
                         expect(page.get_by_text("Sentinel-2 حقيقي", exact=False)).to_be_visible()
+                        expect(page.locator(".fg-analysis-map-first")).to_be_visible()
+                        expect(page.locator(".fg-analysis-legacy")).not_to_be_visible()
                     if path == "/app/gis":
                         expect(page.get_by_test_id("gis-field-draw")).to_be_visible()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
