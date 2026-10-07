@@ -438,7 +438,7 @@ export function NationalMap({
         parcels: "parcelles cartographiées",
         street: "Plan", satellite: "Scène vraie couleur", relief: "Relief", analysis: "Indice raster",
         layerSites: "Sites", layerParcels: "Parcelles", layerScenes: "Sentinel", layerAnalysis: "Résultat",
-        modes: "Vue", layers: "Couches", draw: "Redessiner", finish: "Enregistrer", cancel: "Annuler", vertices: "points",
+        modes: "Vue", layers: "Couches", draw: "Dessiner la limite", finish: "Enregistrer", cancel: "Annuler", vertices: "points",
         tools: "Outils", reset: "Algérie", distance: "Distance", areaMeasure: "Surface", clearMeasure: "Effacer",
         opacity: "Opacité", coordinates: "Coordonnées", measured: "Mesure",
       }
@@ -455,7 +455,7 @@ export function NationalMap({
           parcels: "mapped parcels",
           street: "Street", satellite: "True-color scene", relief: "Relief", analysis: "Index raster",
           layerSites: "Sites", layerParcels: "Parcels", layerScenes: "Sentinel", layerAnalysis: "Result",
-          modes: "View", layers: "Layers", draw: "Redraw boundary", finish: "Save boundary", cancel: "Cancel", vertices: "points",
+          modes: "View", layers: "Layers", draw: "Draw boundary", finish: "Save boundary", cancel: "Cancel", vertices: "points",
           tools: "Tools", reset: "Algeria", distance: "Distance", areaMeasure: "Area", clearMeasure: "Clear",
           opacity: "Opacity", coordinates: "Coordinates", measured: "Measurement",
         }
@@ -471,7 +471,7 @@ export function NationalMap({
           parcels: "قطع مرسومة",
           street: "شوارع", satellite: "مشهد حقيقي الألوان", relief: "تضاريس", analysis: "راستر المؤشر",
           layerSites: "المواقع", layerParcels: "القطع", layerScenes: "Sentinel", layerAnalysis: "النتيجة",
-          modes: "الرؤية", layers: "الطبقات", draw: "أعد رسم الحدود", finish: "احفظ الحدود", cancel: "إلغاء", vertices: "نقاط",
+          modes: "الرؤية", layers: "الطبقات", draw: "ارسم حدود القطعة", finish: "احفظ الحدود", cancel: "إلغاء", vertices: "نقاط",
           tools: "أدوات", reset: "الجزائر", distance: "مسافة", areaMeasure: "مساحة", clearMeasure: "مسح",
           opacity: "الشفافية", coordinates: "الإحداثيات", measured: "القياس",
         };
