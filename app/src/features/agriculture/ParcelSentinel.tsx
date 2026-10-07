@@ -52,11 +52,13 @@ export default function ParcelSentinel({
   onSaved,
   selectedParcelId = null,
   onRasterReady,
+  onTrueColorReady,
 }: {
   parcels: Parcel[];
   onSaved: () => void | Promise<void>;
   selectedParcelId?: number | null;
   onRasterReady?: (overlay: { url: string; bbox: [number, number, number, number]; index: SatelliteIndex }) => void;
+  onTrueColorReady?: (overlay: { url: string; bbox: [number, number, number, number] }) => void;
 }) {
   const { i18n } = useTranslation();
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
@@ -172,6 +174,13 @@ export default function ParcelSentinel({
       setPreviewUrl(url);
       if (stats?.analysis_bbox_wgs84) {
         onRasterReady?.({ url, bbox: stats.analysis_bbox_wgs84, index: indexKey });
+        if (onTrueColorReady) {
+          const trueColor = await api.getBlob(
+            `/agriculture/parcels/${parcel.id}/remote-sensing/true-color.png?${new URLSearchParams({ scene_id: sceneId }).toString()}`,
+            60_000,
+          );
+          onTrueColorReady({ url: URL.createObjectURL(trueColor), bbox: stats.analysis_bbox_wgs84 });
+        }
       }
       if (value.created) await onSaved();
     } catch {
