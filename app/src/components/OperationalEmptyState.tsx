@@ -3,8 +3,8 @@ import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 
 type Action =
-  | { label: string; to: string; onClick?: never }
-  | { label: string; onClick: () => void; to?: never };
+  | { label: string; to: string }
+  | { label: string; onClick: () => void };
 
 type Props = {
   icon: LucideIcon;
