@@ -19,6 +19,7 @@ type ServiceFinding = { metric: string; level: string; message: string };
 type ServiceAssessment = { evidence_status: string; decision_status: string; coverage: string[]; findings: ServiceFinding[]; actions: string[]; limitations: string[] };
 type ServiceSummary = { parcel: Parcel; soil_assessment: ServiceAssessment; irrigation_water_assessment: ServiceAssessment; available_services: Record<string, boolean>; provenance: string };
 type Section = 'overview' | 'parcels' | 'irrigation' | 'evidence' | 'calendar' | 'services' | 'economics' | 'readiness';
+const VALID_SECTIONS: Section[] = ['overview','parcels','irrigation','evidence','calendar','services','economics','readiness'];
 const nav: { key: Section; icon: typeof Sprout }[] = [{ key: 'overview', icon: LayoutDashboard }, { key: 'parcels', icon: Sprout }, { key: 'irrigation', icon: Droplets }, { key: 'evidence', icon: FlaskConical }, { key: 'calendar', icon: CalendarDays }, { key: 'services', icon: Wrench }, { key: 'economics', icon: ChartNoAxesCombined }, { key: 'readiness', icon: ShieldCheck }];
 const metrics: TextKey[] = ['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','lswi','ec'];
 const units: Record<string,string> = { ph:'pH', nitrogen:'mg/kg', phosphorus:'mg/kg', potassium:'mg/kg', soc:'%', moisture:'% VWC', ndvi:'index', lswi:'index', ec:'dS/m' };
@@ -46,8 +47,7 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  const t=(key:TextKey)=>translate(lang,key); const {user}=useAuth(); const navigate=useNavigate(); const [searchParams]=useSearchParams();
  const requestedParcelId=Number(searchParams.get('parcel'));
  const requestedSection=searchParams.get('section') as Section | null;
- const validSections:Section[]=['overview','parcels','irrigation','evidence','calendar','services','economics','readiness'];
- const [section,setSection]=useState<Section>(()=>requestedSection&&validSections.includes(requestedSection)?requestedSection:(Number.isInteger(requestedParcelId)&&requestedParcelId>0?'parcels':'overview'));
+ const [section,setSection]=useState<Section>(()=>requestedSection&&VALID_SECTIONS.includes(requestedSection)?requestedSection:(Number.isInteger(requestedParcelId)&&requestedParcelId>0?'parcels':'overview'));
  const [parcels,setParcels]=useState<Parcel[]>(demo?demoParcels:[]); const [observations,setObs]=useState<Observation[]>(demo?demoObs:[]);
  const [plans,setPlans]=useState<Plan[]>([]); const [tasks,setTasks]=useState<Task[]>([]); const [requests,setRequests]=useState<RequestRow[]>([]); const [projects,setProjects]=useState<ProjectRef[]>([]);
  const [loading,setLoading]=useState(!demo); const [error,setError]=useState(''); const [toast,setToast]=useState('');
@@ -64,7 +64,7 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  useEffect(()=>{
   if(demo||!Number.isInteger(requestedParcelId)||requestedParcelId<=0)return;
   if(parcels.some(p=>p.id===requestedParcelId)){
-   setSection(requestedSection&&validSections.includes(requestedSection)?requestedSection:'parcels');
+   setSection(requestedSection&&VALID_SECTIONS.includes(requestedSection)?requestedSection:'parcels');
    setFilter(String(requestedParcelId));
   }
  },[demo,requestedParcelId,requestedSection,parcels]);
