@@ -329,6 +329,11 @@ def _compute_index_statistics_unlocked(
             "width": width,
             "height": height,
             "resolution_m": TARGET_RESOLUTION_M,
+            "effective_source_resolution_m": plan.get("effective_source_resolution_m"),
+            "resampled": (
+                isinstance(plan.get("effective_source_resolution_m"), (int, float))
+                and float(plan["effective_source_resolution_m"]) > TARGET_RESOLUTION_M
+            ),
         },
         "mask": {
             "method": cloud_mask.get("method"),
@@ -486,6 +491,7 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
         "width": width,
         "height": height,
         "valid_fraction": float(np.count_nonzero(valid_mask) / max(width * height, 1)),
+        "effective_source_resolution_m": plan.get("effective_source_resolution_m"),
         "derived_index": "COMPUTED",
         "verified": False,
         "persisted": False,
