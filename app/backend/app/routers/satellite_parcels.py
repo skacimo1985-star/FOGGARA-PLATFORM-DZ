@@ -9,7 +9,7 @@ import json
 import math
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,10 +24,15 @@ from ..services.remote_sensing_raster import (
     RasterCapacityError,
     RasterStatisticsError,
     compute_index_statistics,
+    render_index_preview_png,
     validate_analysis_bbox,
 )
 from .agriculture_operations import METRICS, out, own
-from .remote_sensing_catalog import _provider_item, catalog_scenes
+from .remote_sensing_catalog import (
+    SUPPORTED_INDEX_PATTERN,
+    _provider_item,
+    catalog_scenes,
+)
 
 router = APIRouter(prefix="/api/agriculture", tags=["parcel-sentinel"])
 
@@ -118,6 +123,94 @@ def parcel_scenes(
         "sample_geometry": sample_geometry,
         "stored": False,
     }
+
+
+
+@router.get("/parcels/{identity}/remote-sensing/statistics")
+def parcel_index_statistics(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    index: str = Query(..., pattern=SUPPORTED_INDEX_PATTERN),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, analysis_fingerprint = _analysis_target(parcel)
+    from ..services.remote_sensing_processing import validate_scene_id
+    try:
+        safe_scene_id = validate_scene_id(scene_id)
+    except ProcessingPlanError:
+        api_error(422, "INVALID_SCENE_ID", "Scene ID is invalid")
+
+    _, item = _provider_item(safe_scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+        stats = compute_index_statistics(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Raster analysis could not be completed")
+
+    return {
+        **stats,
+        "parcel_id": parcel.id,
+        "sample_bbox_wgs84": bounds,
+        "sample_geometry": sample_geometry,
+        "analysis_fingerprint": analysis_fingerprint,
+        "stored": False,
+    }
+
+
+@router.get("/parcels/{identity}/remote-sensing/preview.png")
+def parcel_index_preview(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    index: str = Query(..., pattern=SUPPORTED_INDEX_PATTERN),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, _analysis_fingerprint = _analysis_target(parcel)
+    from ..services.remote_sensing_processing import validate_scene_id
+    try:
+        safe_scene_id = validate_scene_id(scene_id)
+    except ProcessingPlanError:
+        api_error(422, "INVALID_SCENE_ID", "Scene ID is invalid")
+
+    _, item = _provider_item(safe_scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+        png, metadata = render_index_preview_png(
+            plan,
+            bounds,
+            geometry_wgs84=geometry,
+        )
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Raster preview could not be completed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Parcel": str(parcel.id),
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Index": str(metadata["index"]),
+            "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Verified": "false",
+            "X-FOGGARA-Geometry": sample_geometry,
+        },
+    )
 
 
 @router.post("/parcels/{identity}/remote-sensing/analyze", status_code=201)
