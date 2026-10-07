@@ -47,7 +47,7 @@ type SitesGeoJSON = {
   };
 };
 
-type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi";
+type RemoteIndex = "ndvi" | "evi" | "savi" | "ndwi" | "ndmi" | "lswi" | "bsi";
 
 type RasterAnalysis = {
   scene_id: string;
@@ -60,6 +60,8 @@ type RasterAnalysis = {
     width: number;
     height: number;
     resolution_m: number;
+    effective_source_resolution_m?: number | null;
+    resampled?: boolean;
   };
   mask: {
     method: string;
@@ -67,6 +69,8 @@ type RasterAnalysis = {
     cloud_masked_pixel_count: number;
     source_nodata_pixel_count: number;
     formula_nodata_pixel_count: number;
+    geometry_mask_applied?: boolean;
+    outside_geometry_pixel_count?: number;
   };
   pixels: {
     total: number;
@@ -111,6 +115,24 @@ function rasterBudget(bbox: [number, number, number, number]) {
   };
 }
 
+function parcelBbox(feature: ParcelBoundaryFeature | null): [number, number, number, number] | null {
+  if (!feature || !Array.isArray(feature.geometry.coordinates)) return null;
+  const ring = feature.geometry.coordinates[0];
+  if (!Array.isArray(ring)) return null;
+  const points = ring
+    .filter((point): point is [number, number] =>
+      Array.isArray(point)
+      && point.length >= 2
+      && Number.isFinite(Number(point[0]))
+      && Number.isFinite(Number(point[1]))
+    )
+    .map((point) => [Number(point[0]), Number(point[1])] as [number, number]);
+  if (!points.length) return null;
+  const lons = points.map(([lon]) => lon);
+  const lats = points.map(([, lat]) => lat);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
+
 export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
@@ -118,6 +140,7 @@ export default function Gis() {
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [nearest, setNearest] = useState<SpatialFeature[]>([]);
   const [spatialEngine, setSpatialEngine] = useState("—");
   const [error, setError] = useState<unknown>(null);
@@ -141,6 +164,8 @@ export default function Gis() {
   const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [analysisResult, setAnalysisResult] = useState<RasterAnalysis | null>(null);
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
+  const [analysisSaving, setAnalysisSaving] = useState(false);
+  const [analysisSaved, setAnalysisSaved] = useState(false);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -174,16 +199,16 @@ export default function Gis() {
       : { eyebrow: "GIS الوطني · FOGGARA-DZ", title: "الإقليم والموارد والمشاريع في رؤية تشغيلية واحدة.", sites: "المواقع الظاهرة", projects: "المشاريع", resources: "الموارد", layers: "الطبقات التشغيلية", table: "السجل المكاني", all: "كل الجزائر", selected: "الموقع المحدد", nearest: "أقرب المواقع", distance: "المسافة", engine: "المحرك المكاني", noNearby: "لا توجد مواقع قريبة أخرى" };
 
   const satelliteCopy = lang === "fr"
-    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée." }
+    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante" }
     : lang === "en"
-      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented." }
-      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI." };
+      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented.", searchParcel: "Search selected parcel", searchView: "Search current view", parcelScope: "Selected parcel", viewScope: "Current view" }
+      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة" };
 
   const analysisCopy = lang === "fr"
-    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est enregistré ni déclaré vérifié." }
+    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
     : lang === "en"
-      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are neither persisted nor marked verified." }
-      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُخزن ولا تُصنّف VERIFIED." };
+      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled" }
+      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات" };
 
   const summary = useMemo(() => {
     const rows = filtered ?? [];
@@ -207,17 +232,25 @@ export default function Gis() {
     [data, selectedSiteId],
   );
 
+  const selectedParcel = useMemo(
+    () => parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId) ?? null,
+    [parcelBoundaries, selectedParcelId],
+  );
+  const selectedParcelBbox = useMemo(() => parcelBbox(selectedParcel), [selectedParcel]);
+  const analysisBbox = selectedParcelBbox ?? viewportBbox;
+
   const selectedScene = useMemo(
     () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
     [satelliteScenes, selectedSceneId],
   );
-  const currentRasterBudget = useMemo(() => rasterBudget(viewportBbox), [viewportBbox]);
+  const currentRasterBudget = useMemo(() => rasterBudget(analysisBbox), [analysisBbox]);
 
   useEffect(() => {
     setAnalysisResult(null);
     setAnalysisError(null);
     setAnalysisOverlay(null);
-  }, [selectedSceneId, selectedIndex]);
+    setAnalysisSaved(false);
+  }, [selectedParcelId, selectedSceneId, selectedIndex]);
 
   useEffect(() => {
     return () => {
@@ -230,17 +263,20 @@ export default function Gis() {
     setSatelliteLoading(true);
     setSatelliteError(null);
     try {
-      const bbox = viewportBbox.map((value) => Number(value.toFixed(6))).join(",");
       const params = new URLSearchParams({
-        bbox,
         start: sceneStart,
         end: sceneEnd,
         cloud_cover_lte: String(cloudCover),
-        limit: "30",
       });
-      const result = await api.get<{ count: number; scenes: SatelliteScene[] }>(
-        `/remote-sensing/catalog/scenes?${params.toString()}`,
-      );
+      let path: string;
+      if (selectedParcelId) {
+        path = `/agriculture/parcels/${selectedParcelId}/remote-sensing/scenes?${params.toString()}`;
+      } else {
+        params.set("bbox", analysisBbox.map((value) => Number(value.toFixed(6))).join(","));
+        params.set("limit", "30");
+        path = `/remote-sensing/catalog/scenes?${params.toString()}`;
+      }
+      const result = await api.get<{ count: number; scenes: SatelliteScene[] }>(path);
       setSatelliteScenes(result.scenes);
       setSelectedSceneId((current) => result.scenes.some((scene) => scene.id === current) ? current : null);
       setAnalysisResult(null);
@@ -258,17 +294,25 @@ export default function Gis() {
     setAnalysisLoading(true);
     setAnalysisError(null);
     try {
-      const params = new URLSearchParams({
-        index: selectedIndex,
-        bbox: viewportBbox.map((value) => Number(value.toFixed(6))).join(","),
-      });
-      const result = await api.get<RasterAnalysis>(
-        `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/statistics?${params.toString()}`,
-      );
-      const preview = await api.getBlob(
-        `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/preview.png?${params.toString()}`,
-        60_000,
-      );
+      let statisticsPath: string;
+      let previewPath: string;
+      if (selectedParcelId) {
+        const params = new URLSearchParams({
+          scene_id: selectedSceneId,
+          index: selectedIndex,
+        });
+        statisticsPath = `/agriculture/parcels/${selectedParcelId}/remote-sensing/statistics?${params.toString()}`;
+        previewPath = `/agriculture/parcels/${selectedParcelId}/remote-sensing/preview.png?${params.toString()}`;
+      } else {
+        const params = new URLSearchParams({
+          index: selectedIndex,
+          bbox: analysisBbox.map((value) => Number(value.toFixed(6))).join(","),
+        });
+        statisticsPath = `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/statistics?${params.toString()}`;
+        previewPath = `/remote-sensing/catalog/scenes/${encodeURIComponent(selectedSceneId)}/preview.png?${params.toString()}`;
+      }
+      const result = await api.get<RasterAnalysis>(statisticsPath);
+      const preview = await api.getBlob(previewPath, 60_000);
       const previewUrl = URL.createObjectURL(preview);
       setAnalysisResult(result);
       setAnalysisOverlay({
@@ -281,6 +325,23 @@ export default function Gis() {
       setAnalysisError(err);
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  const saveParcelAnalysis = async () => {
+    if (!selectedParcelId || !selectedSceneId || !["ndvi", "lswi"].includes(selectedIndex)) return;
+    setAnalysisSaving(true);
+    setAnalysisError(null);
+    try {
+      await api.post(
+        `/agriculture/parcels/${selectedParcelId}/remote-sensing/analyze`,
+        { scene_id: selectedSceneId, index: selectedIndex },
+      );
+      setAnalysisSaved(true);
+    } catch (err) {
+      setAnalysisError(err);
+    } finally {
+      setAnalysisSaving(false);
     }
   };
 
@@ -359,13 +420,14 @@ export default function Gis() {
               disabled={satelliteLoading || !sceneStart || !sceneEnd}
               onClick={() => void searchSatelliteScenes()}
             >
-              {satelliteLoading ? satelliteCopy.searching : satelliteCopy.search}
+              {satelliteLoading ? satelliteCopy.searching : selectedParcelId ? satelliteCopy.searchParcel : satelliteCopy.searchView}
             </button>
           </div>
         </div>
         <ErrorText error={satelliteError} />
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline">LIVE STAC</Badge>
+          <Badge variant="outline">{selectedParcel ? `${satelliteCopy.parcelScope}: ${selectedParcel.properties.name}` : satelliteCopy.viewScope}</Badge>
           <span>{satelliteScenes.length} {satelliteCopy.found}</span>
           {satelliteScenes.length === 0 && !satelliteLoading ? <span>{satelliteCopy.empty}</span> : null}
         </div>
@@ -383,10 +445,15 @@ export default function Gis() {
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
           selectedSiteId={selectedSiteId}
+          selectedParcelId={selectedParcelId}
           onViewportChange={setViewportBbox}
           onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
           onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
           onSelectSite={(siteId) => void selectSite(siteId)}
+          onSelectParcel={(parcelId) => {
+            setSelectedParcelId((current) => current === parcelId ? null : parcelId);
+            setSelectedSiteId(null);
+          }}
           locale={lang}
         />
       )}
@@ -426,16 +493,31 @@ export default function Gis() {
                 <option value="evi">EVI</option>
                 <option value="savi">SAVI</option>
                 <option value="ndwi">NDWI</option>
+                <option value="ndmi">NDMI</option>
+                <option value="lswi">LSWI</option>
+                <option value="bsi">BSI</option>
               </select>
             </label>
-            <button
-              type="button"
-              className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!selectedSceneId || !currentRasterBudget.allowed || analysisLoading}
-              onClick={() => void analyzeCurrentView()}
-            >
-              {analysisLoading ? analysisCopy.running : analysisCopy.run}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedSceneId || !currentRasterBudget.allowed || analysisLoading}
+                onClick={() => void analyzeCurrentView()}
+              >
+                {analysisLoading ? analysisCopy.running : analysisCopy.run}
+              </button>
+              {selectedParcelId && (selectedIndex === "ndvi" || selectedIndex === "lswi") && analysisResult ? (
+                <button
+                  type="button"
+                  className="rounded-md border bg-background px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={analysisSaving}
+                  onClick={() => void saveParcelAnalysis()}
+                >
+                  {analysisSaving ? analysisCopy.saving : analysisSaved ? analysisCopy.saved : analysisCopy.save}
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -443,6 +525,7 @@ export default function Gis() {
           <Badge variant="outline">
             {currentRasterBudget.allowed ? analysisCopy.ready : analysisCopy.zoom}
           </Badge>
+          {selectedParcel ? <Badge variant="outline">{selectedParcel.properties.name} · {selectedParcel.properties.area_ha} ha</Badge> : null}
           <span className="rounded-md border px-2 py-1 text-muted-foreground">
             {analysisCopy.area}: {currentRasterBudget.areaKm2.toFixed(2)} km²
           </span>
@@ -484,7 +567,13 @@ export default function Gis() {
             <div className="sm:col-span-2 lg:col-span-4 xl:col-span-6 flex flex-wrap gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
               <span>{analysisResult.formula_version}</span>
               <span>·</span>
-              <span>{analysisResult.grid.resolution_m} m</span>
+              <span>{analysisResult.grid.resolution_m} m grid</span>
+              {analysisResult.grid.effective_source_resolution_m ? (
+                <>
+                  <span>·</span>
+                  <span>{analysisCopy.sourceRes}: {analysisResult.grid.effective_source_resolution_m} m{analysisResult.grid.resampled ? ` · ${analysisCopy.resampled}` : ""}</span>
+                </>
+              ) : null}
               <span>·</span>
               <span>{analysisResult.grid.crs}</span>
               <span>·</span>
