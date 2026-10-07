@@ -8,6 +8,7 @@ import {
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { ErrorText } from "@/components/common";
+import ParcelSentinel from "@/features/agriculture/ParcelSentinel";
 
 type Parcel = {
   id: number;
@@ -18,6 +19,9 @@ type Parcel = {
   stage: string;
   archived: boolean;
   is_demo: boolean;
+  lat?: number | null;
+  lon?: number | null;
+  boundary_geojson?: { type: "Polygon"; coordinates: [number, number][][] } | null;
 };
 
 type Observation = {
@@ -111,6 +115,7 @@ export default function AnalysisCenter() {
   const [observations,setObservations]=useState<Observation[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState<unknown>(null);
+  const [reloadToken,setReloadToken]=useState(0);
 
   useEffect(()=>{
     let cancelled=false;
@@ -146,7 +151,7 @@ export default function AnalysisCenter() {
       .catch(err=>{if(!cancelled)setError(err);})
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  },[parcelId]);
+  },[parcelId,reloadToken]);
 
   const parcel=parcels.find(row=>row.id===parcelId)??null;
   const satelliteRows=useMemo(()=>observations.filter(row=>SATELLITE_METRICS.has(row.metric)).slice(0,12),[observations]);
@@ -190,6 +195,14 @@ export default function AnalysisCenter() {
         const C=Icon as typeof Satellite;
         return <article key={String(label)} className={`rounded-xl border p-4 ${ready?"border-emerald-500/30 bg-emerald-500/5":"bg-card"}`}><div className="flex items-center justify-between"><C size={19}/><Badge variant="outline">{ready?copy.available:copy.missing}</Badge></div><strong className="mt-3 block">{String(label)}</strong><small className="mt-1 block text-muted-foreground">{String(detail??"—")}</small></article>;
       })}
+    </section>
+
+    <section className="rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/5 via-background to-emerald-500/5 p-4" data-testid="analysis-live-sentinel">
+      <ParcelSentinel
+        parcels={parcels}
+        selectedParcelId={parcelId}
+        onSaved={() => setReloadToken(value => value + 1)}
+      />
     </section>
 
     <section className="grid gap-4 xl:grid-cols-2">
