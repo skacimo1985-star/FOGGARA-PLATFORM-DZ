@@ -155,6 +155,15 @@ def _compute_index_array(index_key: str, bands: Mapping[str, np.ndarray]) -> np.
     if definition.key == "ndwi":
         green, nir = bands["B03"], bands["B08"]
         return _ratio_array(green - nir, green + nir)
+    if definition.key in {"ndmi", "lswi"}:
+        nir, swir1 = bands["B08"], bands["B11"]
+        return _ratio_array(nir - swir1, nir + swir1)
+    if definition.key == "bsi":
+        blue, red, nir, swir1 = bands["B02"], bands["B04"], bands["B08"], bands["B11"]
+        return _ratio_array(
+            (swir1 + red) - (nir + blue),
+            (swir1 + red) + (nir + blue),
+        )
     raise RasterStatisticsError(f"unsupported index: {definition.key}")
 
 
@@ -396,6 +405,10 @@ def _colorize_index(index_key: str, values: np.ndarray, valid_mask: np.ndarray) 
         rgba[..., 0] = np.where(valid_mask, (20 + 20 * normalized).astype(np.uint8), 0)
         rgba[..., 1] = np.where(valid_mask, (90 + 120 * normalized).astype(np.uint8), 0)
         rgba[..., 2] = np.where(valid_mask, (150 + 105 * normalized).astype(np.uint8), 0)
+    elif definition.colormap_family == "soil":
+        rgba[..., 0] = np.where(valid_mask, (110 + 110 * normalized).astype(np.uint8), 0)
+        rgba[..., 1] = np.where(valid_mask, (75 + 75 * (1.0 - normalized)).astype(np.uint8), 0)
+        rgba[..., 2] = np.where(valid_mask, (35 + 45 * (1.0 - normalized)).astype(np.uint8), 0)
     else:
         rgba[..., 0] = np.where(valid_mask, (220 - 180 * normalized).astype(np.uint8), 0)
         rgba[..., 1] = np.where(valid_mask, (80 + 160 * normalized).astype(np.uint8), 0)
