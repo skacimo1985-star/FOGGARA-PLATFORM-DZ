@@ -155,6 +155,7 @@ def _model_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
         "model": runtime["model"],
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(safe_payload, ensure_ascii=False, separators=(",", ":"))}],
         "temperature": 0.2,
+        "response_format": {"type": "json_object"},
         "max_tokens": 900,
     }
     try:
@@ -167,7 +168,7 @@ def _model_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
             content = response.json()["choices"][0]["message"]["content"].strip()
         return _clean_brief(json.loads(content), fallback), True
     except Exception:
-        log.warning("External AI brief unavailable; deterministic fallback used", exc_info=False)
+        log.warning("Configured AI brief runtime unavailable; deterministic fallback used", exc_info=False)
         return fallback, False
 
 
@@ -260,6 +261,7 @@ def _generate_field_advisory(locale: str, context: dict) -> tuple[dict, dict]:
             {"role": "user", "content": json.dumps(context, ensure_ascii=False, separators=(",", ":"))},
         ],
         "temperature": 0.1,
+        "response_format": {"type": "json_object"},
         "max_tokens": 900,
     }
     headers = {"Content-Type": "application/json"}
