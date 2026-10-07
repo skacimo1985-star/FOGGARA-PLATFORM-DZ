@@ -189,6 +189,7 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
             "metric": metric,
             "source": row.source,
             "method": row.method,
+            "unit": row.unit,
             "measured_at": row.measured_at.isoformat(),
         })
     if not latest:
@@ -235,7 +236,15 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
         if row.parameter not in latest:
             latest[row.parameter] = float(row.value)
             ids.append(row.id)
-            sources.append({'measurement_id': row.id, 'parameter': row.parameter, 'source': row.source, 'method': row.method})
+            sources.append({
+                'measurement_id': row.id,
+                'parameter': row.parameter,
+                'metric': row.parameter,
+                'source': row.source,
+                'method': row.method,
+                'unit': row.unit,
+                'measured_at': row.measured_at.isoformat(),
+            })
     if not latest:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],

@@ -10,3 +10,33 @@
 .fg-remote-sensing-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.fg-remote-sensing-grid>div{min-width:0;padding:11px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--surface) 97%,#fff)}.fg-remote-sensing-grid small,.fg-remote-sensing-grid strong{display:block}.fg-remote-sensing-grid small{font:700 8px ui-monospace,monospace;letter-spacing:.08em;color:#526eb5}.fg-remote-sensing-grid strong{margin-top:5px;overflow:hidden;text-overflow:ellipsis;font-size:10px;color:var(--ink)}
 .fg-remote-sensing-state>p{display:flex;align-items:flex-start;gap:7px;color:var(--muted);font-size:9px;line-height:1.65}.fg-remote-sensing-state>p svg{flex-shrink:0;margin-top:1px;color:#526eb5}
 @media(max-width:850px){.fg-remote-sensing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.fg-remote-sensing-head{align-items:flex-start;flex-direction:column}.fg-remote-sensing-grid{grid-template-columns:1fr}}
+
+
+/* Evidence-backed soil and irrigation-water analysis console. */
+.fg-assessment-layout{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.fg-assessment-panel{min-width:0;border:1px solid var(--fg-border);border-radius:14px;background:#fff;overflow:hidden}
+.fg-assessment-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--fg-border);background:linear-gradient(135deg,#f8fbf8,#f1f7f3)}
+.fg-assessment-head h3{margin-top:5px;font-size:19px}
+.fg-assessment-status{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.fg-assessment-status>span{display:grid;gap:2px;padding:6px 8px;border:1px solid #dce7e0;border-radius:8px;background:#fff;color:#788a80;font-size:9px}
+.fg-assessment-status b{color:#245b48;font:700 9px ui-monospace,monospace}
+.fg-assessment-provenance{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:11px 20px;background:#f7faf8;border-bottom:1px solid var(--fg-border);font-size:11px;color:#61756a}
+.fg-assessment-provenance svg{color:#278064}.fg-assessment-provenance strong{color:#34594b}.fg-assessment-provenance code{margin-inline-start:auto;font-size:9px}
+.fg-assessment-section{padding:18px 20px;border-bottom:1px solid #edf2ee}.fg-assessment-section:last-child{border-bottom:0}
+.fg-assessment-section h4{display:flex;align-items:center;gap:7px;margin:0 0 12px;color:#49675a;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.fg-assessment-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fg-assessment-inputs>div{min-width:0;padding:11px;border:1px solid #e3ebe6;border-radius:10px;background:#fafcfb}
+.fg-assessment-inputs small,.fg-assessment-inputs strong,.fg-assessment-inputs span{display:block}
+.fg-assessment-inputs small{color:#75887e;font-size:9px;text-transform:uppercase}.fg-assessment-inputs strong{margin-top:4px;font-size:14px}.fg-assessment-inputs span{margin-top:4px;color:#7d8d84;font-size:9px;overflow-wrap:anywhere}
+.fg-assessment-sources{display:grid;gap:8px}.fg-assessment-sources>div{padding:12px;border:1px solid #e0e9e4;border-radius:10px;background:#fcfdfc}
+.fg-assessment-sources>div>strong{display:block;margin:6px 0 8px;font-size:13px}
+.fg-assessment-sources dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}.fg-assessment-sources dl div{min-width:0}.fg-assessment-sources dt{color:#87968e;font-size:8px;text-transform:uppercase}.fg-assessment-sources dd{margin:3px 0 0;font-size:10px;overflow-wrap:anywhere}
+.fg-evidence-chip{display:inline-flex;padding:3px 7px;border-radius:999px;background:#f4efe3;color:#87652f;font:700 8px ui-monospace,monospace}.fg-evidence-chip.verified{background:#def4e8;color:#087351}.fg-evidence-chip.recorded{background:#eef2f8;color:#506789}
+.fg-assessment-derived{display:grid;gap:8px}.fg-assessment-derived>div{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;padding:11px;border-radius:10px;background:#f2f7ff;border:1px solid #dfe8f7}.fg-assessment-derived span{font-size:10px;color:#536b91}.fg-assessment-derived strong{text-align:end}.fg-assessment-derived code,.fg-assessment-derived small{grid-column:1/-1;color:#6f7e91;font-size:9px;overflow-wrap:anywhere}
+.fg-assessment-findings{display:grid;gap:7px}.fg-assessment-finding{display:grid;grid-template-columns:minmax(70px,.5fr) minmax(0,1.5fr);gap:4px 10px;padding:10px 12px;border-inline-start:4px solid #d2b56a;border-radius:8px;background:#fbf8ef}.fg-assessment-finding.ok{border-color:#63a77e;background:#f2f8f4}.fg-assessment-finding.attention{border-color:#c86e58;background:#fff4f1}.fg-assessment-finding>span{font:700 10px ui-monospace,monospace;text-transform:uppercase}.fg-assessment-finding>strong{font-size:11px}.fg-assessment-finding>small{grid-column:2;color:#7a8980;font-size:9px}
+.fg-assessment-actions{display:grid;gap:7px;margin:0;padding-inline-start:20px}.fg-assessment-actions li{padding-inline-start:4px;color:#4b6357;font-size:11px}
+.fg-assessment-limitations{background:#fffaf2}.fg-assessment-limitations ul{display:grid;gap:6px;margin:0;padding-inline-start:19px}.fg-assessment-limitations li{color:#755f38;font-size:10px}
+.fg-assessment-references{display:grid;gap:7px}.fg-assessment-references a{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:9px 10px;border:1px solid #e0e8e3;border-radius:9px;color:#315e4c;text-decoration:none}.fg-assessment-references span{font:700 9px ui-monospace,monospace}.fg-assessment-references strong{font-size:10px}
+.fg-assessment-empty{display:grid;justify-items:start;gap:8px;padding:20px;color:#815f32;background:#fffaf1}.fg-assessment-empty strong{font-size:13px}.fg-assessment-empty p{font-size:10px;color:#786b55}
+@media(max-width:1050px){.fg-assessment-layout{grid-template-columns:1fr}.fg-assessment-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.fg-assessment-head{flex-direction:column}.fg-assessment-status{justify-content:flex-start}.fg-assessment-inputs{grid-template-columns:1fr 1fr}.fg-assessment-sources dl{grid-template-columns:1fr}.fg-assessment-derived>div,.fg-assessment-finding{grid-template-columns:1fr}.fg-assessment-finding>small{grid-column:1}.fg-assessment-references a{grid-template-columns:1fr auto}.fg-assessment-references span{grid-column:1/-1}}
