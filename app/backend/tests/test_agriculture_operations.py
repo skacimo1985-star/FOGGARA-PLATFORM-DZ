@@ -194,6 +194,21 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     assert body['soil_assessment']['actions']
 
 
+def test_service_summary_reports_live_satellite_for_georeferenced_parcel(client, world):
+    h = login(client, 'o1m@t.dz')
+    parcel = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'Satellite-ready parcel','crop':'wheat','area_ha':1.5,'location':'Laghouat',
+        'lat':33.8,'lon':2.87,
+    })
+    assert parcel.status_code == 201, parcel.text
+    summary = client.get(
+        f"/api/agriculture/parcels/{parcel.json()['id']}/service-summary",
+        headers=h,
+    )
+    assert summary.status_code == 200, summary.text
+    assert summary.json()['available_services']['satellite_live'] is True
+
+
 def test_service_summary_is_org_isolated(client, world, farm):
     _, pid = farm
     h2 = login(client, 'o2m@t.dz')
@@ -642,6 +657,84 @@ def test_sentinel_uses_real_boundary_and_recomputes_when_boundary_changes(client
         f"/api/agriculture/observations?parcel_id={parcel['id']}", headers=h,
     ).json()
     assert len([x for x in observations if x['metric'] == 'ndvi']) == 2
+
+
+
+def test_parcel_readonly_satellite_analysis_uses_boundary_for_all_indices(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    boundary = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8695, 33.7995], [2.8705, 33.7995],
+            [2.8705, 33.8005], [2.8695, 33.8005],
+            [2.8695, 33.7995],
+        ]],
+    }
+    parcel = client.post('/api/agriculture/parcels', headers=h, json={
+        'name': 'GIS analysis field', 'crop': 'wheat', 'area_ha': 1,
+        'location': 'Laghouat', 'boundary_geojson': boundary,
+    }).json()
+    scene_id = 'S2A_GIS_ANALYSIS_2026'
+    captured = {'stats': None, 'preview': None}
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value, {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {}},
+    ))
+    monkeypatch.setattr(
+        satellite,
+        'build_processing_plan',
+        lambda item, index: {'scene_id': item['id'], 'index': index},
+    )
+
+    def stats(plan, bbox, geometry_wgs84=None):
+        captured['stats'] = {'plan': plan, 'bbox': bbox, 'geometry': geometry_wgs84}
+        return {
+            'scene_id': scene_id,
+            'index': plan['index'],
+            'formula_version': 'test-v1',
+            'processing_plan_fingerprint': 'gis-plan',
+            'analysis_bbox_wgs84': bbox,
+            'grid': {'crs': 'EPSG:32631', 'width': 10, 'height': 10, 'resolution_m': 10},
+            'mask': {'geometry_mask_applied': geometry_wgs84 is not None},
+            'pixels': {'valid': 80, 'total': 100, 'valid_fraction': .8},
+            'statistics': {'mean': .12, 'min': -.2, 'max': .4, 'median': .1},
+            'provenance': {'derived_index': 'COMPUTED', 'verified': False, 'persisted': False},
+        }
+
+    def preview(plan, bbox, geometry_wgs84=None):
+        captured['preview'] = {'plan': plan, 'bbox': bbox, 'geometry': geometry_wgs84}
+        return b'\x89PNG\r\n\x1a\nFAKE', {
+            'scene_id': scene_id,
+            'index': plan['index'],
+            'formula_version': 'test-v1',
+        }
+
+    monkeypatch.setattr(satellite, 'compute_index_statistics', stats)
+    monkeypatch.setattr(satellite, 'render_index_preview_png', preview)
+
+    stats_response = client.get(
+        f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/statistics",
+        headers=h,
+        params={'scene_id': scene_id, 'index': 'bsi'},
+    )
+    assert stats_response.status_code == 200, stats_response.text
+    body = stats_response.json()
+    assert body['index'] == 'bsi'
+    assert body['sample_geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
+    assert body['stored'] is False
+    assert captured['stats']['geometry']['type'] == 'Polygon'
+    assert captured['stats']['bbox'][0] == pytest.approx(2.8695)
+
+    preview_response = client.get(
+        f"/api/agriculture/parcels/{parcel['id']}/remote-sensing/preview.png",
+        headers=h,
+        params={'scene_id': scene_id, 'index': 'bsi'},
+    )
+    assert preview_response.status_code == 200, preview_response.text
+    assert preview_response.headers['content-type'] == 'image/png'
+    assert preview_response.headers['x-foggara-geometry'] == 'PARCEL_BOUNDARY_GEOJSON'
+    assert captured['preview']['geometry']['type'] == 'Polygon'
 
 
 def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):

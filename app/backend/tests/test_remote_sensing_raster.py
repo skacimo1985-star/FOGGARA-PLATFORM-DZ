@@ -309,6 +309,27 @@ def test_preview_png_encoder_has_valid_signature(raster_assets):
     assert metadata["persisted"] is False
 
 
+def test_polygon_geometry_masks_preview_to_field_boundary(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    png, metadata = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"),
+        TEST_BBOX,
+        geometry_wgs84=geometry,
+    )
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert metadata["geometry_mask_applied"] is True
+    assert 0 < metadata["valid_fraction"] <= 1
+
+
 def test_preview_png_endpoint_requires_authentication(client):
     response = client.get(
         "/api/remote-sensing/catalog/scenes/S2A_TEST_L2A/preview.png"

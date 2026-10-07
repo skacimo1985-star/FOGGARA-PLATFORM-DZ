@@ -46,3 +46,27 @@
 .fg-map-engine-state.error strong{color:var(--foreground);font-size:13px}
 .fg-national-map.compact .fg-maplibre-host .maplibregl-ctrl-fullscreen{display:none}
 @media (max-width:720px){.fg-national-map-head{align-items:flex-start}.fg-map-head-meta{flex-direction:column;align-items:flex-end;gap:5px}.fg-national-map-canvas{min-height:360px;aspect-ratio:auto}}
+
+
+/* GIS map modes and operational layer controls. */
+.fg-map-control-stack{position:absolute;z-index:4;inset:12px 12px auto auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(460px,calc(100% - 72px));pointer-events:none}
+.fg-command-center[dir=rtl] .fg-map-control-stack{inset:12px auto auto 12px;align-items:flex-start}
+.fg-map-control-card{pointer-events:auto;padding:8px;border:1px solid color-mix(in srgb,var(--border) 78%,transparent);border-radius:12px;background:color-mix(in srgb,var(--background) 92%,transparent);box-shadow:0 10px 30px #102b221f;backdrop-filter:blur(12px)}
+.fg-map-control-card>small{display:block;margin:0 2px 6px;color:var(--muted-foreground);font:750 8px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase}
+.fg-map-control-card>div{display:flex;flex-wrap:wrap;gap:5px}
+.fg-map-control-card button{min-height:30px;padding:5px 9px;border:1px solid var(--cc-line);border-radius:8px;background:var(--background);color:var(--muted-foreground);font-size:10px;font-weight:700;transition:border-color .16s,background .16s,color .16s,transform .16s}
+.fg-map-control-card button:hover{transform:translateY(-1px);border-color:#45967680;color:var(--foreground)}
+.fg-map-control-card button.active{border-color:#31856680;background:color-mix(in srgb,#3c9974 14%,var(--background));color:#17674f}
+.fg-map-layer-buttons{max-width:350px}
+.fg-national-map-canvas:has(.fg-map-control-card button.active) .fg-maplibre-host{transition:filter .2s ease}
+@media(max-width:720px){
+  .fg-map-control-stack{inset:8px 8px auto 54px;max-width:calc(100% - 62px)}
+  .fg-command-center[dir=rtl] .fg-map-control-stack{inset:8px 54px auto 8px}
+  .fg-map-control-card{padding:6px}
+  .fg-map-control-card button{min-height:28px;padding:4px 7px;font-size:9px}
+  .fg-map-control-card>small{display:none}
+}
+
+.fg-map-draw-card{display:flex;align-items:center;gap:6px}
+.fg-map-draw-card>span{padding:0 4px;color:var(--muted-foreground);font-size:9px;font-weight:700}
+.fg-map-draw-card>button:disabled{cursor:not-allowed;opacity:.45;transform:none}
