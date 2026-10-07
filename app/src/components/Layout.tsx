@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link,NavLink,useLocation,useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
-import {Globe,LogOut,Workflow,Compass,FolderKanban,Wrench,Gauge,BarChart3,Map,Radio,Building2,ClipboardCheck,ScrollText,Gavel,Activity,FlaskConical,Menu,X,Network,ShieldCheck,Layers,SlidersHorizontal,Droplets,Sprout,MessageSquareText, type LucideIcon} from 'lucide-react';
+import {Globe,LogOut,Workflow,Compass,FolderKanban,Wrench,Gauge,BarChart3,Map,Radio,Building2,ClipboardCheck,ScrollText,Gavel,Activity,FlaskConical,Menu,X,Network,ShieldCheck,Layers,SlidersHorizontal,Droplets,Sprout,MessageSquareText,ChartNoAxesCombined, type LucideIcon} from 'lucide-react';
 import {useAuth} from '@/context/useAuth';
 import {setLocale,type Locale} from '@/lib/i18n';
 import {WILAYAS} from '@/lib/wilayas';
@@ -27,6 +27,7 @@ const primaryGroups:NavGroup[]=[
  {label:{ar:'ابدأ العمل',fr:'Commencer',en:'Start'},items:[
    {to:'/app',key:'os.workspace',icon:Network,end:true},
    {to:'/app/gis',key:'nav.gis',icon:Map},
+   {to:'/app/analysis',key:'nav.analytics',icon:ChartNoAxesCombined},
    {to:'/app/projects',key:'nav.projects',icon:FolderKanban},
    {to:'/app/resources',key:'nexus.title',icon:Layers},
  ]},
