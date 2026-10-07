@@ -16,7 +16,7 @@ from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
 from ..models import (
-    AgriObservation, Evidence, GovDecision, Measurement, Project, ServiceRequest,
+    AgriObservation, AgriParcel, Evidence, GovDecision, Measurement, Project, ServiceRequest,
     Site, TelemetryReading, User, WaterAllocation,
 )
 
@@ -27,6 +27,11 @@ router = APIRouter(prefix="/api/ai", tags=["ai-insights"])
 class BriefIn(BaseModel):
     locale: Literal["ar", "fr", "en"] = "ar"
     project_id: int | None = Field(default=None, gt=0)
+
+
+class FieldAdvisoryIn(BaseModel):
+    locale: Literal["ar", "fr", "en"] = "ar"
+    parcel_id: int = Field(gt=0)
 
 
 def _count(db: Session, model, *conditions) -> int:
@@ -97,8 +102,26 @@ def _fallback(locale: str, scope: dict, s: dict):
     return {"headline": headline, "executive_summary": summary, "proof_points": proof, "gaps": gaps, "next_actions": actions}
 
 
+def _runtime_config() -> dict | None:
+    if config.AI_LOCAL_ENABLED and config.AI_LOCAL_BASE_URL and config.AI_LOCAL_MODEL:
+        return {
+            "mode": "local",
+            "base_url": config.AI_LOCAL_BASE_URL,
+            "api_key": config.AI_LOCAL_API_KEY,
+            "model": config.AI_LOCAL_MODEL,
+        }
+    if config.AI_EXTERNAL_ENABLED and config.AI_BASE_URL and config.AI_API_KEY and config.AI_MODEL:
+        return {
+            "mode": "external",
+            "base_url": config.AI_BASE_URL,
+            "api_key": config.AI_API_KEY,
+            "model": runtime["model"],
+        }
+    return None
+
+
 def _provider_configured() -> bool:
-    return bool(config.AI_EXTERNAL_ENABLED and config.AI_BASE_URL and config.AI_API_KEY and config.AI_MODEL)
+    return _runtime_config() is not None
 
 
 def _clean_brief(data: object, fallback: dict) -> dict:
@@ -118,7 +141,10 @@ def _clean_brief(data: object, fallback: dict) -> dict:
     return result
 
 
-def _external_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
+def _model_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
+    runtime = _runtime_config()
+    if runtime is None:
+        return fallback, False
     safe_payload = {"locale": locale, "scope": {"type": scope["type"], "domain": scope.get("domain"), "is_demo": scope.get("is_demo")}, "snapshot": snapshot}
     system = (
         "You are the FOGGARA-DZ investor briefing analyst. Use only the supplied aggregate JSON. "
@@ -133,7 +159,10 @@ def _external_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
     }
     try:
         with httpx.Client(timeout=config.AI_TIMEOUT_SECONDS, follow_redirects=False) as client:
-            response = client.post(config.AI_BASE_URL + "/chat/completions", headers={"Authorization": f"Bearer {config.AI_API_KEY}", "Content-Type": "application/json"}, json=payload)
+            headers = {"Content-Type": "application/json"}
+            if runtime["api_key"]:
+                headers["Authorization"] = f"Bearer {runtime['api_key']}"
+            response = client.post(runtime["base_url"] + "/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             content = response.json()["choices"][0]["message"]["content"].strip()
         return _clean_brief(json.loads(content), fallback), True
@@ -144,8 +173,18 @@ def _external_brief(locale: str, scope: dict, snapshot: dict, fallback: dict):
 
 @router.get("/status")
 def ai_status(user: User = Depends(get_current_user)):
-    configured = _provider_configured()
-    return {"external_enabled": config.AI_EXTERNAL_ENABLED, "configured": configured, "mode": "external-ready" if configured else "deterministic-ready", "model": config.AI_MODEL if configured else None, "external_payload_policy": "aggregated_counts_only", "provenance": "PROPOSED"}
+    runtime = _runtime_config()
+    return {
+        "external_enabled": config.AI_EXTERNAL_ENABLED,
+        "local_enabled": config.AI_LOCAL_ENABLED,
+        "configured": runtime is not None,
+        "mode": f"{runtime['mode']}-ready" if runtime else "deterministic-ready",
+        "model": runtime["model"] if runtime else None,
+        "external_payload_policy": "aggregated_counts_only",
+        "field_advisory_payload_policy": "parcel metrics only; no coordinates, names, or source references",
+        "capabilities": ["investor_brief"] + (["field_advisory"] if runtime else []),
+        "provenance": "PROPOSED",
+    }
 
 
 @router.post("/investor-brief")
@@ -154,11 +193,16 @@ def investor_brief(payload: BriefIn, user: User = Depends(get_current_user), db:
     fallback = _fallback(payload.locale, scope, snapshot)
     brief, used_external = (fallback, False)
     if _provider_configured():
-        brief, used_external = _external_brief(payload.locale, scope, snapshot, fallback)
+        brief, used_external = _model_brief(payload.locale, scope, snapshot, fallback)
     audit(db, user, "generate", "investor_ai_brief", project_id=payload.project_id, meta={"external_used": used_external, "locale": payload.locale, "scope": scope["type"]})
     db.commit()
     return {
-        "provider": {"mode": "external" if used_external else "deterministic", "configured": _provider_configured(), "model": config.AI_MODEL if used_external else None, "fallback_used": bool(_provider_configured() and not used_external)},
+        "provider": {
+            "mode": (_runtime_config() or {}).get("mode") if used_external else "deterministic",
+            "configured": _provider_configured(),
+            "model": (_runtime_config() or {}).get("model") if used_external else None,
+            "fallback_used": bool(_provider_configured() and not used_external),
+        },
         "scope": scope, "snapshot": snapshot, "brief": brief, "provenance": "PROPOSED",
         "generated_from": "aggregated_platform_state", "external_payload_policy": "aggregated_counts_only",
         "investment_certification": False,
