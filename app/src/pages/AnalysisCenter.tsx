@@ -207,12 +207,16 @@ export default function AnalysisCenter() {
     </div>;
   }
 
-  return <div className="space-y-5" dir={i18n.dir()} data-testid="analysis-center">
-    <header className="rounded-2xl border bg-gradient-to-br from-emerald-500/10 via-background to-sky-500/10 p-6">
-      <p className="text-xs font-bold tracking-[.16em] text-emerald-700">{copy.eyebrow}</p>
-      <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div><h1 className="text-3xl font-bold">{copy.title}</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">{copy.intro}</p></div>
-        <label className="grid min-w-64 gap-1 text-xs font-semibold"><span>{copy.parcel}</span><select className="rounded-md border bg-background px-3 py-2 text-sm" value={parcelId??""} onChange={e=>setParcel(Number(e.target.value))}>{parcels.map(row=><option key={row.id} value={row.id}>{row.name} · {row.area_ha.toFixed(2)} ha</option>)}</select></label>
+  return <div className="fg-analysis-workspace" dir={i18n.dir()} data-testid="analysis-center">
+    <header className="fg-analysis-toolbar">
+      <div>
+        <p>{copy.eyebrow}</p>
+        <h1>{copy.title}</h1>
+        <span>{copy.demoHidden}</span>
+      </div>
+      <div className="fg-analysis-toolbar-actions">
+        <button type="button" onClick={toggleDemo} className={showDemo?"demo-on":""}><Eye size={15}/>{showDemo?copy.hideDemo:copy.showDemo}</button>
+        <Link to="/app/gis" className="primary"><MapPinned size={16}/>{copy.draw}</Link>
       </div>
     </header>
 
