@@ -349,6 +349,7 @@ def main():
                         expect(page.locator(".fg-map-mode-switcher button")).to_have_count(5)
                         page.locator(".fg-map-mode-switcher button").last.click()
                         expect(page.locator(".fg-map-layer-menu")).to_contain_text("بنية المياه")
+                        expect(page.locator(".fg-map-layer-menu")).to_contain_text("حساسات IoT")
                         page.locator(".fg-map-mode-switcher button").last.click()
                         page.get_by_role("button", name="إظهار DEMO", exact=True).click()
                         expect(page.get_by_test_id("analysis-live-sentinel")).to_be_visible()
