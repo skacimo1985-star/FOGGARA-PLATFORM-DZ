@@ -118,7 +118,7 @@ export default function Iot() {
   }
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
+    <div className="space-y-6" dir={i18n.dir()} data-testid="iot-operational-center">
       <header className="rounded-2xl border bg-gradient-to-br from-emerald-500/10 via-background to-sky-500/10 p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">FOGGARA / IOT EDGE</p>
         <h1 className="mt-1 text-2xl font-bold">{copy.title}</h1>
