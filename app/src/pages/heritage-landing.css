@@ -1119,3 +1119,84 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-heritage-visual-controls{top:14px;inset-inline-end:14px}
   .fg-heritage-visual-controls button{width:34px;height:34px}
 }
+
+
+/* Full-screen presentation mode */
+.fg-heritage-head-side{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:18px;
+}
+.fg-heritage-present-button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:8px 12px;
+  border:1px solid var(--national-green);
+  background:transparent;
+  color:var(--national-green);
+  font:800 9px/1 ui-monospace,SFMono-Regular,monospace;
+  letter-spacing:.1em;
+  cursor:pointer;
+}
+.fg-heritage-present-button:hover{
+  background:var(--national-green);
+  color:#fff;
+}
+.fg-heritage-presentation.is-fullscreen{
+  position:fixed;
+  z-index:1200;
+  inset:0;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:34px clamp(22px,4vw,72px) 28px;
+  overflow:auto;
+  background:#fffdf8;
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-head{
+  width:min(1500px,100%);
+  margin:0 auto 28px;
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-stage,
+.fg-heritage-presentation.is-fullscreen .fg-heritage-thumbnails,
+.fg-heritage-presentation.is-fullscreen .fg-heritage-progress{
+  width:min(1500px,100%);
+  margin-inline:auto;
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-stage{
+  min-height:min(66vh,760px);
+  grid-template-columns:minmax(0,1.2fr) minmax(390px,.8fr);
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-visual{
+  min-height:min(66vh,760px);
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-head h2{
+  font-size:clamp(54px,6.5vw,96px);
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-caption h3{
+  font-size:clamp(31px,3.4vw,52px);
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-caption p{
+  max-width:720px;
+  font-size:15px;
+}
+.fg-heritage-presentation.is-fullscreen .fg-heritage-thumbnails{
+  margin-top:14px;
+}
+@media(max-width:980px){
+  .fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-stage{
+    grid-template-columns:1fr;
+  }
+  .fg-heritage-presentation.is-fullscreen .fg-heritage-visual{
+    min-height:55vh;
+  }
+}
+@media(max-width:700px){
+  .fg-heritage-head-side{gap:14px}
+  .fg-heritage-presentation.is-fullscreen{padding:20px 14px}
+  .fg-heritage-presentation.is-fullscreen .fg-heritage-presentation-head h2{font-size:44px}
+  .fg-heritage-presentation.is-fullscreen .fg-heritage-visual{min-height:52vh}
+}
