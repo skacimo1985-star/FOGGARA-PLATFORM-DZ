@@ -11,6 +11,7 @@ import { ServiceOfferings } from "@/components/ServiceOfferings";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
+import "./heritage-landing.css";
 const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
 const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"review",Icon:ShieldCheck,to:"/app/review"},{key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}];
 export default function Landing() {
@@ -21,6 +22,7 @@ export default function Landing() {
   const expoUrl="https://foggara-dz.onrender.com/expo";
   const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
+  const heritage=lang==="fr"?{title:"Préserver nos ressources.",accent:"Cultiver notre avenir.",body:"De l’héritage des oasis à la décision éclairée : eau, énergie, agriculture, écosystèmes et santé.",discover:"Découvrir la plateforme",scroll:"Explorer FOGGARA",visit:"Accès visiteur"}:lang==="en"?{title:"Stewards of our resources.",accent:"Cultivating our future.",body:"From oasis heritage to informed decisions: water, energy, food, ecosystems and health.",discover:"Explore the platform",scroll:"Discover FOGGARA",visit:"Visitor access"}:{title:"نصون مواردنا.",accent:"ونزرع مستقبلنا.",body:"من إرث الواحات إلى القرار المستنير: المياه والطاقة والزراعة والنظم البيئية والصحة.",discover:"اكتشف المنصة",scroll:"استكشف فقارة",visit:"دخول الزوار"};
   const expoCopy=lang==="fr"?{enter:"Accès visiteur AGRITECH",visitors:"visiteurs",feedback:"avis",noPassword:"sans mot de passe",operate:"Créer un espace opérationnel"}:lang==="en"?{enter:"AGRITECH visitor access",visitors:"visitors",feedback:"feedback",noPassword:"no password required",operate:"Create operational workspace"}:{enter:"دخول زائر AGRITECH",visitors:"زائر",feedback:"رأي",noPassword:"بدون كلمة مرور",operate:"إنشاء مساحة عمل حقيقية"};
   const toolCopy=lang==="fr"?{
     eyebrow:"FOGGARA / TOOL DECK",title:"Choisissez un service. Commencez immédiatement.",body:"Une interface orientée outils : recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"Ouvrir",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond.",qrTitle:"Accès visiteur au salon",qrBody:"Scannez pour ouvrir directement le mode AGRITECH sans compte.",scan:"Ouvrir",copy:"Copier",copied:"Copié",download:"Télécharger SVG",quick:"Accès rapide"
@@ -106,18 +108,29 @@ export default function Landing() {
       <Link to="/presentation">{t("publicExperience.presentation")}</Link><Link to="/contact">{t("publicExperience.contact")}</Link>
     </nav>
     <section className="fg-landing-hero" aria-labelledby="foggara-title">
-      <picture className="fg-oasis-image"><source media="(max-width: 650px)" srcSet="/images/oasis-hero-mobile.webp"/><img src="/images/oasis-hero.webp" alt="" width="1891" height="831" fetchPriority="high" decoding="async"/></picture>
-      <div className="fg-landing-copy"><p className="fg-eyebrow" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</p>
-        <p className="fg-landing-kicker">{t("publicExperience.kicker")}</p>
-        <h1 id="foggara-title">{t("publicExperience.title")}<br/><em>{t("publicExperience.titleAccent")}</em></h1>
-        <p className="fg-landing-intro">{t("publicExperience.intro")}</p>
-        <div className="fg-hero-actions"><Link className="fg-button" to={user?"/app":"/register"}>{user?t("publicExperience.enter"):expoCopy.operate}<ArrowUpRight size={18}/></Link>
-          {!user&&<Link className="fg-button fg-secondary" to="/login">{expoCopy.enter}</Link>}
-          <Link className="fg-link" to="/demo">{t("demo.try")}<ArrowUpRight size={16}/></Link></div>
-        {!user&&<p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p>}
-        <p className="fg-landing-trust"><ShieldCheck size={16}/>{t("publicExperience.trust")}</p>
-        <p className="fg-oasis-caption">{t("demo.imageNotice")}</p>
+      <picture className="fg-oasis-image"><source media="(max-width: 650px)" srcSet="/images/oasis-dawn-mobile.webp"/><img src="/images/oasis-dawn.webp" alt="" width="1891" height="831" fetchPriority="high" decoding="async"/></picture>
+      <div className="fg-landing-copy">
+        <h1 id="foggara-title">{heritage.title}<br/><em>{heritage.accent}</em></h1>
+        <p className="fg-landing-intro">{heritage.body}</p>
+        <div className="fg-hero-actions"><a className="fg-button fg-secondary" href="#tools">{heritage.discover}<ArrowUpRight size={17}/></a><Link className="fg-heritage-visitor" to={user?"/app":"/expo"}>{user?t("publicExperience.enter"):heritage.visit}<ArrowUpRight size={16}/></Link></div>
       </div>
+      <div className="fg-heritage-bottom"><span dir="ltr">WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH</span><a href="#tools">{heritage.scroll}<ArrowDown size={16}/></a><span className="fg-heritage-image-notice">{t("demo.imageNotice")}</span></div>
+    </section>
+    <section className="fg-tool-hub" id="tools" aria-labelledby="fg-tool-title">
+      <div className="fg-tool-panel">
+        <div className="fg-tool-heading"><div><p className="fg-eyebrow">{toolCopy.eyebrow}</p><h2 id="fg-tool-title">{toolCopy.title}</h2><p>{toolCopy.body}</p></div><span className="fg-tool-count" dir="ltr">{visibleTools.length}/{toolDeck.length}</span></div>
+        <label className="fg-tool-command"><Search size={20}/><input ref={toolSearchRef} value={toolQuery} onChange={e=>setToolQuery(e.target.value)} placeholder={toolCopy.search} aria-label={toolCopy.search}/><kbd dir="ltr">Ctrl/⌘ K</kbd></label>
+        <div className="fg-tool-grid">
+          {visibleTools.map(({key,Icon,to,scope,title,body})=><Link to={to} className="fg-tool-card" key={key}>
+            <span className="fg-tool-icon"><Icon size={22}/></span><span className="fg-tool-meta">{scope==="public"?toolCopy.public:toolCopy.workspace}</span>
+            <h3>{title}</h3><p>{body}</p><span className="fg-tool-open">{toolCopy.open}<ArrowUpRight size={15}/></span>
+          </Link>)}
+          {visibleTools.length===0&&<p className="fg-tool-empty">{toolCopy.noResults}</p>}
+        </div>
+      </div>
+    </section>
+    <section className="fg-heritage-expo" aria-label={toolCopy.qrTitle}>
+      <div><p className="fg-eyebrow">AGRITECH / FOGGARA</p><h2>{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p><Link className="fg-link" to={user?"/app":"/register"}>{user?t("publicExperience.enter"):expoCopy.operate}<ArrowUpRight size={16}/></Link><p className="fg-landing-trust"><Users size={16}/><strong>{expoStats.visitors}</strong> {expoCopy.visitors} · <strong>{expoStats.feedback}</strong> {expoCopy.feedback} · {expoCopy.noPassword}</p></div>
       <aside className="fg-hero-qr" aria-labelledby="fg-hero-qr-title">
         <div className="fg-hero-qr-head"><div><p className="fg-eyebrow">AGRITECH EXPO / QR</p><h2 id="fg-hero-qr-title">{toolCopy.qrTitle}</h2><p>{toolCopy.qrBody}</p></div><QrCode size={24}/></div>
         <a href={expoUrl} target="_blank" rel="noreferrer" className="fg-hero-qr-code" aria-label={toolCopy.scan}>
@@ -133,19 +146,6 @@ export default function Landing() {
         </div>
         <small dir="ltr">foggara-dz.onrender.com/expo</small>
       </aside>
-    </section>
-    <section className="fg-tool-hub" id="tools" aria-labelledby="fg-tool-title">
-      <div className="fg-tool-panel">
-        <div className="fg-tool-heading"><div><p className="fg-eyebrow">{toolCopy.eyebrow}</p><h2 id="fg-tool-title">{toolCopy.title}</h2><p>{toolCopy.body}</p></div><span className="fg-tool-count" dir="ltr">{visibleTools.length}/{toolDeck.length}</span></div>
-        <label className="fg-tool-command"><Search size={20}/><input ref={toolSearchRef} value={toolQuery} onChange={e=>setToolQuery(e.target.value)} placeholder={toolCopy.search} aria-label={toolCopy.search}/><kbd dir="ltr">Ctrl/⌘ K</kbd></label>
-        <div className="fg-tool-grid">
-          {visibleTools.map(({key,Icon,to,scope,title,body})=><Link to={to} className="fg-tool-card" key={key}>
-            <span className="fg-tool-icon"><Icon size={22}/></span><span className="fg-tool-meta">{scope==="public"?toolCopy.public:toolCopy.workspace}</span>
-            <h3>{title}</h3><p>{body}</p><span className="fg-tool-open">{toolCopy.open}<ArrowUpRight size={15}/></span>
-          </Link>)}
-          {visibleTools.length===0&&<p className="fg-tool-empty">{toolCopy.noResults}</p>}
-        </div>
-      </div>
     </section>
     <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
     <section className="fg-platform-spine" aria-label="FOGGARA operating model">
@@ -177,3 +177,4 @@ export default function Landing() {
     <footer className="fg-landing-footer"><span dir="ltr">FOGGARA-DZ · SIREP OASES NEXUS WEFEH-DZ</span><nav aria-label={t("publicExperience.legal")}><Link to="/privacy">{t("publicExperience.privacy")}</Link><Link to="/terms">{t("publicExperience.terms")}</Link><Link to="/rights">{t("publicExperience.rights")}</Link></nav><p>{t("publicExperience.scope")}</p><a href="#foggara-title" className="fg-link">{t("publicExperience.top")}<ArrowDown className="fg-up" size={14}/></a></footer>
   </div>;
 }
+
