@@ -124,3 +124,15 @@
   .fg-map-mode-switcher button{flex:0 0 auto}
   .fg-map-layer-menu{inset:52px 8px auto 8px;width:auto}
 }
+
+
+.fg-map-satellite-meta{
+  position:absolute;z-index:8;inset:auto 12px 56px auto;max-width:min(360px,calc(100% - 24px));
+  padding:10px 12px;border:1px solid #ffffff4d;border-radius:12px;
+  background:#102a23d9;color:#effff8;backdrop-filter:blur(12px);box-shadow:0 12px 36px -28px #001c14;
+}
+.fg-map-satellite-meta strong,.fg-map-satellite-meta span,.fg-map-satellite-meta small{display:block}
+.fg-map-satellite-meta strong{font-size:10px;letter-spacing:.02em}
+.fg-map-satellite-meta span{margin-top:3px;font-size:9px;color:#d9f7e9}
+.fg-map-satellite-meta small{margin-top:3px;font-size:7px;line-height:1.4;color:#b8ddce;overflow-wrap:anywhere}
+@media(max-width:720px){.fg-map-satellite-meta{inset:auto 8px 54px 8px;max-width:none}}
