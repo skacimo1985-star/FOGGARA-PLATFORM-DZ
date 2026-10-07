@@ -88,6 +88,34 @@ type RasterAnalysis = {
   };
 };
 
+type FieldAssessment = {
+  evidence_status: string;
+  decision_status: string;
+  coverage: string[];
+  limitations: string[];
+};
+
+type FieldServiceSummary = {
+  latest_observations: Record<string, {
+    value: number;
+    unit: string;
+    source_type: string;
+    observed_at: string;
+    evidence_status: string;
+  }>;
+  soil_assessment: FieldAssessment;
+  irrigation_water_assessment: FieldAssessment;
+  available_services: {
+    soil_screening: boolean;
+    irrigation_water_screening: boolean;
+    irrigation_planning: boolean;
+    vegetation_monitoring: boolean;
+    satellite_live: boolean;
+    weather_live: boolean;
+  };
+  provenance: string;
+};
+
 type MapPoint = [number, number];
 
 function polygonPoints(feature: ParcelBoundaryFeature | null): MapPoint[] {
@@ -204,6 +232,9 @@ export default function Gis() {
   const [fieldSaving, setFieldSaving] = useState(false);
   const [fieldMessage, setFieldMessage] = useState("");
   const [fieldError, setFieldError] = useState<unknown>(null);
+  const [fieldServices, setFieldServices] = useState<FieldServiceSummary | null>(null);
+  const [fieldServicesLoading, setFieldServicesLoading] = useState(false);
+  const [fieldServicesError, setFieldServicesError] = useState<unknown>(null);
 
   useEffect(() => {
     if (Number.isInteger(requestedProjectId) && requestedProjectId > 0) {
@@ -269,6 +300,12 @@ export default function Gis() {
       ? { title: "Draw a field boundary", subtitle: "Turn on drawing, then click around the field. FOGGARA calculates area and perimeter before saving.", start: "Draw field", drawing: "Drawing mode active", undo: "Undo last point", clear: "Clear", name: "Field name", crop: "Crop", area: "Area", perimeter: "Perimeter", vertices: "Vertices", save: "Save field", saving: "Saving…", saved: "Field saved. Sentinel and agricultural services can now run on it.", choose: "Select at least 3 points.", site: "Linked site", noSite: "No site required", openAgri: "Open agricultural services", crops: { date_palm: "Date palm", wheat: "Wheat", barley: "Barley", potato: "Potato", tomato: "Tomato", olive: "Olive", other: "Other" } }
       : { title: "حدد مساحة الأرض على الخريطة", subtitle: "فعّل الرسم ثم اضغط حول حدود الأرض. تحسب FOGGARA المساحة والمحيط قبل الحفظ.", start: "ابدأ تحديد الأرض", drawing: "وضع الرسم مفعل", undo: "تراجع عن آخر نقطة", clear: "مسح الحدود", name: "اسم القطعة", crop: "المحصول", area: "المساحة", perimeter: "المحيط", vertices: "النقاط", save: "حفظ القطعة", saving: "جارٍ الحفظ…", saved: "تم حفظ القطعة. يمكنك الآن تشغيل Sentinel والخدمات الزراعية عليها.", choose: "حدد 3 نقاط على الأقل.", site: "الموقع المرتبط", noSite: "لا يشترط موقع مسبق", openAgri: "فتح الخدمات الزراعية", crops: { date_palm: "نخيل التمر", wheat: "قمح", barley: "شعير", potato: "بطاطا", tomato: "طماطم", olive: "زيتون", other: "أخرى" } };
 
+  const intelligenceCopy = lang === "fr"
+    ? { title: "Intelligence de la parcelle", subtitle: "Services calculés et données disponibles pour la parcelle sélectionnée.", satellite: "Sentinel-2", vegetation: "Végétation", soil: "Sol", water: "Eau d’irrigation", irrigation: "Planification de l’irrigation", weather: "Météo", available: "Disponible", missing: "Données requises", configured: "Configuré", notConnected: "Non configuré", analyze: "Chercher Sentinel", irrigationAction: "Calculer l’irrigation", evidenceAction: "Ouvrir l’analyse sol/eau", observations: "Dernières observations" }
+    : lang === "en"
+      ? { title: "Field intelligence", subtitle: "Computed services and available evidence for the selected field.", satellite: "Sentinel-2", vegetation: "Vegetation", soil: "Soil", water: "Irrigation water", irrigation: "Irrigation planning", weather: "Weather", available: "Available", missing: "Data required", configured: "Configured", notConnected: "Not configured", analyze: "Search Sentinel", irrigationAction: "Calculate irrigation", evidenceAction: "Open soil/water analysis", observations: "Latest observations" }
+      : { title: "ذكاء الحقل المحدد", subtitle: "الخدمات والبيانات المتاحة للقطعة التي اخترتها على الخريطة.", satellite: "Sentinel-2", vegetation: "حالة الغطاء النباتي", soil: "التربة", water: "مياه الري", irrigation: "تخطيط الري", weather: "الطقس", available: "متاح", missing: "يحتاج بيانات", configured: "مهيأ", notConnected: "غير مهيأ", analyze: "بحث Sentinel", irrigationAction: "حساب الري", evidenceAction: "فتح تحليل التربة والمياه", observations: "آخر القياسات" };
+
   const analysisCopy = lang === "fr"
     ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est enregistré ni déclaré vérifié." }
     : lang === "en"
@@ -308,6 +345,23 @@ export default function Gis() {
   const draftMetrics = useMemo(() => boundaryMetrics(draftBoundary), [draftBoundary]);
   const selectedParcelBbox = useMemo(() => bboxFromPoints(polygonPoints(selectedParcel)), [selectedParcel]);
   const analysisTargetBbox = selectedParcelBbox ?? viewportBbox;
+
+  useEffect(() => {
+    if (!selectedParcelId) {
+      setFieldServices(null);
+      setFieldServicesError(null);
+      return;
+    }
+    let cancelled = false;
+    setFieldServicesLoading(true);
+    setFieldServicesError(null);
+    const suffix = projectContext?.id ? `?project_id=${projectContext.id}` : "";
+    api.get<FieldServiceSummary>(`/agriculture/parcels/${selectedParcelId}/service-summary${suffix}`)
+      .then((result) => { if (!cancelled) setFieldServices(result); })
+      .catch((err) => { if (!cancelled) { setFieldServices(null); setFieldServicesError(err); } })
+      .finally(() => { if (!cancelled) setFieldServicesLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedParcelId, projectContext?.id]);
 
 
   useEffect(() => {
@@ -614,6 +668,55 @@ export default function Gis() {
           locale={lang}
         />
       )}
+
+      {selectedParcel ? (
+        <section className="rounded-2xl border border-emerald-600/25 bg-card p-4 shadow-sm" data-testid="gis-field-intelligence">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">FIELD INTELLIGENCE</p>
+              <h2 className="mt-1 text-xl font-bold">{intelligenceCopy.title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{selectedParcel.properties.name} · {Number(selectedParcel.properties.area_ha).toFixed(2)} ha · {intelligenceCopy.subtitle}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={satelliteLoading} onClick={() => void searchSatelliteScenes()}>{intelligenceCopy.analyze}</button>
+              <Link className="rounded-md border bg-background px-4 py-2 text-sm font-semibold" to={`/app/agriculture?parcel=${selectedParcel.id}&section=irrigation`}>{intelligenceCopy.irrigationAction}</Link>
+              <Link className="rounded-md border bg-background px-4 py-2 text-sm font-semibold" to={`/app/agriculture?parcel=${selectedParcel.id}&section=services`}>{intelligenceCopy.evidenceAction}</Link>
+            </div>
+          </div>
+          {fieldServicesLoading ? <Skeleton className="mt-4 h-28 w-full" /> : fieldServices ? (
+            <>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+                {[
+                  [intelligenceCopy.satellite, fieldServices.available_services.satellite_live, "LIVE STAC"],
+                  [intelligenceCopy.vegetation, fieldServices.available_services.vegetation_monitoring, fieldServices.available_services.vegetation_monitoring ? intelligenceCopy.available : intelligenceCopy.missing],
+                  [intelligenceCopy.soil, fieldServices.available_services.soil_screening, fieldServices.soil_assessment.evidence_status],
+                  [intelligenceCopy.water, fieldServices.available_services.irrigation_water_screening, fieldServices.irrigation_water_assessment.evidence_status],
+                  [intelligenceCopy.irrigation, fieldServices.available_services.irrigation_planning, intelligenceCopy.available],
+                  [intelligenceCopy.weather, fieldServices.available_services.weather_live, fieldServices.available_services.weather_live ? intelligenceCopy.configured : intelligenceCopy.notConnected],
+                ].map(([label, ready, detail]) => (
+                  <article key={String(label)} className={`rounded-xl border p-3 ${ready ? "border-emerald-500/30 bg-emerald-500/5" : "bg-muted/20"}`}>
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <strong className="mt-1 block text-sm">{ready ? intelligenceCopy.available : intelligenceCopy.missing}</strong>
+                    <small className="mt-1 block text-[10px] text-muted-foreground">{String(detail)}</small>
+                  </article>
+                ))}
+              </div>
+              {Object.keys(fieldServices.latest_observations).length > 0 ? (
+                <div className="mt-4 rounded-xl border bg-background p-3">
+                  <strong className="text-sm">{intelligenceCopy.observations}</strong>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {Object.entries(fieldServices.latest_observations).map(([metric, row]) => (
+                      <span key={metric} className="rounded-full border px-3 py-1 text-xs">
+                        <b className="uppercase">{metric}</b> · <span dir="ltr">{Number(row.value).toFixed(2)} {row.unit}</span> · {row.evidence_status}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : <ErrorText error={fieldServicesError} />}
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={analysisCopy.title}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
