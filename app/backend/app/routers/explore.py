@@ -302,21 +302,34 @@ def gis_iot_bindings_geojson(user: User = Depends(get_current_user), db: Session
         "irrigation_zone": IrrigationZone,
         "zone": IrrigationZone,
     }
-    buckets: dict[int, dict] = {}
-    unresolved = 0
-
     sensors = list(db.scalars(
         select(Sensor).where(Sensor.org_id == user.org_id).order_by(Sensor.id)
     ))
+
+    refs_by_type: dict[str, set[int]] = {}
     for sensor in sensors:
-        model = subject_models.get((sensor.subject_type or "").strip().lower())
-        if model is None or sensor.subject_id is None:
+        subject_type = (sensor.subject_type or "").strip().lower()
+        if subject_type in subject_models and sensor.subject_id is not None:
+            refs_by_type.setdefault(subject_type, set()).add(sensor.subject_id)
+
+    resolved: dict[tuple[str, int], object] = {}
+    for subject_type, subject_ids in refs_by_type.items():
+        model = subject_models[subject_type]
+        rows = db.scalars(select(model).where(
+            model.org_id == user.org_id,
+            model.id.in_(subject_ids),
+        )).all()
+        for row in rows:
+            resolved[(subject_type, row.id)] = row
+
+    buckets: dict[int, dict] = {}
+    unresolved = 0
+    for sensor in sensors:
+        subject_type = (sensor.subject_type or "").strip().lower()
+        if sensor.subject_id is None:
             unresolved += 1
             continue
-        subject = db.scalar(select(model).where(
-            model.id == sensor.subject_id,
-            model.org_id == user.org_id,
-        ))
+        subject = resolved.get((subject_type, sensor.subject_id))
         if subject is None or subject.site_id not in site_by_id:
             unresolved += 1
             continue
@@ -333,7 +346,7 @@ def gis_iot_bindings_geojson(user: User = Depends(get_current_user), db: Session
         bucket["non_simulated_sensor_count"] += int(not bool(sensor.is_simulated))
         bucket["active_sensor_count"] += int(sensor.status == "active")
         bucket["metrics"].add(sensor.metric)
-        bucket["subject_types"].add((sensor.subject_type or "").strip().lower())
+        bucket["subject_types"].add(subject_type)
 
     features = []
     for site_id, bucket in buckets.items():
@@ -373,9 +386,9 @@ def gis_iot_bindings_geojson(user: User = Depends(get_current_user), db: Session
             "coordinate_scope": "resolved_subject_site_not_sensor_gps",
             "exact_sensor_coordinates": False,
             "live_telemetry_claim": False,
+            "resolution_strategy": "batched_by_subject_type",
         },
     }
-
 
 @router.get("/gis/parcels.geojson")
 def gis_parcels_geojson(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
