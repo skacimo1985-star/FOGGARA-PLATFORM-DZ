@@ -423,7 +423,10 @@ def service_summary(identity: int, project_id: int | None = Query(default=None, 
             'irrigation_water_screening': bool(water['coverage']),
             'irrigation_planning': True,
             'vegetation_monitoring': 'ndvi' in latest or 'lswi' in latest,
-            'satellite_live': False,
+            'satellite_live': bool(
+                parcel.boundary_geojson is not None
+                or (parcel.lat is not None and parcel.lon is not None)
+            ),
             'weather_live': False,
         },
         'provenance': 'RECORDED_AND_COMPUTED',

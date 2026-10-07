@@ -194,6 +194,21 @@ def test_service_summary_turns_recorded_data_into_actionable_service(client, wor
     assert body['soil_assessment']['actions']
 
 
+def test_service_summary_reports_live_satellite_for_georeferenced_parcel(client, world):
+    h = login(client, 'o1m@t.dz')
+    parcel = client.post('/api/agriculture/parcels', headers=h, json={
+        'name':'Satellite-ready parcel','crop':'wheat','area_ha':1.5,'location':'Laghouat',
+        'lat':33.8,'lon':2.87,
+    })
+    assert parcel.status_code == 201, parcel.text
+    summary = client.get(
+        f"/api/agriculture/parcels/{parcel.json()['id']}/service-summary",
+        headers=h,
+    )
+    assert summary.status_code == 200, summary.text
+    assert summary.json()['available_services']['satellite_live'] is True
+
+
 def test_service_summary_is_org_isolated(client, world, farm):
     _, pid = farm
     h2 = login(client, 'o2m@t.dz')
