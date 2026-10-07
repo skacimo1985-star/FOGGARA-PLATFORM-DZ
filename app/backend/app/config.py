@@ -102,7 +102,10 @@ if AI_EXTERNAL_ENABLED and AI_LOCAL_ENABLED:
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "").strip().rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_MODEL = os.environ.get("AI_MODEL", "").strip()
-AI_LOCAL_BASE_URL = os.environ.get("AI_LOCAL_BASE_URL", "").strip().rstrip("/")
+AI_LOCAL_BASE_URL = os.environ.get(
+    "AI_LOCAL_BASE_URL",
+    "http://127.0.0.1:11434/v1" if AI_LOCAL_ENABLED and ENV == "dev" else "",
+).strip().rstrip("/")
 AI_LOCAL_API_KEY = os.environ.get("AI_LOCAL_API_KEY", "").strip()
 AI_LOCAL_MODEL = os.environ.get("AI_LOCAL_MODEL", "").strip()
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
