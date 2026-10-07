@@ -20,6 +20,7 @@ def test_health_requires_no_auth_and_has_security_headers(client):
     assert "default-src 'self'" in csp
     assert "fonts.gstatic.com" in csp        # Google Fonts مسموح للواجهة
     assert "fonts.googleapis.com" in csp
+    assert "tiles.mapterhorn.com" in csp
     assert "script-src 'self'" in csp
     assert "tiles.openfreemap.org" in csp
     assert "connect-src https:" not in csp

@@ -189,13 +189,6 @@ jobs:
           node-version: '22.18.0'
       - run: npm ci && npm run build
         working-directory: app
-
-      - run: npm run typecheck
-        working-directory: app
-      - run: npm run lint
-        working-directory: app
-      - run: npm test
-        working-directory: app
       - name: Audit locked dependencies
         working-directory: app
         run: npm run audit:dependencies

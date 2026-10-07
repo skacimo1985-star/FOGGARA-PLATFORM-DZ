@@ -1,6 +1,7 @@
 """Authenticated runtime-readiness summary without secret disclosure."""
 from __future__ import annotations
 
+import os
 import time
 
 from fastapi import APIRouter, Depends
@@ -53,6 +54,21 @@ def _ai_state() -> dict:
     }
 
 
+def _deployment_state() -> dict:
+    commit = os.getenv("RENDER_GIT_COMMIT", "").strip()[:40] or None
+    service_name = os.getenv("RENDER_SERVICE_NAME", "").strip()[:120] or None
+    hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()[:255] or None
+    provider = "render" if any((commit, service_name, hostname)) else "generic"
+    return {
+        "provider": provider,
+        "release_id": commit[:12] if commit else f"v{config.APP_VERSION}",
+        "git_commit": commit,
+        "service_name": service_name,
+        "public_hostname": hostname,
+        "source": "runtime_environment",
+    }
+
+
 def _weather_state() -> dict:
     configured = bool(
         config.WEATHER_PROVIDER_ENABLED
@@ -88,6 +104,7 @@ def readiness(_user: User = Depends(get_current_user)):
             "hsts_expected": production_mode,
             "jwt_ttl_hours": config.TOKEN_TTL_HOURS,
         },
+        "deployment": _deployment_state(),
     }
     integrations = {
         "satellite": {

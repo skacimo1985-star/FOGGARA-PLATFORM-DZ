@@ -219,7 +219,7 @@ def catalog_scenes(
 def scene_index_preview(
     scene_id: str,
     bbox: str = Query(..., min_length=7, max_length=160),
-    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
+    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi|lswi)$"),
     _user: User = Depends(get_current_user),
 ):
     raw_bbox = _parse_bbox(bbox)
@@ -272,7 +272,7 @@ def index_definitions(_user: User = Depends(get_current_user)):
 @router.get("/catalog/scenes/{scene_id}/processing-plan")
 def scene_processing_plan(
     scene_id: str,
-    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
+    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi|lswi)$"),
     _user: User = Depends(get_current_user),
 ):
     _safe_scene_id, item = _provider_item(scene_id)
@@ -290,7 +290,7 @@ def scene_processing_plan(
 def scene_index_statistics(
     scene_id: str,
     bbox: str = Query(..., min_length=7, max_length=160),
-    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi)$"),
+    index: str = Query(..., pattern="^(ndvi|evi|savi|ndwi|lswi)$"),
     _user: User = Depends(get_current_user),
 ):
     raw_bbox = _parse_bbox(bbox)

@@ -26,9 +26,17 @@ def admins(db, world):
 
 
 def _device(client, h, name="جهاز اختبار"):
+    site = client.post("/api/sites", json={
+        "name": f"{name} site", "wilaya": "Laghouat", "lat": 33.8, "lon": 2.9
+    }, headers=h)
+    assert site.status_code == 201, site.text
+    well = client.post("/api/water/wells", json={
+        "site_id": site.json()["id"], "name": f"{name} well", "depth_m": 40
+    }, headers=h)
+    assert well.status_code == 201, well.text
     r = client.post(f"{TEL}/devices", json={
         "name": name, "device_type": "well_controller",
-        "subject_type": "well", "subject_id": 1}, headers=h)
+        "subject_type": "well", "subject_id": well.json()["id"]}, headers=h)
     assert r.status_code == 201, r.text
     return r.json()
 
@@ -38,7 +46,6 @@ def _sensor(client, h, device_id, metric="water_level", sensor_type="water_level
     r = client.post(f"{TEL}/sensors", json={
         "device_id": device_id, "name": f"مستشعر {metric}", "sensor_type": sensor_type,
         "metric": metric, "unit": unit, "min_value": min_value, "max_value": max_value,
-        "subject_type": "well", "subject_id": 1,
         "configuration": {"base_value": base}}, headers=h)
     assert r.status_code == 201, r.text
     return r.json()
@@ -357,3 +364,42 @@ def test_unauthenticated_rejected(client, world):
     assert client.get(TEL).status_code == 401
     assert client.get(f"{SIM}/runs").status_code == 401
     assert client.get(RULES).status_code == 401
+
+
+
+def test_spatial_subject_binding_is_owned_and_inherited(admins, client):
+    h1 = login(client, "o1m@t.dz")
+    h2 = login(client, "o2m@t.dz")
+
+    dev1 = _device(client, h1, "owned binding")
+    sensor = _sensor(client, h1, dev1["id"])
+    assert sensor["subject_type"] == "well"
+    assert sensor["subject_id"] == dev1["subject_id"]
+
+    site2 = client.post("/api/sites", json={
+        "name": "other tenant site", "wilaya": "Laghouat", "lat": 33.7, "lon": 2.8
+    }, headers=h2)
+    assert site2.status_code == 201
+    well2 = client.post("/api/water/wells", json={
+        "site_id": site2.json()["id"], "name": "other tenant well", "depth_m": 35
+    }, headers=h2)
+    assert well2.status_code == 201
+
+    cross = client.post(f"{TEL}/devices", json={
+        "name": "cross tenant device",
+        "device_type": "well_controller",
+        "subject_type": "well",
+        "subject_id": well2.json()["id"],
+        "configuration": {},
+    }, headers=h1)
+    assert cross.status_code == 404
+    assert cross.json()["detail"]["code"] == "SUBJECT_NOT_FOUND"
+
+    incomplete = client.post(f"{TEL}/devices", json={
+        "name": "incomplete subject",
+        "device_type": "generic_sensor_node",
+        "subject_type": "well",
+        "configuration": {},
+    }, headers=h1)
+    assert incomplete.status_code == 422
+    assert incomplete.json()["detail"]["code"] == "SUBJECT_REFERENCE_INCOMPLETE"

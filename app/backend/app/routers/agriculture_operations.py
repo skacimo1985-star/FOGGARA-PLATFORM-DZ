@@ -13,7 +13,13 @@ from ..deps import api_error, get_current_user, require_reviewer
 from ..models import AgriParcel, AgriObservation, AgriPlan, AgriTask, Evidence, Measurement, Project, Site, User
 from ..services.agriculture_operations import irrigation_scenario
 from ..services.parcel_geometry import ParcelGeometryError, normalize_parcel_boundary
-from ..services.service_delivery import irrigation_water_assessment, soil_assessment, soil_assessment_values
+from ..services.service_delivery import (
+    irrigation_water_assessment,
+    soil_assessment,
+    soil_assessment_values,
+    soil_data_gaps,
+    water_data_gaps,
+)
 
 operations_router = APIRouter(prefix='/api/agriculture', tags=['agriculture-operations'])
 
@@ -40,6 +46,7 @@ class ParcelIn(Input):
                 raise ValueError(str(exc)) from exc
             self.boundary_geojson = normalized
             self.lon, self.lat = meta['centroid']
+            self.area_ha = meta['estimated_area_ha']
         elif (self.lat is None) != (self.lon is None):
             raise ValueError('Latitude and longitude must be supplied together')
         return self
@@ -68,11 +75,12 @@ METRICS = {
     'ph': ('pH', 0, 14), 'nitrogen': ('mg/kg', 0, 1000000),
     'phosphorus': ('mg/kg', 0, 1000000), 'potassium': ('mg/kg', 0, 1000000),
     'soc': ('%', 0, 100), 'moisture': ('% VWC', 0, 100),
-    'ndvi': ('index', -1, 1), 'lswi': ('index', -1, 1), 'ec': ('dS/m', 0, 100),
+    'ndvi': ('index', -1, 1), 'evi': ('index', -2, 2), 'savi': ('index', -1.5, 1.5),
+    'ndwi': ('index', -1, 1), 'lswi': ('index', -1, 1), 'ec': ('dS/m', 0, 100),
 }
 class ObservationIn(Input):
     parcel_id: int = Field(gt=0)
-    metric: Literal['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','lswi','ec']
+    metric: Literal['ph','nitrogen','phosphorus','potassium','soc','moisture','ndvi','evi','savi','ndwi','lswi','ec']
     value: float
     source_type: Literal['lab','sensor','satellite','manual']
     source_ref: str = Field(min_length=3, max_length=300)
@@ -86,7 +94,7 @@ class ObservationIn(Input):
         if self.observed_at > datetime.now(timezone.utc):
             raise ValueError('Observation cannot be in the future')
         # No unsupported NPK/pH inference is admitted as a laboratory measurement.
-        if self.source_type == 'satellite' and self.metric not in ('ndvi', 'lswi', 'moisture'):
+        if self.source_type == 'satellite' and self.metric not in ('ndvi', 'evi', 'savi', 'ndwi', 'lswi', 'moisture'):
             raise ValueError('Satellite soil chemistry requires a separately validated model')
         return self
 
@@ -179,6 +187,7 @@ def verified_soil_assessment(db: Session, user: User, parcel: AgriParcel):
             "findings": [],
             "actions": [],
             "coverage": [],
+            "data_gaps": soil_data_gaps({}),
             "measurement_ids": [],
             "measurement_sources": [],
             "limitations": ["VERIFIED_PARCEL_SOIL_MEASUREMENTS_REQUIRED"],
@@ -195,6 +204,7 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
     if project is None or project.resource_id is None:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'data_gaps': water_data_gaps({}),
                 'measurement_ids': [], 'measurement_sources': [], 'resource_id': None,
                 'limitations': ['PROJECT_WATER_RESOURCE_REQUIRED', 'VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
     rows = list(db.scalars(select(Measurement).where(
@@ -206,22 +216,26 @@ def verified_water_assessment(db: Session, user: User, project: Project | None):
         Measurement.verification_status == 'verified',
     ).order_by(Measurement.measured_at.desc(), Measurement.id.desc()).limit(100)))
     latest = {}
+    units = {}
     ids = []
     sources = []
     for row in rows:
         if row.parameter not in latest:
             latest[row.parameter] = float(row.value)
+            units[row.parameter] = row.unit
             ids.append(row.id)
             sources.append({'measurement_id': row.id, 'parameter': row.parameter, 'source': row.source, 'method': row.method})
     if not latest:
         return {'service': 'irrigation_water_screening', 'evidence_status': 'MISSING', 'decision_status': 'UNAVAILABLE',
                 'inputs': {}, 'findings': [], 'actions': [], 'coverage': [],
+                'data_gaps': water_data_gaps({}),
                 'measurement_ids': [], 'measurement_sources': [], 'resource_id': project.resource_id,
                 'limitations': ['VERIFIED_WATER_MEASUREMENTS_REQUIRED']}
-    result = irrigation_water_assessment(latest)
+    result = irrigation_water_assessment(latest, units=units)
     result['evidence_status'] = 'COMPUTED_FROM_VERIFIED_MEASUREMENTS'
     result['measurement_ids'] = ids
     result['measurement_sources'] = sources
+    result['measurement_units'] = units
     result['resource_id'] = project.resource_id
     return result
 
@@ -267,6 +281,7 @@ def update_parcel(identity: int, payload: ParcelUpdate, user: User = Depends(get
         meta = None
         if row.boundary_geojson is not None:
             _normalized, meta = normalize_parcel_boundary(row.boundary_geojson)
+            row.area_ha = meta['estimated_area_ha']
         audit(db, user, 'boundary_update', 'agri_parcels', entity_id=row.id,
               meta={'has_boundary': row.boundary_geojson is not None, 'geometry': meta})
     return record(db, user, row, 'update')

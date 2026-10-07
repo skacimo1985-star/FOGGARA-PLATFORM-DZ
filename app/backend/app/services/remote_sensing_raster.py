@@ -155,6 +155,9 @@ def _compute_index_array(index_key: str, bands: Mapping[str, np.ndarray]) -> np.
     if definition.key == "ndwi":
         green, nir = bands["B03"], bands["B08"]
         return _ratio_array(green - nir, green + nir)
+    if definition.key == "lswi":
+        nir, swir = bands["B08"], bands["B11"]
+        return _ratio_array(nir - swir, nir + swir)
     raise RasterStatisticsError(f"unsupported index: {definition.key}")
 
 
@@ -404,7 +407,11 @@ def _colorize_index(index_key: str, values: np.ndarray, valid_mask: np.ndarray) 
     return rgba
 
 
-def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict]:
+def _render_index_preview_png_unlocked(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
     analysis_bbox = validate_analysis_bbox(bbox)
     assets = plan.get("required_assets")
     cloud_mask = plan.get("cloud_mask")
@@ -461,8 +468,26 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
     cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
     combined_invalid = source_invalid | scl_invalid | cloud_invalid
 
+    analysis_mask = np.ones((height, width), dtype=bool)
+    if geometry_wgs84 is not None:
+        if not isinstance(geometry_wgs84, Mapping) or geometry_wgs84.get("type") != "Polygon":
+            raise RasterStatisticsError("analysis geometry must be a GeoJSON Polygon")
+        try:
+            projected_geometry = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+            analysis_mask = geometry_mask(
+                [projected_geometry],
+                out_shape=(height, width),
+                transform=target_transform,
+                invert=True,
+                all_touched=False,
+            )
+        except (RasterioError, ValueError, TypeError) as exc:
+            raise RasterStatisticsError("parcel polygon could not be projected onto the preview grid") from exc
+        if not np.any(analysis_mask):
+            raise RasterStatisticsError("parcel polygon does not cover any preview pixels")
+
     index_values = _compute_index_array(str(plan.get("index") or ""), band_arrays)
-    valid_mask = ~(combined_invalid | ~np.isfinite(index_values))
+    valid_mask = analysis_mask & ~(combined_invalid | ~np.isfinite(index_values))
     rgba = _colorize_index(str(plan.get("index") or ""), index_values, valid_mask)
     png = _encode_rgba_png(rgba)
     metadata = {
@@ -472,7 +497,8 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
         "analysis_bbox_wgs84": list(analysis_bbox),
         "width": width,
         "height": height,
-        "valid_fraction": float(np.count_nonzero(valid_mask) / max(width * height, 1)),
+        "valid_fraction": float(np.count_nonzero(valid_mask) / max(np.count_nonzero(analysis_mask), 1)),
+        "geometry_mask_applied": geometry_wgs84 is not None,
         "derived_index": "COMPUTED",
         "verified": False,
         "persisted": False,
@@ -480,10 +506,134 @@ def _render_index_preview_png_unlocked(plan: Mapping, bbox) -> tuple[bytes, dict
     return png, metadata
 
 
-def render_index_preview_png(plan: Mapping, bbox) -> tuple[bytes, dict]:
+def render_index_preview_png(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
     if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
         raise RasterCapacityError("raster analysis capacity is busy")
     try:
-        return _render_index_preview_png_unlocked(plan, bbox)
+        return _render_index_preview_png_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84)
+    finally:
+        _RASTER_ANALYSIS_SEMAPHORE.release()
+
+
+def _render_true_color_preview_png_unlocked(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
+    analysis_bbox = validate_analysis_bbox(bbox)
+    assets = plan.get("required_assets")
+    cloud_mask = plan.get("cloud_mask")
+    if not isinstance(assets, list) or len(assets) < 3 or not isinstance(cloud_mask, Mapping):
+        raise RasterStatisticsError("true-color processing plan is incomplete")
+    scl_asset = cloud_mask.get("asset")
+    if not isinstance(scl_asset, Mapping):
+        raise RasterStatisticsError("true-color processing plan has no SCL asset")
+
+    try:
+        with rasterio.Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif,.TIF",
+            GDAL_HTTP_MAX_RETRY="1",
+            GDAL_HTTP_RETRY_DELAY="0.2",
+            GDAL_HTTP_TIMEOUT="10",
+            GDAL_HTTP_CONNECTTIMEOUT="5",
+            AWS_NO_SIGN_REQUEST="YES",
+        ):
+            target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
+            bands: dict[str, np.ndarray] = {}
+            source_invalid = np.zeros((height, width), dtype=bool)
+            for asset in assets:
+                if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
+                    raise RasterStatisticsError("true-color plan contains an invalid band asset")
+                values, invalid = _read_aligned(
+                    asset,
+                    target_crs=target_crs,
+                    target_transform=target_transform,
+                    width=width,
+                    height=height,
+                    resampling=Resampling.bilinear,
+                )
+                scaled = _scaled(values, asset)
+                source_invalid |= invalid | ~np.isfinite(scaled)
+                bands[str(asset["band"])] = scaled
+            scl_values, scl_invalid = _read_aligned(
+                scl_asset,
+                target_crs=target_crs,
+                target_transform=target_transform,
+                width=width,
+                height=height,
+                resampling=Resampling.nearest,
+            )
+    except RasterStatisticsError:
+        raise
+    except (RasterioError, OSError, ValueError) as exc:
+        raise RasterStatisticsError("trusted Sentinel RGB raster could not be read") from exc
+
+    required = ("B04", "B03", "B02")
+    if any(key not in bands for key in required):
+        raise RasterStatisticsError("true-color plan is missing RGB bands")
+
+    safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
+    rounded_scl = safe_scl.astype(np.int16, copy=False)
+    cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
+    analysis_mask = np.ones((height, width), dtype=bool)
+    if geometry_wgs84 is not None:
+        if not isinstance(geometry_wgs84, Mapping) or geometry_wgs84.get("type") != "Polygon":
+            raise RasterStatisticsError("analysis geometry must be a GeoJSON Polygon")
+        projected_geometry = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+        analysis_mask = geometry_mask(
+            [projected_geometry],
+            out_shape=(height, width),
+            transform=target_transform,
+            invert=True,
+            all_touched=False,
+        )
+        if not np.any(analysis_mask):
+            raise RasterStatisticsError("parcel polygon does not cover any RGB preview pixels")
+
+    valid_mask = analysis_mask & ~(source_invalid | scl_invalid | cloud_invalid)
+    rgba = np.zeros((height, width, 4), dtype=np.uint8)
+    for channel, band_name in enumerate(required):
+        values = bands[band_name]
+        valid_values = values[valid_mask]
+        if valid_values.size == 0:
+            continue
+        low, high = np.percentile(valid_values, [2.0, 98.0])
+        if not math.isfinite(float(low)) or not math.isfinite(float(high)) or high <= low:
+            low, high = float(np.min(valid_values)), float(np.max(valid_values))
+        span = max(float(high - low), 1e-6)
+        normalized = np.clip((values - np.float32(low)) / np.float32(span), 0.0, 1.0)
+        normalized = np.power(normalized, np.float32(0.9))
+        rgba[..., channel] = np.where(valid_mask, (normalized * 255.0).astype(np.uint8), 0)
+    rgba[..., 3] = np.where(valid_mask, 255, 0).astype(np.uint8)
+
+    png = _encode_rgba_png(rgba)
+    return png, {
+        "scene_id": plan.get("scene_id"),
+        "kind": "true_color",
+        "analysis_bbox_wgs84": list(analysis_bbox),
+        "width": width,
+        "height": height,
+        "valid_fraction": float(np.count_nonzero(valid_mask) / max(np.count_nonzero(analysis_mask), 1)),
+        "geometry_mask_applied": geometry_wgs84 is not None,
+        "visualization": "COMPUTED",
+        "verified": False,
+        "persisted": False,
+    }
+
+
+def render_true_color_preview_png(
+    plan: Mapping,
+    bbox,
+    geometry_wgs84: Mapping | None = None,
+) -> tuple[bytes, dict]:
+    if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
+        raise RasterCapacityError("raster analysis capacity is busy")
+    try:
+        return _render_true_color_preview_png_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84)
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from app import config as app_config
 from app.models import AuditLog
 from app.services.agriculture_operations import irrigation_scenario, vegetation_index
+from app.services.parcel_geometry import normalize_parcel_boundary
 from tests.conftest import login
 
 @pytest.fixture()
@@ -638,3 +639,101 @@ def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):
     other_geo = client.get('/api/gis/parcels.geojson', headers=h2)
     assert other_geo.status_code == 200
     assert other_geo.json()['features'] == []
+
+
+
+def test_parcel_boundary_is_authoritative_for_area_and_centroid(client, world):
+    h = login(client, 'o1m@t.dz')
+    boundary = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8700, 33.8000],
+            [2.8720, 33.8000],
+            [2.8720, 33.8020],
+            [2.8700, 33.8020],
+            [2.8700, 33.8000],
+        ]],
+    }
+    _normalized, meta = normalize_parcel_boundary(boundary)
+    created = client.post('/api/agriculture/parcels', headers=h, json={
+        'name': 'Mapped field',
+        'crop': 'wheat',
+        'area_ha': 999.0,
+        'location': 'Laghouat',
+        'boundary_geojson': boundary,
+    })
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert float(body['area_ha']) == pytest.approx(meta['estimated_area_ha'], rel=1e-6)
+    assert float(body['area_ha']) != 999.0
+    assert float(body['lon']) == pytest.approx(meta['centroid'][0], rel=1e-6)
+    assert float(body['lat']) == pytest.approx(meta['centroid'][1], rel=1e-6)
+    assert meta['estimated_perimeter_m'] > 0
+
+    larger = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8700, 33.8000],
+            [2.8740, 33.8000],
+            [2.8740, 33.8040],
+            [2.8700, 33.8040],
+            [2.8700, 33.8000],
+        ]],
+    }
+    _normalized2, meta2 = normalize_parcel_boundary(larger)
+    patched = client.patch(
+        f"/api/agriculture/parcels/{body['id']}",
+        headers=h,
+        json={'boundary_geojson': larger},
+    )
+    assert patched.status_code == 200, patched.text
+    assert float(patched.json()['area_ha']) == pytest.approx(meta2['estimated_area_ha'], rel=1e-6)
+    assert float(patched.json()['area_ha']) > float(body['area_ha'])
+
+
+
+def test_live_sentinel_can_persist_non_ndvi_index(client, world, monkeypatch):
+    import app.routers.satellite_parcels as satellite
+    h = login(client, 'o1m@t.dz')
+    parcel_id = _satellite_parcel(client, h)
+    scene_id = 'S2A_MULTI_INDEX_2026'
+    acquired = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    seen = {}
+
+    monkeypatch.setattr(satellite, '_provider_item', lambda value: (
+        value,
+        {'id': value, 'collection': 'sentinel-2-l2a', 'properties': {'datetime': acquired}},
+    ))
+    def build(item, index):
+        seen['index'] = index
+        return {'scene_id': item['id'], 'index': index}
+    monkeypatch.setattr(satellite, 'build_processing_plan', build)
+    monkeypatch.setattr(satellite, 'compute_index_statistics', lambda plan, bbox, geometry_wgs84=None: {
+        'scene_id': scene_id,
+        'index': plan['index'],
+        'processing_plan_fingerprint': 'sha256:multi-index',
+        'statistics': {'mean': 0.41, 'min': 0.1, 'max': 0.7},
+        'pixels': {'valid': 90, 'total': 100, 'valid_fraction': .9},
+    })
+
+    response = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': scene_id, 'index': 'evi'},
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert seen['index'] == 'evi'
+    assert body['observation']['metric'] == 'evi'
+    assert body['observation']['evidence_status'] == 'INFERRED'
+    assert body['computation'] == 'SENTINEL_SCL_MASKED_EVI'
+    assert ':evi:' in body['observation']['source_ref']
+
+    duplicate = client.post(
+        f'/api/agriculture/parcels/{parcel_id}/remote-sensing/analyze',
+        headers=h,
+        json={'scene_id': scene_id, 'index': 'evi'},
+    )
+    assert duplicate.status_code == 201
+    assert duplicate.json()['created'] is False
+    assert duplicate.json()['observation']['id'] == body['observation']['id']

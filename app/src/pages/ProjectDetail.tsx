@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { BrainCircuit, Database, Droplets, Gavel, ListChecks, MapPinned, Network, ScrollText, ShieldCheck, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
@@ -24,7 +24,13 @@ const STATUSES = ["draft", "active", "suspended", "closed"] as const;
 export default function ProjectDetail() {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const pid = Number(id);
+  const requestedTab = searchParams.get("tab");
+  const projectTabs = ["overview","data","evidence","reviews","actions","audit","assurance","agriculture"] as const;
+  const defaultTab = projectTabs.includes(requestedTab as typeof projectTabs[number])
+    ? requestedTab as typeof projectTabs[number]
+    : "overview";
 
   const [project, setProject] = useState<Project | null>(null);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -185,7 +191,7 @@ export default function ProjectDetail() {
         </div>
       </section>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="h-auto max-w-full flex-wrap gap-1 [&>button]:h-auto">
           <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="data">{t("project.tabs.data")}</TabsTrigger>

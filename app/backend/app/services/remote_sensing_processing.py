@@ -28,6 +28,12 @@ SCL_ASSET_ALIASES = ("scl", "SCL")
 MASKED_SCL_CLASSES = (0, 1, 3, 8, 9, 10, 11)
 PLAN_VERSION = "foggara-raster-plan-v1"
 
+RGB_BAND_ALIASES = {
+    "B04": ("red", "B04"),
+    "B03": ("green", "B03"),
+    "B02": ("blue", "B02"),
+}
+
 
 class ProcessingPlanError(ValueError):
     pass
@@ -220,6 +226,58 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
         "provenance": {
             "provider_metadata": "OBSERVED",
             "derived_index": "COMPUTED",
+            "verified": False,
+        },
+    }
+
+
+def build_true_color_plan(item: Mapping) -> dict:
+    """Build a fixed-provider Sentinel-2 RGB preview plan."""
+    scene_id = validate_scene_id(str(item.get("id") or ""))
+    if item.get("collection") != SENTINEL_COLLECTION:
+        raise ProcessingPlanError("STAC item is not from the Sentinel-2 L2A collection")
+    assets = item.get("assets")
+    if not isinstance(assets, Mapping):
+        raise ProcessingPlanError("STAC item has no asset map")
+
+    resolved = [
+        _resolve_asset(assets, logical_band=band, aliases=aliases)
+        for band, aliases in RGB_BAND_ALIASES.items()
+    ]
+    scl = _resolve_asset(assets, logical_band="SCL", aliases=SCL_ASSET_ALIASES)
+    public_assets = [asset.public_dict() for asset in resolved]
+    public_scl = scl.public_dict()
+    fingerprint_input = {
+        "scene_id": scene_id,
+        "collection": SENTINEL_COLLECTION,
+        "kind": "true_color",
+        "assets": public_assets,
+        "scl": public_scl,
+        "masked_scl_classes": list(MASKED_SCL_CLASSES),
+        "target_resolution_m": 10,
+    }
+    fingerprint = hashlib.sha256(
+        json.dumps(fingerprint_input, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return {
+        "plan_version": PLAN_VERSION,
+        "fingerprint_sha256": fingerprint,
+        "provider": "Element 84 Earth Search",
+        "collection": SENTINEL_COLLECTION,
+        "scene_id": scene_id,
+        "kind": "true_color",
+        "source_item_url": item_url(scene_id),
+        "target_resolution_m": 10,
+        "required_assets": public_assets,
+        "cloud_mask": {
+            "asset": public_scl,
+            "method": "sentinel-2-scl",
+            "masked_classes": list(MASKED_SCL_CLASSES),
+            "resampling": "nearest",
+        },
+        "provenance": {
+            "provider_metadata": "OBSERVED",
+            "rgb_visualization": "COMPUTED",
             "verified": False,
         },
     }

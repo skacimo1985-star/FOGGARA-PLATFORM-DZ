@@ -6,3 +6,6 @@ c40a5f01b0b86663d3495adcf6f6010b9923aa5a:app/backend/tests/test_security_hardeni
 
 # Reviewed synthetic negative-config fixture introduced by integration; replaced with generated test key.
 3101dbdb63eb81e0185afd8c1f5b586b5324221a:app/backend/tests/test_security_claims.py:generic-api-key:87
+
+# Self-hosted CI: synthetic one-run JWT fixture; removed and replaced by runtime-generated value.
+7a377920bc8e7cc3572ab331b663ee54f03c34bb:.github/workflows/selfhosted-backend.yml:generic-api-key:37

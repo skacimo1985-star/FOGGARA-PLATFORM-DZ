@@ -5,7 +5,30 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: cd app && npm ci && npm run build && pip install -r backend/requirements.lock
+    buildCommand: >-
+      cd app &&
+      npm ci &&
+      npm run build &&
+      npm run audit:dependencies &&
+      cd backend &&
+      python -m pip install -r requirements.lock -r requirements-dev.txt &&
+      python -m pip install pip-audit==2.10.1 bandit==1.8.6 &&
+      python -m pip_audit -r requirements.lock &&
+      python -m bandit -q -r app -ll &&
+      python -m pytest
+      tests/test_bootstrap.py
+      tests/test_wilayas.py
+      tests/test_stac.py
+      tests/test_remote_sensing_catalog.py
+      tests/test_remote_sensing_indices.py
+      tests/test_remote_sensing_processing.py
+      tests/test_service_delivery_analysis.py
+      tests/test_agriculture_operations.py
+      tests/test_gis_infrastructure.py
+      tests/test_gis_iot_bindings.py
+      tests/test_telemetry_simulator.py
+      tests/test_system_readiness.py
+      -q -ra --tb=short
     startCommand: cd app/backend && python -m alembic upgrade head && python seed.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     healthCheckPath: /api/health
     envVars:

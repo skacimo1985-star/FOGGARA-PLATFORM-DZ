@@ -19,12 +19,14 @@ def processing_plan(index="ndvi"):
         "B03": {"band": "B03", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B03.tif", "scale": 0.0001, "offset": 0.0},
         "B04": {"band": "B04", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B04.tif", "scale": 0.0001, "offset": 0.0},
         "B08": {"band": "B08", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B08.tif", "scale": 0.0001, "offset": 0.0},
+        "B11": {"band": "B11", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B11.tif", "scale": 0.0001, "offset": 0.0},
     }
     needed = {
         "ndvi": ["B04", "B08"],
         "evi": ["B02", "B04", "B08"],
         "savi": ["B04", "B08"],
         "ndwi": ["B03", "B08"],
+        "lswi": ["B08", "B11"],
     }[index]
     return {
         "scene_id": "S2A_TEST_L2A",
@@ -43,6 +45,22 @@ def processing_plan(index="ndvi"):
             "method": "sentinel-2-scl",
             "masked_classes": [0, 1, 3, 8, 9, 10, 11],
         },
+    }
+
+
+def true_color_plan():
+    base = processing_plan("evi")
+    required = {
+        "B02": {"band": "B02", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B02.tif", "scale": 0.0001, "offset": 0.0},
+        "B03": {"band": "B03", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B03.tif", "scale": 0.0001, "offset": 0.0},
+        "B04": {"band": "B04", "host": TRUSTED_COG_HOST, "path": f"{PATH_ROOT}/B04.tif", "scale": 0.0001, "offset": 0.0},
+    }
+    return {
+        "scene_id": base["scene_id"],
+        "kind": "true_color",
+        "fingerprint_sha256": "b" * 64,
+        "required_assets": [required["B04"], required["B03"], required["B02"]],
+        "cloud_mask": base["cloud_mask"],
     }
 
 
@@ -69,6 +87,7 @@ def raster_assets(monkeypatch):
         "B03": make_memfile(base * 2000, dtype="uint16"),
         "B04": make_memfile(base * 2000, dtype="uint16"),
         "B08": make_memfile(base * 6000, dtype="uint16"),
+        "B11": make_memfile(base * 3000, dtype="uint16"),
         "SCL": make_memfile(
             np.array(
                 [
@@ -110,7 +129,7 @@ def test_live_ndvi_statistics_use_scale_and_scl_mask(raster_assets):
     assert result["provenance"]["persisted"] is False
 
 
-@pytest.mark.parametrize("index", ["ndvi", "evi", "savi", "ndwi"])
+@pytest.mark.parametrize("index", ["ndvi", "evi", "savi", "ndwi", "lswi"])
 def test_all_indices_produce_finite_statistics(raster_assets, index):
     result = remote_sensing_raster.compute_index_statistics(
         processing_plan(index),
@@ -188,6 +207,7 @@ def provider_item():
             "green": asset("B03"),
             "red": asset("B04"),
             "nir": asset("B08"),
+            "swir16": asset("B11", gsd=20),
             "scl": scl,
         },
     }
@@ -361,3 +381,51 @@ def test_polygon_geometry_masks_statistics_to_field_boundary(raster_assets):
     assert 0 < clipped["pixels"]["total"] < full["pixels"]["total"]
     assert 0 <= clipped["pixels"]["valid"] <= clipped["pixels"]["total"]
     assert clipped["statistics"]["mean"] == pytest.approx(0.5, abs=1e-5)
+
+
+
+def test_preview_png_applies_parcel_polygon_mask(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    full_png, full_meta = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"), TEST_BBOX,
+    )
+    clipped_png, clipped_meta = remote_sensing_raster.render_index_preview_png(
+        processing_plan("ndvi"), TEST_BBOX, geometry_wgs84=geometry,
+    )
+    assert full_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert clipped_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert clipped_meta["geometry_mask_applied"] is True
+    assert full_meta["geometry_mask_applied"] is False
+    assert clipped_png != full_png
+    assert 0 < clipped_meta["valid_fraction"] <= 1
+
+
+
+def test_true_color_preview_png_is_geometry_masked(raster_assets):
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [3.0, 0.0],
+            [3.000175, 0.0],
+            [3.000175, 0.00035],
+            [3.0, 0.00035],
+            [3.0, 0.0],
+        ]],
+    }
+    png, metadata = remote_sensing_raster.render_true_color_preview_png(
+        true_color_plan(), TEST_BBOX, geometry_wgs84=geometry,
+    )
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert metadata["kind"] == "true_color"
+    assert metadata["geometry_mask_applied"] is True
+    assert metadata["visualization"] == "COMPUTED"
+    assert metadata["verified"] is False

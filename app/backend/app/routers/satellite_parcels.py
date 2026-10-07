@@ -8,8 +8,9 @@ import hashlib
 import json
 import math
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,8 @@ from ..services.remote_sensing_raster import (
     RasterCapacityError,
     RasterStatisticsError,
     compute_index_statistics,
+    render_index_preview_png,
+    render_true_color_preview_png,
     validate_analysis_bbox,
 )
 from .agriculture_operations import METRICS, out, own
@@ -38,6 +41,7 @@ MIN_VALID_PIXELS = 9
 class AnalyzeIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     scene_id: str = Field(min_length=3, max_length=120)
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = "ndvi"
 
 
 def _analysis_target(parcel: AgriParcel) -> tuple[list[float], dict | None, str, str]:
@@ -118,6 +122,113 @@ def parcel_scenes(
     }
 
 
+@router.get("/parcels/{identity}/remote-sensing/statistics")
+def parcel_index_statistics(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = Query(default="ndvi"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, analysis_fingerprint = _analysis_target(parcel)
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+        stats = compute_index_statistics(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Raster analysis could not be completed")
+    return {
+        **stats,
+        "parcel_id": parcel.id,
+        "sample_geometry": sample_geometry,
+        "analysis_fingerprint": analysis_fingerprint,
+        "stored": False,
+        "evidence_status": "COMPUTED",
+    }
+
+
+@router.get("/parcels/{identity}/remote-sensing/true-color.png")
+def parcel_true_color_preview(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, _analysis_fingerprint = _analysis_target(parcel)
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_true_color_plan(item)
+        png, metadata = render_true_color_preview_png(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted RGB assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "True-color raster preview could not be completed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Visualization": "TRUE_COLOR",
+            "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Sample-Geometry": sample_geometry,
+            "X-FOGGARA-Geometry-Mask": "true" if metadata.get("geometry_mask_applied") else "false",
+            "X-FOGGARA-Verified": "false",
+        },
+    )
+
+
+@router.get("/parcels/{identity}/remote-sensing/preview.png")
+def parcel_index_preview(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    index: Literal["ndvi", "evi", "savi", "ndwi", "lswi"] = Query(default="ndvi"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, _analysis_fingerprint = _analysis_target(parcel)
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+        png, metadata = render_index_preview_png(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted preview assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Raster preview could not be completed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Index": str(metadata["index"]),
+            "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Sample-Geometry": sample_geometry,
+            "X-FOGGARA-Geometry-Mask": "true" if metadata.get("geometry_mask_applied") else "false",
+            "X-FOGGARA-Verified": "false",
+        },
+    )
+
+
 @router.post("/parcels/{identity}/remote-sensing/analyze", status_code=201)
 def analyze_parcel(
     identity: int,
@@ -136,25 +247,26 @@ def analyze_parcel(
         scene_id = validate_scene_id(payload.scene_id)
     except ProcessingPlanError:
         api_error(422, "INVALID_SCENE_ID", "Scene ID is invalid")
-    source_ref = f"{PROVIDER}:{scene_id}:ndvi:{analysis_fingerprint}"
+    index_key = payload.index
+    source_ref = f"{PROVIDER}:{scene_id}:{index_key}:{analysis_fingerprint}"
     prior = db.scalar(select(AgriObservation).where(
         AgriObservation.org_id == user.org_id,
         AgriObservation.parcel_id == parcel.id,
-        AgriObservation.metric == "ndvi",
+        AgriObservation.metric == index_key,
         AgriObservation.source_type == "satellite",
         AgriObservation.source_ref == source_ref,
     ))
     if prior is not None:
         return {
             "created": False, "observation": out(prior),
-            "provenance": "INFERRED", "computation": "SENTINEL_SCL_MASKED_NDVI",
+            "provenance": "INFERRED", "computation": f"SENTINEL_SCL_MASKED_{index_key.upper()}",
             "sample_geometry": sample_geometry, "analysis_fingerprint": analysis_fingerprint,
         }
 
     _, item = _provider_item(scene_id)
     acquired_at = _scene_time(item)
     try:
-        plan = build_processing_plan(item, "ndvi")
+        plan = build_processing_plan(item, index_key)
         stats = compute_index_statistics(plan, bounds, geometry_wgs84=geometry)
     except ProcessingPlanError:
         api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
@@ -171,13 +283,13 @@ def analyze_parcel(
     if (
         count < MIN_VALID_PIXELS or fraction < MIN_VALID_FRACTION
         or not isinstance(mean, (float, int)) or not math.isfinite(mean)
-        or not (-1 <= mean <= 1)
+        or not (METRICS[index_key][1] <= mean <= METRICS[index_key][2])
     ):
         api_error(422, "LOW_QUALITY_SATELLITE_SCENE", "Cloud or no-data mask leaves insufficient pixels")
 
     row = AgriObservation(
-        org_id=user.org_id, parcel_id=parcel.id, metric="ndvi",
-        value=round(float(mean), 6), unit=METRICS["ndvi"][0],
+        org_id=user.org_id, parcel_id=parcel.id, metric=index_key,
+        value=round(float(mean), 6), unit=METRICS[index_key][0],
         source_type="satellite", source_ref=source_ref, observed_at=acquired_at,
         evidence_status="INFERRED", created_by=user.id, is_demo=False,
     )
@@ -186,7 +298,7 @@ def analyze_parcel(
     audit(db, user, "sentinel_index_computed", "agri_observations", entity_id=row.id,
           meta={
               "parcel_id": parcel.id, "scene_id": scene_id, "provider": PROVIDER,
-              "index": "ndvi", "algorithm": "SENTINEL_SCL_MASKED_NDVI",
+              "index": index_key, "algorithm": f"SENTINEL_SCL_MASKED_{index_key.upper()}",
               "processing_plan_fingerprint": stats.get("processing_plan_fingerprint"),
               "valid_fraction": fraction, "valid_pixels": count,
               "total_pixels": int(pixels.get("total") or 0),
@@ -200,6 +312,6 @@ def analyze_parcel(
     db.commit()
     return {
         "created": True, "observation": out(row), "statistics": stats,
-        "provenance": "INFERRED", "computation": "SENTINEL_SCL_MASKED_NDVI",
+        "provenance": "INFERRED", "computation": f"SENTINEL_SCL_MASKED_{index_key.upper()}",
         "sample_geometry": sample_geometry, "analysis_fingerprint": analysis_fingerprint,
     }

@@ -54,6 +54,14 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         display_range=(-1.0, 1.0),
         colormap_family="water",
     ),
+    "lswi": IndexDefinition(
+        key="lswi",
+        label="LSWI / canopy water index",
+        required_bands=("B08", "B11"),
+        stac_assets={"B08": ("nir", "B08"), "B11": ("swir16", "B11")},
+        display_range=(-1.0, 1.0),
+        colormap_family="water",
+    ),
 }
 
 
@@ -120,6 +128,10 @@ def compute_index(
     if normalized == "ndwi":
         green, nir = values["B03"], values["B08"]
         return _safe_ratio(green - nir, green + nir)
+
+    if normalized == "lswi":
+        nir, swir = values["B08"], values["B11"]
+        return _safe_ratio(nir - swir, nir + swir)
 
     raise AssertionError(f"Unhandled index definition: {normalized}")
 

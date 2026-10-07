@@ -20,6 +20,14 @@ type Readiness = {
   core: {
     database: { status: string; latency_ms: number; schema_revision: string; engine: string };
     environment: { mode: string; production_mode: boolean; app_version: string };
+    deployment: {
+      provider: string;
+      release_id: string;
+      git_commit: string | null;
+      service_name: string | null;
+      public_hostname: string | null;
+      source: string;
+    };
   };
   integrations: {
     satellite: { status: string; provenance: string };
@@ -62,8 +70,8 @@ export default function CommandCenter() {
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const copy = lang === "fr" ? {
     eyebrow: "CENTRE DE COMMANDE NATIONAL · WEFEH",
-    title: "Du terrain à la décision.",
-    intro: "Une vue opérationnelle unique des projets, ressources, télémétrie, preuves et décisions de FOGGARA-DZ.",
+    title: "Gérer une ressource. Prouver ses données. Décider et agir.",
+    intro: "FOGGARA-DZ relie territoire, ressources WEFEH, données vérifiables, analyse, décision, action et suivi dans un même contexte opérationnel.",
     live: "Données connectées", projects: "Projets", sites: "Sites", telemetry: "Lectures récentes",
     decisions: "Décisions à revoir", evidence: "Éléments à revoir", infrastructure: "Appareils & capteurs",
     open: "Ouvrir", domains: "Espaces opérationnels", flow: "Chaîne de décision FOGGARA",
@@ -71,12 +79,14 @@ export default function CommandCenter() {
     water: "Eau", agriculture: "Agriculture", gis: "SIG national", telemetryLabel: "IoT & télémétrie",
     decisionsLabel: "Décisions", automation: "Automatisation", ai: "Insights IA", evidenceLabel: "Preuves",
     updated: "Actualisé", review: "File de revue", national: "Couverture nationale", activeProjects: "Projets actifs", openProject: "Ouvrir", viewSite: "Voir sur la carte", noProjects: "Aucun projet opérationnel",
-    readinessTitle: "Préparation d’exécution", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
+    readinessTitle: "Préparation d’exécution", release: "Version déployée", runtime: "Runtime", database: "Base de données", aiMode: "IA", weather: "Météo", satelliteLabel: "Satellite", automationLabel: "Automatisation", assurance: "Garanties restant à prouver", notCertified: "Non certifié production",
     setupTitle: "Initialiser les données opérationnelles", setupBody: "Créez votre premier site, projet, ressource en eau et parcelle avec des données réelles.", setupAction: "Configurer maintenant",
+    managedTitle: "Commencer par ce que vous gérez", managedIntro: "Choisissez l’objet opérationnel. FOGGARA ouvre ensuite ses données, analyses, décisions et actions dans le même contexte.", landAsset: "Parcelle / terrain", landBody: "Limites · satellite · sol · irrigation", waterAsset: "Ressource en eau", waterBody: "Puits · réservoir · pompage · qualité", projectAsset: "Projet", projectBody: "Données · preuves · décisions · actions", deviceAsset: "Équipement / capteur", deviceBody: "Appareils · capteurs · télémétrie · Edge",
+    actionsTitle: "Services opérationnels", analysisAction: "Centre d’analyses", drawField: "Délimiter une parcelle", satelliteAction: "Analyser Sentinel", irrigationAction: "Calculer l’irrigation", iotAction: "Appareils & lectures", projectData: "Mesures & preuves", decisionAction: "Construire une décision", serviceAction: "Demander un service", metrologyAction: "Métrologie & étalonnage",
   } : lang === "en" ? {
     eyebrow: "NATIONAL COMMAND CENTER · WEFEH",
-    title: "From field reality to decision.",
-    intro: "One operational view of FOGGARA-DZ projects, resources, telemetry, evidence and decisions.",
+    title: "Manage a resource. Prove its data. Decide and act.",
+    intro: "FOGGARA-DZ connects territory, WEFEH resources, verifiable data, analysis, decision, action and monitoring in one operational context.",
     live: "Connected data", projects: "Projects", sites: "Sites", telemetry: "Recent readings",
     decisions: "Decisions to review", evidence: "Evidence to review", infrastructure: "Devices & sensors",
     open: "Open", domains: "Operational workspaces", flow: "FOGGARA decision chain",
@@ -84,12 +94,14 @@ export default function CommandCenter() {
     water: "Water", agriculture: "Agriculture", gis: "National GIS", telemetryLabel: "IoT & telemetry",
     decisionsLabel: "Decisions", automation: "Automation", ai: "AI Insights", evidenceLabel: "Evidence",
     updated: "Updated", review: "Review queue", national: "National coverage", activeProjects: "Active projects", openProject: "Open", viewSite: "View on map", noProjects: "No operational projects",
-    readinessTitle: "Runtime readiness", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
+    readinessTitle: "Runtime readiness", release: "Deployed release", runtime: "Runtime", database: "Database", aiMode: "AI", weather: "Weather", satelliteLabel: "Satellite", automationLabel: "Automation", assurance: "Assurance still to prove", notCertified: "Not production certified",
     setupTitle: "Initialize operational data", setupBody: "Create your first real site, project, water resource and parcel.", setupAction: "Set up now",
+    managedTitle: "Start with what you manage", managedIntro: "Choose the operational object. FOGGARA then opens its data, analysis, decisions and actions in the same context.", landAsset: "Field / land", landBody: "Boundary · satellite · soil · irrigation", waterAsset: "Water resource", waterBody: "Well · reservoir · pumping · quality", projectAsset: "Project", projectBody: "Data · evidence · decisions · actions", deviceAsset: "Equipment / sensor", deviceBody: "Devices · sensors · telemetry · Edge",
+    actionsTitle: "Operational services", analysisAction: "Analysis center", drawField: "Draw a field", satelliteAction: "Analyze Sentinel", irrigationAction: "Calculate irrigation", iotAction: "Devices & readings", projectData: "Measurements & evidence", decisionAction: "Build a decision", serviceAction: "Request a service", metrologyAction: "Metrology & calibration",
   } : {
     eyebrow: "مركز القيادة الوطني · WEFEH",
-    title: "من الواقع الميداني إلى القرار.",
-    intro: "رؤية تشغيلية موحدة لمشاريع وموارد وقياسات وأدلة وقرارات FOGGARA-DZ.",
+    title: "أدِر موردًا، أثبت بياناته، ثم قرّر ونفّذ.",
+    intro: "FOGGARA-DZ تربط الإقليم وموارد WEFEH والبيانات الموثقة والتحليل والقرار والتنفيذ والمتابعة داخل سياق تشغيلي واحد.",
     live: "بيانات مترابطة", projects: "المشاريع", sites: "المواقع", telemetry: "القياسات الأخيرة",
     decisions: "قرارات تنتظر المراجعة", evidence: "أدلة تنتظر المراجعة", infrastructure: "الأجهزة والحساسات",
     open: "فتح", domains: "مساحات العمل التشغيلية", flow: "سلسلة القرار في FOGGARA",
@@ -97,8 +109,10 @@ export default function CommandCenter() {
     water: "المياه", agriculture: "الزراعة", gis: "GIS الوطني", telemetryLabel: "IoT والقياسات",
     decisionsLabel: "القرارات", automation: "الأتمتة", ai: "ذكاء وتحليلات AI", evidenceLabel: "الأدلة",
     updated: "آخر تحديث", review: "طابور المراجعة", national: "التغطية الوطنية", activeProjects: "المشاريع النشطة", openProject: "فتح", viewSite: "عرض على الخريطة", noProjects: "لا توجد مشاريع تشغيلية",
-    readinessTitle: "جاهزية التشغيل", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
+    readinessTitle: "جاهزية التشغيل", release: "الإصدار المنشور", runtime: "التشغيل", database: "قاعدة البيانات", aiMode: "الذكاء", weather: "الطقس", satelliteLabel: "الأقمار الصناعية", automationLabel: "الأتمتة", assurance: "ضمانات لم تُثبت بعد", notCertified: "غير معتمد كإنتاج كامل",
     setupTitle: "ابدأ التشغيل ببيانات حقيقية", setupBody: "أنشئ أول موقع ومشروع ومورد ماء وقطعة زراعية مرتبطة بمؤسستك.", setupAction: "تهيئة مساحة العمل",
+    managedTitle: "ابدأ بما تديره فعليًا", managedIntro: "اختر الأصل أو المورد؛ بعدها تفتح FOGGARA بياناته وتحليلاته وقراراته وإجراءاته في نفس السياق.", landAsset: "أرض / قطعة زراعية", landBody: "حدود · أقمار · تربة · ري", waterAsset: "مورد مائي", waterBody: "بئر · خزان · ضخ · جودة", projectAsset: "مشروع", projectBody: "بيانات · أدلة · قرارات · إجراءات", deviceAsset: "جهاز / حساس", deviceBody: "أجهزة · حساسات · Telemetry · Edge",
+    actionsTitle: "خدمات تشغيل مباشرة", analysisAction: "مركز التحاليل", drawField: "حدد أرضًا على الخريطة", satelliteAction: "حلّل Sentinel", irrigationAction: "احسب الري", iotAction: "أجهزة وحساسات وقراءات", projectData: "قياسات وأدلة المشروع", decisionAction: "ابنِ قرارًا", serviceAction: "اطلب خدمة", metrologyAction: "المعايرة والقياس",
   };
 
   useEffect(() => {
@@ -137,18 +151,31 @@ export default function CommandCenter() {
     void load();
   }, [user?.role]);
 
+  const realProjects = useMemo(
+    () => snapshot.projects?.filter((project) => !project.is_demo) ?? null,
+    [snapshot.projects],
+  );
+  const realSites = useMemo(
+    () => snapshot.sites?.filter((entry) => !entry.site.is_demo) ?? null,
+    [snapshot.sites],
+  );
+  const realDecisions = useMemo(
+    () => snapshot.decisions?.filter((decision) => !decision.is_demo) ?? null,
+    [snapshot.decisions],
+  );
+
   const counts = useMemo(() => ({
-    projects: snapshot.projects?.length,
-    sites: snapshot.sites?.length,
+    projects: realProjects?.length,
+    sites: realSites?.length,
     telemetry: snapshot.telemetry?.length,
-    decisions: snapshot.decisions?.length,
+    decisions: realDecisions?.length,
     evidence: snapshot.pending
       ? snapshot.pending.measurements.length + snapshot.pending.evidences.length
       : undefined,
     infrastructure: snapshot.devices && snapshot.sensors
       ? snapshot.devices.length + snapshot.sensors.length
       : undefined,
-  }), [snapshot]);
+  }), [snapshot.telemetry, snapshot.pending, snapshot.devices, snapshot.sensors, realProjects, realSites, realDecisions]);
 
   const cards = [
     { label: copy.projects, value: counts.projects, to: "/app/projects", icon: FolderKanban },
@@ -223,14 +250,33 @@ export default function CommandCenter() {
     { label: copy.ai, body: workspaceBody.ai, to: "/app/insights", icon: Bot },
   ];
 
+  const managedObjects = [
+    { label: copy.landAsset, body: copy.landBody, to: "/app/gis", icon: MapPinned, code: "LAND" },
+    { label: copy.waterAsset, body: copy.waterBody, to: "/app/water", icon: Droplets, code: "WATER" },
+    { label: copy.projectAsset, body: copy.projectBody, to: "/app/projects", icon: FolderKanban, code: "PROJECT" },
+    { label: copy.deviceAsset, body: copy.deviceBody, to: "/app/iot", icon: Radio, code: "IOT" },
+  ];
+
+  const operationalActions = [
+    { label: copy.analysisAction, to: "/app/analysis", icon: Gauge, code: "ANL" },
+    { label: copy.drawField, to: "/app/gis", icon: MapPinned, code: "MAP" },
+    { label: copy.satelliteAction, to: "/app/gis", icon: Satellite, code: "EO" },
+    { label: copy.irrigationAction, to: "/app/agriculture?section=irrigation", icon: Droplets, code: "IRR" },
+    { label: copy.iotAction, to: "/app/iot", icon: Radio, code: "IOT" },
+    { label: copy.projectData, to: "/app/projects", icon: FolderKanban, code: "DATA" },
+    { label: copy.decisionAction, to: "/app/studio", icon: ClipboardCheck, code: "DEC" },
+    { label: copy.serviceAction, to: "/app/services", icon: Workflow, code: "SRV" },
+    { label: copy.metrologyAction, to: "/app/metrology", icon: Gauge, code: "MET" },
+  ];
+
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
-  const recentProjects = [...(snapshot.projects ?? [])]
+  const recentProjects = [...(realProjects ?? [])]
     .filter((project) => project.status !== "closed")
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
   const projectSite = (project: Project) =>
-    project.site_id == null ? null : snapshot.sites?.find((row) => row.site.id === project.site_id)?.site ?? null;
-  const needsSetup = snapshot.projects !== null && snapshot.sites !== null && snapshot.projects.length === 0 && snapshot.sites.length === 0;
+    project.site_id == null ? null : realSites?.find((row) => row.site.id === project.site_id)?.site ?? null;
+  const needsSetup = realProjects !== null && realSites !== null && realProjects.length === 0 && realSites.length === 0;
 
   return (
     <div className="fg-command-center" dir={i18n.dir()}>
@@ -252,12 +298,28 @@ export default function CommandCenter() {
         </div>
       </section>
 
+      <section className="fg-command-managed" data-testid="managed-object-launcher" aria-label={copy.managedTitle}>
+        <div className="fg-command-section-title">
+          <div><span>RESOURCE / ASSET FIRST</span><h2>{copy.managedTitle}</h2><p>{copy.managedIntro}</p></div>
+          <Layers3 size={24}/>
+        </div>
+        <div className="fg-command-managed-grid">
+          {managedObjects.map(({ label, body, to, icon: Icon, code }) => (
+            <Link key={code} to={to} className="fg-command-managed-card">
+              <span className="fg-command-managed-icon"><Icon size={21}/></span>
+              <div><strong>{label}</strong><small>{body}</small></div>
+              <ArrowUpRight size={16}/>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {needsSetup && <section className="fg-command-section" aria-label={copy.setupTitle}>
         <div className="fg-command-section-title"><div><span>PRODUCTION / REAL DATA</span><h2>{copy.setupTitle}</h2><p>{copy.setupBody}</p></div><MapPinned size={26}/></div>
         <Link to="/app/setup" className="fg-command-workspace"><Sprout size={23}/><div><strong>{copy.setupAction}</strong><small>Site · Project · Water · Parcel</small></div><ArrowUpRight size={15}/></Link>
       </section>}
 
-      <section className="fg-command-kpis" aria-label={copy.activity}>
+      <section className="fg-command-kpis fg-command-kpis-secondary" aria-label={copy.activity}>
         {cards.map(({ label, value, to, icon: Icon }) => (
           <Link to={to} className="fg-command-kpi" key={label}>
             <div><Icon size={18} /><span>{label}</span></div>
@@ -267,12 +329,41 @@ export default function CommandCenter() {
         ))}
       </section>
 
+      <section className="fg-command-actions" data-testid="operational-service-launcher" aria-label={copy.actionsTitle}>
+        <div className="fg-command-section-title">
+          <div><span>ACTION / SERVICE</span><h2>{copy.actionsTitle}</h2></div>
+          <Zap size={24}/>
+        </div>
+        <div className="fg-command-action-grid">
+          {operationalActions.map(({ label, to, icon: Icon, code }) => (
+            <Link key={code} to={to}>
+              <span><Icon size={18}/><b>{code}</b></span>
+              <strong>{label}</strong>
+              <ArrowUpRight size={15}/>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="fg-command-readiness" data-testid="runtime-readiness" aria-label={copy.readinessTitle}>
         <div className="fg-command-section-title">
           <div><span>RUNTIME / EVIDENCE OF OPERATION</span><h2>{copy.readinessTitle}</h2></div>
           <ShieldCheck size={26}/>
         </div>
         {readiness ? <>
+          <div className="fg-readiness-release" data-testid="runtime-release-identity">
+            <div>
+              <span>{copy.release}</span>
+              <strong dir="ltr">{readiness.core.deployment.release_id}</strong>
+            </div>
+            <div>
+              <b>{readiness.core.deployment.provider.toUpperCase()}</b>
+              <small dir="ltr">
+                {readiness.core.deployment.service_name ?? "FOGGARA-DZ"}
+                {readiness.core.deployment.public_hostname ? ` · ${readiness.core.deployment.public_hostname}` : ""}
+              </small>
+            </div>
+          </div>
           <div className="fg-readiness-grid">
             <article className={readiness.runtime_status === "healthy" ? "ok" : "warn"}>
               <span>{copy.runtime}</span><strong>{readinessLabel(readiness.runtime_status)}</strong>
@@ -335,7 +426,7 @@ export default function CommandCenter() {
 
       <section className="fg-command-grid">
         <NationalMap
-          sites={snapshot.sites ?? []}
+          sites={realSites ?? []}
           wilayas={wilayas}
           onSelectSite={(siteId) => navigate(`/app/gis?site=${siteId}`)}
           locale={lang}

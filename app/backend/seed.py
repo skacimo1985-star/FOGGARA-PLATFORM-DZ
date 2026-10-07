@@ -164,6 +164,7 @@ def main():
     # even when synthetic business data is disabled.
     seed_demo = _seed_demo_enabled()
     demo_password = _require_demo_password() if seed_demo else None
+    demo_password_hash = hash_password(demo_password) if demo_password is not None else None
     db = SessionLocal()
     created = {"orgs": 0, "users": 0, "sites": 0, "resources": 0, "assets": 0,
                "projects": 0, "measurements": 0, "evidences": 0, "instruments": 0,
@@ -191,23 +192,23 @@ def main():
 
         # ---- Users ----
         member1, c = get_or_create(db, User, email="member@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(demo_password),
+            org_id=org1.id, password_hash=demo_password_hash,
             full_name="مستخدم تجريبي — عضو 1", role="member"))
         created["users"] += c
         reviewer1, c = get_or_create(db, User, email="reviewer@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(demo_password),
+            org_id=org1.id, password_hash=demo_password_hash,
             full_name="مراجع تجريبي 1", role="reviewer"))
         created["users"] += c
         admin1, c = get_or_create(db, User, email="admin@demo1.dz", defaults=dict(
-            org_id=org1.id, password_hash=hash_password(demo_password),
+            org_id=org1.id, password_hash=demo_password_hash,
             full_name="مشرف تجريبي 1", role="admin"))
         created["users"] += c
         member2, c = get_or_create(db, User, email="member@demo2.dz", defaults=dict(
-            org_id=org2.id, password_hash=hash_password(demo_password),
+            org_id=org2.id, password_hash=demo_password_hash,
             full_name="مستخدم تجريبي — عضو 2", role="member"))
         created["users"] += c
         _, c = get_or_create(db, User, email="reviewer@demo2.dz", defaults=dict(
-            org_id=org2.id, password_hash=hash_password(demo_password),
+            org_id=org2.id, password_hash=demo_password_hash,
             full_name="مراجع تجريبي 2", role="reviewer"))
         created["users"] += c
 
@@ -791,7 +792,7 @@ def main():
 
             usr_x, c = get_or_create(db, User,
                 email=f"member@{w['org_code'].lower()}.dz",
-                defaults=dict(org_id=org_x.id, password_hash=hash_password(demo_password),
+                defaults=dict(org_id=org_x.id, password_hash=demo_password_hash,
                               full_name=f"عضو تجريبي — {w['wilaya_ar']}", role="member"))
             created["users"] += c
 
@@ -805,7 +806,7 @@ def main():
                               status=w["resource_status"], is_demo=True))
             created["resources"] += c
 
-            project_x, c = get_or_create(db, Project, org_id=org_x.id, title=w["project_title"],
+            project_x, c = get_or_create(db, Project, org_id=org_x.id, title=f"مساحة تشغيل تجريبية — {w['site_name'].replace(' (تجريبي)', '')}",
                 defaults=dict(description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
                               domain=w["project_domain"], status="active",
                               site_id=site_x.id, resource_id=res_x.id, is_demo=True,
@@ -876,7 +877,7 @@ def main():
 
         proj2, c = get_or_create(
             db, Project, org_id=org2.id,
-            title="برنامج ري تجريبي — تندوف",
+            title="مساحة تشغيل تجريبية — منطقة أم العسل — تندوف",
             defaults=dict(
                 description="مشروع اصطناعي للعرض واختبار سير العمل — ليس مشروعًا ميدانيًا أو إحصاءً رسميًا.",
                 domain="food", status="active", site_id=site2.id,
@@ -922,7 +923,7 @@ def main():
         created["assets"] += c
 
         proj, c = get_or_create(db, Project, org_id=org1.id,
-                                title="إعادة تأهيل فڨارة أولف الشرقية (تجريبي)",
+                                title="مساحة تشغيل تجريبية — واحة أولف — أدرار",
                                 defaults=dict(
                                     description="مشروع تجريبي لاختبار سير عمل المنصة — ليس مشروعًا وطنيًا حقيقيًا.",
                                     domain="water", status="active", site_id=site1.id,
@@ -1200,3 +1201,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if _env_flag("RELEASE_GATE"):
+        from app.release_gate import run_release_gate
+        run_release_gate()

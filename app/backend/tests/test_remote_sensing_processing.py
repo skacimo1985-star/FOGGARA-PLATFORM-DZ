@@ -5,6 +5,7 @@ from app.services.remote_sensing_processing import (
     MASKED_SCL_CLASSES,
     TRUSTED_COG_HOST,
     build_processing_plan,
+    build_true_color_plan,
 )
 from tests.conftest import login
 
@@ -36,6 +37,7 @@ def stac_item():
             "green": cog("B03"),
             "red": cog("B04"),
             "nir": cog("B08"),
+            "swir16": cog("B11", gsd=20),
             "scl": cog("SCL", gsd=20, scale=None, offset=None),
             "red-jp2": {
                 "href": "https://example.invalid/B04.jp2",
@@ -247,3 +249,28 @@ def test_processing_plan_rejects_traversal_and_bad_port():
         assert False, "invalid port must be rejected"
     except ValueError as exc:
         assert "invalid port" in str(exc)
+
+
+
+def test_processing_plan_resolves_lswi_nir_and_swir():
+    plan = build_processing_plan(stac_item(), "lswi")
+    bands = {row["band"]: row for row in plan["required_assets"]}
+    assert set(bands) == {"B08", "B11"}
+    assert bands["B08"]["asset_key"] == "nir"
+    assert bands["B11"]["asset_key"] == "swir16"
+    assert bands["B11"]["gsd_m"] == 20
+    assert plan["target_resolution_m"] == 10
+
+
+
+def test_true_color_plan_resolves_rgb_and_scl():
+    plan = build_true_color_plan(stac_item())
+    assert plan["kind"] == "true_color"
+    bands = {row["band"]: row for row in plan["required_assets"]}
+    assert set(bands) == {"B04", "B03", "B02"}
+    assert bands["B04"]["asset_key"] == "red"
+    assert bands["B03"]["asset_key"] == "green"
+    assert bands["B02"]["asset_key"] == "blue"
+    assert plan["cloud_mask"]["asset"]["asset_key"] == "scl"
+    assert plan["provenance"]["rgb_visualization"] == "COMPUTED"
+    assert plan["provenance"]["verified"] is False

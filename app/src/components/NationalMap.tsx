@@ -4,7 +4,58 @@ import type { GisSite, WilayaMeta } from "@/types";
 export type AnalysisRasterOverlay = {
   url: string;
   bbox: [number, number, number, number];
-  index: "ndvi" | "evi" | "savi" | "ndwi";
+  index: "ndvi" | "evi" | "savi" | "ndwi" | "lswi";
+};
+
+export type SatelliteRasterOverlay = {
+  url: string;
+  bbox: [number, number, number, number];
+  scene_id: string;
+  acquired_at: string | null;
+  provider: string;
+  cloud_cover_pct: number | null;
+};
+
+export type InfrastructureFeature = {
+  type: "Feature";
+  id: number;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    site_id: number;
+    site_name: string;
+    wilaya: string;
+    total: number;
+    water_resources: number;
+    wells: number;
+    reservoirs: number;
+    pumps: number;
+    irrigation_zones: number;
+    valves: number;
+    coordinate_scope: "SITE";
+    exact_asset_coordinates: false;
+    is_demo: boolean;
+  };
+};
+
+export type IotBindingFeature = {
+  type: "Feature";
+  id: number;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    site_id: number;
+    site_name: string;
+    wilaya: string;
+    sensor_count: number;
+    simulated_sensor_count: number;
+    non_simulated_sensor_count: number;
+    active_sensor_count: number;
+    metrics: string[];
+    subject_types: string[];
+    coordinate_scope: "RESOLVED_SUBJECT_SITE";
+    exact_sensor_coordinates: false;
+    live_telemetry_claim: false;
+    is_demo: boolean;
+  };
 };
 
 export type ParcelBoundaryFeature = {
@@ -48,7 +99,10 @@ type Props = {
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
+  infrastructureClusters?: InfrastructureFeature[];
+  iotBindings?: IotBindingFeature[];
   analysisOverlay?: AnalysisRasterOverlay | null;
+  satelliteOverlay?: SatelliteRasterOverlay | null;
   selectedSceneId?: string | null;
   selectedWilaya?: string;
   selectedSiteId?: number | null;
@@ -58,8 +112,12 @@ type Props = {
   onSelectParcel?: (parcelId: number) => void;
   onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
+  drawMode?: boolean;
+  draftBoundary?: Point[];
+  onDraftBoundaryChange?: (points: Point[]) => void;
   locale?: string;
   compact?: boolean;
+  minimal?: boolean;
 };
 
 type Point = [number, number];
@@ -94,6 +152,7 @@ type ImageSource = {
 
 type MapEvent = {
   features?: Array<{ properties?: Record<string, unknown> }>;
+  lngLat?: { lng: number; lat: number };
   error?: unknown;
 };
 
@@ -104,6 +163,8 @@ type MapInstance = {
   getSource: (id: string) => unknown;
   getCanvas: () => HTMLCanvasElement;
   setPaintProperty: (layerId: string, name: string, value: unknown) => void;
+  setLayoutProperty: (layerId: string, name: string, value: unknown) => void;
+  setTerrain: (options: { source: string; exaggeration?: number } | null) => void;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
   getBounds: () => {
@@ -129,7 +190,13 @@ type MapLibreModule = {
 
 const MAPLIBRE_MODULE_URL = "/vendor/maplibre-gl.mjs";
 const MAPLIBRE_WORKER_URL = "/vendor/maplibre-gl-worker.mjs";
-const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_STYLES = {
+  map: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+  relief: "https://tiles.openfreemap.org/styles/bright",
+  satellite: "https://tiles.openfreemap.org/styles/liberty",
+} as const;
+const MAPTERHORN_TERRAIN = "https://tiles.mapterhorn.com/tilejson.json";
 const ALGERIA_BOUNDS: [Point, Point] = [[-8.8, 18.4], [12.2, 37.5]];
 const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/2m8pJwAAAABJRU5ErkJggg==";
 
@@ -155,6 +222,30 @@ function isImageSource(value: unknown): value is ImageSource {
   return typeof (value as { updateImage?: unknown }).updateImage === "function";
 }
 
+function draftCollection(points: Point[]) {
+  const features: unknown[] = points.map((point, index) => ({
+    type: "Feature",
+    id: `draft-${index}`,
+    properties: { kind: "vertex", order: index + 1 },
+    geometry: { type: "Point", coordinates: point },
+  }));
+  if (points.length >= 2) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "edge" },
+      geometry: { type: "LineString", coordinates: points },
+    });
+  }
+  if (points.length >= 3) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "polygon" },
+      geometry: { type: "Polygon", coordinates: [[...points, points[0]]] },
+    });
+  }
+  return { type: "FeatureCollection", features };
+}
+
 function boundsFor(points: Point[]): [Point, Point] | null {
   if (points.length === 0) return null;
   let minLon = points[0][0];
@@ -175,7 +266,10 @@ export function NationalMap({
   wilayas,
   satelliteScenes = [],
   parcelBoundaries = [],
+  infrastructureClusters = [],
+  iotBindings = [],
   analysisOverlay = null,
+  satelliteOverlay = null,
   selectedSceneId = null,
   selectedWilaya = "",
   selectedSiteId = null,
@@ -185,8 +279,12 @@ export function NationalMap({
   onSelectParcel,
   onSelectScene,
   onViewportChange,
+  drawMode = false,
+  draftBoundary = [],
+  onDraftBoundaryChange,
   locale = "ar",
   compact = false,
+  minimal = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
@@ -195,18 +293,31 @@ export function NationalMap({
   const onSelectSceneRef = useRef(onSelectScene);
   const onSelectParcelRef = useRef(onSelectParcel);
   const onViewportChangeRef = useRef(onViewportChange);
+  const drawModeRef = useRef(drawMode);
+  const draftBoundaryRef = useRef<Point[]>(draftBoundary);
+  const onDraftBoundaryChangeRef = useRef(onDraftBoundaryChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
+  const infrastructureFeaturesRef = useRef({ type: "FeatureCollection", features: [] as InfrastructureFeature[] });
+  const iotFeaturesRef = useRef({ type: "FeatureCollection", features: [] as IotBindingFeature[] });
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
+  const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
+  const [baseMode, setBaseMode] = useState<"map" | "dark" | "relief" | "satellite">("map");
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+  const [layers, setLayers] = useState({ parcels: true, scenes: true, sites: true, infrastructure: true, iot: true, analysis: true });
 
   onSelectSiteRef.current = onSelectSite;
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
   onSelectParcelRef.current = onSelectParcel;
   onViewportChangeRef.current = onViewportChange;
+  drawModeRef.current = drawMode;
+  draftBoundaryRef.current = draftBoundary;
+  onDraftBoundaryChangeRef.current = onDraftBoundaryChange;
   analysisOverlayRef.current = analysisOverlay;
+  satelliteOverlayRef.current = satelliteOverlay;
 
   const plotted = useMemo(
     () => sites
@@ -270,6 +381,18 @@ export function NationalMap({
   }), [parcelBoundaries, selectedParcelId]);
   parcelFeaturesRef.current = parcelFeatureCollection;
 
+  const infrastructureFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: infrastructureClusters,
+  }), [infrastructureClusters]);
+  infrastructureFeaturesRef.current = infrastructureFeatureCollection;
+
+  const iotFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: iotBindings,
+  }), [iotBindings]);
+  iotFeaturesRef.current = iotFeatureCollection;
+
   const labels = locale === "fr"
     ? {
         title: "Carte opérationnelle nationale",
@@ -281,6 +404,11 @@ export function NationalMap({
         source: "Open map",
         scenes: "scènes Sentinel-2",
         parcels: "parcelles cartographiées",
+        infrastructure: "infrastructure eau · ancrée au site",
+        iot: "capteurs IoT · liaison résolue",
+        mapMode: "Carte", darkMode: "Sombre", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Calques",
+        noSatellite: "Lancez une analyse Sentinel pour charger l’image RGB de la parcelle.",
+        traffic: "Trafic", trafficUnavailable: "Nécessite un fournisseur de trafic temps réel configuré.",
       }
     : locale === "en"
       ? {
@@ -293,6 +421,11 @@ export function NationalMap({
           source: "Open map",
           scenes: "Sentinel-2 scenes",
           parcels: "mapped parcels",
+          infrastructure: "water infrastructure · site anchored",
+          iot: "IoT sensors · resolved binding",
+          mapMode: "Map", darkMode: "Dark", reliefMode: "Relief", satelliteMode: "Sentinel", layers: "Layers",
+          noSatellite: "Run a Sentinel analysis to load the parcel RGB image.",
+          traffic: "Traffic", trafficUnavailable: "Requires a configured real-time traffic provider.",
         }
       : {
           title: "الخريطة التشغيلية الوطنية",
@@ -304,10 +437,16 @@ export function NationalMap({
           source: "خريطة مفتوحة",
           scenes: "مشاهد Sentinel-2",
           parcels: "قطع مرسومة",
+          infrastructure: "بنية المياه · مرتبطة بالموقع",
+          iot: "حساسات IoT · ربط متحقق",
+          mapMode: "خريطة", darkMode: "داكن", reliefMode: "تضاريس", satelliteMode: "Sentinel", layers: "طبقات",
+          noSatellite: "شغّل تحليل Sentinel لتحميل صورة RGB الحقيقية للقطعة.",
+          traffic: "المرور", trafficUnavailable: "يحتاج مزود حركة مرور حي مهيأ.",
         };
 
   useEffect(() => {
     let cancelled = false;
+    setEngineState("loading");
     let map: MapInstance | null = null;
     let loadTimeout: number | null = null;
 
@@ -319,7 +458,7 @@ export function NationalMap({
         module.setWorkerUrl?.(MAPLIBRE_WORKER_URL);
         map = new module.Map({
           container: containerRef.current,
-          style: OPENFREEMAP_STYLE,
+          style: OPENFREEMAP_STYLES[baseMode],
           center: [2.6, 28.2],
           zoom: compact ? 3.5 : 4.1,
           minZoom: 2,
@@ -339,6 +478,33 @@ export function NationalMap({
         map.on("load", () => {
           if (cancelled || !map) return;
           if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+
+          if (baseMode === "relief") {
+            map.addSource("terrain-dem", { type: "raster-dem", url: MAPTERHORN_TERRAIN, tileSize: 512 });
+            map.addLayer({
+              id: "terrain-hillshade",
+              type: "hillshade",
+              source: "terrain-dem",
+              paint: { "hillshade-exaggeration": 0.42, "hillshade-shadow-color": "#26382f" },
+            });
+            map.setTerrain({ source: "terrain-dem", exaggeration: 1.25 });
+          }
+
+          const initialSatellite = satelliteOverlayRef.current;
+          map.addSource("sentinel-rgb-overlay", {
+            type: "image",
+            url: initialSatellite?.url ?? TRANSPARENT_PIXEL,
+            coordinates: overlayCoordinates(initialSatellite?.bbox ?? [-8.8, 18.4, 12.2, 37.5]),
+          });
+          map.addLayer({
+            id: "sentinel-rgb-overlay",
+            type: "raster",
+            source: "sentinel-rgb-overlay",
+            paint: {
+              "raster-opacity": baseMode === "satellite" && initialSatellite ? 1 : 0,
+              "raster-fade-duration": 0,
+            },
+          });
 
           const initialOverlay = analysisOverlayRef.current;
           map.addSource("analysis-overlay", {
@@ -404,6 +570,97 @@ export function NationalMap({
             },
           });
 
+          map.addSource("field-draft", {
+            type: "geojson",
+            data: draftCollection(draftBoundaryRef.current),
+          });
+          map.addLayer({
+            id: "field-draft-fill",
+            type: "fill",
+            source: "field-draft",
+            filter: ["==", ["geometry-type"], "Polygon"],
+            paint: { "fill-color": "#f59e0b", "fill-opacity": 0.22 },
+          });
+          map.addLayer({
+            id: "field-draft-line",
+            type: "line",
+            source: "field-draft",
+            filter: ["in", ["geometry-type"], ["literal", ["LineString", "Polygon"]]],
+            paint: { "line-color": "#d97706", "line-width": 3.2, "line-dasharray": [1.4, 1] },
+          });
+          map.addLayer({
+            id: "field-draft-points",
+            type: "circle",
+            source: "field-draft",
+            filter: ["==", ["geometry-type"], "Point"],
+            paint: {
+              "circle-radius": 5.5,
+              "circle-color": "#f59e0b",
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 2,
+            },
+          });
+
+          map.addSource("site-iot-bindings", {
+            type: "geojson",
+            data: iotFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "site-iot-halo",
+            type: "circle",
+            source: "site-iot-bindings",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "sensor_count"], 1, 7, 10, 14, 50, 20],
+              "circle-color": "#7c3aed",
+              "circle-opacity": 0.13,
+              "circle-blur": 0.28,
+            },
+          });
+          map.addLayer({
+            id: "site-iot-bindings",
+            type: "circle",
+            source: "site-iot-bindings",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "sensor_count"], 1, 4, 10, 7, 50, 11],
+              "circle-color": [
+                "case",
+                [">", ["get", "non_simulated_sensor_count"], 0], "#7c3aed",
+                "#9ca3af"
+              ],
+              "circle-stroke-color": "#f5f3ff",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": 0.94,
+            },
+          });
+
+          map.addSource("site-infrastructure", {
+            type: "geojson",
+            data: infrastructureFeaturesRef.current,
+          });
+          map.addLayer({
+            id: "site-infrastructure-halo",
+            type: "circle",
+            source: "site-infrastructure",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "total"], 1, 8, 10, 15, 50, 22],
+              "circle-color": "#1578b8",
+              "circle-opacity": 0.16,
+              "circle-blur": 0.22,
+            },
+          });
+          map.addLayer({
+            id: "site-infrastructure",
+            type: "circle",
+            source: "site-infrastructure",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "total"], 1, 4.5, 10, 8, 50, 12],
+              "circle-color": "#1578b8",
+              "circle-stroke-color": "#dff4ff",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": 0.92,
+            },
+          });
+
           map.addSource("foggara-sites", {
             type: "geojson",
             data: featuresRef.current,
@@ -432,13 +689,24 @@ export function NationalMap({
             },
           });
 
+          map.on("click", (event) => {
+            if (!drawModeRef.current || !event.lngLat || !onDraftBoundaryChangeRef.current) return;
+            if (draftBoundaryRef.current.length >= 500) return;
+            const next: Point = [
+              Number(event.lngLat.lng.toFixed(8)),
+              Number(event.lngLat.lat.toFixed(8)),
+            ];
+            onDraftBoundaryChangeRef.current([...draftBoundaryRef.current, next]);
+          });
+
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map && onSelectSceneRef.current) map.getCanvas().style.cursor = "pointer";
+            if (map && onSelectSceneRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "satellite-scenes-fill", (event) => {
+            if (drawModeRef.current) return;
             const sceneId = String(event.features?.[0]?.properties?.sceneId ?? "");
             if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
           });
@@ -450,8 +718,33 @@ export function NationalMap({
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "agri-parcel-fill", (event) => {
+            if (drawModeRef.current) return;
             const parcelId = Number(event.features?.[0]?.properties?.id);
             if (Number.isFinite(parcelId) && onSelectParcelRef.current) onSelectParcelRef.current(parcelId);
+          });
+
+          map.on("mouseenter", "site-iot-bindings", () => {
+            if (map && onSelectSiteRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "site-iot-bindings", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "site-iot-bindings", (event) => {
+            if (drawModeRef.current) return;
+            const siteId = Number(event.features?.[0]?.properties?.site_id);
+            if (Number.isFinite(siteId) && onSelectSiteRef.current) onSelectSiteRef.current(siteId);
+          });
+
+          map.on("mouseenter", "site-infrastructure", () => {
+            if (map && onSelectSiteRef.current && !drawModeRef.current) map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "site-infrastructure", () => {
+            if (map) map.getCanvas().style.cursor = "";
+          });
+          map.on("click", "site-infrastructure", (event) => {
+            if (drawModeRef.current) return;
+            const siteId = Number(event.features?.[0]?.properties?.site_id);
+            if (Number.isFinite(siteId) && onSelectSiteRef.current) onSelectSiteRef.current(siteId);
           });
 
           map.on("mouseenter", "foggara-sites", () => {
@@ -461,6 +754,7 @@ export function NationalMap({
             if (map) map.getCanvas().style.cursor = "";
           });
           map.on("click", "foggara-sites", (event) => {
+            if (drawModeRef.current) return;
             const properties = event.features?.[0]?.properties;
             const siteId = Number(properties?.siteId);
             const code = String(properties?.wilayaCode ?? "");
@@ -496,12 +790,22 @@ export function NationalMap({
       map?.remove();
       mapRef.current = null;
     };
-  }, [compact]);
+  }, [compact, baseMode]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("foggara-sites");
     if (isGeoJsonSource(source)) source.setData(featureCollection);
   }, [featureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("site-infrastructure");
+    if (isGeoJsonSource(source)) source.setData(infrastructureFeatureCollection);
+  }, [infrastructureFeatureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("site-iot-bindings");
+    if (isGeoJsonSource(source)) source.setData(iotFeatureCollection);
+  }, [iotFeatureCollection]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("satellite-scenes");
@@ -512,6 +816,25 @@ export function NationalMap({
     const source = mapRef.current?.getSource("agri-parcel-boundaries");
     if (isGeoJsonSource(source)) source.setData(parcelFeatureCollection);
   }, [parcelFeatureCollection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("field-draft");
+    if (isGeoJsonSource(source)) source.setData(draftCollection(draftBoundary));
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = drawMode ? "crosshair" : "";
+  }, [draftBoundary, drawMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource("sentinel-rgb-overlay");
+    if (!map || !isImageSource(source)) return;
+    const bbox: [number, number, number, number] = satelliteOverlay?.bbox ?? [-8.8, 18.4, 12.2, 37.5];
+    source.updateImage({
+      url: satelliteOverlay?.url ?? TRANSPARENT_PIXEL,
+      coordinates: overlayCoordinates(bbox),
+    });
+    map.setPaintProperty("sentinel-rgb-overlay", "raster-opacity", baseMode === "satellite" && satelliteOverlay ? 1 : 0);
+  }, [baseMode, satelliteOverlay]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -528,6 +851,24 @@ export function NationalMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || engineState !== "ready") return;
+
+    const selectedParcel = parcelBoundaries.find((feature) => feature.id === selectedParcelId);
+    const rawRing = selectedParcel?.geometry?.coordinates;
+    const parcelPoints: Point[] = Array.isArray(rawRing) && Array.isArray(rawRing[0])
+      ? (rawRing[0] as unknown[]).filter((value): value is number[] =>
+          Array.isArray(value) && value.length >= 2
+          && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))
+        ).map((value) => [Number(value[0]), Number(value[1])])
+      : [];
+    const parcelBounds = boundsFor(parcelPoints);
+    if (parcelBounds) {
+      map.fitBounds(parcelBounds, {
+        padding: compact ? 26 : 72,
+        maxZoom: compact ? 15 : 17,
+        duration: 650,
+      });
+      return;
+    }
 
     const selectedSite = plotted.find((entry) => entry.site.id === selectedSiteId);
     if (selectedSite) {
@@ -555,11 +896,31 @@ export function NationalMap({
     }
 
     map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
-  }, [compact, engineState, plotted, selectedSiteId, selectedWilaya]);
+  }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || engineState !== "ready") return;
+    for (const [id, visible] of [
+      ["agri-parcel-fill", layers.parcels],
+      ["agri-parcel-outline", layers.parcels],
+      ["satellite-scenes-fill", layers.scenes],
+      ["satellite-scenes-outline", layers.scenes],
+      ["foggara-site-halo", layers.sites],
+      ["foggara-sites", layers.sites],
+      ["site-infrastructure-halo", layers.infrastructure],
+      ["site-infrastructure", layers.infrastructure],
+      ["site-iot-halo", layers.iot],
+      ["site-iot-bindings", layers.iot],
+    ] as const) {
+      map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+    }
+    map.setPaintProperty("analysis-overlay", "raster-opacity", layers.analysis && analysisOverlay ? 0.78 : 0);
+  }, [analysisOverlay, baseMode, engineState, layers]);
 
   return (
-    <section className={`fg-national-map ${compact ? "compact" : ""}`} aria-label={labels.title}>
-      <div className="fg-national-map-head">
+    <section className={`fg-national-map ${compact ? "compact" : ""} ${minimal ? "minimal" : ""}`} aria-label={labels.title}>
+      {!minimal && <div className="fg-national-map-head">
         <div>
           <span className="fg-map-kicker">ALGERIA · {wilayas.length || 69} WILAYAS</span>
           <h2>{labels.title}</h2>
@@ -568,9 +929,43 @@ export function NationalMap({
           <span>{labels.source}</span>
           <strong>{plotted.length} {labels.sites} · {parcelBoundaries.length} {labels.parcels} · {satelliteScenes.length} {labels.scenes}</strong>
         </div>
-      </div>
+      </div>}
 
       <div className="fg-national-map-canvas">
+        <div className="fg-map-mode-switcher" role="toolbar" aria-label={labels.layers}>
+          {([
+            ["map", labels.mapMode],
+            ["dark", labels.darkMode],
+            ["relief", labels.reliefMode],
+            ["satellite", labels.satelliteMode],
+          ] as const).map(([mode,label]) => (
+            <button
+              type="button"
+              key={mode}
+              className={baseMode === mode ? "active" : ""}
+              onClick={() => setBaseMode(mode)}
+              title={mode === "satellite" && !satelliteOverlay ? labels.noSatellite : label}
+            >{label}</button>
+          ))}
+          <button type="button" className={layerMenuOpen ? "active" : ""} onClick={() => setLayerMenuOpen(v => !v)}>{labels.layers}</button>
+        </div>
+        {layerMenuOpen ? <div className="fg-map-layer-menu">
+          {([
+            ["parcels", labels.parcels],
+            ["scenes", labels.scenes],
+            ["sites", labels.sites],
+            ["infrastructure", labels.infrastructure],
+            ["iot", labels.iot],
+            ["analysis", analysisOverlay ? analysisOverlay.index.toUpperCase() : "NDVI / LSWI"],
+          ] as const).map(([key,label]) => <label key={key}><input type="checkbox" checked={layers[key]} onChange={e => setLayers(prev => ({...prev,[key]:e.target.checked}))}/><span>{label}</span></label>)}
+          <div className="fg-map-traffic-disabled" title={labels.trafficUnavailable}><span>{labels.traffic}</span><small>{labels.trafficUnavailable}</small></div>
+        </div> : null}
+        {baseMode === "satellite" && satelliteOverlay ? <div className="fg-map-satellite-meta" data-testid="sentinel-map-provenance">
+          <strong>Sentinel-2 L2A</strong>
+          <span>{satelliteOverlay.acquired_at?.slice(0,10) ?? "—"} · {satelliteOverlay.provider}</span>
+          <small>{satelliteOverlay.scene_id} · {satelliteOverlay.cloud_cover_pct==null?"?":satelliteOverlay.cloud_cover_pct.toFixed(1)}% cloud · COMPUTED RGB</small>
+        </div> : null}
+        {baseMode === "satellite" && !satelliteOverlay ? <div className="fg-map-satellite-hint">{labels.noSatellite}</div> : null}
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
         {engineState === "loading" && (
           <div className="fg-map-engine-state" aria-live="polite">{labels.loading}</div>
@@ -583,13 +978,15 @@ export function NationalMap({
         )}
       </div>
 
-      <div className="fg-national-map-foot">
+      {!minimal && <div className="fg-national-map-foot">
         <span><i className="fg-map-legend-dot" /> {labels.sites}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#178568" }} /> {labels.parcels}</span>
         <span><i className="fg-map-legend-dot" style={{ background: "#0ea5e9" }} /> {labels.scenes}</span>
+        {infrastructureClusters.length ? <span><i className="fg-map-legend-dot" style={{ background: "#1578b8" }} /> {labels.infrastructure} · SITE-ANCHORED</span> : null}
+        {iotBindings.length ? <span><i className="fg-map-legend-dot" style={{ background: "#7c3aed" }} /> {labels.iot} · NO SENSOR GPS CLAIM</span> : null}
         {analysisOverlay ? <span className="font-semibold uppercase">{analysisOverlay.index} · COMPUTED</span> : null}
         <small>{labels.note}</small>
-      </div>
+      </div>}
     </section>
   );
 }
