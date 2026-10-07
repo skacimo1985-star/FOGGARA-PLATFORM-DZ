@@ -617,6 +617,24 @@ export function NationalMap({
     const map = mapRef.current;
     if (!map || engineState !== "ready") return;
 
+    const selectedParcel = parcelBoundaries.find((feature) => feature.id === selectedParcelId);
+    const rawRing = selectedParcel?.geometry?.coordinates;
+    const parcelPoints: Point[] = Array.isArray(rawRing) && Array.isArray(rawRing[0])
+      ? (rawRing[0] as unknown[]).filter((value): value is number[] =>
+          Array.isArray(value) && value.length >= 2
+          && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))
+        ).map((value) => [Number(value[0]), Number(value[1])])
+      : [];
+    const parcelBounds = boundsFor(parcelPoints);
+    if (parcelBounds) {
+      map.fitBounds(parcelBounds, {
+        padding: compact ? 26 : 72,
+        maxZoom: compact ? 15 : 17,
+        duration: 650,
+      });
+      return;
+    }
+
     const selectedSite = plotted.find((entry) => entry.site.id === selectedSiteId);
     if (selectedSite) {
       map.flyTo({
@@ -643,7 +661,7 @@ export function NationalMap({
     }
 
     map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
-  }, [compact, engineState, plotted, selectedSiteId, selectedWilaya]);
+  }, [compact, engineState, parcelBoundaries, plotted, selectedParcelId, selectedSiteId, selectedWilaya]);
 
   return (
     <section className={`fg-national-map ${compact ? "compact" : ""}`} aria-label={labels.title}>
