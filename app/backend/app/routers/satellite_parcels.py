@@ -121,6 +121,38 @@ def parcel_scenes(
     }
 
 
+@router.get("/parcels/{identity}/remote-sensing/statistics")
+def parcel_index_statistics(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    index: Literal["ndvi", "evi", "savi", "ndwi"] = Query(default="ndvi"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, analysis_fingerprint = _analysis_target(parcel)
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_processing_plan(item, index)
+        stats = compute_index_statistics(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted analysis assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Raster analysis could not be completed")
+    return {
+        **stats,
+        "parcel_id": parcel.id,
+        "sample_geometry": sample_geometry,
+        "analysis_fingerprint": analysis_fingerprint,
+        "stored": False,
+        "evidence_status": "COMPUTED",
+    }
+
+
 @router.get("/parcels/{identity}/remote-sensing/preview.png")
 def parcel_index_preview(
     identity: int,
