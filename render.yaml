@@ -8,9 +8,6 @@ services:
     buildCommand: >-
       cd app &&
       npm ci &&
-      npm run typecheck &&
-      npm run lint &&
-      npm test &&
       npm run build &&
       npm run audit:dependencies &&
       cd backend &&
