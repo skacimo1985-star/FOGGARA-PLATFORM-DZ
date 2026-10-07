@@ -25,6 +25,7 @@ from ..services.remote_sensing_raster import (
     RasterStatisticsError,
     compute_index_statistics,
     render_index_preview_png,
+    render_true_color_preview_png,
     validate_analysis_bbox,
 )
 from .agriculture_operations import METRICS, out, own
@@ -151,6 +152,43 @@ def parcel_index_statistics(
         "stored": False,
         "evidence_status": "COMPUTED",
     }
+
+
+@router.get("/parcels/{identity}/remote-sensing/true-color.png")
+def parcel_true_color_preview(
+    identity: int,
+    scene_id: str = Query(..., min_length=3, max_length=120),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    parcel = own(db, AgriParcel, identity, user)
+    if parcel.archived:
+        api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+    bounds, geometry, sample_geometry, _analysis_fingerprint = _analysis_target(parcel)
+    _safe_scene_id, item = _provider_item(scene_id)
+    try:
+        plan = build_true_color_plan(item)
+        png, metadata = render_true_color_preview_png(plan, bounds, geometry_wgs84=geometry)
+    except ProcessingPlanError:
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene is missing trusted RGB assets")
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Raster capacity busy; retry later")
+    except RasterStatisticsError:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", "True-color raster preview could not be completed")
+
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-FOGGARA-Scene": str(metadata["scene_id"]),
+            "X-FOGGARA-Visualization": "TRUE_COLOR",
+            "X-FOGGARA-Evidence": "COMPUTED",
+            "X-FOGGARA-Sample-Geometry": sample_geometry,
+            "X-FOGGARA-Geometry-Mask": "true" if metadata.get("geometry_mask_applied") else "false",
+            "X-FOGGARA-Verified": "false",
+        },
+    )
 
 
 @router.get("/parcels/{identity}/remote-sensing/preview.png")
