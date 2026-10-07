@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorText, DemoBadge } from "@/components/common";
-import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteScene } from "@/components/NationalMap";
+import { NationalMap, type AnalysisRasterOverlay, type InfrastructureFeature, type ParcelBoundaryFeature, type SatelliteScene } from "@/components/NationalMap";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -21,6 +21,19 @@ type SpatialFeature = {
     commune: string | null;
     is_demo: boolean;
     distance_m?: number;
+  };
+};
+
+type InfrastructureGeoJSON = {
+  type: "FeatureCollection";
+  features: InfrastructureFeature[];
+  metadata: {
+    organization_scoped: boolean;
+    count: number;
+    crs: string;
+    geometry_type: string;
+    coordinate_scope: string;
+    exact_asset_coordinates: boolean;
   };
 };
 
@@ -206,6 +219,7 @@ export default function Gis() {
   const [error, setError] = useState<unknown>(null);
   const [satelliteScenes, setSatelliteScenes] = useState<SatelliteScene[]>([]);
   const [parcelBoundaries, setParcelBoundaries] = useState<ParcelBoundaryFeature[]>([]);
+  const [infrastructureClusters, setInfrastructureClusters] = useState<InfrastructureFeature[]>([]);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
@@ -264,6 +278,9 @@ export default function Gis() {
     api.get<ParcelBoundariesGeoJSON>("/gis/parcels.geojson")
       .then((r) => setParcelBoundaries(r.features))
       .catch(() => setParcelBoundaries([]));
+    api.get<InfrastructureGeoJSON>("/gis/infrastructure.geojson")
+      .then((r) => setInfrastructureClusters(r.features))
+      .catch(() => setInfrastructureClusters([]));
   }, []);
 
   const filtered = useMemo(() => {
@@ -652,6 +669,7 @@ export default function Gis() {
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
           parcelBoundaries={parcelBoundaries}
+          infrastructureClusters={infrastructureClusters}
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
