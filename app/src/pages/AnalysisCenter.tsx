@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
-  Activity, ArrowUpRight, CloudSun, Droplets, FlaskConical, Leaf,
+  Activity, ArrowUpRight, CloudSun, Droplets, Eye, FlaskConical, Leaf,
   MapPinned, Satellite, ShieldCheck, Sprout,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { ErrorText } from "@/components/common";
 import ParcelSentinel from "@/features/agriculture/ParcelSentinel";
+import { NationalMap, type ParcelBoundaryFeature } from "@/components/NationalMap";
 
 type Parcel = {
   id: number;
@@ -22,6 +23,11 @@ type Parcel = {
   lat?: number | null;
   lon?: number | null;
   boundary_geojson?: { type: "Polygon"; coordinates: [number, number][][] } | null;
+};
+
+type ParcelBoundaryResponse = {
+  type: "FeatureCollection";
+  features: ParcelBoundaryFeature[];
 };
 
 type Observation = {
