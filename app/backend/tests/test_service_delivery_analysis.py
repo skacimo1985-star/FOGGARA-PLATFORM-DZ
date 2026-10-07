@@ -80,3 +80,25 @@ def test_irrigation_water_direct_sar_can_flag_severe_infiltration_risk():
         item["metric"] == "sar_ec" and item["level"] == "attention"
         for item in result["findings"]
     )
+
+
+
+def test_data_gaps_shrink_as_measurements_arrive():
+    soil_empty = soil_assessment_values({})
+    assert {"ph", "ec", "nitrogen", "phosphorus", "potassium", "soc", "moisture"} == {
+        item["metric"] for item in soil_empty["data_gaps"]
+    }
+    soil_partial = soil_assessment_values({"ph": 7.1, "ec": 1.3})
+    assert "ph" not in {item["metric"] for item in soil_partial["data_gaps"]}
+    assert "ec" not in {item["metric"] for item in soil_partial["data_gaps"]}
+
+    water_partial = irrigation_water_assessment(
+        {"ph": 7.3, "ec": 1.1, "tds": 700, "sar": 2.2},
+        units={"ph": "pH", "ec": "dS/m", "tds": "mg/L", "sar": "index"},
+    )
+    missing = {item["metric"] for item in water_partial["data_gaps"]}
+    assert "ph" not in missing
+    assert "ec" not in missing
+    assert "tds" not in missing
+    assert "sar_or_na_ca_mg" not in missing
+    assert {"chloride", "bicarbonate"} <= missing
