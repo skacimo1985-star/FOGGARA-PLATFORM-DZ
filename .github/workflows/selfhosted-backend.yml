@@ -32,18 +32,12 @@ jobs:
 
       - name: Run focused backend regression
         working-directory: app/backend
+        shell: pwsh
         env:
           TEST_DATABASE_URL: sqlite+pysqlite:///./foggara-selfhosted-test.db
-          JWT_SECRET: selfhosted-ci-only-secret-0123456789abcdef
-        run: >
-          python -m pytest
-          tests/test_service_delivery_analysis.py
-          tests/test_agriculture_operations.py
-          tests/test_gis_infrastructure.py
-          tests/test_gis_iot_bindings.py
-          tests/test_telemetry_simulator.py
-          tests/test_system_readiness.py
-          -q -ra --tb=short
+        run: |
+          $env:JWT_SECRET = ([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"))
+          python -m pytest tests/test_service_delivery_analysis.py tests/test_agriculture_operations.py tests/test_gis_infrastructure.py tests/test_gis_iot_bindings.py tests/test_telemetry_simulator.py tests/test_system_readiness.py -q -ra --tb=short
 
       - name: Remove disposable SQLite database
         if: always()
