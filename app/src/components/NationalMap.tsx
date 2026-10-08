@@ -363,6 +363,7 @@ export function NationalMap({
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
   const satelliteOverlayRef = useRef<SatelliteRasterOverlay | null>(satelliteOverlay);
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
+  const analysisSelectionBboxRef = useRef<[number, number, number, number] | null>(analysisSelectionBbox);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
   const [mapMode, setMapMode] = useState<"street" | "satellite" | "relief" | "analysis">("street");
   const [visibleLayers, setVisibleLayers] = useState({
@@ -396,6 +397,7 @@ export function NationalMap({
   selectingAnalysisAreaRef.current = selectingAnalysisArea;
   satelliteOverlayRef.current = satelliteOverlay;
   analysisOverlayRef.current = analysisOverlay;
+  analysisSelectionBboxRef.current = analysisSelectionBbox;
 
   const plotted = useMemo(
     () => sites
@@ -725,7 +727,7 @@ export function NationalMap({
 
           map.addSource("analysis-selection", {
             type: "geojson",
-            data: analysisSelectionGeoJson(analysisSelectionBbox),
+            data: analysisSelectionGeoJson(analysisSelectionBboxRef.current),
           });
           map.addLayer({
             id: "analysis-selection-fill",
