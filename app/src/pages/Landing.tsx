@@ -103,6 +103,23 @@ export default function Landing() {
     toolsEyebrow:"FOGGARA / الخدمات الرقمية",toolsTitle:"اختر الأداة وابدأ مباشرة.",toolsBody:"بحث سريع ودخول مباشر ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة."
   };
 
+  const institutionCopy=lang==="fr"?{
+    capabilities:["INGÉNIERIE","SERVICES NUMÉRIQUES","ÉNERGIE","AGRICULTURE","MESURE","ÉTALONNAGE","INSPECTION"],
+    galleryAria:"FOGGARA-DZ · patrimoine, terrain et intelligence des ressources",
+    gallery:["OASIS & EAU","PATRIMOINE FOGGARA","TERRAIN & RESSOURCES","DONNÉES & PREUVES"],
+    demoModules:[["MODE EXPO","/expo"],["EAU & SOL","/agriculture-services"],["PRÉSENTATION","/presentation"]]
+  }:lang==="en"?{
+    capabilities:["ENGINEERING","DIGITAL SERVICES","ENERGY","AGRICULTURE","MEASUREMENT","CALIBRATION","INSPECTION"],
+    galleryAria:"FOGGARA-DZ · heritage, field reality and resource intelligence",
+    gallery:["OASIS & WATER","FOGGARA HERITAGE","FIELD & RESOURCES","DATA & EVIDENCE"],
+    demoModules:[["EXPO MODE","/expo"],["WATER & SOIL","/agriculture-services"],["PRESENTATION","/presentation"]]
+  }:{
+    capabilities:["الهندسة","الخدمات الرقمية","الطاقة","الزراعة","القياس","المعايرة","التفتيش"],
+    galleryAria:"فقارة الجزائر · التراث والميدان وذكاء الموارد",
+    gallery:["الواحة والمياه","تراث الفقارة","الميدان والموارد","البيانات والأدلة"],
+    demoModules:[["وضع المعرض","/expo"],["المياه والتربة","/agriculture-services"],["عرض المنصة","/presentation"]]
+  };
+
   const toolLabels=lang==="fr"?{
     expo:["MODE AGRITECH","Carte live, compteur visiteurs et feedback public."],
     satellite:["INTELLIGENCE SATELLITE","Sentinel-2 réel, NDVI, EVI, SAVI, NDWI, NDMI, LSWI et BSI."],
@@ -259,7 +276,7 @@ export default function Landing() {
           <h1 id="foggara-title">{hero.title}<br/><span>{hero.accent}</span></h1>
           <div className="fg-moon-hero-actions">
             <a className="fg-moon-btn fg-moon-btn-light" href="#operating">{copy.discover}</a>
-            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
+            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/login"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
           </div>
         </div>
       </div>
@@ -303,13 +320,30 @@ export default function Landing() {
       </div>
       <div className="fg-lukas-about-copy">
         <p>{copy.aboutBody}</p>
+        <div className="fg-global-capabilities" aria-label={copy.aboutStrong}>
+          {institutionCopy.capabilities.map(item=><span key={item}>{item}</span>)}
+        </div>
         <Link className="fg-moon-btn fg-moon-btn-green" to="/about">{copy.readMore}<ArrowUpRight size={17}/></Link>
       </div>
     </section>
 
-    <div className="fg-global-visual-stage" aria-label="FOGGARA-DZ oasis">
-      <figure className="fg-global-visual-main"><img src="/images/oasis-dawn.webp" alt="Algerian oasis landscape" loading="lazy"/></figure>
-      <figure className="fg-global-visual-side"><img src="/images/oasis-hero.webp" alt="Oasis and water landscape" loading="lazy"/></figure>
+    <div className="fg-global-visual-stage" aria-label={institutionCopy.galleryAria}>
+      <figure className="fg-global-visual-main">
+        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
+        <figcaption>{institutionCopy.gallery[0]}</figcaption>
+      </figure>
+      <figure className="fg-global-visual-heritage">
+        <img src="/images/foggara-video-frame-2.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <figcaption>{institutionCopy.gallery[1]}</figcaption>
+      </figure>
+      <figure className="fg-global-visual-field">
+        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[2]} loading="lazy"/>
+        <figcaption>{institutionCopy.gallery[2]}</figcaption>
+      </figure>
+      <figure className="fg-global-visual-evidence">
+        <img src="/images/foggara-video-frame-1.webp" alt={institutionCopy.gallery[3]} loading="lazy"/>
+        <figcaption>{institutionCopy.gallery[3]}</figcaption>
+      </figure>
       <div className="fg-global-visual-note">
         <span>HERITAGE → DATA → EVIDENCE → DECISION</span>
         <strong>FOGGARA-DZ</strong>
@@ -351,11 +385,14 @@ export default function Landing() {
         <p>{copy.liveBody}</p>
         <div className="fg-moon-demo-actions">
           <Link className="fg-moon-btn fg-moon-btn-light" to="/expo">{copy.openDemo}<ArrowUpRight size={16}/></Link>
-          <Link className="fg-moon-btn fg-moon-btn-outline" to={user?"/app":"/register"}>{copy.enter}<ArrowUpRight size={16}/></Link>
+          <Link className="fg-moon-btn fg-moon-btn-outline" to={user?"/app":"/login"}>{copy.enter}<ArrowUpRight size={16}/></Link>
         </div>
+        <nav className="fg-global-demo-modules" aria-label={copy.liveDemo}>
+          {institutionCopy.demoModules.map(([label,to],index)=><Link to={to} key={label}><span dir="ltr">0{index+1}</span>{label}<ArrowUpRight size={13}/></Link>)}
+        </nav>
       </div>
       <aside className="fg-moon-qr" aria-label={copy.openDemo}>
-        <a href={expoUrl} target="_blank" rel="noreferrer"><img src="/expo-qr.svg" alt="FOGGARA AGRITECH EXPO QR" width="92" height="92"/></a>
+        <a href={expoUrl} target="_blank" rel="noreferrer"><img src="/expo-qr.svg" alt="FOGGARA AGRITECH EXPO QR" width="64" height="64"/></a>
         <div>
           <strong>FOGGARA / EXPO</strong>
           <span dir="ltr">foggara-dz.onrender.com/expo</span>

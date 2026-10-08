@@ -7,7 +7,7 @@ const landingCss=readFileSync(new URL('../src/pages/heritage-landing.css',import
 
 test('Canva presentation image switching is fade-only with no scale zoom',()=>{
   assert.ok(deckCss.includes('@keyframes ocpFade'));
-  assert.equal(/@keyframes ocpFade[\\s\\S]*?scale\\(/.test(deckCss),false);
+  assert.equal(/@keyframes ocpFade[\s\S]*?scale\(/.test(deckCss),false);
 });
 
 test('landing hero image switching is fade-only with no scale zoom',()=>{

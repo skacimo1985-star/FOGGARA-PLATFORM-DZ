@@ -19,7 +19,7 @@ test('landing embeds the shared Canva oasis presentation',()=>{
   assert.ok(landing.includes('OasisCanvaPresentation'));
   assert.ok(landing.includes('<OasisCanvaPresentation lang={lang} compact/>'));
   assert.ok(deck.includes('FOGGARA-DZ · CANVA PRESENTATION'));
-  assert.ok(deck.includes('SMART AGRICULTURE DEMO'));
+  assert.ok(deck.includes('FROM FIELD QUESTION TO AGRICULTURAL ADVICE'));
   assert.ok(deck.includes('AGRITECH EXPO'));
 });
 
