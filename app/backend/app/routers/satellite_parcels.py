@@ -11,9 +11,10 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
@@ -110,6 +111,51 @@ def _scene_time(item: dict) -> datetime:
     except (ValueError, TypeError):
         api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Scene has no trustworthy acquisition timestamp")
     return when
+
+
+@router.get("/automation/status")
+def parcel_automation_status(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Organization-scoped proof that the backend automation is actually running."""
+    from ..field_automation_runtime import runtime as field_runtime
+
+    eligible = db.scalar(
+        select(func.count()).select_from(AgriParcel).where(
+            AgriParcel.org_id == user.org_id,
+            AgriParcel.archived.is_(False),
+            AgriParcel.is_demo.is_(False),
+        )
+    ) or 0
+    stored = db.scalar(
+        select(func.count()).select_from(AgriObservation).where(
+            AgriObservation.org_id == user.org_id,
+            AgriObservation.source_type == "satellite",
+            AgriObservation.source_ref.like("automation:%"),
+        )
+    ) or 0
+    latest = db.scalar(
+        select(func.max(AgriObservation.observed_at)).where(
+            AgriObservation.org_id == user.org_id,
+            AgriObservation.source_type == "satellite",
+            AgriObservation.source_ref.like("automation:%"),
+        )
+    )
+    return {
+        "enabled": config.FIELD_AUTOMATION_ENABLED,
+        "interval_seconds": config.FIELD_AUTOMATION_INTERVAL_SECONDS,
+        "lookback_days": config.FIELD_AUTOMATION_LOOKBACK_DAYS,
+        "cloud_cover_lte": config.FIELD_AUTOMATION_CLOUD_COVER_LTE,
+        "eligible_parcels": int(eligible),
+        "stored_automated_observations": int(stored),
+        "latest_observation_at": latest,
+        "runtime": dict(field_runtime),
+        "provider": PROVIDER,
+        "indices": list(PERSISTABLE_INDICES),
+        "evidence_status": "INFERRED",
+        "field_execution": False,
+    }
 
 
 @router.get("/parcels/{identity}/remote-sensing/scenes")
