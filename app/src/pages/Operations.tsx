@@ -68,7 +68,7 @@ function Review({row,resource,disabled,onReview}:{
 }
 function ProjectSelector({projects,activeProjectId}:{projects:Project[];activeProjectId:number|null}) {
   const {t}=useTranslation();
-  return <Field label={t("productionCopy.project")}><select name="project_id" className={inputClass} required defaultValue={activeProjectId??""}>
+  return <Field label={t("productionCopy.project")}><select key={activeProjectId??"none"} name="project_id" className={inputClass} required defaultValue={activeProjectId??""}>
     <option value="">{t("productionCopy.selectAProject")}</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_demo?" · DEMO":""}</option>)}
   </select></Field>;
 }
