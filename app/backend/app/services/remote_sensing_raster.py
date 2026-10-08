@@ -225,6 +225,7 @@ def _compute_index_statistics_unlocked(
             target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
 
             band_arrays: dict[str, np.ndarray] = {}
+            band_invalid: dict[str, np.ndarray] = {}
             source_invalid = np.zeros((height, width), dtype=bool)
             for asset in assets:
                 if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
@@ -238,8 +239,10 @@ def _compute_index_statistics_unlocked(
                     resampling=Resampling.bilinear,
                 )
                 scaled = _scaled(values, asset)
-                source_invalid |= invalid | ~np.isfinite(scaled)
+                invalid_band = invalid | ~np.isfinite(scaled)
+                source_invalid |= invalid_band
                 band_arrays[str(asset["band"])] = scaled
+                band_invalid[str(asset["band"])] = invalid_band
 
             scl_values, scl_invalid = _read_aligned(
                 scl_asset,
@@ -391,6 +394,7 @@ def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
         ):
             target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
             band_arrays: dict[str, np.ndarray] = {}
+            band_invalid: dict[str, np.ndarray] = {}
             source_invalid = np.zeros((height, width), dtype=bool)
             for asset in assets:
                 if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
@@ -404,8 +408,10 @@ def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
                     resampling=Resampling.bilinear,
                 )
                 scaled = _scaled(values, asset)
-                source_invalid |= invalid | ~np.isfinite(scaled)
+                invalid_band = invalid | ~np.isfinite(scaled)
+                source_invalid |= invalid_band
                 band_arrays[str(asset["band"])] = scaled
+                band_invalid[str(asset["band"])] = invalid_band
 
             scl_values, scl_invalid = _read_aligned(
                 scl_asset,
@@ -423,13 +429,19 @@ def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
     rounded_scl = safe_scl.astype(np.int16, copy=False)
     cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
-    common_invalid = source_invalid | scl_invalid | cloud_invalid
     total_pixels = int(width * height)
 
     results: dict[str, dict] = {}
     for index_key in indices:
+        definition = get_index_definition(str(index_key))
+        index_source_invalid = np.asarray(scl_invalid, dtype=bool).copy()
+        for band in definition.required_bands:
+            invalid = band_invalid.get(band)
+            if invalid is None:
+                raise RasterStatisticsError(f"multi-index plan is missing invalid mask for {band}")
+            index_source_invalid |= invalid
         values = _compute_index_array(str(index_key), band_arrays)
-        valid_mask = ~(common_invalid | ~np.isfinite(values))
+        valid_mask = ~(index_source_invalid | cloud_invalid | ~np.isfinite(values))
         valid_values = values[valid_mask]
         valid_pixels = int(valid_values.size)
         statistics = {"min": None, "max": None, "mean": None, "median": None}
@@ -440,7 +452,6 @@ def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
                 "mean": float(np.mean(valid_values, dtype=np.float64)),
                 "median": float(np.median(valid_values)),
             }
-        definition = get_index_definition(str(index_key))
         results[str(index_key)] = {
             "statistics": statistics,
             "pixels": {
@@ -449,6 +460,7 @@ def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
                 "masked": total_pixels - valid_pixels,
                 "valid_fraction": valid_pixels / total_pixels if total_pixels else 0.0,
             },
+            "source_nodata_pixel_count": int(np.count_nonzero(index_source_invalid)),
             "formula_version": definition.formula_version,
             "formula": definition.formula,
             "application_domain": definition.application_domain,
