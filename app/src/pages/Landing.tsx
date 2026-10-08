@@ -333,7 +333,7 @@ export default function Landing() {
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
-        <img src="/images/foggara-heritage-poster.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/foggara-video-frame-2.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
       <figure className="fg-global-visual-field">
