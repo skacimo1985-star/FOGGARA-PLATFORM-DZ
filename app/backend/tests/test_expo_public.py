@@ -123,6 +123,7 @@ def test_expo_feedback_requires_content(client):
 
 
 def test_expo_feedback_rejects_another_visitor_session(client):
+    feedback_before = client.get("/api/expo/stats").json()["feedback"]
     owner_key = "expo_feedback_owner_123456"
     attacker_key = "expo_feedback_other_123456"
     visit = client.post(
@@ -145,7 +146,7 @@ def test_expo_feedback_rejects_another_visitor_session(client):
     )
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "EXPO_VISIT_NOT_FOUND"
-    assert client.get("/api/expo/stats").json()["feedback"] == 0
+    assert client.get("/api/expo/stats").json()["feedback"] == feedback_before
 
 
 def test_expo_feedback_requires_session_proof(client):
