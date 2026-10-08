@@ -20,7 +20,7 @@ test('reception hero switches between clear oasis images only',()=>{
   assert.equal(heroMedia.includes('foggara-sprite'),false);
 });
 
-test('hero remains connected to real routes',()=>{
-  assert.ok(landing.includes('to={user?"/app":"/expo"}'));
+test('hero routes visitors through the optional Expo profile entry',()=>{
+  assert.ok(landing.includes('to={user?"/app":"/login"}'));
   assert.ok(landing.includes('href="#about"'));
 });
