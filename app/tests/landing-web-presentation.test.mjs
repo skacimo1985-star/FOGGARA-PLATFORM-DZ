@@ -35,3 +35,14 @@ test('Canva presentation autoplays on the landing with fade-only transitions',()
   assert.ok(deck.includes('6500'));
   assert.equal(deck.includes('setPlaying(false)'),false);
 });
+
+
+test('landing uses the supplied editorial portfolio direction without duplicating presentation',()=>{
+  assert.ok(landing.includes('fg-lukas-hero'));
+  assert.ok(landing.includes('fg-lukas-thumbs'));
+  assert.ok(landing.includes('fg-lukas-domain-strip'));
+  assert.ok(landing.includes('fg-lukas-about'));
+  assert.ok(landing.includes('fg-lukas-image-rail'));
+  assert.equal((landing.match(/OasisCanvaPresentation/g)||[]).length>=1,true);
+  assert.equal(landing.includes('id="heritage"'),false);
+});
