@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const landing=readFileSync(new URL('../src/pages/Landing.tsx',import.meta.url),'utf8');
+const css=readFileSync(new URL('../src/pages/heritage-landing.css',import.meta.url),'utf8');
+
+test('institutional landing keeps a four-image visual story',()=>{
+  for(const asset of [
+    '/images/oasis-dawn.webp',
+    '/images/foggara-heritage-poster.webp',
+    '/images/oasis-hero.webp',
+    '/images/foggara-video-frame-1.webp'
+  ]){
+    assert.ok(landing.includes(asset),asset);
+  }
+  assert.ok(landing.includes('fg-global-visual-heritage'));
+  assert.ok(landing.includes('fg-global-visual-evidence'));
+});
+
+test('company capabilities remain visible in all supported languages',()=>{
+  assert.ok(landing.includes('INGÉNIERIE'));
+  assert.ok(landing.includes('DIGITAL SERVICES'));
+  assert.ok(landing.includes('الخدمات الرقمية'));
+  assert.ok(landing.includes('fg-global-capabilities'));
+});
+
+test('expo QR stays compact and demo routes remain actionable',()=>{
+  assert.ok(landing.includes('width="64" height="64"'));
+  assert.ok(css.includes('grid-template-columns:64px 1fr'));
+  assert.ok(css.includes('.fg-global-demo-modules'));
+  for(const route of ['/expo','/agriculture-services','/presentation']){
+    assert.ok(landing.includes(route),route);
+  }
+});
