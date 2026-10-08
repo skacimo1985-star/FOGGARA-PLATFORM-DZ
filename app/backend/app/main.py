@@ -32,6 +32,7 @@ log = logging.getLogger("foggara")
 async def lifespan(_app):
     from .automation_runtime import run_queue
     from .field_automation_runtime import run_field_automation
+    from .mqtt_edge_runtime import run_mqtt_edge
 
     stop = asyncio.Event()
     tasks = []
@@ -39,6 +40,8 @@ async def lifespan(_app):
         tasks.append(asyncio.create_task(run_queue(stop)))
     if config.FIELD_AUTOMATION_ENABLED:
         tasks.append(asyncio.create_task(run_field_automation(stop)))
+    if config.MQTT_EDGE_ENABLED:
+        tasks.append(asyncio.create_task(run_mqtt_edge(stop)))
     try:
         yield
     finally:
