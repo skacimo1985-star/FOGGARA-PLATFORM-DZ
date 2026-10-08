@@ -6,7 +6,7 @@ import {
   FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
   BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
-  Building2, Waves, ScanLine, X, Maximize2
+  Building2, Waves, ScanLine
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
@@ -19,10 +19,6 @@ import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
 import "./heritage-landing.css";
-
-type HeritageLightbox =
-  | {kind:"image";src:string;alt:string}
-  | {kind:"sprite";photo:number;alt:string};
 
 const domains = [
   {key:"water",Icon:Droplets},
@@ -50,11 +46,10 @@ export default function Landing() {
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
   const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
-  const [heritageLightbox,setHeritageLightbox]=useState<HeritageLightbox|null>(null);
   const lang:Locale=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
 
   const copy=lang==="fr"?{
-    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",presentation:"PRÉSENTATION",heritage:"FOGGARA",demo:"DÉMO",contact:"CONTACT",
+    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",presentation:"PRÉSENTATION",demo:"DÉMO",contact:"CONTACT",
     topNational:"PLATEFORME NATIONALE ALGÉRIENNE",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"De l’ingéniosité hydraulique des oasis à une plateforme nationale de décision : terrain, données, preuves, analyse et action."},
@@ -71,15 +66,11 @@ export default function Landing() {
       ["AGRICULTURE & SATELLITE","Parcelles, Sentinel-2, indices de végétation, météo agricole et suivi des cultures.","/app/agriculture"],
       ["PREUVES & DÉCISION","Provenance, validation, analyse, règles, scénarios et décisions auditées.","/app/studio"]
     ],
-    galleryTitle:"FOGGARA",galleryStrong:"EN IMAGES",galleryBody:"Une lecture visuelle du système hydraulique oasien, de la source au partage de l’eau et à la parcelle cultivée.",
-    gallery:["GALERIE MÈRE","KASRIA PRINCIPALE","SEGUIAS","PARTAGE DE L’EAU","MAJEN & BASSIN","PATRIMOINE DE TIMIMOUN"],
-    heritageTitle:"DE L’HÉRITAGE",heritageStrong:"AU JUMEAU NUMÉRIQUE",heritageBody:"L’infographie patrimoniale devient une porte d’entrée pédagogique vers le modèle FOGGARA : source → galerie → kasria → seguia → parcelle, puis données → preuves → décision → suivi.",
-    heritageAction:"EXPLORER LE NEXUS",viewImage:"AGRANDIR L’IMAGE",closeImage:"FERMER L’IMAGE",
     liveDemo:"DÉMO OPÉRATIONNELLE",liveBody:"Entrez directement dans le parcours Expo, explorez les modules actifs et laissez un retour public pour poursuivre la discussion avec SIREP OASES.",
     openDemo:"OUVRIR LA DÉMO",copy:"COPIER",copied:"COPIÉ",download:"QR SVG",
     toolsEyebrow:"FOGGARA / SERVICES NUMÉRIQUES",toolsTitle:"CHOISISSEZ UN OUTIL. COMMENCEZ IMMÉDIATEMENT.",toolsBody:"Recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"OUVRIR",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond."
   }:lang==="en"?{
-    home:"HOME",about:"ABOUT",services:"SERVICES",presentation:"PRESENTATION",heritage:"FOGGARA",demo:"DEMO",contact:"CONTACT",
+    home:"HOME",about:"ABOUT",services:"SERVICES",presentation:"PRESENTATION",demo:"DEMO",contact:"CONTACT",
     topNational:"ALGERIAN NATIONAL PLATFORM",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"From oasis water ingenuity to a national decision platform: field reality, data, evidence, analysis and action."},
@@ -96,15 +87,11 @@ export default function Landing() {
       ["AGRICULTURE & SATELLITE","Parcels, Sentinel-2, vegetation indices, agricultural weather and crop monitoring.","/app/agriculture"],
       ["EVIDENCE & DECISION","Provenance, validation, analysis, rules, scenarios and auditable decisions.","/app/studio"]
     ],
-    galleryTitle:"FOGGARA",galleryStrong:"IN IMAGES",galleryBody:"A visual reading of the oasis hydraulic system, from source and water sharing to the cultivated parcel.",
-    gallery:["MOTHER GALLERY","MAIN KASRIA","SEGUIAS","WATER SHARING","MAJEN & BASIN","TIMIMOUN HERITAGE"],
-    heritageTitle:"FROM HERITAGE",heritageStrong:"TO DIGITAL TWIN",heritageBody:"The heritage infographic becomes an educational gateway into the FOGGARA model: source → gallery → kasria → seguia → parcel, then data → evidence → decision → monitoring.",
-    heritageAction:"EXPLORE THE NEXUS",viewImage:"VIEW IMAGE",closeImage:"CLOSE IMAGE",
     liveDemo:"OPERATIONAL DEMO",liveBody:"Enter the Expo journey directly, explore active modules and leave public feedback to continue the conversation with SIREP OASES.",
     openDemo:"OPEN DEMO",copy:"COPY",copied:"COPIED",download:"QR SVG",
     toolsEyebrow:"FOGGARA / DIGITAL SERVICES",toolsTitle:"CHOOSE A TOOL. START NOW.",toolsBody:"Fast search, direct entry and traceable results.",search:"Search satellite, weather, soil, GIS, AI…",open:"OPEN",public:"PUBLIC",workspace:"WORKSPACE",noResults:"No matching service."
   }:{
-    home:"الرئيسية",about:"من نحن",services:"الخدمات",presentation:"عرض المنصة",heritage:"الفقارة",demo:"الديمو",contact:"اتصل بنا",
+    home:"الرئيسية",about:"من نحن",services:"الخدمات",presentation:"عرض المنصة",demo:"الديمو",contact:"اتصل بنا",
     topNational:"المنصة الجزائرية الوطنية",topLang:"العربية · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"من عبقرية توزيع المياه في الواحات إلى منصة وطنية للقرار تربط الميدان والبيانات والأدلة والتحليل والتنفيذ."},
@@ -121,10 +108,6 @@ export default function Landing() {
       ["الزراعة والأقمار الصناعية","القطع وSentinel-2 ومؤشرات الغطاء النباتي والطقس الزراعي ومتابعة المحاصيل.","/app/agriculture"],
       ["الأدلة والقرار","المصدر والتحقق والتحليل والقواعد والسيناريوهات والقرارات القابلة للتدقيق.","/app/studio"]
     ],
-    galleryTitle:"الفقارة",galleryStrong:"بالصور",galleryBody:"قراءة بصرية للنظام المائي في الواحات، من المصدر وتقاسم المياه إلى القطعة المزروعة.",
-    gallery:["المعرض الأم","الكسـرية الرئيسية","السواقي","تقاسم المياه","الماجن والحوض","تراث تيميمون"],
-    heritageTitle:"من التراث",heritageStrong:"إلى التوأم الرقمي",heritageBody:"المخطط التراثي يصبح مدخلًا بصريًا لفهم نموذج FOGGARA: المصدر ← المعرض ← الكسرية ← الساقية ← القطعة، ثم البيانات ← الأدلة ← القرار ← المتابعة.",
-    heritageAction:"استكشف NEXUS",viewImage:"عرض الصورة",closeImage:"إغلاق الصورة",
     liveDemo:"ديمو تشغيلي",liveBody:"ادخل مباشرة إلى مسار المعرض، استكشف الوحدات الفعالة واترك رأيك لمواصلة النقاش مع SIREP OASES.",
     openDemo:"فتح الديمو",copy:"نسخ",copied:"تم النسخ",download:"QR SVG",
     toolsEyebrow:"FOGGARA / الخدمات الرقمية",toolsTitle:"اختر الأداة وابدأ مباشرة.",toolsBody:"بحث سريع ودخول مباشر ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة."
@@ -191,18 +174,6 @@ export default function Landing() {
   },[]);
 
   useEffect(()=>{
-    if(!heritageLightbox)return;
-    const previousOverflow=document.body.style.overflow;
-    document.body.style.overflow="hidden";
-    const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setHeritageLightbox(null);};
-    document.addEventListener("keydown",close);
-    return()=>{
-      document.removeEventListener("keydown",close);
-      document.body.style.overflow=previousOverflow;
-    };
-  },[heritageLightbox]);
-
-  useEffect(()=>{
     const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),6000);
     return()=>window.clearInterval(timer);
   },[copy.hero.length]);
@@ -243,7 +214,6 @@ export default function Landing() {
       <a href="#about">{copy.about}</a>
       <a href="#services">{copy.services}</a>
       <a href="#presentation">{copy.presentation}</a>
-      <a href="#heritage">{copy.heritage}</a>
       <a href="#demo">{copy.demo}</a>
       <Link to="/contact">{copy.contact}</Link>
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
@@ -301,56 +271,7 @@ export default function Landing() {
       </div>
     </section>
 
-    <section className="fg-moon-heritage fg-foggara-visual-demo" id="heritage">
-      <div className="fg-moon-heritage-copy">
-        <p className="fg-eyebrow">DEMO / FOGGARA HERITAGE</p>
-        <h2>{copy.heritageTitle}<br/><strong>{copy.heritageStrong}</strong></h2>
-        <p>{copy.heritageBody}</p>
-        <Link className="fg-moon-btn fg-moon-btn-dark" to="/app/nexus">{copy.heritageAction}<ArrowUpRight size={17}/></Link>
-      </div>
-      <div className="fg-foggara-demo-stage">
-        <figure className="fg-foggara-demo-feature">
-          <button
-            type="button"
-            className="fg-heritage-image-trigger fg-heritage-poster-trigger"
-            aria-label={`${copy.viewImage}: La Foggara`}
-            onClick={()=>setHeritageLightbox({kind:"image",src:"/images/foggara-heritage-poster.webp",alt:"La Foggara — système traditionnel de partage des eaux"})}
-          >
-            <img src="/images/foggara-heritage-poster.webp" alt="La Foggara — système traditionnel de partage des eaux" loading="lazy" decoding="async"/>
-            <span className="fg-heritage-zoom"><Maximize2 size={18}/>{copy.viewImage}</span>
-          </button>
-          <figcaption>LA FOGGARA · DEMO VISUEL</figcaption>
-        </figure>
-        <div className="fg-foggara-demo-photos" aria-label="Foggara documentary demo">
-          {[1,3,4,5,6,7,8,10,11].map((photo,index)=>{
-            const label=copy.gallery[index%copy.gallery.length];
-            return <figure key={photo}>
-              <button
-                type="button"
-                className="fg-heritage-image-trigger fg-heritage-thumb-trigger"
-                aria-label={`${copy.viewImage}: ${label}`}
-                onClick={()=>setHeritageLightbox({kind:"sprite",photo,alt:label})}
-              >
-                <div className={`fg-moon-photo fg-photo-${String(photo).padStart(2,"0")}`} role="img" aria-label={label}/>
-                <span className="fg-heritage-thumb-zoom" aria-hidden="true"><Maximize2 size={15}/></span>
-              </button>
-            </figure>;
-          })}
-        </div>
-      </div>
-    </section>
 
-    {heritageLightbox&&<div className="fg-heritage-lightbox" role="dialog" aria-modal="true" aria-label={heritageLightbox.alt} onClick={()=>setHeritageLightbox(null)}>
-      <div className="fg-heritage-lightbox-panel" onClick={event=>event.stopPropagation()}>
-        <button type="button" className="fg-heritage-lightbox-close" aria-label={copy.closeImage} onClick={()=>setHeritageLightbox(null)}><X size={21}/></button>
-        <div className="fg-heritage-lightbox-media">
-          {heritageLightbox.kind==="image"
-            ?<img src={heritageLightbox.src} alt={heritageLightbox.alt}/>
-            :<div className={`fg-heritage-lightbox-sprite fg-photo-${String(heritageLightbox.photo).padStart(2,"0")}`} role="img" aria-label={heritageLightbox.alt}/>}
-        </div>
-        <div className="fg-heritage-lightbox-caption"><strong>{heritageLightbox.alt}</strong><span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH-DZ</span></div>
-      </div>
-    </div>}
 
     <section className="fg-moon-demo" id="demo">
       <div>
