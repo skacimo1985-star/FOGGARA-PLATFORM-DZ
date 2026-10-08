@@ -849,6 +849,7 @@ class DecisionVerificationOut(ORM):
 _DEVICE_TYPE = Literal["well_controller", "pump_controller", "reservoir_monitor",
                        "irrigation_controller", "energy_meter",
                        "environmental_station", "generic_sensor_node"]
+_DEVICE_PROTOCOL = Literal["simulated", "mqtt", "modbus", "opcua", "rest", "thingsboard_gateway"]
 _SENSOR_TYPE = Literal["water_level", "flow_rate", "pressure", "temperature",
                        "pump_state", "valve_state", "energy", "voltage",
                        "current", "frequency"]
@@ -860,6 +861,7 @@ _RULE_OP = Literal["GT", "GTE", "LT", "LTE", "EQ", "NEQ"]
 class DeviceIn(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     device_type: _DEVICE_TYPE
+    protocol: _DEVICE_PROTOCOL = "simulated"
     subject_type: Optional[str] = Field(default=None, max_length=50)
     subject_id: Optional[int] = None
     configuration: dict = Field(default_factory=dict)
