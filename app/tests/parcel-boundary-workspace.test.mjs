@@ -14,7 +14,8 @@ const mapSource = readFileSync(
 test("GIS can select parcels that do not yet have mapped boundaries", () => {
   assert.match(source, /api\.get<ParcelRecord\[]>\("\/agriculture\/parcels"\)/);
   assert.match(source, /value=\{selectedParcelId \?\? ""\}/);
-  assert.match(source, /setSelectedParcelId/);
+  assert.match(source, /setActiveParcelId/);
+  assert.match(source, /useOperationalContext/);
 });
 
 test("parcel boundary workspace supports server-validated GeoJSON import", () => {
