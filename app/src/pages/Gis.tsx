@@ -241,6 +241,14 @@ type FieldIntelligenceStudy = {
     profile?: CropProfile;
     interpretation: string;
   }>;
+  global_sources?: Array<{
+    id: string;
+    name: string;
+    license: string;
+    role: string;
+    status: string;
+    url: string;
+  }>;
   soil_context: {
     provider: string;
     resolution_m: number;
@@ -1272,6 +1280,15 @@ export default function Gis() {
                 : <p>{fieldCopy.noData}</p>}
             </div>
           </div>
+          {fieldIntelligenceResult.global_sources?.length ? (
+            <div className="fg-field-global-sources">
+              {fieldIntelligenceResult.global_sources.map(source=><div key={source.id}>
+                <strong>{source.name}</strong>
+                <span>{source.role}</span>
+                <small>{source.status} · {source.license}</small>
+              </div>)}
+            </div>
+          ) : null}
           <div className="fg-field-intelligence-notes">
             {fieldIntelligenceResult.crop_profile.limitations.map(item=><p key={item}>{item}</p>)}
             {fieldIntelligenceResult.limitations?.slice(0,3).map(item=><p key={item}>{item}</p>)}
