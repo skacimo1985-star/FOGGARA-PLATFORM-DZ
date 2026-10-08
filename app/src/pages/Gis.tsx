@@ -177,7 +177,7 @@ type TimeSeriesStudy = {
     standards: Array<{id:string;name:string;organization:string;role:string;url:string;claim:string}>;
   };
   limitations: string[];
-
+};
 
 function rasterBudget(bbox: [number, number, number, number]) {
   const [west, south, east, north] = bbox;
