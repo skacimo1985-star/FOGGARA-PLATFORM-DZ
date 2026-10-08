@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, Query, Response
 from ..deps import api_error, get_current_user
 from ..models import User
 from ..services.remote_sensing_indices import public_index_definitions
+from ..services.field_intelligence import public_field_capabilities, resolve_crop_profile
+from ..services.isda_soil_context import sample_soil_context
 from ..services.remote_sensing_methodology import (
     acquisition_age_hours,
     operational_quality_indicator,
@@ -21,6 +23,7 @@ from ..services.remote_sensing_methodology import (
 )
 from ..services.remote_sensing_processing import (
     ProcessingPlanError,
+    build_multi_index_plan,
     build_processing_plan,
     build_true_color_plan,
     item_url,
@@ -30,6 +33,7 @@ from ..services.remote_sensing_raster import (
     RasterCapacityError,
     RasterStatisticsError,
     compute_index_statistics,
+    compute_multi_index_statistics,
     render_index_preview_png,
     render_true_color_preview_png,
     validate_analysis_bbox,
@@ -298,6 +302,162 @@ def catalog_scenes(
     }
 
 
+
+
+@router.get("/field-intelligence/capabilities")
+def field_intelligence_capabilities(_user: User = Depends(get_current_user)):
+    return public_field_capabilities()
+
+
+@router.get("/studies/field-intelligence")
+def field_intelligence_study(
+    bbox: str = Query(..., min_length=7, max_length=160),
+    start: date = Query(...),
+    end: date = Query(...),
+    crop: str = Query(default="", max_length=120),
+    cloud_cover_lte: float = Query(default=30, ge=0, le=100),
+    include_soil: bool = Query(default=True),
+    _user: User = Depends(get_current_user),
+):
+    if start > end:
+        api_error(422, "INVALID_DATE_RANGE", "start date must not be after end date")
+    if (end - start).days > 366:
+        api_error(422, "DATE_RANGE_TOO_LARGE", "field intelligence is limited to 366 days")
+
+    raw_bbox = _parse_bbox(bbox)
+    try:
+        validate_analysis_bbox(raw_bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", str(exc))
+
+    estimated_pixels = _study_pixel_budget(raw_bbox)
+    if estimated_pixels > 250_000:
+        api_error(
+            422,
+            "FIELD_INTELLIGENCE_AREA_TOO_LARGE",
+            "Analyze All is limited to about 250,000 10 m pixels; select a smaller field AOI.",
+        )
+
+    capabilities = public_field_capabilities()
+    features = _earth_search_features(raw_bbox, start, end, cloud_cover_lte, 12)
+    selected_feature = None
+    selected_plan = None
+    selected_scene = None
+    skipped = []
+    for feature in features:
+        scene = _scene_from_feature(feature)
+        if not scene.get("id") or scene.get("geometry") is None:
+            continue
+        try:
+            plan = build_multi_index_plan(feature)
+        except ProcessingPlanError:
+            skipped.append({"scene_id": scene.get("id"), "reason": "required_bands_unavailable"})
+            continue
+        selected_feature = feature
+        selected_plan = plan
+        selected_scene = scene
+        break
+
+    if selected_feature is None or selected_plan is None or selected_scene is None:
+        return {
+            "status": "NO_USABLE_SCENE",
+            "bbox_wgs84": raw_bbox,
+            "period": {"start": start.isoformat(), "end": end.isoformat()},
+            "crop_profile": resolve_crop_profile(crop),
+            "scene": None,
+            "domains": {},
+            "soil_context": None,
+            "global_sources": capabilities["global_projects"],
+            "skipped": skipped,
+            "evidence": {"verified": False},
+        }
+
+    try:
+        spectral = compute_multi_index_statistics(selected_plan, raw_bbox)
+    except RasterCapacityError:
+        api_error(429, "RASTER_ANALYSIS_BUSY", "Field-intelligence raster capacity is busy; retry later")
+    except RasterStatisticsError as exc:
+        api_error(502, "REMOTE_RASTER_UNAVAILABLE", str(exc))
+
+    indices = spectral["indices"]
+    ndvi_valid = float(indices.get("ndvi", {}).get("pixels", {}).get("valid_fraction") or 0.0)
+    quality = operational_quality_indicator(ndvi_valid, selected_scene.get("cloud_cover_pct"))
+    soil = sample_soil_context(raw_bbox) if include_soil else None
+    profile = resolve_crop_profile(crop)
+
+    domains = {
+        "vegetation": {
+            "status": "COMPUTED",
+            "indices": {key: indices[key] for key in ("ndvi", "evi", "savi") if key in indices},
+            "interpretation": "Screen canopy greenness/vigor; not a diagnosis of disease, nutrient deficiency or yield.",
+        },
+        "canopy_moisture": {
+            "status": "COMPUTED",
+            "indices": {key: indices[key] for key in ("ndmi", "lswi") if key in indices},
+            "interpretation": "Moisture-related spectral response; not an absolute soil-moisture measurement.",
+        },
+        "surface_water": {
+            "status": "COMPUTED",
+            "indices": {key: indices[key] for key in ("ndwi",) if key in indices},
+            "interpretation": "Surface-water screening within the field AOI.",
+        },
+        "soil_surface": {
+            "status": "COMPUTED",
+            "indices": {key: indices[key] for key in ("bsi",) if key in indices},
+            "interpretation": "Bare/exposed soil screening from Sentinel-2 reflectance.",
+        },
+        "soil_context": {
+            "status": "INFERRED" if soil and soil.get("available_properties") else "UNAVAILABLE",
+            "provider": None if soil is None else soil.get("provider"),
+            "context": soil,
+            "interpretation": "Spatial soil-model context only; verified laboratory measurements remain authoritative.",
+        },
+        "crop": {
+            "status": profile["crop_identity_status"],
+            "profile": profile,
+            "interpretation": "Crop profile guides monitoring emphasis; it does not classify crop identity from Sentinel-2.",
+        },
+    }
+
+    return {
+        "status": "READY",
+        "study_type": "field_intelligence_snapshot",
+        "bbox_wgs84": raw_bbox,
+        "period": {"start": start.isoformat(), "end": end.isoformat()},
+        "crop_profile": profile,
+        "scene": {
+            **selected_scene,
+            "acquisition_age_hours": acquisition_age_hours(selected_scene.get("datetime")),
+        },
+        "quality_indicator": quality,
+        "spectral_processing": {
+            "grid": spectral["grid"],
+            "mask": spectral["mask"],
+            "processing_plan_fingerprint": spectral["processing_plan_fingerprint"],
+        },
+        "domains": domains,
+        "soil_context": soil,
+        "global_sources": capabilities["global_projects"],
+        "skipped": skipped,
+        "follow_up": {
+            "time_series": "/api/remote-sensing/studies/timeseries",
+            "true_color": f"/api/remote-sensing/catalog/scenes/{selected_scene['id']}/true-color.png",
+            "index_preview": f"/api/remote-sensing/catalog/scenes/{selected_scene['id']}/preview.png",
+        },
+        "evidence": {
+            "satellite_scene": "OBSERVED",
+            "spectral_indices": "COMPUTED",
+            "soil_spatial_model": "INFERRED" if soil else "MISSING",
+            "crop_identity": profile["crop_identity_status"],
+            "agronomic_interpretation": "INFERRED",
+            "verified": False,
+        },
+        "limitations": [
+            "No spectral result is automatically upgraded to VERIFIED.",
+            "N/P/K/pH prescriptions require validated soil measurements or a separately validated chemical-soil provider contract.",
+            "Individual date-palm counting requires validated very-high-resolution imagery, not Sentinel-2 alone.",
+        ],
+    }
 
 
 @router.get("/providers")

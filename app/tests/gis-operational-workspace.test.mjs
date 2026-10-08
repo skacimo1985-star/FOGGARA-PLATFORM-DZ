@@ -40,3 +40,20 @@ test('GIS exposes a real multi-temporal satellite study workflow',()=>{
   assert.ok(source.includes('processing_plan_fingerprint'));
   assert.ok(source.includes('QA4EO-INSPIRED TRACEABILITY'));
 });
+
+
+test('GIS creates a real parcel from the manually selected AOI',()=>{
+  assert.ok(source.includes('createFieldFromAoi'));
+  assert.ok(source.includes('bboxPolygon(manualAnalysisBbox)'));
+  assert.ok(source.includes('api.post<ParcelRecord>("/agriculture/parcels"'));
+  assert.ok(source.includes('newFieldCrop'));
+  assert.ok(source.includes('Date palm'));
+});
+
+test('GIS Analyze All calls the combined field-intelligence study',()=>{
+  assert.ok(source.includes('analyzeAllField'));
+  assert.ok(source.includes('/remote-sensing/studies/field-intelligence'));
+  assert.ok(source.includes('fg-field-intelligence'));
+  assert.ok(source.includes('fieldIntelligenceResult.soil_context'));
+  assert.ok(source.includes('OBSERVED → COMPUTED → INFERRED'));
+});

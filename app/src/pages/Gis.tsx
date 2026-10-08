@@ -179,6 +179,105 @@ type TimeSeriesStudy = {
   limitations: string[];
 };
 
+type FieldIndexResult = {
+  statistics: { min: number | null; max: number | null; mean: number | null; median: number | null };
+  pixels: { total: number; valid: number; masked: number; valid_fraction: number };
+  formula_version: string;
+  formula: string;
+  application_domain: string;
+  reference_url: string | null;
+};
+
+type SoilContextProperty = {
+  status: string;
+  mean_0_20: number | null;
+  spatial_spread: number | null;
+  prediction_stdev_0_20: number | null;
+  sample_count: number;
+  label: string;
+  unit: string;
+  resolution_m: number;
+  depth_cm: string;
+};
+
+type CropProfile = {
+  id: string;
+  label: string;
+  declared_crop: string | null;
+  crop_identity_status: string;
+  category: string;
+  priority_indices: string[];
+  modules: string[];
+  limitations: string[];
+};
+
+type FieldIntelligenceStudy = {
+  status: "READY" | "NO_USABLE_SCENE";
+  study_type?: string;
+  bbox_wgs84: [number, number, number, number];
+  period: { start: string; end: string };
+  crop_profile: CropProfile;
+  scene: (SatelliteScene & { acquisition_age_hours?: number | null }) | null;
+  quality_indicator?: { score: number; grade: string; usability: string; standard_claim: boolean };
+  spectral_processing?: {
+    grid: { crs: string; width: number; height: number; resolution_m: number; effective_source_resolution_m?: number | null };
+    mask: { method: string; masked_scl_classes: number[]; cloud_masked_pixel_count: number; source_nodata_pixel_count: number };
+    processing_plan_fingerprint: string;
+  };
+  domains: Record<string, {
+    status: string;
+    indices?: Record<string, FieldIndexResult>;
+    provider?: string | null;
+    context?: {
+      provider: string;
+      resolution_m: number;
+      properties: Record<string, SoilContextProperty>;
+      available_properties: string[];
+      unavailable_properties: string[];
+      evidence_status: string;
+      attribution: string;
+      limitations: string[];
+    } | null;
+    profile?: CropProfile;
+    interpretation: string;
+  }>;
+  global_sources?: Array<{
+    id: string;
+    name: string;
+    license: string;
+    role: string;
+    status: string;
+    url: string;
+  }>;
+  soil_context: {
+    provider: string;
+    resolution_m: number;
+    properties: Record<string, SoilContextProperty>;
+    available_properties: string[];
+    unavailable_properties: string[];
+    evidence_status: string;
+    attribution: string;
+    limitations: string[];
+  } | null;
+  evidence?: Record<string, string | boolean>;
+  limitations?: string[];
+};
+
+
+function bboxPolygon(bbox: [number, number, number, number]): PolygonGeometry {
+  const [west,south,east,north]=bbox;
+  return {
+    type:"Polygon",
+    coordinates:[[
+      [west,south],
+      [east,south],
+      [east,north],
+      [west,north],
+      [west,south],
+    ]],
+  };
+}
+
 function rasterBudget(bbox: [number, number, number, number]) {
   const [west, south, east, north] = bbox;
   const valid = [west, south, east, north].every(Number.isFinite)
@@ -241,6 +340,13 @@ export default function Gis() {
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
   const [manualAnalysisBbox, setManualAnalysisBbox] = useState<[number, number, number, number] | null>(null);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldCrop, setNewFieldCrop] = useState("");
+  const [fieldSaving, setFieldSaving] = useState(false);
+  const [fieldError, setFieldError] = useState<unknown>(null);
+  const [fieldIntelligenceLoading, setFieldIntelligenceLoading] = useState(false);
+  const [fieldIntelligenceError, setFieldIntelligenceError] = useState<unknown>(null);
+  const [fieldIntelligenceResult, setFieldIntelligenceResult] = useState<FieldIntelligenceStudy | null>(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const defaultStart = useMemo(() => {
     const date = new Date();
@@ -340,6 +446,12 @@ export default function Gis() {
       ? { title: "Parcel workspace", select: "Select parcel", none: "No parcel selected", mapped: "Boundary mapped", unmapped: "Boundary required", importGeoJson: "Import GeoJSON", exportGeoJson: "Export GeoJSON", clearBoundary: "Clear boundary", clearConfirm: "Remove the mapped boundary from this parcel?", importError: "The file must contain a GeoJSON Polygon.", hint: "Select any parcel, then draw its boundary on the map or import a GeoJSON Polygon. Final geometry validation is server-side." }
       : { title: "مساحة عمل القطعة", select: "اختر قطعة", none: "لم تُحدد قطعة", mapped: "الحدود مرسومة", unmapped: "تحتاج إلى حدود", importGeoJson: "استيراد GeoJSON", exportGeoJson: "تصدير GeoJSON", clearBoundary: "مسح الحدود", clearConfirm: "هل تريد إزالة الحدود المكانية لهذه القطعة؟", importError: "يجب أن يحتوي الملف على Polygon بصيغة GeoJSON.", hint: "اختر أي قطعة ثم ارسم حدودها على الخريطة أو استورد Polygon بصيغة GeoJSON. التحقق النهائي من الهندسة يتم في الخادم." };
 
+  const fieldCopy = lang === "fr"
+    ? { create: "Créer la parcelle depuis la zone", name: "Nom de la parcelle", crop: "Culture", namePlaceholder: "Ex. Oasis Nord", cropPlaceholder: "Dattier, blé, tomate…", selectedArea: "Zone manuelle sélectionnée", save: "Enregistrer la parcelle", saving: "Enregistrement…", refine: "Après l’enregistrement, vous pouvez redessiner une limite polygonale précise.", analyzeAll: "ANALYSER TOUT", analyzingAll: "Analyse globale…", allTitle: "Intelligence complète de la parcelle", allHint: "Végétation · humidité · eau · sol de surface · contexte sol · culture", soil: "Contexte sol iSDA", cropProfile: "Profil culture", latestScene: "Dernière scène utilisable", quality: "Qualité", noData: "Aucune donnée disponible", providerModel: "Modèle spatial — non vérifié terrain" }
+    : lang === "en"
+      ? { create: "Create field from selected area", name: "Field name", crop: "Crop", namePlaceholder: "e.g. North Oasis", cropPlaceholder: "Date palm, wheat, tomato…", selectedArea: "Manual area selected", save: "Save field", saving: "Saving…", refine: "After saving, you can redraw a precise polygon boundary.", analyzeAll: "ANALYZE ALL", analyzingAll: "Full analysis…", allTitle: "Complete field intelligence", allHint: "Vegetation · moisture · water · soil surface · soil context · crop", soil: "iSDA soil context", cropProfile: "Crop profile", latestScene: "Latest usable scene", quality: "Quality", noData: "No data available", providerModel: "Spatial model — not field verified" }
+      : { create: "إنشاء القطعة من المساحة المحددة", name: "اسم القطعة", crop: "المحصول", namePlaceholder: "مثال: واحة الشمال", cropPlaceholder: "نخيل تمر، قمح، طماطم…", selectedArea: "تم تحديد المساحة يدويًا", save: "حفظ القطعة", saving: "جارٍ الحفظ…", refine: "بعد الحفظ يمكنك إعادة رسم حدود Polygon دقيقة.", analyzeAll: "تحليل الكل", analyzingAll: "جارٍ التحليل الشامل…", allTitle: "الذكاء المتكامل للقطعة", allHint: "النبات · الرطوبة · المياه · سطح التربة · سياق التربة · المحصول", soil: "سياق التربة iSDA", cropProfile: "ملف المحصول", latestScene: "أحدث مشهد صالح", quality: "الجودة", noData: "لا توجد بيانات", providerModel: "نموذج مكاني — غير متحقق ميدانيًا" };
+
   const summary = useMemo(() => {
     const rows = filtered ?? [];
     return {
@@ -405,6 +517,8 @@ export default function Gis() {
     setAnalysisSaved(false);
     setStudyResult(null);
     setStudyError(null);
+    setFieldIntelligenceResult(null);
+    setFieldIntelligenceError(null);
   }, [selectedParcelId]);
 
   useEffect(() => {
@@ -416,6 +530,8 @@ export default function Gis() {
     setAnalysisSaved(false);
     setStudyResult(null);
     setStudyError(null);
+    setFieldIntelligenceResult(null);
+    setFieldIntelligenceError(null);
   }, [manualAnalysisBbox]);
 
   useEffect(() => {
@@ -577,6 +693,58 @@ export default function Gis() {
     ]);
     setParcelBoundaries(boundaries.features);
     setParcels(parcelRows.filter((row) => !row.archived));
+  };
+
+  const createFieldFromAoi = async () => {
+    if (!manualAnalysisBbox || !newFieldName.trim() || !newFieldCrop.trim() || fieldSaving) return;
+    setFieldSaving(true);
+    setFieldError(null);
+    try {
+      const budget = rasterBudget(manualAnalysisBbox);
+      const [west,south,east,north] = manualAnalysisBbox;
+      const created = await api.post<ParcelRecord>("/agriculture/parcels", {
+        name: newFieldName.trim(),
+        crop: newFieldCrop.trim(),
+        area_ha: Math.max(0.01, Number((budget.areaKm2 * 100).toFixed(4))),
+        location: `GIS AOI ${((south+north)/2).toFixed(5)}, ${((west+east)/2).toFixed(5)}`,
+        boundary_geojson: bboxPolygon(manualAnalysisBbox),
+        stage: "initial",
+      });
+      await refreshParcelSpatialData();
+      setSelectedParcelId(created.id);
+      setManualAnalysisBbox(null);
+      setNewFieldName("");
+      setFieldIntelligenceResult(null);
+    } catch (err) {
+      setFieldError(err);
+    } finally {
+      setFieldSaving(false);
+    }
+  };
+
+  const analyzeAllField = async () => {
+    if (!currentRasterBudget.allowed || fieldIntelligenceLoading || !sceneStart || !sceneEnd) return;
+    setFieldIntelligenceLoading(true);
+    setFieldIntelligenceError(null);
+    setFieldIntelligenceResult(null);
+    try {
+      const crop = selectedParcelRecord?.crop || newFieldCrop.trim();
+      const params = new URLSearchParams({
+        bbox: analysisBbox.map((value) => Number(value.toFixed(6))).join(","),
+        start: sceneStart,
+        end: sceneEnd,
+        crop,
+        cloud_cover_lte: String(cloudCover),
+        include_soil: "true",
+      });
+      const result = await api.get<FieldIntelligenceStudy>(`/remote-sensing/studies/field-intelligence?${params.toString()}`);
+      setFieldIntelligenceResult(result);
+      if (result.scene?.id) setSelectedSceneId(result.scene.id);
+    } catch (err) {
+      setFieldIntelligenceError(err);
+    } finally {
+      setFieldIntelligenceLoading(false);
+    }
   };
 
   const resetParcelAnalysis = () => {
@@ -827,6 +995,37 @@ export default function Gis() {
             </div>
           </div>
         </div>
+        {manualAnalysisBbox ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3 lg:grid-cols-[1fr_1fr_auto]">
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{fieldCopy.name}</span>
+              <input className="rounded-md border bg-background px-3 py-2" value={newFieldName} onChange={(e)=>setNewFieldName(e.target.value)} placeholder={fieldCopy.namePlaceholder}/>
+            </label>
+            <label className="grid gap-1 text-xs font-medium">
+              <span>{fieldCopy.crop}</span>
+              <input list="foggara-crops" className="rounded-md border bg-background px-3 py-2" value={newFieldCrop} onChange={(e)=>setNewFieldCrop(e.target.value)} placeholder={fieldCopy.cropPlaceholder}/>
+              <datalist id="foggara-crops">
+                <option value="Date palm"/>
+                <option value="Wheat"/>
+                <option value="Barley"/>
+                <option value="Maize"/>
+                <option value="Potato"/>
+                <option value="Tomato"/>
+                <option value="Olive"/>
+                <option value="Citrus"/>
+              </datalist>
+            </label>
+            <button type="button" className="self-end rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={fieldSaving||!newFieldName.trim()||!newFieldCrop.trim()} onClick={()=>void createFieldFromAoi()}>
+              {fieldSaving?fieldCopy.saving:fieldCopy.save}
+            </button>
+            <div className="lg:col-span-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline">{fieldCopy.selectedArea}</Badge>
+              <span>{fieldCopy.refine}</span>
+            </div>
+            <div className="lg:col-span-3"><ErrorText error={fieldError}/></div>
+          </div>
+        ) : null}
+
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           {selectedParcelRecord ? (
             <>
@@ -942,6 +1141,14 @@ export default function Gis() {
               </button>
               <button
                 type="button"
+                className="rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!currentRasterBudget.allowed || currentRasterBudget.pixels>250000 || fieldIntelligenceLoading || !sceneStart || !sceneEnd}
+                onClick={() => void analyzeAllField()}
+              >
+                {fieldIntelligenceLoading ? fieldCopy.analyzingAll : fieldCopy.analyzeAll}
+              </button>
+              <button
+                type="button"
                 className="rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!currentRasterBudget.allowed || studyLoading || !sceneStart || !sceneEnd}
                 onClick={() => void runTimeSeriesStudy()}
@@ -978,6 +1185,7 @@ export default function Gis() {
 
         <ErrorText error={analysisError} />
         <ErrorText error={studyError} />
+        <ErrorText error={fieldIntelligenceError} />
 
         {analysisResult ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
@@ -1026,6 +1234,69 @@ export default function Gis() {
           </div>
         ) : null}
       </section>
+
+      {fieldIntelligenceResult?.status==="READY" ? (
+        <section className="fg-field-intelligence" aria-label={fieldCopy.allTitle}>
+          <div className="fg-field-intelligence-head">
+            <div>
+              <span>FIELD / AOI INTELLIGENCE · SENTINEL-2 + iSDAsoil</span>
+              <h2>{fieldCopy.allTitle}</h2>
+              <p>{fieldCopy.allHint}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{fieldIntelligenceResult.crop_profile.declared_crop||fieldIntelligenceResult.crop_profile.label}</Badge>
+              {fieldIntelligenceResult.quality_indicator?<Badge variant="outline">{fieldCopy.quality}: {fieldIntelligenceResult.quality_indicator.grade} · {fieldIntelligenceResult.quality_indicator.score}/100</Badge>:null}
+            </div>
+          </div>
+          <div className="fg-field-intelligence-meta">
+            <div><small>{fieldCopy.cropProfile}</small><strong>{fieldIntelligenceResult.crop_profile.label}</strong><span>{fieldIntelligenceResult.crop_profile.crop_identity_status}</span></div>
+            <div><small>{fieldCopy.latestScene}</small><strong>{fieldIntelligenceResult.scene?.datetime?new Date(fieldIntelligenceResult.scene.datetime).toLocaleDateString(locale):"—"}</strong><span>{fieldIntelligenceResult.scene?.platform??"Sentinel-2"}</span></div>
+            <div><small>AOI</small><strong>{currentRasterBudget.areaKm2.toFixed(2)} km²</strong><span>{fieldIntelligenceResult.spectral_processing?.grid.resolution_m??10} m</span></div>
+            <div><small>EVIDENCE</small><strong>OBSERVED → COMPUTED → INFERRED</strong><span>NOT VERIFIED</span></div>
+          </div>
+          <div className="fg-field-index-grid">
+            {Object.entries(fieldIntelligenceResult.domains).flatMap(([domain,value])=>Object.entries(value.indices??{}).map(([key,item])=>
+              <article key={`${domain}-${key}`}>
+                <span>{domain.replaceAll("_"," ")}</span>
+                <h3>{key.toUpperCase()}</h3>
+                <strong dir="ltr">{item.statistics.mean==null?"—":item.statistics.mean.toFixed(4)}</strong>
+                <small dir="ltr">{(item.pixels.valid_fraction*100).toFixed(1)}% valid · {item.application_domain}</small>
+              </article>
+            ))}
+          </div>
+          <div className="fg-field-soil">
+            <div>
+              <span>SOIL / 30 m / INFERRED</span>
+              <h3>{fieldCopy.soil}</h3>
+              <p>{fieldCopy.providerModel}</p>
+            </div>
+            <div className="fg-field-soil-grid">
+              {fieldIntelligenceResult.soil_context?.available_properties.length
+                ? fieldIntelligenceResult.soil_context.available_properties.map(key=>{
+                    const item=fieldIntelligenceResult.soil_context?.properties[key];
+                    if(!item)return null;
+                    return <div key={key}><small>{item.label} · 0–20 cm</small><strong dir="ltr">{item.mean_0_20==null?"—":`${item.mean_0_20.toFixed(2)} ${item.unit}`}</strong><span dir="ltr">σ {item.prediction_stdev_0_20==null?"—":item.prediction_stdev_0_20.toFixed(2)} · {item.resolution_m} m</span></div>;
+                  })
+                : <p>{fieldCopy.noData}</p>}
+            </div>
+          </div>
+          {fieldIntelligenceResult.global_sources?.length ? (
+            <div className="fg-field-global-sources">
+              {fieldIntelligenceResult.global_sources.map(source=><div key={source.id}>
+                <strong>{source.name}</strong>
+                <span>{source.role}</span>
+                <small>{source.status} · {source.license}</small>
+              </div>)}
+            </div>
+          ) : null}
+          <div className="fg-field-intelligence-notes">
+            {fieldIntelligenceResult.crop_profile.limitations.map(item=><p key={item}>{item}</p>)}
+            {fieldIntelligenceResult.limitations?.slice(0,3).map(item=><p key={item}>{item}</p>)}
+          </div>
+        </section>
+      ) : fieldIntelligenceResult?.status==="NO_USABLE_SCENE" ? (
+        <section className="fg-field-intelligence"><p>{satelliteCopy.empty}</p></section>
+      ) : null}
 
       {studyResult ? (
         <section className="fg-eo-study" aria-label={analysisCopy.studyTitle}>

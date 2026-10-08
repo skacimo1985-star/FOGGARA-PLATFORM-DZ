@@ -225,6 +225,7 @@ def _compute_index_statistics_unlocked(
             target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
 
             band_arrays: dict[str, np.ndarray] = {}
+            band_invalid: dict[str, np.ndarray] = {}
             source_invalid = np.zeros((height, width), dtype=bool)
             for asset in assets:
                 if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
@@ -238,8 +239,10 @@ def _compute_index_statistics_unlocked(
                     resampling=Resampling.bilinear,
                 )
                 scaled = _scaled(values, asset)
-                source_invalid |= invalid | ~np.isfinite(scaled)
+                invalid_band = invalid | ~np.isfinite(scaled)
+                source_invalid |= invalid_band
                 band_arrays[str(asset["band"])] = scaled
+                band_invalid[str(asset["band"])] = invalid_band
 
             scl_values, scl_invalid = _read_aligned(
                 scl_asset,
@@ -359,6 +362,149 @@ def _compute_index_statistics_unlocked(
         },
     }
 
+
+
+def _compute_multi_index_statistics_unlocked(plan: Mapping, bbox) -> dict:
+    """Read the shared Sentinel bands once and compute all supported screening indices."""
+    analysis_bbox = validate_analysis_bbox(bbox)
+    assets = plan.get("required_assets")
+    cloud_mask = plan.get("cloud_mask")
+    indices = plan.get("indices")
+    if (
+        not isinstance(assets, list)
+        or not assets
+        or not isinstance(cloud_mask, Mapping)
+        or not isinstance(indices, list)
+        or not indices
+    ):
+        raise RasterStatisticsError("multi-index processing plan is incomplete")
+    scl_asset = cloud_mask.get("asset")
+    if not isinstance(scl_asset, Mapping):
+        raise RasterStatisticsError("multi-index processing plan has no SCL asset")
+
+    try:
+        with rasterio.Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif,.TIF",
+            GDAL_HTTP_MAX_RETRY="1",
+            GDAL_HTTP_RETRY_DELAY="0.2",
+            GDAL_HTTP_TIMEOUT="10",
+            GDAL_HTTP_CONNECTTIMEOUT="5",
+            AWS_NO_SIGN_REQUEST="YES",
+        ):
+            target_crs, target_transform, width, height = _target_grid(assets[0], analysis_bbox)
+            band_arrays: dict[str, np.ndarray] = {}
+            band_invalid: dict[str, np.ndarray] = {}
+            source_invalid = np.zeros((height, width), dtype=bool)
+            for asset in assets:
+                if not isinstance(asset, Mapping) or not isinstance(asset.get("band"), str):
+                    raise RasterStatisticsError("multi-index plan contains an invalid band asset")
+                values, invalid = _read_aligned(
+                    asset,
+                    target_crs=target_crs,
+                    target_transform=target_transform,
+                    width=width,
+                    height=height,
+                    resampling=Resampling.bilinear,
+                )
+                scaled = _scaled(values, asset)
+                invalid_band = invalid | ~np.isfinite(scaled)
+                source_invalid |= invalid_band
+                band_arrays[str(asset["band"])] = scaled
+                band_invalid[str(asset["band"])] = invalid_band
+
+            scl_values, scl_invalid = _read_aligned(
+                scl_asset,
+                target_crs=target_crs,
+                target_transform=target_transform,
+                width=width,
+                height=height,
+                resampling=Resampling.nearest,
+            )
+    except RasterStatisticsError:
+        raise
+    except (RasterioError, OSError, ValueError) as exc:
+        raise RasterStatisticsError("trusted Sentinel multi-index raster could not be read") from exc
+
+    safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
+    rounded_scl = safe_scl.astype(np.int16, copy=False)
+    cloud_invalid = np.isin(rounded_scl, np.asarray(MASKED_SCL_CLASSES, dtype=np.int16))
+    total_pixels = int(width * height)
+
+    results: dict[str, dict] = {}
+    for index_key in indices:
+        definition = get_index_definition(str(index_key))
+        index_source_invalid = np.asarray(scl_invalid, dtype=bool).copy()
+        for band in definition.required_bands:
+            invalid = band_invalid.get(band)
+            if invalid is None:
+                raise RasterStatisticsError(f"multi-index plan is missing invalid mask for {band}")
+            index_source_invalid |= invalid
+        values = _compute_index_array(str(index_key), band_arrays)
+        valid_mask = ~(index_source_invalid | cloud_invalid | ~np.isfinite(values))
+        valid_values = values[valid_mask]
+        valid_pixels = int(valid_values.size)
+        statistics = {"min": None, "max": None, "mean": None, "median": None}
+        if valid_pixels:
+            statistics = {
+                "min": float(np.min(valid_values)),
+                "max": float(np.max(valid_values)),
+                "mean": float(np.mean(valid_values, dtype=np.float64)),
+                "median": float(np.median(valid_values)),
+            }
+        results[str(index_key)] = {
+            "statistics": statistics,
+            "pixels": {
+                "total": total_pixels,
+                "valid": valid_pixels,
+                "masked": total_pixels - valid_pixels,
+                "valid_fraction": valid_pixels / total_pixels if total_pixels else 0.0,
+            },
+            "source_nodata_pixel_count": int(np.count_nonzero(index_source_invalid)),
+            "formula_version": definition.formula_version,
+            "formula": definition.formula,
+            "application_domain": definition.application_domain,
+            "reference_url": definition.reference_url or None,
+        }
+
+    return {
+        "scene_id": plan.get("scene_id"),
+        "indices": results,
+        "processing_plan_fingerprint": plan.get("fingerprint_sha256"),
+        "analysis_bbox_wgs84": list(analysis_bbox),
+        "grid": {
+            "crs": str(target_crs),
+            "width": width,
+            "height": height,
+            "resolution_m": TARGET_RESOLUTION_M,
+            "effective_source_resolution_m": plan.get("effective_source_resolution_m"),
+            "resampled": (
+                isinstance(plan.get("effective_source_resolution_m"), (int, float))
+                and float(plan["effective_source_resolution_m"]) > TARGET_RESOLUTION_M
+            ),
+        },
+        "mask": {
+            "method": cloud_mask.get("method"),
+            "masked_scl_classes": list(cloud_mask.get("masked_classes") or []),
+            "cloud_masked_pixel_count": int(np.count_nonzero(cloud_invalid)),
+            "source_nodata_pixel_count": int(np.count_nonzero(source_invalid | scl_invalid)),
+        },
+        "provenance": {
+            "provider_metadata": "OBSERVED",
+            "derived_indices": "COMPUTED",
+            "verified": False,
+            "persisted": False,
+        },
+    }
+
+
+def compute_multi_index_statistics(plan: Mapping, bbox) -> dict:
+    if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
+        raise RasterCapacityError("raster analysis capacity is busy")
+    try:
+        return _compute_multi_index_statistics_unlocked(plan, bbox)
+    finally:
+        _RASTER_ANALYSIS_SEMAPHORE.release()
 
 
 def compute_index_statistics(plan: Mapping, bbox, geometry_wgs84: Mapping | None = None) -> dict:
