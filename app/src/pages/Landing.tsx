@@ -35,7 +35,7 @@ export default function Landing() {
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
-  const [expoStats,setExpoStats]=useState<{visitors:number;feedback:number}>({visitors:0,feedback:0});
+  const [demoStats,setDemoStats]=useState<{sites:number;projects:number;parcels:number;observations:number}>({sites:0,projects:0,parcels:0,observations:0});
   const lang:Locale=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
 
   const copy=lang==="fr"?{
@@ -49,7 +49,7 @@ export default function Landing() {
     discover:"DÉCOUVRIR",visitor:"ACCÈS VISITEUR",enter:"OUVRIR LA PLATEFORME",
     aboutTitle:"À PROPOS DE",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ est une entreprise algérienne multidisciplinaire qui relie ingénierie, services numériques, énergie, agriculture, mesure, étalonnage, inspection et intelligence des ressources. FOGGARA-DZ en est le cœur numérique.",
     readMore:"EN SAVOIR PLUS",
-    stats:["WILAYAS","DOMAINES WEFEH","VISITEURS EXPO","AVIS REÇUS"],
+    stats:["WILAYAS","DOMAINES WEFEH","PROJETS DÉMO","PARCELLES DÉMO"],
     offerTitle:"CE QUE",offerStrong:"NOUS OFFRONS",offerBody:"Des services terrain et numériques connectés par un même système de données, de preuves et de décision.",
     offers:[
       ["EAU & IRRIGATION","Gestion des ressources, pompage, qualité de l’eau, mesures et optimisation de l’irrigation.","/agriculture-services"],
@@ -70,7 +70,7 @@ export default function Landing() {
     discover:"DISCOVER",visitor:"VISITOR ACCESS",enter:"OPEN PLATFORM",
     aboutTitle:"ABOUT",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ is an Algerian multidisciplinary company connecting engineering, digital services, energy, agriculture, measurement, calibration, inspection and resource intelligence. FOGGARA-DZ is its digital core.",
     readMore:"READ MORE",
-    stats:["WILAYAS","WEFEH DOMAINS","EXPO VISITORS","FEEDBACK"],
+    stats:["WILAYAS","WEFEH DOMAINS","DEMO PROJECTS","DEMO PARCELS"],
     offerTitle:"WHAT",offerStrong:"WE OFFER",offerBody:"Field and digital services connected through one data, evidence and decision system.",
     offers:[
       ["WATER & IRRIGATION","Resource management, pumping, water quality, measurements and irrigation optimisation.","/agriculture-services"],
@@ -91,7 +91,7 @@ export default function Landing() {
     discover:"اكتشف",visitor:"دخول الزائر",enter:"فتح المنصة",
     aboutTitle:"من نحن",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ مؤسسة جزائرية متعددة التخصصات تربط الهندسة والخدمات الرقمية والطاقة والزراعة والقياس والمعايرة والتفتيش وذكاء الموارد. وتمثل FOGGARA-DZ قلبها الرقمي.",
     readMore:"المزيد",
-    stats:["ولاية","مجالات WEFEH","زوار المعرض","آراء مسجلة"],
+    stats:["ولاية","مجالات WEFEH","مشاريع تجريبية","قطع تجريبية"],
     offerTitle:"ماذا",offerStrong:"نقدم",offerBody:"خدمات ميدانية ورقمية مترابطة داخل منظومة موحدة للبيانات والأدلة والقرار.",
     offers:[
       ["المياه والري","إدارة الموارد والضخ وجودة المياه والقياسات وتحسين الري.","/agriculture-services"],
@@ -202,8 +202,8 @@ export default function Landing() {
 
   useEffect(()=>{
     let cancelled=false;
-    api.get<{visitors:number;feedback:number}>("/expo/stats")
-      .then(value=>{if(!cancelled)setExpoStats(value);})
+    api.get<{counts:{sites:number;projects:number;parcels:number;observations:number}}>("/expo/demo-data")
+      .then(value=>{if(!cancelled)setDemoStats(value.counts);})
       .catch(()=>undefined);
     return()=>{cancelled=true;};
   },[]);
@@ -382,8 +382,8 @@ export default function Landing() {
     <section className="fg-moon-stats fg-global-stats" aria-label="FOGGARA statistics">
       <article><MapPinned size={30}/><strong>{WILAYAS.length}</strong><span>{copy.stats[0]}</span></article>
       <article><ScanLine size={30}/><strong>5</strong><span>{copy.stats[1]}</span></article>
-      <article><Users size={30}/><strong>{expoStats.visitors}</strong><span>{copy.stats[2]}</span></article>
-      <article><ShieldCheck size={30}/><strong>{expoStats.feedback}</strong><span>{copy.stats[3]}</span></article>
+      <article><Users size={30}/><strong>{demoStats.projects}</strong><span>{copy.stats[2]}</span></article>
+      <article><ShieldCheck size={30}/><strong>{demoStats.parcels}</strong><span>{copy.stats[3]}</span></article>
     </section>
 
     <section className="fg-moon-offer fg-global-services" id="services">
