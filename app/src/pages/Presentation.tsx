@@ -30,7 +30,7 @@ export default function Presentation(){
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
  const exportResult=()=>{const file=new Blob([JSON.stringify({algorithm:'bounded-weighted-utility-browser-v1',status:'UNSAVED_USER_SCENARIO',created_at:new Date().toISOString(),inputs:axes,result},null,2)],{type:'application/json'});const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='foggara-user-matrix.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <div className="fp-presentation">
- <section className="fp-figma-presentation" aria-labelledby="fp-figma-title">
+ <section ref={storyRef} className={`fp-figma-presentation ${expanded?'fp-figma-fullscreen':''}`} aria-labelledby="fp-figma-title">
   <header className="fp-figma-head">
    <div><p className="fp-overline">{c.eyebrow}</p><h1 id="fp-figma-title">{c.title}</h1></div>
    <p>{c.intro}</p>
@@ -69,7 +69,7 @@ export default function Presentation(){
   </div>
  </section>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
- <section ref={storyRef} id="presentation" className={`fp-figma-bridge ${expanded?'fp-expanded':''}`}>
+ <section id="presentation" className="fp-figma-bridge">
   <div className="fp-section-heading"><div><p className="fp-overline">WEFEH / NEXUS</p><h2>{c.architecture}</h2><p>{c.architectureSub}</p></div></div>
   <div className="fp-figma-nexus">
    <NexusKasria active={active} onSelect={setActive}/>
