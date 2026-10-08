@@ -14,6 +14,9 @@ test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/foggara-video-frame-1.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp")'));
+  assert.match(css,/\.fg-moon-hero-media\s*\{[^}]*z-index\s*:\s*0\s*;/s);
+  assert.match(css,/\.fg-moon-hero-overlay\s*\{[^}]*z-index\s*:\s*1\s*;/s);
+  assert.doesNotMatch(css,/\.fg-moon-hero-media\s*\{[^}]*z-index\s*:\s*-3\s*;/s);
   const heroStart=landing.indexOf('<section className="fg-moon-hero fg-lukas-hero fg-rebuilt-hero"');
   const heroEnd=landing.indexOf('<nav className="fg-lukas-domain-strip"',heroStart);
   const hero=landing.slice(heroStart,heroEnd);
