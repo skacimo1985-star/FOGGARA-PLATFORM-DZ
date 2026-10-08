@@ -13,6 +13,7 @@ runtime = {
     "last_success": None,
     "summary": None,
     "error": None,
+    "cursor": 0,
 }
 
 
@@ -23,12 +24,13 @@ async def run_field_automation(stop: asyncio.Event, interval_seconds: float | No
         while not stop.is_set():
             runtime["last_run"] = datetime.now(timezone.utc).isoformat()
             try:
-                summary = await asyncio.to_thread(run_cycle)
+                summary = await asyncio.to_thread(run_cycle, after_id=int(runtime.get("cursor") or 0))
                 runtime.update(
                     state="running",
                     last_success=datetime.now(timezone.utc).isoformat(),
                     summary=summary,
                     error=None,
+                    cursor=int(summary.get("last_parcel_id") or 0),
                 )
             except Exception as exc:
                 runtime.update(state="degraded", error=type(exc).__name__)
