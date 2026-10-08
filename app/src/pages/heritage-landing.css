@@ -125,7 +125,7 @@
   background-repeat:no-repeat;
   background-position:center;
   background-size:cover;
-  animation:fgMoonHeroIn .8s ease both;
+  animation:fgMoonHeroFade .42s ease both;
 }
 .fg-moon-hero-media-1{
   background-image:url("/images/oasis-dawn.webp");
@@ -137,8 +137,7 @@
 }
 .fg-moon-hero-media-3{
   background-image:url("/images/oasis-dawn.webp");
-  background-position:center 72%;
-  transform:scale(1.025);
+  background-position:center 58%;
 }
 .fg-moon-hero-overlay{
   z-index:-2;
@@ -146,7 +145,7 @@
     linear-gradient(90deg,#061705e8 0%,#0a1b08bd 37%,#0c170867 65%,#06170542 100%),
     linear-gradient(0deg,#06170576,transparent 45%);
 }
-@keyframes fgMoonHeroIn{from{opacity:.35;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
+@keyframes fgMoonHeroFade{from{opacity:.28}to{opacity:1}}
 .fg-moon-hero-content{width:min(660px,100%);color:#fff;position:relative;z-index:2}
 .fg-moon-hero-eyebrow{
   margin:0 0 13px;
