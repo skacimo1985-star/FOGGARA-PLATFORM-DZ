@@ -41,6 +41,7 @@ export default function Landing() {
   const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
   const [heroSlide,setHeroSlide]=useState(0);
+  const [presentationSlide,setPresentationSlide]=useState(0);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -48,7 +49,7 @@ export default function Landing() {
   const lang:Locale=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
 
   const copy=lang==="fr"?{
-    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",heritage:"FOGGARA",demo:"DÉMO",contact:"CONTACT",
+    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",presentation:"PRÉSENTATION",heritage:"FOGGARA",demo:"DÉMO",contact:"CONTACT",
     topNational:"PLATEFORME NATIONALE ALGÉRIENNE",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"De l’ingéniosité hydraulique des oasis à une plateforme nationale de décision : terrain, données, preuves, analyse et action."},
@@ -59,21 +60,21 @@ export default function Landing() {
     aboutTitle:"À PROPOS DE",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ est une entreprise algérienne multidisciplinaire qui relie ingénierie, services numériques, énergie, agriculture, mesure, étalonnage, inspection et intelligence des ressources. FOGGARA-DZ en est le cœur numérique.",
     readMore:"EN SAVOIR PLUS",
     stats:["WILAYAS","DOMAINES WEFEH","VISITEURS EXPO","AVIS REÇUS"],
-    offerTitle:"CE QUE",offerStrong:"NOUS OFFRONS",offerBody:"Le modèle visuel du template Moon est conservé, mais chaque bloc ouvre désormais un service réel de FOGGARA.",
+    offerTitle:"CE QUE",offerStrong:"NOUS OFFRONS",offerBody:"Des services terrain et numériques connectés par un même système de données, de preuves et de décision.",
     offers:[
       ["EAU & IRRIGATION","Gestion des ressources, pompage, qualité de l’eau, mesures et optimisation de l’irrigation.","/agriculture-services"],
       ["AGRICULTURE & SATELLITE","Parcelles, Sentinel-2, indices de végétation, météo agricole et suivi des cultures.","/app/agriculture"],
       ["PREUVES & DÉCISION","Provenance, validation, analyse, règles, scénarios et décisions auditées.","/app/studio"]
     ],
-    galleryTitle:"FOGGARA",galleryStrong:"EN IMAGES",galleryBody:"Les photographies fournies deviennent la matière visuelle principale de la plateforme, et non un simple décor.",
+    galleryTitle:"FOGGARA",galleryStrong:"EN IMAGES",galleryBody:"Une lecture visuelle du système hydraulique oasien, de la source au partage de l’eau et à la parcelle cultivée.",
     gallery:["GALERIE MÈRE","KASRIA PRINCIPALE","SEGUIAS","PARTAGE DE L’EAU","MAJEN & BASSIN","PATRIMOINE DE TIMIMOUN"],
     heritageTitle:"DE L’HÉRITAGE",heritageStrong:"AU JUMEAU NUMÉRIQUE",heritageBody:"L’infographie patrimoniale devient une porte d’entrée pédagogique vers le modèle FOGGARA : source → galerie → kasria → seguia → parcelle, puis données → preuves → décision → suivi.",
     heritageAction:"EXPLORER LE NEXUS",
-    liveDemo:"DÉMO OPÉRATIONNELLE",liveBody:"Entrée visiteur sans mot de passe, compteur Expo réel, feedback public et accès aux modules existants. Le QR reste compact et ne masque plus l’image.",
+    liveDemo:"DÉMO OPÉRATIONNELLE",liveBody:"Entrez directement dans le parcours Expo, explorez les modules actifs et laissez un retour public pour poursuivre la discussion avec SIREP OASES.",
     openDemo:"OUVRIR LA DÉMO",copy:"COPIER",copied:"COPIÉ",download:"QR SVG",
     toolsEyebrow:"FOGGARA / SERVICES NUMÉRIQUES",toolsTitle:"CHOISISSEZ UN OUTIL. COMMENCEZ IMMÉDIATEMENT.",toolsBody:"Recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"OUVRIR",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond."
   }:lang==="en"?{
-    home:"HOME",about:"ABOUT",services:"SERVICES",heritage:"FOGGARA",demo:"DEMO",contact:"CONTACT",
+    home:"HOME",about:"ABOUT",services:"SERVICES",presentation:"PRESENTATION",heritage:"FOGGARA",demo:"DEMO",contact:"CONTACT",
     topNational:"ALGERIAN NATIONAL PLATFORM",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"From oasis water ingenuity to a national decision platform: field reality, data, evidence, analysis and action."},
@@ -84,21 +85,21 @@ export default function Landing() {
     aboutTitle:"ABOUT",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ is an Algerian multidisciplinary company connecting engineering, digital services, energy, agriculture, measurement, calibration, inspection and resource intelligence. FOGGARA-DZ is its digital core.",
     readMore:"READ MORE",
     stats:["WILAYAS","WEFEH DOMAINS","EXPO VISITORS","FEEDBACK"],
-    offerTitle:"WHAT",offerStrong:"WE OFFER",offerBody:"The Moon template visual rhythm is retained, but every block now opens a real FOGGARA service.",
+    offerTitle:"WHAT",offerStrong:"WE OFFER",offerBody:"Field and digital services connected through one data, evidence and decision system.",
     offers:[
       ["WATER & IRRIGATION","Resource management, pumping, water quality, measurements and irrigation optimisation.","/agriculture-services"],
       ["AGRICULTURE & SATELLITE","Parcels, Sentinel-2, vegetation indices, agricultural weather and crop monitoring.","/app/agriculture"],
       ["EVIDENCE & DECISION","Provenance, validation, analysis, rules, scenarios and auditable decisions.","/app/studio"]
     ],
-    galleryTitle:"FOGGARA",galleryStrong:"IN IMAGES",galleryBody:"The supplied photographs become core platform storytelling, not decorative filler.",
+    galleryTitle:"FOGGARA",galleryStrong:"IN IMAGES",galleryBody:"A visual reading of the oasis hydraulic system, from source and water sharing to the cultivated parcel.",
     gallery:["MOTHER GALLERY","MAIN KASRIA","SEGUIAS","WATER SHARING","MAJEN & BASIN","TIMIMOUN HERITAGE"],
     heritageTitle:"FROM HERITAGE",heritageStrong:"TO DIGITAL TWIN",heritageBody:"The heritage infographic becomes an educational gateway into the FOGGARA model: source → gallery → kasria → seguia → parcel, then data → evidence → decision → monitoring.",
     heritageAction:"EXPLORE THE NEXUS",
-    liveDemo:"OPERATIONAL DEMO",liveBody:"Password-free visitor entry, real Expo counters, public feedback and access to existing modules. The QR stays compact and no longer covers the main visual.",
+    liveDemo:"OPERATIONAL DEMO",liveBody:"Enter the Expo journey directly, explore active modules and leave public feedback to continue the conversation with SIREP OASES.",
     openDemo:"OPEN DEMO",copy:"COPY",copied:"COPIED",download:"QR SVG",
     toolsEyebrow:"FOGGARA / DIGITAL SERVICES",toolsTitle:"CHOOSE A TOOL. START NOW.",toolsBody:"Fast search, direct entry and traceable results.",search:"Search satellite, weather, soil, GIS, AI…",open:"OPEN",public:"PUBLIC",workspace:"WORKSPACE",noResults:"No matching service."
   }:{
-    home:"الرئيسية",about:"من نحن",services:"الخدمات",heritage:"الفقارة",demo:"الديمو",contact:"اتصل بنا",
+    home:"الرئيسية",about:"من نحن",services:"الخدمات",presentation:"عرض المنصة",heritage:"الفقارة",demo:"الديمو",contact:"اتصل بنا",
     topNational:"المنصة الجزائرية الوطنية",topLang:"العربية · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"من عبقرية توزيع المياه في الواحات إلى منصة وطنية للقرار تربط الميدان والبيانات والأدلة والتحليل والتنفيذ."},
@@ -109,17 +110,17 @@ export default function Landing() {
     aboutTitle:"من نحن",aboutStrong:"SIREP OASES",aboutBody:"SIREP OASES NEXUS WEFEH-DZ مؤسسة جزائرية متعددة التخصصات تربط الهندسة والخدمات الرقمية والطاقة والزراعة والقياس والمعايرة والتفتيش وذكاء الموارد. وتمثل FOGGARA-DZ قلبها الرقمي.",
     readMore:"المزيد",
     stats:["ولاية","مجالات WEFEH","زوار المعرض","آراء مسجلة"],
-    offerTitle:"ماذا",offerStrong:"نقدم",offerBody:"نحافظ على الإيقاع البصري لقالب Moon، لكن كل قسم أصبح مرتبطًا بخدمة حقيقية داخل FOGGARA.",
+    offerTitle:"ماذا",offerStrong:"نقدم",offerBody:"خدمات ميدانية ورقمية مترابطة داخل منظومة موحدة للبيانات والأدلة والقرار.",
     offers:[
       ["المياه والري","إدارة الموارد والضخ وجودة المياه والقياسات وتحسين الري.","/agriculture-services"],
       ["الزراعة والأقمار الصناعية","القطع وSentinel-2 ومؤشرات الغطاء النباتي والطقس الزراعي ومتابعة المحاصيل.","/app/agriculture"],
       ["الأدلة والقرار","المصدر والتحقق والتحليل والقواعد والسيناريوهات والقرارات القابلة للتدقيق.","/app/studio"]
     ],
-    galleryTitle:"الفقارة",galleryStrong:"بالصور",galleryBody:"الصور التي قدمتها أصبحت جزءًا أساسيًا من سرد المنصة وليست مجرد خلفية.",
+    galleryTitle:"الفقارة",galleryStrong:"بالصور",galleryBody:"قراءة بصرية للنظام المائي في الواحات، من المصدر وتقاسم المياه إلى القطعة المزروعة.",
     gallery:["المعرض الأم","الكسـرية الرئيسية","السواقي","تقاسم المياه","الماجن والحوض","تراث تيميمون"],
     heritageTitle:"من التراث",heritageStrong:"إلى التوأم الرقمي",heritageBody:"المخطط التراثي يصبح مدخلًا بصريًا لفهم نموذج FOGGARA: المصدر ← المعرض ← الكسرية ← الساقية ← القطعة، ثم البيانات ← الأدلة ← القرار ← المتابعة.",
     heritageAction:"استكشف NEXUS",
-    liveDemo:"ديمو تشغيلي",liveBody:"دخول زائر بدون كلمة مرور، عدادات حقيقية للمعرض، استطلاع رأي عام، وربط مباشر بالوحدات الحالية. ويبقى QR صغيرًا ولا يغطي الصورة.",
+    liveDemo:"ديمو تشغيلي",liveBody:"ادخل مباشرة إلى مسار المعرض، استكشف الوحدات الفعالة واترك رأيك لمواصلة النقاش مع SIREP OASES.",
     openDemo:"فتح الديمو",copy:"نسخ",copied:"تم النسخ",download:"QR SVG",
     toolsEyebrow:"FOGGARA / الخدمات الرقمية",toolsTitle:"اختر الأداة وابدأ مباشرة.",toolsBody:"بحث سريع ودخول مباشر ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة."
   };
@@ -176,6 +177,47 @@ export default function Landing() {
     spineBody:"تربط FOGGARA المواقع والقياسات والمشاريع والأدلة والقواعد والقرارات والمتابعة في بيئة تشغيلية واحدة."
   };
 
+  const presentation=lang==="fr"?{
+    eyebrow:"CANVA × FIGMA → WEB",
+    title:"UNE PRÉSENTATION QUI DEVIENT UNE EXPÉRIENCE PRODUIT",
+    intro:"Le deck n’est plus une image posée dans la page : il devient une narration interactive qui relie patrimoine, ressources, analyses et décisions réelles.",
+    open:"OUVRIR LA PRÉSENTATION",
+    slides:[
+      {kicker:"01 · HÉRITAGE",title:"DE L’HÉRITAGE AU JUMEAU NUMÉRIQUE",body:"La foggara fournit une logique lisible : capter, répartir, acheminer et observer. FOGGARA-DZ traduit cette logique en données, preuves, règles et suivi.",flow:"SOURCE → GALERIE → KASRIA → SEGUIA → PARCELLE",to:"/presentation"},
+      {kicker:"02 · MODÈLE",title:"UN CYCLE DE DÉCISION COMPLET",body:"La plateforme organise le passage de la ressource à la donnée, puis à l’analyse, aux règles, à la décision, à l’action et à l’apprentissage.",flow:"RESSOURCE → DONNÉES → ANALYSE → DÉCISION → PREUVE",to:"/app/studio"},
+      {kicker:"03 · NEXUS",title:"WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH",body:"Les cinq domaines ne sont pas affichés comme des silos : ils partagent un même espace de données, de contraintes, de scénarios et de décision.",flow:"5 DOMAINES · 1 ESPACE DE DÉCISION",to:"/app/nexus"},
+      {kicker:"04 · PLATEFORME",title:"SIG, SATELLITE, IOT ET INTELLIGENCE",body:"Parcelles, puits, pompes, capteurs, Sentinel-2, météo, mesures terrain, scénarios et IA locale se rejoignent dans des workflows opérationnels.",flow:"GIS → REMOTE SENSING → IOT → AI",to:"/app"},
+      {kicker:"05 · AGRICULTURE",title:"DU CHAMP À LA RECOMMANDATION",body:"Sélectionnez une parcelle, observez la végétation, le sol, l’eau et la météo, puis produisez une recommandation reliée à ses sources.",flow:"PARCELLE → INDICES → MÉTÉO → IRRIGATION",to:"/app/agriculture"},
+      {kicker:"06 · ASSURANCE",title:"PREUVE AVANT DÉCISION",body:"Chaque résultat distingue ce qui est observé, vérifié, calculé, inféré ou proposé afin de garder provenance, méthode et validation visibles.",flow:"OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED",to:"/app/review"}
+    ]
+  }:lang==="en"?{
+    eyebrow:"CANVA × FIGMA → WEB",
+    title:"A PRESENTATION THAT BECOMES A PRODUCT EXPERIENCE",
+    intro:"The deck is no longer a static image inside the page. It becomes an interactive narrative connecting heritage, resources, analysis and real decisions.",
+    open:"OPEN FULL PRESENTATION",
+    slides:[
+      {kicker:"01 · HERITAGE",title:"FROM HERITAGE TO DIGITAL TWIN",body:"The Foggara offers a legible operating logic: capture, divide, deliver and observe. FOGGARA-DZ translates that logic into data, evidence, rules and monitoring.",flow:"SOURCE → GALLERY → KASRIA → SEGUIA → PARCEL",to:"/presentation"},
+      {kicker:"02 · OPERATING MODEL",title:"A COMPLETE DECISION CYCLE",body:"The platform structures the path from resource to data, analysis, rules, intelligence, decision, action, monitoring and learning.",flow:"RESOURCE → DATA → ANALYSIS → DECISION → EVIDENCE",to:"/app/studio"},
+      {kicker:"03 · NEXUS",title:"WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH",body:"The five domains are not presented as silos. They share one space for data, constraints, scenarios and decisions.",flow:"5 DOMAINS · 1 DECISION SPACE",to:"/app/nexus"},
+      {kicker:"04 · PLATFORM",title:"GIS, SATELLITE, IOT AND INTELLIGENCE",body:"Parcels, wells, pumps, sensors, Sentinel-2, weather, field measurements, scenarios and local AI converge in operational workflows.",flow:"GIS → REMOTE SENSING → IOT → AI",to:"/app"},
+      {kicker:"05 · AGRICULTURE",title:"FROM FIELD TO RECOMMENDATION",body:"Select a parcel, review vegetation, soil, water and weather context, then produce a recommendation linked to its sources.",flow:"PARCEL → INDICES → WEATHER → IRRIGATION",to:"/app/agriculture"},
+      {kicker:"06 · ASSURANCE",title:"EVIDENCE BEFORE DECISION",body:"Every result distinguishes what is observed, verified, computed, inferred or proposed so provenance, method and validation remain visible.",flow:"OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED",to:"/app/review"}
+    ]
+  }:{
+    eyebrow:"CANVA × FIGMA → WEB",
+    title:"عرض يتحول إلى تجربة حقيقية داخل المنصة",
+    intro:"لم يعد العرض صورة ثابتة داخل الصفحة، بل أصبح سردًا تفاعليًا يربط التراث والموارد والتحليل والقرار بالوظائف الحقيقية للمنصة.",
+    open:"فتح العرض الكامل",
+    slides:[
+      {kicker:"01 · التراث",title:"من التراث إلى التوأم الرقمي",body:"تقدم الفقارة منطقًا واضحًا: التقاط المورد وتقاسمه ونقله ومتابعته. وتترجم FOGGARA-DZ هذا المنطق إلى بيانات وأدلة وقواعد ومراقبة.",flow:"المصدر ← المعرض ← الكسرية ← الساقية ← القطعة",to:"/presentation"},
+      {kicker:"02 · النموذج",title:"دورة قرار متكاملة",body:"تنظم المنصة الانتقال من المورد إلى البيانات والتحليل والقواعد والذكاء ثم القرار والتنفيذ والمتابعة والتعلم.",flow:"المورد ← البيانات ← التحليل ← القرار ← الدليل",to:"/app/studio"},
+      {kicker:"03 · WEFEH",title:"المياه · الطاقة · الغذاء · النظام البيئي · الصحة",body:"لا تعرض المجالات الخمسة كجزر منفصلة، بل داخل مساحة واحدة للبيانات والقيود والسيناريوهات والقرار.",flow:"5 مجالات · مساحة قرار واحدة",to:"/app/nexus"},
+      {kicker:"04 · المنصة",title:"GIS والأقمار وIoT والذكاء",body:"تجتمع القطع والآبار والمضخات والحساسات وSentinel-2 والطقس والقياسات والسيناريوهات والذكاء المحلي داخل مسارات تشغيلية.",flow:"GIS ← الاستشعار ← IOT ← الذكاء",to:"/app"},
+      {kicker:"05 · الزراعة",title:"من الحقل إلى التوصية",body:"اختر قطعة، راجع مؤشرات الغطاء النباتي والتربة والمياه والطقس، ثم أنشئ توصية مرتبطة بمصادرها.",flow:"القطعة ← المؤشرات ← الطقس ← الري",to:"/app/agriculture"},
+      {kicker:"06 · الضمان",title:"الدليل قبل القرار",body:"يميز كل ناتج بين ما هو ملاحظ ومتحقق ومحسوب ومستنتج ومقترح حتى يبقى المصدر والطريقة والتحقق واضحًا.",flow:"ملاحظ ← متحقق ← محسوب ← مستنتج ← مقترح",to:"/app/review"}
+    ]
+  };
+
   useEffect(()=>{
     let cancelled=false;
     api.get<{visitors:number;feedback:number}>("/expo/stats")
@@ -188,6 +230,13 @@ export default function Landing() {
     const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),6000);
     return()=>window.clearInterval(timer);
   },[copy.hero.length]);
+
+  useEffect(()=>{
+    const reduceMotion=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if(reduceMotion)return;
+    const timer=window.setInterval(()=>setPresentationSlide(value=>(value+1)%presentation.slides.length),8000);
+    return()=>window.clearInterval(timer);
+  },[presentation.slides.length]);
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
@@ -212,19 +261,7 @@ export default function Landing() {
   }
 
   const hero=copy.hero[heroSlide];
-  const bilingualHero={
-    enTitle:"FROM HERITAGE TO DIGITAL TWIN",
-    arTitle:"من التراث إلى التوأم الرقمي",
-    enBody:"FOGGARA-DZ is an Algerian integrated decision and evidence platform connecting Water, Energy, Food, Ecosystem and Health — turning field data into verifiable evidence and actionable decisions.",
-    arBody:"FOGGARA-DZ منصة جزائرية متكاملة للقرار والأدلة، تربط المياه والطاقة والغذاء والنظم البيئية والصحة، وتحول بيانات الميدان إلى أدلة قابلة للتحقق وقرارات قابلة للتنفيذ.",
-    enQuote:"“Every resource connected. Every decision grounded.”",
-    arQuote:"«كل مورد مترابط، وكل قرار يستند إلى دليل.»"
-  };
-  const videoFrameLabels=[
-    ["SOURCE","المصدر"],
-    ["KASRIA","الكسرية"],
-    ["FLOW","تدفق المياه"]
-  ];
+  const presentationCurrent=presentation.slides[presentationSlide];
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -237,6 +274,7 @@ export default function Landing() {
       <a href="#home">{copy.home}</a>
       <a href="#about">{copy.about}</a>
       <a href="#services">{copy.services}</a>
+      <a href="#presentation">{copy.presentation}</a>
       <a href="#heritage">{copy.heritage}</a>
       <a href="#demo">{copy.demo}</a>
       <Link to="/contact">{copy.contact}</Link>
@@ -257,35 +295,48 @@ export default function Landing() {
         </div>
       </div>
 
-      <aside className="fg-hero-bilingual" aria-label="FOGGARA-DZ bilingual project introduction">
-        <div className="fg-hero-bilingual-head">
-          <div dir="ltr"><span>FOGGARA-DZ</span><strong>{bilingualHero.enTitle}</strong></div>
-          <div dir="rtl"><span>FOGGARA-DZ</span><strong>{bilingualHero.arTitle}</strong></div>
-        </div>
-        <div className="fg-hero-bilingual-copy">
-          <p dir="ltr">{bilingualHero.enBody}</p>
-          <p dir="rtl">{bilingualHero.arBody}</p>
-        </div>
-        <blockquote>
-          <span dir="ltr">{bilingualHero.enQuote}</span>
-          <span dir="rtl">{bilingualHero.arQuote}</span>
-        </blockquote>
-      </aside>
-
       <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
       <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
-      <div className="fg-video-story-strip" role="tablist" aria-label="FOGGARA video story frames">
-        {videoFrameLabels.map(([en,ar],index)=><button
-          type="button"
-          key={en}
-          role="tab"
-          aria-selected={heroSlide===index}
-          className={heroSlide===index?"active":""}
-          onClick={()=>setHeroSlide(index)}
-        >
-          <span className={`fg-video-thumb fg-video-thumb-${index+1}`} aria-hidden="true"/>
-          <span><small dir="ltr">0{index+1}</small><strong dir="ltr">{en}</strong><em dir="rtl">{ar}</em></span>
-        </button>)}
+      <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
+    </section>
+
+    <section className="fg-web-presentation" id="presentation" aria-labelledby="fg-presentation-title">
+      <header className="fg-web-presentation-head">
+        <div><p className="fg-eyebrow">{presentation.eyebrow}</p><h2 id="fg-presentation-title">{presentation.title}</h2></div>
+        <p>{presentation.intro}</p>
+      </header>
+
+      <div className="fg-web-presentation-shell">
+        <div className={`fg-web-presentation-stage fg-presentation-stage-${presentationSlide+1}`}>
+          <div className="fg-web-presentation-stage-shade"/>
+          <div className="fg-web-presentation-stage-index" dir="ltr">{String(presentationSlide+1).padStart(2,"0")} / {String(presentation.slides.length).padStart(2,"0")}</div>
+          <div className="fg-web-presentation-stage-copy">
+            <p>{presentationCurrent.kicker}</p>
+            <h3>{presentationCurrent.title}</h3>
+            <span>{presentationCurrent.flow}</span>
+            <strong className="fg-presentation-bilingual-tag" dir="auto">{presentationSlide===0?"FROM HERITAGE TO DIGITAL TWIN · من التراث إلى التوأم الرقمي":presentationSlide===2?"WEFEH NEXUS · ترابط الموارد":presentationSlide===5?"EVIDENCE BEFORE DECISION · الدليل قبل القرار":""}</strong>
+          </div>
+        </div>
+
+        <aside className="fg-web-presentation-rail">
+          <div className="fg-web-presentation-body">
+            <p>{presentationCurrent.body}</p>
+            <Link className="fg-web-presentation-link" to={presentationCurrent.to}>{presentation.open}<ArrowUpRight size={16}/></Link>
+          </div>
+          <div className="fg-web-presentation-tabs" role="tablist" aria-label={presentation.title}>
+            {presentation.slides.map((slide,index)=><button
+              type="button"
+              role="tab"
+              aria-selected={presentationSlide===index}
+              className={presentationSlide===index?"active":""}
+              key={slide.title}
+              onClick={()=>setPresentationSlide(index)}
+            >
+              <span dir="ltr">{String(index+1).padStart(2,"0")}</span>
+              <div><small>{slide.kicker}</small><strong>{slide.title}</strong></div>
+            </button>)}
+          </div>
+        </aside>
       </div>
     </section>
 
