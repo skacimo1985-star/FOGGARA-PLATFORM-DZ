@@ -51,8 +51,9 @@ export default function Landing() {
     home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",heritage:"FOGGARA",demo:"DÉMO",contact:"CONTACT",
     topNational:"PLATEFORME NATIONALE ALGÉRIENNE",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
-      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"De l’ingéniosité hydraulique des oasis à une plateforme nationale de décision : terrain, données, preuves, analyse et action."},
-      {eyebrow:"PATRIMOINE → INGÉNIERIE",title:"LA KASRIA",accent:"DEVIENT INTELLIGENCE",body:"La logique du partage de l’eau inspire une architecture numérique où chaque ressource, mesure et décision conserve sa provenance."},
+      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"De l’ingéniosité hydraulique des oasis à une plateforme intégrée de décision : terrain, données, preuves, analyse et action."},
+      {eyebrow:"PATRIMOINE → JUMEAU NUMÉRIQUE",title:"LA FOGGARA",accent:"DEVIENT INTELLIGENCE",body:"La logique de la source, de la galerie, de la kasria, de la seguia et de la parcelle inspire une architecture numérique traçable."},
+      {eyebrow:"PREUVE → DÉCISION",title:"CHAQUE DONNÉE",accent:"GARDE SA PROVENANCE",body:"Les observations, mesures, calculs et recommandations restent reliés à leur source, méthode, validation et historique."},
       {eyebrow:"EAU · ÉNERGIE · ALIMENTATION · ÉCOSYSTÈME · SANTÉ",title:"UNE PLATEFORME",accent:"POUR AGIR",body:"SIG, agriculture intelligente, télédétection, IoT, analyses, conformité, décisions et suivi dans un même environnement opérationnel."}
     ],
     discover:"DÉCOUVRIR",visitor:"ACCÈS VISITEUR",enter:"OUVRIR LA PLATEFORME",
@@ -76,8 +77,9 @@ export default function Landing() {
     home:"HOME",about:"ABOUT",services:"SERVICES",heritage:"FOGGARA",demo:"DEMO",contact:"CONTACT",
     topNational:"ALGERIAN NATIONAL PLATFORM",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
-      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"From oasis water ingenuity to a national decision platform: field reality, data, evidence, analysis and action."},
-      {eyebrow:"HERITAGE → ENGINEERING",title:"THE KASRIA",accent:"BECOMES INTELLIGENCE",body:"The logic of water sharing inspires a digital architecture where every resource, measurement and decision keeps its provenance."},
+      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"From oasis water ingenuity to an integrated decision platform: field reality, data, evidence, analysis and action."},
+      {eyebrow:"HERITAGE → DIGITAL TWIN",title:"THE FOGGARA",accent:"BECOMES INTELLIGENCE",body:"The logic of source, gallery, kasria, seguia and parcel inspires a traceable digital architecture."},
+      {eyebrow:"EVIDENCE → DECISION",title:"EVERY SIGNAL",accent:"KEEPS ITS PROVENANCE",body:"Observations, measurements, calculations and recommendations remain linked to source, method, validation and history."},
       {eyebrow:"WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH",title:"ONE PLATFORM",accent:"BUILT TO ACT",body:"GIS, smart agriculture, remote sensing, IoT, analysis, compliance, decisions and monitoring in one operational environment."}
     ],
     discover:"DISCOVER",visitor:"VISITOR ACCESS",enter:"OPEN PLATFORM",
@@ -101,8 +103,9 @@ export default function Landing() {
     home:"الرئيسية",about:"من نحن",services:"الخدمات",heritage:"الفقارة",demo:"الديمو",contact:"اتصل بنا",
     topNational:"المنصة الجزائرية الوطنية",topLang:"العربية · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
-      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"من عبقرية توزيع المياه في الواحات إلى منصة وطنية للقرار تربط الميدان والبيانات والأدلة والتحليل والتنفيذ."},
-      {eyebrow:"التراث ← الهندسة",title:"الكسـرية",accent:"تصبح ذكاءً",body:"منطق اقتسام الماء يلهم بنية رقمية تحفظ مصدر كل مورد وقياس وتحليل وقرار وتربطها بسلسلة إثبات واضحة."},
+      {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"من عبقرية المياه في الواحات إلى منصة متكاملة للقرار تربط الواقع الميداني والبيانات والأدلة والتحليل والتنفيذ."},
+      {eyebrow:"التراث ← التوأم الرقمي",title:"الفقارة",accent:"تصبح ذكاءً",body:"منطق المصدر والمعرض والكسرية والساقية والقطعة يلهم بنية رقمية قابلة للتتبع."},
+      {eyebrow:"الدليل ← القرار",title:"كل إشارة",accent:"تحفظ مصدرها",body:"تبقى الملاحظات والقياسات والحسابات والتوصيات مرتبطة بالمصدر والطريقة والتحقق والسجل."},
       {eyebrow:"المياه · الطاقة · الغذاء · النظام البيئي · الصحة",title:"منصة واحدة",accent:"للقرار والعمل",body:"GIS والزراعة الذكية والاستشعار عن بعد وIoT والتحاليل والامتثال والقرار والمتابعة داخل بيئة تشغيلية واحدة."}
     ],
     discover:"اكتشف",visitor:"دخول الزائر",enter:"فتح المنصة",
@@ -212,6 +215,12 @@ export default function Landing() {
   }
 
   const hero=copy.hero[heroSlide];
+  const bilingualHero={
+    enProject:"FOGGARA-DZ is an Algerian integrated decision and evidence platform connecting Water, Energy, Food, Ecosystem and Health — from field reality and satellite intelligence to auditable decisions and action.",
+    arProject:"FOGGARA-DZ منصة جزائرية متكاملة للقرار والأدلة تربط المياه والطاقة والغذاء والنظام البيئي والصحة، من الواقع الميداني وذكاء الأقمار الصناعية إلى قرارات قابلة للتدقيق والتنفيذ.",
+    enQuote:"FROM HERITAGE TO DIGITAL TWIN — EVERY RESOURCE CONNECTED. EVERY DECISION GROUNDED.",
+    arQuote:"من التراث إلى التوأم الرقمي — كل مورد مترابط، وكل قرار مؤسس على دليل."
+  };
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -238,6 +247,10 @@ export default function Landing() {
         <h1 id="foggara-title">{hero.title}</h1>
         <span className="fg-moon-hero-accent">{hero.accent}</span>
         <p>{hero.body}</p>
+        <div className="fg-hero-bilingual" aria-label="FOGGARA-DZ project statement">
+          <div dir="ltr"><span>WHAT IS FOGGARA-DZ?</span><p>{bilingualHero.enProject}</p><blockquote>{bilingualHero.enQuote}</blockquote></div>
+          <div dir="rtl"><span>ما هي FOGGARA-DZ؟</span><p>{bilingualHero.arProject}</p><blockquote>{bilingualHero.arQuote}</blockquote></div>
+        </div>
         <div className="fg-moon-hero-actions">
           <a className="fg-moon-btn fg-moon-btn-light" href="#about">{copy.discover}</a>
           <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}</Link>
@@ -245,6 +258,7 @@ export default function Landing() {
       </div>
       <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
       <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
+      <div className="fg-video-frame-label" dir="ltr"><span>VIDEO STORY</span><strong>{String(heroSlide+1).padStart(2,"0")} / {String(copy.hero.length).padStart(2,"0")}</strong><small>OASIS · WATER · AGRICULTURE · DECISION</small></div>
       <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
     </section>
 
