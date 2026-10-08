@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { MapPinned } from "lucide-react";
 import { api } from "@/lib/api";
@@ -370,6 +370,7 @@ export default function Gis() {
   const [studyLoading, setStudyLoading] = useState(false);
   const [studyError, setStudyError] = useState<unknown>(null);
   const [studyResult, setStudyResult] = useState<TimeSeriesStudy | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -441,6 +442,81 @@ export default function Gis() {
       ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", runParcel: "Analyze selected parcel", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled", study: "Time-series study", studying: "Studying…", studyTitle: "Real multi-temporal study", studyScenes: "Analyzed scenes", studyTrend: "Trend", studyDelta: "Change", studySlope: "Slope / day", studyQuality: "Operational quality", trendIncreasing: "increasing", trendDecreasing: "decreasing", trendStable: "stable", trendInsufficient: "insufficient data", validPixels: "valid pixels", researchBasis: "Scientific basis and traceability" }
       : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", runParcel: "حلّل القطعة المحددة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات", study: "دراسة زمنية", studying: "جارٍ إعداد الدراسة…", studyTitle: "دراسة فعلية متعددة الأزمنة", studyScenes: "المشاهد المحللة", studyTrend: "الاتجاه", studyDelta: "التغير", studySlope: "الميل / يوم", studyQuality: "الجودة التشغيلية", trendIncreasing: "تصاعدي", trendDecreasing: "تنازلي", trendStable: "مستقر", trendInsufficient: "بيانات غير كافية", validPixels: "بكسلات صالحة", researchBasis: "الأساس العلمي وقابلية التتبع" };
 
+  const guideCopy = lang === "fr"
+    ? {
+        title: "Analyse de parcelle — mode simple",
+        body: "Choisissez une parcelle, puis lancez une analyse complète. Les détails STAC, GeoJSON et indices restent disponibles dans les outils avancés.",
+        project: "1 · Projet",
+        parcel: "2 · Parcelle",
+        analyze: "3 · Analyser",
+        result: "4 · Résultat",
+        projectMissing: "Sélectionnez d’abord un projet actif.",
+        chooseProject: "Ouvrir les projets",
+        chooseParcel: "Choisir une parcelle",
+        areaHint: "Aucune parcelle ? Utilisez « Zone d’analyse » sur la carte, choisissez 2 coins, puis enregistrez la parcelle.",
+        analyzeNow: "Analyser la parcelle",
+        analyzing: "Analyse en cours…",
+        advanced: "Outils avancés",
+        hideAdvanced: "Masquer les outils avancés",
+        noResult: "Aucune analyse lancée pour cette parcelle.",
+        vegetation: "Vigueur végétale",
+        moisture: "Humidité",
+        soil: "Sol",
+        quality: "Qualité",
+        selectedArea: "Zone sélectionnée",
+        ready: "Prêt",
+        missing: "À compléter",
+      }
+    : lang === "en"
+      ? {
+          title: "Field analysis — simple mode",
+          body: "Choose a field, then run one complete analysis. STAC, GeoJSON and raw index controls remain available under Advanced tools.",
+          project: "1 · Project",
+          parcel: "2 · Field",
+          analyze: "3 · Analyze",
+          result: "4 · Result",
+          projectMissing: "Select an active project first.",
+          chooseProject: "Open projects",
+          chooseParcel: "Choose a field",
+          areaHint: "No field yet? Use “Select analysis area” on the map, pick 2 corners, then save the field.",
+          analyzeNow: "Analyze field",
+          analyzing: "Analyzing…",
+          advanced: "Advanced tools",
+          hideAdvanced: "Hide advanced tools",
+          noResult: "No analysis has been run for this field.",
+          vegetation: "Vegetation vigor",
+          moisture: "Moisture",
+          soil: "Soil",
+          quality: "Quality",
+          selectedArea: "Selected area",
+          ready: "Ready",
+          missing: "Missing",
+        }
+      : {
+          title: "تحليل الحقل — الوضع البسيط",
+          body: "اختر القطعة ثم شغّل تحليلًا واحدًا شاملًا. تفاصيل STAC وGeoJSON واختيار المؤشرات تبقى داخل الأدوات المتقدمة.",
+          project: "1 · المشروع",
+          parcel: "2 · القطعة",
+          analyze: "3 · التحليل",
+          result: "4 · النتيجة",
+          projectMissing: "اختر مشروعًا نشطًا أولًا.",
+          chooseProject: "فتح المشاريع",
+          chooseParcel: "اختر القطعة",
+          areaHint: "لا توجد قطعة؟ اضغط «حدد منطقة التحليل» على الخريطة، اختر زاويتين، ثم احفظ القطعة.",
+          analyzeNow: "حلّل الحقل الآن",
+          analyzing: "جارٍ تحليل الحقل…",
+          advanced: "أدوات متقدمة",
+          hideAdvanced: "إخفاء الأدوات المتقدمة",
+          noResult: "لم يتم تشغيل تحليل لهذه القطعة بعد.",
+          vegetation: "حيوية النبات",
+          moisture: "الرطوبة",
+          soil: "التربة",
+          quality: "جودة البيانات",
+          selectedArea: "منطقة محددة",
+          ready: "جاهز",
+          missing: "ناقص",
+        };
+
   const parcelCopy = lang === "fr"
     ? { title: "Espace parcellaire", select: "Choisir une parcelle", none: "Aucune parcelle", mapped: "Limite cartographiée", unmapped: "Limite à définir", importGeoJson: "Importer GeoJSON", exportGeoJson: "Exporter GeoJSON", clearBoundary: "Supprimer la limite", clearConfirm: "Supprimer la limite cartographique de cette parcelle ?", importError: "Le fichier doit contenir un Polygon GeoJSON.", hint: "Sélectionnez une parcelle, puis dessinez sa limite sur la carte ou importez un Polygon GeoJSON. La validation finale est effectuée par le serveur." }
     : lang === "en"
@@ -506,6 +582,27 @@ export default function Gis() {
     [satelliteScenes, selectedSceneId],
   );
   const currentRasterBudget = useMemo(() => rasterBudget(analysisBbox), [analysisBbox]);
+  const activeProject = useMemo(
+    () => (data ?? []).flatMap((entry) => entry.projects).find((project) => project.id === activeProjectId) ?? null,
+    [data, activeProjectId],
+  );
+  const fieldIndexMean = (key: string) => {
+    if (!fieldIntelligenceResult || fieldIntelligenceResult.status !== "READY") return null;
+    for (const domain of Object.values(fieldIntelligenceResult.domains)) {
+      const mean = domain.indices?.[key]?.statistics.mean;
+      if (typeof mean === "number") return mean;
+    }
+    return null;
+  };
+  const ndviMean = fieldIndexMean("ndvi");
+  const moistureMean = fieldIndexMean("ndmi") ?? fieldIndexMean("ndwi") ?? fieldIndexMean("lswi");
+  const soilPh = fieldIntelligenceResult?.soil_context?.properties?.ph?.mean_0_20 ?? null;
+  const simpleAnalysisReady = Boolean(
+    activeProjectId
+    && currentRasterBudget.allowed
+    && (selectedParcelId || manualAnalysisBbox)
+    && (selectedParcelId || newFieldCrop.trim())
+  );
 
   useEffect(() => {
     setAnalysisResult(null);
@@ -868,7 +965,7 @@ export default function Gis() {
   };
 
   return (
-    <div className="fg-command-center fg-gis-workspace" dir={i18n.dir()}>
+    <div className={`fg-command-center fg-gis-workspace ${advancedOpen ? "is-advanced" : ""}`} dir={i18n.dir()}>
       <section className="fg-gis-heading">
         <div>
           <p className="fg-command-eyebrow">{copy.eyebrow}</p>
@@ -928,9 +1025,81 @@ export default function Gis() {
           }}
           onDrawParcelBoundary={(geometry) => void saveParcelBoundary(geometry)}
           locale={lang}
+          guided={!advancedOpen}
+          guideAreaSelection={!selectedParcelId && !manualAnalysisBbox}
         />
       )}
       </div>
+
+      <section className="fg-gis-guide" aria-label={guideCopy.title}>
+        <div className="fg-gis-guide-head">
+          <div>
+            <span>FOGGARA GIS · SIMPLE WORKFLOW</span>
+            <h2>{guideCopy.title}</h2>
+            <p>{guideCopy.body}</p>
+          </div>
+          <button type="button" className="fg-gis-advanced-toggle" onClick={() => setAdvancedOpen((value) => !value)}>
+            {advancedOpen ? guideCopy.hideAdvanced : guideCopy.advanced}
+          </button>
+        </div>
+
+        <div className="fg-gis-steps">
+          <div className={activeProjectId ? "done" : ""}><b>01</b><span>{guideCopy.project}</span><strong>{activeProject?.title ?? guideCopy.missing}</strong></div>
+          <div className={selectedParcelId || manualAnalysisBbox ? "done" : ""}><b>02</b><span>{guideCopy.parcel}</span><strong>{selectedParcelRecord?.name ?? (manualAnalysisBbox ? guideCopy.selectedArea : guideCopy.missing)}</strong></div>
+          <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>03</b><span>{guideCopy.analyze}</span><strong>{fieldIntelligenceLoading ? guideCopy.analyzing : simpleAnalysisReady ? guideCopy.ready : guideCopy.missing}</strong></div>
+          <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>04</b><span>{guideCopy.result}</span><strong>{fieldIntelligenceResult?.status === "READY" ? guideCopy.ready : guideCopy.missing}</strong></div>
+        </div>
+
+        {!activeProjectId ? (
+          <div className="fg-gis-guide-action">
+            <p>{guideCopy.projectMissing}</p>
+            <Link to="/app/projects">{guideCopy.chooseProject}</Link>
+          </div>
+        ) : (
+          <div className="fg-gis-simple-controls">
+            <label>
+              <span>{guideCopy.chooseParcel}</span>
+              <select value={selectedParcelId ?? ""} onChange={(event) => {
+                const next = Number(event.target.value);
+                setActiveParcelId(Number.isFinite(next) && next > 0 ? next : null);
+                if (Number.isFinite(next) && next > 0) setManualAnalysisBbox(null);
+              }}>
+                <option value="">{guideCopy.chooseParcel}</option>
+                {scopedParcels.map((parcel) => <option key={parcel.id} value={parcel.id}>{parcel.name} · {parcel.crop} · {parcel.area_ha} ha</option>)}
+              </select>
+            </label>
+            <div className="fg-gis-simple-primary">
+              <button type="button" disabled={!simpleAnalysisReady || fieldIntelligenceLoading} onClick={() => void analyzeAllField()}>
+                {fieldIntelligenceLoading ? guideCopy.analyzing : guideCopy.analyzeNow}
+              </button>
+              {!selectedParcelId && !manualAnalysisBbox ? <p>{guideCopy.areaHint}</p> : null}
+            </div>
+          </div>
+        )}
+
+        {manualAnalysisBbox && !selectedParcelId ? (
+          <div className="fg-gis-create-simple">
+            <label><span>{fieldCopy.name}</span><input value={newFieldName} onChange={(e)=>setNewFieldName(e.target.value)} placeholder={fieldCopy.namePlaceholder}/></label>
+            <label><span>{fieldCopy.crop}</span><input value={newFieldCrop} onChange={(e)=>setNewFieldCrop(e.target.value)} placeholder={fieldCopy.cropPlaceholder}/></label>
+            <button type="button" disabled={fieldSaving || !newFieldName.trim() || !newFieldCrop.trim()} onClick={() => void createFieldFromAoi()}>
+              {fieldSaving ? fieldCopy.saving : fieldCopy.save}
+            </button>
+          </div>
+        ) : null}
+
+        <ErrorText error={fieldIntelligenceError} />
+
+        <div className="fg-gis-simple-result">
+          {fieldIntelligenceResult?.status === "READY" ? (
+            <>
+              <div><span>{guideCopy.vegetation}</span><strong dir="ltr">{ndviMean == null ? "—" : ndviMean.toFixed(3)}</strong><small>NDVI</small></div>
+              <div><span>{guideCopy.moisture}</span><strong dir="ltr">{moistureMean == null ? "—" : moistureMean.toFixed(3)}</strong><small>NDMI / NDWI / LSWI</small></div>
+              <div><span>{guideCopy.soil}</span><strong dir="ltr">{soilPh == null ? "—" : soilPh.toFixed(2)}</strong><small>pH · 0–20 cm</small></div>
+              <div><span>{guideCopy.quality}</span><strong dir="ltr">{fieldIntelligenceResult.quality_indicator?.score ?? "—"}</strong><small>{fieldIntelligenceResult.quality_indicator?.grade ?? "NOT VERIFIED"}</small></div>
+            </>
+          ) : <p>{guideCopy.noResult}</p>}
+        </div>
+      </section>
 
       {data !== null && data.length === 0 && parcels.length === 0 ? (
         <div className="fg-gis-empty-hint"><OperationalEmptyState
@@ -943,14 +1112,14 @@ export default function Gis() {
         /></div>
       ) : null}
 
-      <section className="fg-command-kpis" aria-label={copy.layers}>
+      <section className="fg-command-kpis fg-gis-advanced" aria-label={copy.layers}>
         <div className="fg-command-kpi"><div><span>{copy.sites}</span></div><strong>{filtered === null ? "—" : summary.sites}</strong></div>
         <div className="fg-command-kpi"><div><span>{copy.projects}</span></div><strong>{filtered === null ? "—" : summary.projects}</strong></div>
         <div className="fg-command-kpi"><div><span>{copy.resources}</span></div><strong>{filtered === null ? "—" : summary.resources}</strong></div>
         <div className="fg-command-kpi"><div><span>{t("gis.assets")}</span></div><strong>{filtered === null ? "—" : summary.assets}</strong></div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={parcelCopy.title}>
+      <section className="fg-gis-advanced rounded-2xl border bg-card p-4 shadow-sm" aria-label={parcelCopy.title}>
         <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-lg font-bold">{parcelCopy.title}</h2>
@@ -1060,7 +1229,7 @@ export default function Gis() {
         <ErrorText error={boundaryError} />
       </section>
 
-      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
+      <section className="fg-gis-advanced rounded-2xl border bg-card p-4 shadow-sm" aria-label={satelliteCopy.title}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600">{satelliteCopy.provider}</p>
@@ -1099,7 +1268,7 @@ export default function Gis() {
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={analysisCopy.title}>
+      <section className="fg-gis-advanced rounded-2xl border bg-card p-4 shadow-sm" aria-label={analysisCopy.title}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
@@ -1253,7 +1422,7 @@ export default function Gis() {
       </section>
 
       {fieldIntelligenceResult?.status==="READY" ? (
-        <section className="fg-field-intelligence" aria-label={fieldCopy.allTitle}>
+        <section className="fg-field-intelligence fg-gis-advanced" aria-label={fieldCopy.allTitle}>
           <div className="fg-field-intelligence-head">
             <div>
               <span>FIELD / AOI INTELLIGENCE · SENTINEL-2 + iSDAsoil</span>
@@ -1312,11 +1481,11 @@ export default function Gis() {
           </div>
         </section>
       ) : fieldIntelligenceResult?.status==="NO_USABLE_SCENE" ? (
-        <section className="fg-field-intelligence"><p>{satelliteCopy.empty}</p></section>
+        <section className="fg-field-intelligence fg-gis-advanced"><p>{satelliteCopy.empty}</p></section>
       ) : null}
 
       {studyResult ? (
-        <section className="fg-eo-study" aria-label={analysisCopy.studyTitle}>
+        <section className="fg-eo-study fg-gis-advanced" aria-label={analysisCopy.studyTitle}>
           <div className="fg-eo-study-head">
             <div>
               <span>SENTINEL-2 L2A · STAC · QA4EO-INSPIRED TRACEABILITY</span>
@@ -1351,7 +1520,7 @@ export default function Gis() {
       ) : null}
 
       {satelliteScenes.length > 0 ? (
-        <section className="rounded-2xl border bg-card p-4">
+        <section className="fg-gis-advanced rounded-2xl border bg-card p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-bold">{satelliteCopy.title}</h2>
             <Badge variant="outline">{satelliteScenes.length}</Badge>
@@ -1382,7 +1551,7 @@ export default function Gis() {
         </section>
       ) : null}
 
-      <section className="fg-gis-spatial-panel" aria-label={copy.selected}>
+      <section className="fg-gis-spatial-panel fg-gis-advanced" aria-label={copy.selected}>
         <div className="fg-gis-spatial-summary">
           <span>EPSG:4326 · {copy.engine}: <b>{spatialEngine}</b></span>
           {selectedSite ? (
@@ -1412,7 +1581,7 @@ export default function Gis() {
         </div>
       </section>
 
-      <section className="fg-gis-register">
+      <section className="fg-gis-register fg-gis-advanced">
         <div className="fg-command-section-title">
           <div><span>GIS / SITES / RESOURCES / PROJECTS</span><h2>{copy.table}</h2></div>
           <Badge variant="outline">{wilayaFilter || String(wilayas.length || 69)}</Badge>
