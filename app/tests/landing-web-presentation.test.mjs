@@ -15,23 +15,23 @@ test('Landing remains syntactically valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('hero no longer contains the rejected bilingual text card',()=>{
-  assert.equal(landing.includes('fg-hero-bilingual'),false);
-  assert.equal(landing.includes('Every resource connected. Every decision grounded.'),false);
+test('landing embeds the preferred Figma presentation composition',()=>{
+  assert.ok(landing.includes('className="fg-figma-embed"'));
+  assert.ok(landing.includes('fg-figma-embed-frame'));
+  assert.ok(landing.includes('fg-figma-embed-thumbs'));
+  assert.ok(landing.includes('heritageLabel:"HERITAGE FLOW"'));
+  assert.ok(landing.includes('digitalLabel:"DIGITAL FLOW"'));
+  assert.ok(css.includes('EMBEDDED FIGMA PRESENTATION'));
 });
 
-test('Canva and Figma deck is translated into a native six-stage product presentation',()=>{
-  assert.ok(landing.includes('id="presentation"'));
-  assert.ok(landing.includes('FOGGARA-DZ / PLATFORM PRESENTATION'));
-  assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));
-  assert.ok(landing.includes('WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH'));
-  assert.ok(landing.includes('OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED'));
-  assert.ok(landing.includes('presentationSlide'));
-  assert.ok(css.includes('.fg-web-presentation-shell'));
-  assert.ok(css.includes('.fg-web-presentation-tabs'));
+test('embedded Figma presentation keeps five synchronized stages',()=>{
+  for(const marker of ['SOURCE / MOTHER GALLERY','KASRIA / WATER SHARING','SEGUIAS / DISTRIBUTION','PARCEL / AGRICULTURAL USE','EVIDENCE / MONITORING'])
+    assert.ok(landing.includes(marker),marker);
+  assert.ok(landing.includes('String(presentationSlide+1).padStart(2,"0")'));
+  assert.ok(landing.includes('setPresentationSlide(index)'));
 });
 
-test('presentation links to real operational routes',()=>{
-  for(const route of ['/presentation','/app/studio','/app/nexus','/app','/app/agriculture','/app/review'])
+test('presentation stages link to real platform routes',()=>{
+  for(const route of ['/presentation','/app/nexus','/app/gis','/app/agriculture','/app/review'])
     assert.ok(landing.includes(`to:"${route}"`)||landing.includes(`to:'${route}'`),route);
 });
