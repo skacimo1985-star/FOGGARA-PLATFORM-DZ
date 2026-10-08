@@ -17,6 +17,14 @@ GLOBAL_PROJECTS = [
         "url": "https://github.com/digitalearthafrica/crop-mask",
     },
     {
+        "id": "agripulse",
+        "name": "AgriPulse",
+        "license": "MIT",
+        "role": "field boundary + Sentinel + weather + soil fusion reference architecture",
+        "status": "reference_architecture",
+        "url": "https://github.com/robloxsagax-web/AgriPulse",
+    },
+    {
         "id": "esa-worldcereal",
         "name": "ESA WorldCereal",
         "license": "provider terms / open EO product",
@@ -55,6 +63,14 @@ GLOBAL_PROJECTS = [
         "role": "individual date-palm crown segmentation from very-high-resolution imagery",
         "status": "optional_vhr_module",
         "url": "https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data",
+    },
+    {
+        "id": "date-palm-tunisia",
+        "name": "DatePalm Tunisia research pipeline",
+        "license": "GPL-3.0",
+        "role": "date-palm oasis climate, groundwater and satellite time-series research reference",
+        "status": "research_reference_no_code_vendored",
+        "url": "https://github.com/tanitdata/DatePalm",
     },
 ]
 
