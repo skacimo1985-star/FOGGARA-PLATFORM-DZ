@@ -71,6 +71,8 @@ type Props = {
   onAnalysisSelectionChange?: (bbox: [number, number, number, number] | null) => void;
   locale?: string;
   compact?: boolean;
+  guided?: boolean;
+  guideAreaSelection?: boolean;
 };
 
 type Point = [number, number];
@@ -348,6 +350,8 @@ export function NationalMap({
   onAnalysisSelectionChange,
   locale = "ar",
   compact = false,
+  guided = false,
+  guideAreaSelection = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
@@ -1061,7 +1065,7 @@ export function NationalMap({
   };
 
   return (
-    <section className={`fg-national-map ${compact ? "compact" : ""}`} aria-label={labels.title}>
+    <section className={`fg-national-map ${compact ? "compact" : ""} ${guided ? "guided" : ""}`} aria-label={labels.title}>
       <div className="fg-national-map-head">
         <div>
           <span className="fg-map-kicker">ALGERIA · {wilayas.length || 69} WILAYAS</span>
@@ -1069,7 +1073,7 @@ export function NationalMap({
         </div>
         <div className="fg-map-head-meta">
           <span>{labels.source}</span>
-          <strong>{plotted.length} {labels.sites} · {parcelBoundaries.length} {labels.parcels} · {satelliteScenes.length} {labels.scenes}</strong>
+          <strong>{guided ? `${parcelBoundaries.length} ${labels.parcels}` : `${plotted.length} ${labels.sites} · ${parcelBoundaries.length} ${labels.parcels} · ${satelliteScenes.length} ${labels.scenes}`}</strong>
         </div>
       </div>
 
@@ -1097,7 +1101,7 @@ export function NationalMap({
               ))}
             </div>
           </div>
-          <div className="fg-map-control-card" aria-label={labels.layers}>
+          {!guided ? <div className="fg-map-control-card" aria-label={labels.layers}>
             <small>{labels.layers}</small>
             <div className="fg-map-layer-buttons">
               {([
@@ -1117,14 +1121,14 @@ export function NationalMap({
                 </button>
               ))}
             </div>
-          </div>
+          </div> : null}
           <div className="fg-map-control-card" aria-label={labels.tools}>
             <small>{labels.tools}</small>
             <div className="fg-map-layer-buttons">
               <button type="button" onClick={resetMap}>{labels.reset}</button>
               <button
                 type="button"
-                className={selectingAnalysisArea ? "active" : ""}
+                className={`${selectingAnalysisArea ? "active" : ""} ${guideAreaSelection ? "guide-primary" : ""}`}
                 aria-pressed={selectingAnalysisArea}
                 onClick={() => {
                   setDrawingBoundary(false);
