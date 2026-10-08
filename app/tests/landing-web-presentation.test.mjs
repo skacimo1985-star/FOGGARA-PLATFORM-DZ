@@ -22,7 +22,7 @@ test('hero no longer contains the rejected bilingual text card',()=>{
 
 test('Canva and Figma deck is translated into a native six-stage product presentation',()=>{
   assert.ok(landing.includes('id="presentation"'));
-  assert.ok(landing.includes('CANVA × FIGMA → WEB'));
+  assert.ok(landing.includes('FOGGARA-DZ / PLATFORM PRESENTATION'));
   assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));
   assert.ok(landing.includes('WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH'));
   assert.ok(landing.includes('OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED'));
