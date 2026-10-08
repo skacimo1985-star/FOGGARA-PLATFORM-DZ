@@ -15,10 +15,18 @@ test('Presentation.tsx remains valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('oasis presentation uses the approved visual assets',()=>{
+test('previous Figma composition is restored as the presentation experience',()=>{
+  assert.ok(source.includes("title:'FROM HERITAGE TO DIGITAL TWIN'"));
   assert.ok(source.includes('presentationPhotos=[10,8,6,1,11]'));
-  assert.ok(source.includes('fp-oasis-hero-scene'));
-  assert.ok(source.includes('FROM HERITAGE TO DIGITAL TWIN'));
-  assert.ok(css.includes('/images/oasis-dawn.webp'));
+  assert.ok(source.includes('fp-figma-frame'));
+  assert.ok(source.includes('fp-figma-thumbs'));
+  assert.ok(source.includes('HERITAGE FLOW'));
+  assert.ok(source.includes('DIGITAL FLOW'));
+  assert.ok(css.includes('RESTORED FIGMA PRESENTATION'));
   assert.ok(css.includes('/images/foggara-sprite.webp'));
+});
+
+test('presentation preserves five synchronized Foggara stages',()=>{
+  for(const marker of ['SOURCE / MOTHER GALLERY','KASRIA / WATER SHARING','SEGUIAS / DISTRIBUTION','PARCEL / AGRICULTURAL USE','EVIDENCE / MONITORING'])
+    assert.ok(source.includes(marker),marker);
 });
