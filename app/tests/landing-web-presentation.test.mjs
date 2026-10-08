@@ -54,3 +54,23 @@ test('landing uses one global platform narrative without duplicate presentation'
   assert.equal(landing.includes('fg-platform-spine'),false);
   assert.equal(landing.includes('id="heritage"'),false);
 });
+
+
+test('landing keeps the expo QR compact and outside the hero',()=>{
+  const heroStart=landing.indexOf('<section className="fg-moon-hero fg-lukas-hero"');
+  const heroEnd=landing.indexOf('<nav className="fg-lukas-domain-strip"',heroStart);
+  const hero=landing.slice(heroStart,heroEnd);
+  assert.equal(hero.includes('expo-qr.svg'),false);
+  assert.ok(landing.includes('width="74" height="74"'));
+});
+
+test('landing integrates the available field imagery as one editorial mosaic',()=>{
+  for(const asset of [
+    '/images/oasis-dawn.webp',
+    '/images/foggara-video-frame-1.webp',
+    '/images/foggara-video-frame-2.webp',
+    '/images/oasis-hero.webp'
+  ]) assert.ok(landing.includes(asset),asset);
+  assert.ok(landing.includes('fg-global-visual-detail-a'));
+  assert.ok(landing.includes('fg-global-visual-detail-b'));
+});
