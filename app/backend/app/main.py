@@ -31,14 +31,20 @@ log = logging.getLogger("foggara")
 @asynccontextmanager
 async def lifespan(_app):
     from .automation_runtime import run_queue
+    from .field_automation_runtime import run_field_automation
+
     stop = asyncio.Event()
-    task = asyncio.create_task(run_queue(stop)) if config.OPERATIONS_AUTOMATION_ENABLED else None
+    tasks = []
+    if config.OPERATIONS_AUTOMATION_ENABLED:
+        tasks.append(asyncio.create_task(run_queue(stop)))
+    if config.FIELD_AUTOMATION_ENABLED:
+        tasks.append(asyncio.create_task(run_field_automation(stop)))
     try:
         yield
     finally:
         stop.set()
-        if task is not None:
-            await task  # Finish the current atomic transaction before shutdown.
+        if tasks:
+            await asyncio.gather(*tasks)  # Finish current atomic work before shutdown.
 
 app = FastAPI(
     lifespan=lifespan,
