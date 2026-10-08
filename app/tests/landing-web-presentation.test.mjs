@@ -37,12 +37,20 @@ test('Canva presentation autoplays on the landing with fade-only transitions',()
 });
 
 
-test('landing uses the supplied editorial portfolio direction without duplicating presentation',()=>{
+test('landing uses one global platform narrative without duplicate presentation',()=>{
   assert.ok(landing.includes('fg-lukas-hero'));
-  assert.ok(landing.includes('fg-lukas-thumbs'));
   assert.ok(landing.includes('fg-lukas-domain-strip'));
-  assert.ok(landing.includes('fg-lukas-about'));
-  assert.ok(landing.includes('fg-lukas-image-rail'));
-  assert.equal((landing.match(/OasisCanvaPresentation/g)||[]).length>=1,true);
+  assert.ok(landing.includes('fg-global-operating'));
+  assert.ok(landing.includes('fg-global-visual-stage'));
+  assert.ok(landing.includes('fg-global-services'));
+  assert.ok(landing.includes('fg-global-presentation'));
+  assert.ok(landing.includes('OBSERVED'));
+  assert.ok(landing.includes('VERIFIED'));
+  assert.ok(landing.includes('COMPUTED'));
+  assert.ok(landing.includes('INFERRED'));
+  assert.ok(landing.includes('PROPOSED'));
+  assert.equal((landing.match(/<OasisCanvaPresentation/g)||[]).length,1);
+  assert.equal(landing.includes('fg-lukas-image-rail'),false);
+  assert.equal(landing.includes('fg-platform-spine'),false);
   assert.equal(landing.includes('id="heritage"'),false);
 });
