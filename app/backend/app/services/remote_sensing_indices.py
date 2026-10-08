@@ -18,7 +18,10 @@ class IndexDefinition:
     stac_assets: Mapping[str, tuple[str, ...]]
     display_range: tuple[float, float]
     colormap_family: str
-    formula_version: str = "foggara-rs-v1"
+    formula: str = ""
+    application_domain: str = ""
+    reference_url: str = ""
+    formula_version: str = "foggara-rs-v2"
 
 
 INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
@@ -29,6 +32,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B04": ("red", "B04"), "B08": ("nir", "B08")},
         display_range=(-0.2, 0.9),
         colormap_family="vegetation",
+        formula="(NIR - RED) / (NIR + RED)",
+        application_domain="vegetation",
+        reference_url="https://ntrs.nasa.gov/citations/19740022614",
     ),
     "evi": IndexDefinition(
         key="evi",
@@ -37,6 +43,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B02": ("blue", "B02"), "B04": ("red", "B04"), "B08": ("nir", "B08")},
         display_range=(-0.2, 0.8),
         colormap_family="vegetation",
+        formula="2.5 * (NIR - RED) / (NIR + 6*RED - 7.5*BLUE + 1)",
+        application_domain="vegetation",
+        reference_url="https://doi.org/10.1016/S0034-4257(96)00112-5",
     ),
     "savi": IndexDefinition(
         key="savi",
@@ -45,6 +54,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B04": ("red", "B04"), "B08": ("nir", "B08")},
         display_range=(-0.2, 0.8),
         colormap_family="vegetation",
+        formula="(1 + 0.5) * (NIR - RED) / (NIR + RED + 0.5)",
+        application_domain="vegetation",
+        reference_url="https://doi.org/10.1016/0034-4257(88)90106-X",
     ),
     "ndwi": IndexDefinition(
         key="ndwi",
@@ -53,6 +65,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B03": ("green", "B03"), "B08": ("nir", "B08")},
         display_range=(-1.0, 1.0),
         colormap_family="water",
+        formula="(GREEN - NIR) / (GREEN + NIR)",
+        application_domain="water",
+        reference_url="https://doi.org/10.1080/01431169608948714",
     ),
     "ndmi": IndexDefinition(
         key="ndmi",
@@ -61,6 +76,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B08": ("nir", "B08"), "B11": ("swir16", "B11")},
         display_range=(-1.0, 1.0),
         colormap_family="water",
+        formula="(NIR - SWIR1) / (NIR + SWIR1)",
+        application_domain="vegetation_moisture",
+        reference_url="https://doi.org/10.1016/S0034-4257(01)00318-2",
     ),
     "lswi": IndexDefinition(
         key="lswi",
@@ -69,6 +87,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         stac_assets={"B08": ("nir", "B08"), "B11": ("swir16", "B11")},
         display_range=(-1.0, 1.0),
         colormap_family="water",
+        formula="(NIR - SWIR1) / (NIR + SWIR1)",
+        application_domain="land_surface_water",
+        reference_url="https://doi.org/10.1016/j.rse.2003.11.008",
     ),
     "bsi": IndexDefinition(
         key="bsi",
@@ -82,6 +103,9 @@ INDEX_DEFINITIONS: dict[str, IndexDefinition] = {
         },
         display_range=(-1.0, 1.0),
         colormap_family="soil",
+        formula="((SWIR1 + RED) - (NIR + BLUE)) / ((SWIR1 + RED) + (NIR + BLUE))",
+        application_domain="bare_soil_screening",
+        reference_url="",
     ),
 }
 
@@ -174,6 +198,10 @@ def public_index_definitions() -> list[dict]:
             "display_range": list(definition.display_range),
             "colormap_family": definition.colormap_family,
             "formula_version": definition.formula_version,
+            "formula": definition.formula,
+            "application_domain": definition.application_domain,
+            "reference_url": definition.reference_url or None,
+            "method_cross_checks": ["Awesome Spectral Indices (MIT)", "openEO process semantics (Apache-2.0)"],
             "evidence_status": "COMPUTED",
             "source_sensor": "Sentinel-2 L2A",
         }

@@ -30,3 +30,13 @@ test('manual AOI becomes the actual Sentinel bbox',()=>{
   assert.ok(source.includes('onAnalysisSelectionChange'));
   assert.ok(source.includes('params.set("bbox", analysisBbox'));
 });
+
+
+test('GIS exposes a real multi-temporal satellite study workflow',()=>{
+  assert.ok(source.includes('/remote-sensing/studies/timeseries'));
+  assert.ok(source.includes('runTimeSeriesStudy'));
+  assert.ok(source.includes('fg-eo-study'));
+  assert.ok(source.includes('quality_indicator'));
+  assert.ok(source.includes('processing_plan_fingerprint'));
+  assert.ok(source.includes('QA4EO-INSPIRED TRACEABILITY'));
+});

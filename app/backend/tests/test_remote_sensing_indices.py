@@ -90,4 +90,7 @@ def test_index_definition_endpoint_exposes_computed_not_verified_metadata(client
     assert by_key["ndwi"]["colormap_family"] == "water"
     assert by_key["lswi"]["required_bands"] == ["B08", "B11"]
     assert by_key["bsi"]["colormap_family"] == "soil"
-    assert all(row["formula_version"] == "foggara-rs-v1" for row in body["indices"])
+    assert all(row["formula_version"] == "foggara-rs-v2" for row in body["indices"])
+    assert by_key["ndvi"]["formula"] == "(NIR - RED) / (NIR + RED)"
+    assert by_key["ndvi"]["reference_url"] == "https://ntrs.nasa.gov/citations/19740022614"
+    assert "Awesome Spectral Indices (MIT)" in by_key["evi"]["method_cross_checks"]
