@@ -19,9 +19,10 @@ test('Presentation.tsx remains valid TSX',()=>{
 test('presentation uses the shared supplied Oases Nexus deck',()=>{
   assert.ok(source.includes('OasisCanvaPresentation'));
   assert.ok(source.includes('<OasisCanvaPresentation lang={locale}/>'));
-  assert.ok(deck.includes('DÉFINIR LE TERRAIN'));
-  assert.ok(deck.includes('PREUVE AVANT DÉCISION'));
-  assert.ok(deck.includes('DÉMO FOGGARA-DZ'));
+  assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
+  assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
+  assert.ok(deck.includes('AGRITECH EXPO — LIVE DEMO'));
+  assert.ok(deck.includes('ANCESTRAL WISDOM. MODERN DECISIONS.'));
 });
 
 test('deck mirrors the supplied visual language and uses existing platform media',()=>{
@@ -33,6 +34,9 @@ test('deck mirrors the supplied visual language and uses existing platform media
   assert.ok(deckCss.includes('/images/oasis-hero.webp'));
   assert.ok(deckCss.includes('/images/foggara-video-frame-1.webp'));
   assert.ok(deckCss.includes('/images/foggara-video-frame-2.webp'));
+  assert.ok(deckCss.includes('/images/user-oasis-hero.webp'));
+  assert.ok(deckCss.includes('/images/user-heritage-digital-twin.webp'));
+  assert.ok(deckCss.includes('grid-template-columns:repeat(12'));
 });
 
 test('decision matrix remains available below the presentation',()=>{
