@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..deps import api_error, require_reviewer
 from ..expo_models import ExpoFeedback, ExpoVisit
-from ..models import User
+from ..models import AgriObservation, AgriParcel, Project, Site, User, WaterResource
 from ..ratelimit import check_rate_limit
 from .remote_sensing_catalog import (
     EARTH_SEARCH_SEARCH_URL,
@@ -124,6 +124,81 @@ def expo_feedback(payload: FeedbackIn, request: Request, db: Session = Depends(g
     return {"feedback_id": row.id, "status": "received", **_counts(db)}
 
 
+
+
+@router.get("/demo-data")
+def expo_demo_data(db: Session = Depends(get_db)):
+    """Public read-only aggregate of rows explicitly marked as DEMO.
+
+    This endpoint never exposes non-demo organization data or user records.
+    """
+    sites = db.scalars(
+        select(Site)
+        .where(
+            Site.is_demo.is_(True),
+            Site.lat.is_not(None),
+            Site.lon.is_not(None),
+        )
+        .order_by(Site.id)
+        .limit(120)
+    ).all()
+
+    site_ids = [site.id for site in sites]
+    projects = db.scalars(
+        select(Project).where(Project.is_demo.is_(True), Project.site_id.in_(site_ids))
+    ).all() if site_ids else []
+    resources = db.scalars(
+        select(WaterResource).where(
+            WaterResource.is_demo.is_(True),
+            WaterResource.site_id.in_(site_ids),
+        )
+    ).all() if site_ids else []
+
+    projects_by_site: dict[int, list[dict]] = {}
+    for row in projects:
+        projects_by_site.setdefault(row.site_id, []).append({
+            "id": row.id,
+            "title": row.title,
+            "domain": row.domain,
+            "status": row.status,
+        })
+
+    resources_by_site: dict[int, list[dict]] = {}
+    for row in resources:
+        resources_by_site.setdefault(row.site_id, []).append({
+            "id": row.id,
+            "type": row.type,
+            "name": row.name,
+            "status": row.status,
+        })
+
+    gis_sites = [{
+        "site": {
+            "id": site.id,
+            "name": site.name,
+            "wilaya": site.wilaya,
+            "commune": site.commune,
+            "lat": float(site.lat),
+            "lon": float(site.lon),
+            "is_demo": True,
+        },
+        "projects": projects_by_site.get(site.id, []),
+        "resources": resources_by_site.get(site.id, []),
+        "assets": [],
+        "service_requests": [],
+    } for site in sites]
+
+    return {
+        "demo": True,
+        "label": "SYNTHETIC_DEMO_DATA",
+        "sites": gis_sites,
+        "counts": {
+            "sites": int(db.scalar(select(func.count()).select_from(Site).where(Site.is_demo.is_(True))) or 0),
+            "projects": int(db.scalar(select(func.count()).select_from(Project).where(Project.is_demo.is_(True))) or 0),
+            "parcels": int(db.scalar(select(func.count()).select_from(AgriParcel).where(AgriParcel.is_demo.is_(True))) or 0),
+            "observations": int(db.scalar(select(func.count()).select_from(AgriObservation).where(AgriObservation.is_demo.is_(True))) or 0),
+        },
+    }
 
 
 @router.get("/insights")

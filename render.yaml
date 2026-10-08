@@ -5,7 +5,7 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: cd app && npm ci && npm run build && python -m compileall -q backend/app && pip install -r backend/requirements.lock
+    buildCommand: cd app && npm ci && npm run build && test -s dist/images/user-oasis-hero.webp && test -s dist/images/user-heritage-digital-twin.webp && test -s dist/images/oasis-dawn.webp && test -s dist/expo-qr.svg && python -m compileall -q backend/app && pip install -r backend/requirements.lock
     startCommand: cd app/backend && python -m alembic upgrade head && python seed_reference.py && { [ "${SEED_DEMO:-false}" != "true" ] || python seed.py; } && exec python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     healthCheckPath: /api/health
     envVars:
@@ -16,7 +16,11 @@ services:
       - key: ENV
         value: prod
       - key: SEED_DEMO
-        value: "false"
+        value: "true"
+      - key: DEMO_INSTANCE
+        value: "true"
+      - key: DEMO_PASSWORD
+        generateValue: true
       - key: JWT_SECRET
         generateValue: true
       - key: SETUP_KEY

@@ -123,6 +123,7 @@ def test_expo_feedback_requires_content(client):
 
 
 def test_expo_feedback_rejects_another_visitor_session(client):
+    feedback_before = client.get("/api/expo/stats").json()["feedback"]
     owner_key = "expo_feedback_owner_123456"
     attacker_key = "expo_feedback_other_123456"
     visit = client.post(
@@ -145,7 +146,7 @@ def test_expo_feedback_rejects_another_visitor_session(client):
     )
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "EXPO_VISIT_NOT_FOUND"
-    assert client.get("/api/expo/stats").json()["feedback"] == 0
+    assert client.get("/api/expo/stats").json()["feedback"] == feedback_before
 
 
 def test_expo_feedback_requires_session_proof(client):
@@ -254,3 +255,15 @@ def test_expo_insights_aggregate_feedback_without_session_keys(client, world):
     assert len(body["recent_feedback"]) == 2
     assert body["recent_feedback"][0]["suggestion"] == "More local crop data"
     assert "session_key" not in body["recent_feedback"][0]
+
+
+def test_expo_demo_data_is_public_and_has_safe_shape(client):
+    response = client.get("/api/expo/demo-data")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["demo"] is True
+    assert body["label"] == "SYNTHETIC_DEMO_DATA"
+    assert set(body["counts"]) == {"sites", "projects", "parcels", "observations"}
+    assert isinstance(body["sites"], list)
+    assert "users" not in body
+    assert "organizations" not in body

@@ -7,6 +7,7 @@ import { ErrorText } from "@/components/common";
 import { NationalMap, type SatelliteScene } from "@/components/NationalMap";
 import { api } from "@/lib/api";
 import { WILAYAS } from "@/lib/wilayas";
+import type { GisSite } from "@/types";
 import "./expo.css";
 
 type ExpoStats = { visitors: number; feedback: number };
@@ -21,6 +22,12 @@ type SceneResponse = {
   live: boolean;
   count: number;
   scenes: SatelliteScene[];
+};
+type DemoDataResponse = {
+  demo: true;
+  label: string;
+  sites: GisSite[];
+  counts: { sites: number; projects: number; parcels: number; observations: number };
 };
 
 const ALGERIA: [number, number, number, number] = [-8.8, 18.4, 12.2, 37.5];
@@ -63,6 +70,7 @@ export default function Expo() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   });
   const [stats, setStats] = useState<ExpoStats>({ visitors: 0, feedback: 0 });
+  const [demoData, setDemoData] = useState<DemoDataResponse | null>(null);
   const [visitError, setVisitError] = useState<unknown>(null);
   const [viewport, setViewport] = useState<[number, number, number, number]>(ALGERIA);
   const [scenes, setScenes] = useState<SatelliteScene[]>([]);
@@ -82,6 +90,8 @@ export default function Expo() {
     intro: "Accès public en lecture seule pour le salon. Aucune donnée privée d'organisation n'est exposée.",
     visitors: "visiteurs",
     feedback: "avis reçus",
+    projects: "projets démo",
+    parcels: "parcelles démo",
     mapTitle: "Observation satellite en direct",
     mapBody: "Recherchez des scènes Sentinel-2 réelles sur la vue actuelle de l'Algérie.",
     search: "Rechercher Sentinel-2",
@@ -105,6 +115,8 @@ export default function Expo() {
     intro: "Public read-only expo access. No private organization data is exposed.",
     visitors: "visitors",
     feedback: "feedback received",
+    projects: "demo projects",
+    parcels: "demo parcels",
     mapTitle: "Live satellite observation",
     mapBody: "Search real Sentinel-2 scenes over the current Algeria map view.",
     search: "Search Sentinel-2",
@@ -128,6 +140,8 @@ export default function Expo() {
     intro: "دخول عام للمعرض بصلاحية عرض فقط، دون كشف بيانات المؤسسات الخاصة.",
     visitors: "زائر",
     feedback: "مشاركة رأي",
+    projects: "مشروع تجريبي",
+    parcels: "قطعة تجريبية",
     mapTitle: "رصد فضائي حي",
     mapBody: "ابحث عن مشاهد Sentinel-2 حقيقية ضمن نطاق الخريطة الحالي في الجزائر.",
     search: "بحث Sentinel-2",
@@ -167,6 +181,16 @@ export default function Expo() {
     void register();
     return () => { cancelled = true; };
   }, [profile.name, profile.visitor_role]);
+
+
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get<DemoDataResponse>("/expo/demo-data")
+      .then(value => { if (!cancelled) setDemoData(value); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   async function searchScenes() {
     setSceneBusy(true);
@@ -237,6 +261,8 @@ export default function Expo() {
       <div className="fg-expo-counters" aria-live="polite">
         <article><Users size={22}/><strong>{stats.visitors}</strong><span>{copy.visitors}</span></article>
         <article><MessageSquareText size={22}/><strong>{stats.feedback}</strong><span>{copy.feedback}</span></article>
+        <article><QrCode size={22}/><strong>{demoData?.counts.projects ?? 0}</strong><span>{copy.projects}</span></article>
+        <article><Satellite size={22}/><strong>{demoData?.counts.parcels ?? 0}</strong><span>{copy.parcels}</span></article>
       </div>
     </header>
 
@@ -251,7 +277,7 @@ export default function Expo() {
       </div>
       <ErrorText error={sceneError} />
       <NationalMap
-        sites={[]}
+        sites={demoData?.sites ?? []}
         wilayas={WILAYAS}
         satelliteScenes={scenes}
         onViewportChange={setViewport}
