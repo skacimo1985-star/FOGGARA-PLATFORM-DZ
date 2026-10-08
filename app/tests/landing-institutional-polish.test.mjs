@@ -7,10 +7,10 @@ const css=readFileSync(new URL('../src/pages/heritage-landing.css',import.meta.u
 
 test('institutional landing keeps a four-image visual story',()=>{
   for(const asset of [
-    '/images/foggara-heritage-poster.webp',
-    '/images/foggara-sprite.webp',
+    '/images/user-heritage-digital-twin.webp',
+    '/images/user-oases-nexus-wefeh.webp',
     '/images/foggara-video-frame-2.webp',
-    '/images/oasis-hero.webp',
+    '/images/user-oasis-hero.webp',
     '/images/foggara-video-frame-1.webp'
   ]){
     assert.ok(landing.includes(asset),asset);

@@ -128,11 +128,11 @@
   animation:fgMoonHeroFade .42s ease both;
 }
 .fg-moon-hero-media-1{
-  background-image:url("/images/oasis-hero.webp");
+  background-image:url("/images/user-oasis-hero.webp");
   background-position:center 58%;
 }
 .fg-moon-hero-media-2{
-  background-image:url("/images/oasis-hero.webp");
+  background-image:url("/images/user-oasis-hero.webp");
   background-position:center 52%;
 }
 .fg-moon-hero-media-3{
@@ -236,13 +236,13 @@
 .fg-presentation-stage-1{background-image:url("/images/foggara-video-frame-1.webp");background-position:center 56%}
 .fg-presentation-stage-2{background-image:url("/images/foggara-video-frame-2.webp");background-position:center 54%}
 .fg-presentation-stage-3{background-image:url("/images/oasis-dawn.webp");background-position:center 58%}
-.fg-presentation-stage-4{background-image:url("/images/oasis-hero.webp");background-position:center}
+.fg-presentation-stage-4{background-image:url("/images/user-oasis-hero.webp");background-position:center}
 .fg-presentation-stage-5{
-  background-image:url("/images/foggara-sprite.webp");
+  background-image:url("/images/user-oases-nexus-wefeh.webp");
   background-size:400% 300%;
   background-position:66.666% 50%;
 }
-.fg-presentation-stage-6{background-image:url("/images/foggara-heritage-poster.webp");background-position:center 24%}
+.fg-presentation-stage-6{background-image:url("/images/user-heritage-digital-twin.webp");background-position:center 24%}
 .fg-web-presentation-stage-shade{
   position:absolute;
   inset:0;
@@ -457,7 +457,7 @@
 .fg-moon-dots button[aria-current=true]{background:var(--moon-lime);border-color:#fff}
 
 .fg-moon-photo{
-  background-image:url("/images/foggara-sprite.webp");
+  background-image:url("/images/user-oases-nexus-wefeh.webp");
   background-repeat:no-repeat;
   background-size:400% 300%;
   background-color:#193313;
@@ -881,7 +881,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   position:relative;
   min-height:610px;
   overflow:hidden;
-  background-image:url("/images/foggara-sprite.webp");
+  background-image:url("/images/user-oases-nexus-wefeh.webp");
   background-repeat:no-repeat;
   background-size:400% 300%;
   background-color:#2a1b12;
@@ -1048,7 +1048,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   aspect-ratio:1.55;
   overflow:hidden;
   border:2px solid transparent;
-  background-image:url("/images/foggara-sprite.webp");
+  background-image:url("/images/user-oases-nexus-wefeh.webp");
   background-repeat:no-repeat;
   background-size:400% 300%;
   background-color:#28170f;
@@ -1245,7 +1245,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
 .fg-heritage-lightbox-sprite{
   width:100%;
   min-height:min(74vh,760px);
-  background-image:url("/images/foggara-sprite.webp");
+  background-image:url("/images/user-oases-nexus-wefeh.webp");
   background-repeat:no-repeat;
   background-size:400% 300%;
   background-color:#193313;
@@ -2126,7 +2126,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   opacity:1;
   filter:saturate(1.02) contrast(1.03) brightness(.82);
 }
-.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/oasis-hero.webp");background-position:center 54%}
+.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp");background-position:center 54%}
 .fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/foggara-video-frame-1.webp");background-position:center 56%}
 .fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp");background-position:center 52%}
 .fg-rebuilt-hero .fg-moon-hero-overlay{
@@ -2644,7 +2644,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   line-height:1.7;
 }
 .fg-global-services .fg-moon-offer-card a{margin-top:auto}
-.fg-global-services .fg-offer-1 .fg-moon-offer-mark{background-image:url("/images/foggara-sprite.webp")!important}
+.fg-global-services .fg-offer-1 .fg-moon-offer-mark{background-image:url("/images/user-oases-nexus-wefeh.webp")!important}
 .fg-global-services .fg-offer-2 .fg-moon-offer-mark{background-image:url("/images/foggara-video-frame-1.webp")!important}
 .fg-global-services .fg-offer-3 .fg-moon-offer-mark{background-image:url("/images/oasis-dawn.webp")!important}
 

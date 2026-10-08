@@ -28,7 +28,7 @@ test('supplied heritage artwork is integrated once without reviving the old ligh
   assert.equal(landing.includes('fg-heritage-lightbox'),false);
   assert.equal(landing.includes('href="#heritage"'),false);
   assert.ok(landing.includes('fg-agriculture-template-story'));
-  assert.equal((landing.match(/foggara-heritage-poster\.webp/g)||[]).length,1);
+  assert.equal((landing.match(/user-heritage-digital-twin\.webp/g)||[]).length,1);
   assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));
   assert.ok(landing.includes('KASRIA'));
   assert.ok(landing.includes('SEGUIA'));

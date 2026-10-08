@@ -11,7 +11,7 @@ test('landing keeps the rejected bilingual text card removed',()=>{
 });
 
 test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
-  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/oasis-hero.webp")'));
+  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/foggara-video-frame-1.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp")'));
   const heroStart=landing.indexOf('<section className="fg-moon-hero fg-lukas-hero fg-rebuilt-hero"');
@@ -20,7 +20,7 @@ test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
   assert.ok(hero.includes('SIREP OASES'));
   assert.ok(hero.includes('FOGGARA-DZ'));
   assert.ok(hero.includes('NEXUS WEFEH'));
-  assert.ok(hero.includes('index===0?"/images/oasis-hero.webp"'));
+  assert.ok(hero.includes('index===0?"/images/user-oasis-hero.webp"'));
   assert.ok(hero.includes('index===1?"/images/foggara-video-frame-1.webp"'));
 });
 

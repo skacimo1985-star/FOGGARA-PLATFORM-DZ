@@ -280,7 +280,7 @@ export default function Landing() {
       <div className="fg-rebuilt-hero-bottom">
         <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
           {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
-            <img src={index===0?"/images/oasis-hero.webp":index===1?"/images/foggara-video-frame-1.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
+            <img src={index===0?"/images/user-oasis-hero.webp":index===1?"/images/foggara-video-frame-1.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
           </button>)}
         </div>
         <div className="fg-rebuilt-domain-line" dir="ltr">
@@ -351,14 +351,14 @@ export default function Landing() {
         <Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link>
       </div>
       <figure className="fg-agriculture-template-art">
-        <img src="/images/foggara-heritage-poster.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
+        <img src="/images/user-heritage-digital-twin.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
         <figcaption><span>FIELD HERITAGE</span><strong>FOGGARA → DIGITAL TWIN</strong></figcaption>
       </figure>
     </section>
 
     <div className="fg-global-visual-stage" aria-label={institutionCopy.galleryAria}>
       <figure className="fg-global-visual-main">
-        <img src="/images/foggara-sprite.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
+        <img src="/images/user-oases-nexus-wefeh.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
