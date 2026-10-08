@@ -22,10 +22,14 @@ test('landing keeps exactly one primary presentation experience',()=>{
   assert.equal(landing.includes('heritageAction'),false);
 });
 
-test('duplicate heritage presentation and its lightbox are absent',()=>{
+test('supplied heritage artwork is integrated once without reviving the old lightbox',()=>{
   assert.equal(landing.includes('fg-moon-heritage'),false);
   assert.equal(landing.includes('fg-foggara-visual-demo'),false);
   assert.equal(landing.includes('fg-heritage-lightbox'),false);
-  assert.equal(landing.includes('foggara-heritage-poster.webp'),false);
   assert.equal(landing.includes('href="#heritage"'),false);
+  assert.ok(landing.includes('fg-agriculture-template-story'));
+  assert.equal((landing.match(/foggara-heritage-poster\.webp/g)||[]).length,1);
+  assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));
+  assert.ok(landing.includes('KASRIA'));
+  assert.ok(landing.includes('SEGUIA'));
 });
