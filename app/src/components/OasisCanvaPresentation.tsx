@@ -115,8 +115,6 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
     return()=>window.clearInterval(timer);
   },[playing,c.slides.length]);
 
-  useEffect(()=>{setIndex(0)},[lang]);
-
   const progress=useMemo(()=>((index+1)/c.slides.length)*100,[index,c.slides.length]);
 
   return <section className={`ocp ${compact?"ocp-compact":""}`} dir={dir} aria-labelledby={compact?"ocp-compact-title":"ocp-title"}>
