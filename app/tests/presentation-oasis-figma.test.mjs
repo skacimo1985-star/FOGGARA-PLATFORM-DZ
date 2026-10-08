@@ -37,6 +37,10 @@ test('deck mirrors the supplied visual language and uses existing platform media
   assert.ok(deckCss.includes('/images/user-oasis-hero.webp'));
   assert.ok(deckCss.includes('/images/user-heritage-digital-twin.webp'));
   assert.ok(deckCss.includes('grid-template-columns:repeat(12'));
+  assert.ok(deck.includes('className="ocp-media-image"'));
+  assert.ok(deck.includes('src="/images/user-oasis-hero.webp"'));
+  assert.ok(deck.includes('src="/images/user-heritage-digital-twin.webp"'));
+  assert.ok(deckCss.includes('.ocp-media-image'));
 });
 
 test('decision matrix remains available below the presentation',()=>{
