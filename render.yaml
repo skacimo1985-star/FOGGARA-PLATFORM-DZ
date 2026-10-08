@@ -27,6 +27,18 @@ services:
         value: "false"
       - key: NEXUS_MATRIX_ENGINE
         value: python
+      - key: OPERATIONS_AUTOMATION_ENABLED
+        value: "true"
+      - key: FIELD_AUTOMATION_ENABLED
+        value: "true"
+      - key: FIELD_AUTOMATION_INTERVAL_SECONDS
+        value: "21600"
+      - key: FIELD_AUTOMATION_LOOKBACK_DAYS
+        value: "45"
+      - key: FIELD_AUTOMATION_CLOUD_COVER_LTE
+        value: "35"
+      - key: FIELD_AUTOMATION_BATCH_SIZE
+        value: "12"
       - key: TOKEN_TTL_HOURS
         value: "2"
       - key: TRUSTED_PROXY_PEERS
