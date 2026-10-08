@@ -1883,7 +1883,8 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   border-color:#ffffff28;
 }
 .fg-global-presentation .fg-eyebrow{color:#d5bc83}
-.fg-global-presentation .ocp-root{
+.fg-global-presentation .ocp-head{display:none}
+.fg-global-presentation .ocp{
   width:min(1320px,calc(100% - 54px));
   margin-inline:auto;
 }
@@ -1961,7 +1962,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-global-services>header,
   .fg-global-services .fg-moon-offer-grid,
   .fg-global-presentation .fg-global-section-head,
-  .fg-global-presentation .ocp-root,
+  .fg-global-presentation .ocp,
   .fg-global-demo,
   .fg-moon-tools,
   .fg-global-cta{
