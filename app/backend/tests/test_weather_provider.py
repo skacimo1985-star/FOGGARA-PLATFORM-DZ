@@ -163,3 +163,40 @@ def test_parcel_weather_returns_live_provider_result(client, world, monkeypatch)
     assert body["forecast"]["forecast_days"][0]["et0_fao_mm"] == 5.4
     assert body["forecast"]["provenance"] == "INFERRED"
     assert body["forecast"]["field_measurement"] is False
+
+
+def test_weather_forecast_creates_persisted_irrigation_plan(client, world, monkeypatch):
+    h = login(client, "o1m@t.dz")
+    parcel_id = _parcel(client, h, located=True)
+    monkeypatch.setattr(
+        weather_parcels,
+        "fetch_daily_forecast",
+        lambda lat, lon, days=15: {
+            "provider": {"configured": True, "mode": "self-hosted-or-compatible", "provider": "open-meteo-compatible"},
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "timezone": "Africa/Algiers",
+            "forecast_days": [
+                {"date": "2026-10-08", "precipitation_mm": 0.0, "et0_fao_mm": 5.4},
+                {"date": "2026-10-09", "precipitation_mm": 1.2, "et0_fao_mm": 4.9},
+            ],
+            "method": "numerical_weather_forecast",
+            "provenance": "INFERRED",
+            "field_measurement": False,
+        },
+    )
+    response = client.post(
+        f"/api/agriculture/parcels/{parcel_id}/weather/irrigation-plan",
+        headers=h,
+        json={"kc": 0.8, "efficiency": 0.8, "days": 2, "effective_rain_fraction": 0.5},
+    )
+    assert response.status_code == 201, response.text
+    plan = response.json()
+    assert plan["parcel_id"] == parcel_id
+    assert plan["is_demo"] is False
+    assert plan["inputs"]["input_source"] == "LIVE_WEATHER_FORECAST"
+    assert plan["inputs"]["weather_provenance"] == "INFERRED"
+    assert plan["result"]["evidence_status"] == "COMPUTED_FROM_INFERRED_FORECAST"
+    assert plan["result"]["forecast_total_eto_mm"] == 10.3
+    assert plan["result"]["effective_rain_mm"] == 0.6
+    assert plan["result"]["volume_m3"] == 191.0
+    assert "HUMAN_REVIEW_REQUIRED" in plan["result"]["limitations"]
