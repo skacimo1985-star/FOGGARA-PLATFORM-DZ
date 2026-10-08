@@ -422,3 +422,28 @@
   .fg-field-index-grid,
   .fg-field-soil-grid{grid-template-columns:1fr}
 }
+
+.fg-field-global-sources{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+.fg-field-global-sources>div{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid var(--cc-line);
+  border-radius:10px;
+  background:var(--background);
+}
+.fg-field-global-sources strong,
+.fg-field-global-sources span,
+.fg-field-global-sources small{display:block}
+.fg-field-global-sources strong{font-size:10px;color:#274c3d}
+.fg-field-global-sources span{margin-top:3px;color:var(--muted-foreground);font-size:8px;line-height:1.35}
+.fg-field-global-sources small{margin-top:4px;color:#7b6a54;font-size:7px}
+@media(max-width:800px){
+  .fg-field-global-sources{grid-template-columns:1fr 1fr}
+}
+@media(max-width:500px){
+  .fg-field-global-sources{grid-template-columns:1fr}
+}
