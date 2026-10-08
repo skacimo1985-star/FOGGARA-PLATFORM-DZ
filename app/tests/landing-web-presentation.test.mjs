@@ -19,24 +19,31 @@ test('landing embeds the supplied Oases Nexus WEFEH presentation',()=>{
   assert.ok(landing.includes('OasisCanvaPresentation'));
   assert.ok(landing.includes('<OasisCanvaPresentation lang={lang} compact/>'));
   assert.ok(landing.includes('OASES NEXUS WEFEH / FOGGARA-DZ'));
-  assert.ok(deck.includes('DÉFINIR LE TERRAIN'));
-  assert.ok(deck.includes('DÉMO FOGGARA-DZ'));
+  assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
+  assert.ok(deck.includes('AGRITECH EXPO — LIVE DEMO'));
+  assert.ok(deck.includes('ANCESTRAL WISDOM. MODERN DECISIONS.'));
 });
 
-test('presentation preserves the eight-page structure of the supplied design',()=>{
+test('presentation preserves the complete twelve-slide FOGGARA Nexus structure',()=>{
   const markers=[
-    'DÉFINIR LE TERRAIN',
-    'OBSERVER PAR SATELLITE',
-    'COMPRENDRE EAU, SOL ET CULTURES',
-    'PREUVE AVANT DÉCISION',
-    'DE L’ANALYSE À L’ARBITRAGE',
-    'IA SOUVERAINE ET SERVICES',
-    'UN ÉCOSYSTÈME NATIONAL',
-    'DÉMO FOGGARA-DZ'
+    'FOGGARA-DZ',
+    'FROM HERITAGE TO DIGITAL TWIN',
+    'HOW THE FOGGARA WORKS',
+    'THE FOGGARA-DZ OPERATING CYCLE',
+    'WEFEH NEXUS',
+    'FOGGARA-DZ PLATFORM',
+    'SMART AGRICULTURE DEMO',
+    'EVIDENCE BEFORE DECISION',
+    'FROM NEED TO ACTION',
+    'SIREP OASES — SERVICES & ECOSYSTEM',
+    'AGRITECH EXPO — LIVE DEMO',
+    'ANCESTRAL WISDOM. MODERN DECISIONS.'
   ];
   for(const marker of markers) assert.ok(deck.includes(marker),marker);
-  assert.ok(deck.includes('13/14/15 OCTOBRE 2026'));
-  assert.ok(deck.includes('RENCONTRONS-NOUS AU STAND B02'));
+  assert.ok(deck.includes('13 / 14 / 15 OCTOBER 2026'));
+  assert.ok(deck.includes('SHERATON ANNABA'));
+  assert.ok(deck.includes('/expo-qr.svg'));
+  assert.ok(deck.includes('String(slides.length).padStart(2,"0")'));
 });
 
 test('supplied design presentation autoplays with user controls',()=>{
