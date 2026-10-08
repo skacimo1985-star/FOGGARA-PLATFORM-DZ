@@ -67,6 +67,8 @@ type Props = {
   onDrawParcelBoundary?: (geometry: { type: "Polygon"; coordinates: [number, number][][] }) => void;
   onSelectScene?: (sceneId: string) => void;
   onViewportChange?: (bbox: [number, number, number, number]) => void;
+  analysisSelectionBbox?: [number, number, number, number] | null;
+  onAnalysisSelectionChange?: (bbox: [number, number, number, number] | null) => void;
   locale?: string;
   compact?: boolean;
 };
@@ -263,6 +265,28 @@ function polygonAreaSquareMeters(points: Point[]) {
   return Math.abs(twiceArea) / 2;
 }
 
+function analysisSelectionGeoJson(bbox: [number, number, number, number] | null) {
+  if (!bbox) return { type: "FeatureCollection", features: [] };
+  const [west, south, east, north] = bbox;
+  return {
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      properties: { kind: "analysis-selection" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ]],
+      },
+    }],
+  };
+}
+
 function measurementGeoJson(points: Point[], areaMode: boolean) {
   const features: unknown[] = [];
   if (points.length >= 2) {
@@ -320,6 +344,8 @@ export function NationalMap({
   onDrawParcelBoundary,
   onSelectScene,
   onViewportChange,
+  analysisSelectionBbox = null,
+  onAnalysisSelectionChange,
   locale = "ar",
   compact = false,
 }: Props) {
@@ -331,6 +357,7 @@ export function NationalMap({
   const onSelectWilayaRef = useRef(onSelectWilaya);
   const onSelectSceneRef = useRef(onSelectScene);
   const onViewportChangeRef = useRef(onViewportChange);
+  const onAnalysisSelectionChangeRef = useRef(onAnalysisSelectionChange);
   const featuresRef = useRef<SiteFeatureCollection>({ type: "FeatureCollection", features: [] });
   const sceneFeaturesRef = useRef({ type: "FeatureCollection", features: [] as unknown[] });
   const parcelFeaturesRef = useRef({ type: "FeatureCollection", features: [] as ParcelBoundaryFeature[] });
@@ -351,8 +378,11 @@ export function NationalMap({
   const [measurePoints, setMeasurePoints] = useState<Point[]>([]);
   const [satelliteOpacity, setSatelliteOpacity] = useState(96);
   const [analysisOpacity, setAnalysisOpacity] = useState(90);
+  const [selectingAnalysisArea, setSelectingAnalysisArea] = useState(false);
+  const [analysisCorner, setAnalysisCorner] = useState<Point | null>(null);
   const drawingBoundaryRef = useRef(false);
   const measureModeRef = useRef<"none" | "distance" | "area">("none");
+  const selectingAnalysisAreaRef = useRef(false);
 
   onSelectSiteRef.current = onSelectSite;
   onSelectParcelRef.current = onSelectParcel;
@@ -362,6 +392,8 @@ export function NationalMap({
   onSelectWilayaRef.current = onSelectWilaya;
   onSelectSceneRef.current = onSelectScene;
   onViewportChangeRef.current = onViewportChange;
+  onAnalysisSelectionChangeRef.current = onAnalysisSelectionChange;
+  selectingAnalysisAreaRef.current = selectingAnalysisArea;
   satelliteOverlayRef.current = satelliteOverlay;
   analysisOverlayRef.current = analysisOverlay;
 
@@ -442,6 +474,7 @@ export function NationalMap({
         layerSites: "Sites", layerParcels: "Parcelles", layerScenes: "Sentinel", layerAnalysis: "Résultat",
         modes: "Vue", layers: "Couches", draw: "Dessiner la limite", finish: "Enregistrer", cancel: "Annuler", vertices: "points",
         tools: "Outils", reset: "Algérie", distance: "Distance", areaMeasure: "Surface", clearMeasure: "Effacer",
+        selectArea: "Zone d’analyse", firstCorner: "Choisissez 2 coins", clearArea: "Effacer zone",
         opacity: "Opacité", coordinates: "Coordonnées", measured: "Mesure",
       }
     : locale === "en"
@@ -459,6 +492,7 @@ export function NationalMap({
           layerSites: "Sites", layerParcels: "Parcels", layerScenes: "Sentinel", layerAnalysis: "Result",
           modes: "View", layers: "Layers", draw: "Draw boundary", finish: "Save boundary", cancel: "Cancel", vertices: "points",
           tools: "Tools", reset: "Algeria", distance: "Distance", areaMeasure: "Area", clearMeasure: "Clear",
+          selectArea: "Select analysis area", firstCorner: "Pick 2 corners", clearArea: "Clear area",
           opacity: "Opacity", coordinates: "Coordinates", measured: "Measurement",
         }
       : {
@@ -475,6 +509,7 @@ export function NationalMap({
           layerSites: "المواقع", layerParcels: "القطع", layerScenes: "Sentinel", layerAnalysis: "النتيجة",
           modes: "الرؤية", layers: "الطبقات", draw: "ارسم حدود القطعة", finish: "احفظ الحدود", cancel: "إلغاء", vertices: "نقاط",
           tools: "أدوات", reset: "الجزائر", distance: "مسافة", areaMeasure: "مساحة", clearMeasure: "مسح",
+          selectArea: "حدد منطقة التحليل", firstCorner: "اختر زاويتين", clearArea: "مسح المنطقة",
           opacity: "الشفافية", coordinates: "الإحداثيات", measured: "القياس",
         };
 
@@ -688,6 +723,30 @@ export function NationalMap({
             },
           });
 
+          map.addSource("analysis-selection", {
+            type: "geojson",
+            data: analysisSelectionGeoJson(analysisSelectionBbox),
+          });
+          map.addLayer({
+            id: "analysis-selection-fill",
+            type: "fill",
+            source: "analysis-selection",
+            paint: {
+              "fill-color": "#7c3aed",
+              "fill-opacity": 0.12,
+            },
+          });
+          map.addLayer({
+            id: "analysis-selection-line",
+            type: "line",
+            source: "analysis-selection",
+            paint: {
+              "line-color": "#7c3aed",
+              "line-width": 3,
+              "line-dasharray": [2, 1],
+            },
+          });
+
           map.addSource("foggara-sites", {
             type: "geojson",
             data: featuresRef.current,
@@ -717,25 +776,25 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "satellite-scenes-fill", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "satellite-scenes-fill", (event) => {
-            if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
+            if (drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none") return;
             const sceneId = String(event.features?.[0]?.properties?.sceneId ?? "");
             if (sceneId && onSelectSceneRef.current) onSelectSceneRef.current(sceneId);
           });
 
           map.on("mouseenter", "agri-parcel-fill", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "agri-parcel-fill", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "agri-parcel-fill", (event) => {
-            if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
+            if (drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none") return;
             const parcelId = Number(event.features?.[0]?.properties?.id);
             if (Number.isFinite(parcelId) && onSelectParcelRef.current) {
               onSelectParcelRef.current(parcelId);
@@ -743,13 +802,13 @@ export function NationalMap({
           });
 
           map.on("mouseenter", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "pointer";
           });
           map.on("mouseleave", "foggara-sites", () => {
-            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
+            if (map) map.getCanvas().style.cursor = drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none" ? "crosshair" : "";
           });
           map.on("click", "foggara-sites", (event) => {
-            if (drawingBoundaryRef.current || measureModeRef.current !== "none") return;
+            if (drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none") return;
             const properties = event.features?.[0]?.properties;
             const siteId = Number(properties?.siteId);
             const code = String(properties?.wilayaCode ?? "");
@@ -761,6 +820,21 @@ export function NationalMap({
             if (!event.lngLat) return;
             const point: Point = [Number(event.lngLat.lng), Number(event.lngLat.lat)];
             if (!point.every(Number.isFinite)) return;
+            if (selectingAnalysisAreaRef.current) {
+              setAnalysisCorner((first) => {
+                if (!first) return point;
+                const west = Math.min(first[0], point[0]);
+                const south = Math.min(first[1], point[1]);
+                const east = Math.max(first[0], point[0]);
+                const north = Math.max(first[1], point[1]);
+                if (east - west > 1e-6 && north - south > 1e-6) {
+                  onAnalysisSelectionChangeRef.current?.([west, south, east, north]);
+                }
+                setSelectingAnalysisArea(false);
+                return null;
+              });
+              return;
+            }
             if (drawingBoundaryRef.current) {
               setDraftPoints((current) => [...current, point]);
               return;
@@ -847,8 +921,13 @@ export function NationalMap({
     const map = mapRef.current;
     const source = map?.getSource("parcel-draft");
     if (isGeoJsonSource(source)) source.setData(draftGeoJson(draftPoints));
-    if (map) map.getCanvas().style.cursor = drawingBoundary || measureMode !== "none" ? "crosshair" : "";
-  }, [draftPoints, drawingBoundary, measureMode]);
+    if (map) map.getCanvas().style.cursor = drawingBoundary || selectingAnalysisArea || measureMode !== "none" ? "crosshair" : "";
+  }, [draftPoints, drawingBoundary, selectingAnalysisArea, measureMode]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("analysis-selection");
+    if (isGeoJsonSource(source)) source.setData(analysisSelectionGeoJson(analysisSelectionBbox));
+  }, [analysisSelectionBbox]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("measurement-draft");
@@ -968,6 +1047,8 @@ export function NationalMap({
 
   const toggleMeasureMode = (mode: "distance" | "area") => {
     setDrawingBoundary(false);
+    setSelectingAnalysisArea(false);
+    setAnalysisCorner(null);
     setDraftPoints([]);
     setMeasurePoints([]);
     setMeasureMode((current) => current === mode ? "none" : mode);
@@ -1041,6 +1122,33 @@ export function NationalMap({
               <button type="button" onClick={resetMap}>{labels.reset}</button>
               <button
                 type="button"
+                className={selectingAnalysisArea ? "active" : ""}
+                aria-pressed={selectingAnalysisArea}
+                onClick={() => {
+                  setDrawingBoundary(false);
+                  setDraftPoints([]);
+                  setMeasureMode("none");
+                  setMeasurePoints([]);
+                  setAnalysisCorner(null);
+                  setSelectingAnalysisArea((current) => !current);
+                }}
+              >
+                {selectingAnalysisArea ? labels.firstCorner : labels.selectArea}
+              </button>
+              {analysisSelectionBbox ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectingAnalysisArea(false);
+                    setAnalysisCorner(null);
+                    onAnalysisSelectionChangeRef.current?.(null);
+                  }}
+                >
+                  {labels.clearArea}
+                </button>
+              ) : null}
+              <button
+                type="button"
                 className={measureMode === "distance" ? "active" : ""}
                 aria-pressed={measureMode === "distance"}
                 onClick={() => toggleMeasureMode("distance")}
@@ -1105,6 +1213,8 @@ export function NationalMap({
                 <button
                   type="button"
                   onClick={() => {
+                    setSelectingAnalysisArea(false);
+                    setAnalysisCorner(null);
                     setMeasureMode("none");
                     setMeasurePoints([]);
                     setDraftPoints([]);
@@ -1150,6 +1260,11 @@ export function NationalMap({
             <span title={labels.coordinates} dir="ltr">
               {cursorCoordinate[1].toFixed(5)}, {cursorCoordinate[0].toFixed(5)}
             </span>
+          ) : null}
+          {analysisSelectionBbox ? (
+            <strong dir="ltr">
+              AOI: {analysisSelectionBbox.map((value) => value.toFixed(5)).join(", ")}
+            </strong>
           ) : null}
           {measurePoints.length > 1 ? (
             <strong>
