@@ -208,10 +208,6 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
   const slides=slideCopy[lang];
 
   useEffect(()=>{
-    setIndex(0);
-  },[lang]);
-
-  useEffect(()=>{
     if(!playing||window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
     const timer=window.setInterval(()=>setIndex(value=>(value+1)%slides.length),6500);
     return()=>window.clearInterval(timer);
