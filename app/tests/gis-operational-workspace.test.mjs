@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 
 const source=readFileSync(new URL('../src/pages/Gis.tsx',import.meta.url),'utf8');
+const mapSource=readFileSync(new URL('../src/components/NationalMap.tsx',import.meta.url),'utf8');
+const css=readFileSync(new URL('../src/pages/command-center.css',import.meta.url),'utf8');
 
 test('GIS page remains valid TSX',()=>{
   const result=ts.transpileModule(source,{
@@ -56,4 +58,29 @@ test('GIS Analyze All calls the combined field-intelligence study',()=>{
   assert.ok(source.includes('fg-field-intelligence'));
   assert.ok(source.includes('fieldIntelligenceResult.soil_context'));
   assert.ok(source.includes('OBSERVED → COMPUTED → INFERRED'));
+});
+
+
+test('GIS defaults to one guided field-analysis workflow',()=>{
+  assert.ok(source.includes('fg-gis-guide'));
+  assert.ok(source.includes('guideCopy.analyzeNow'));
+  assert.ok(source.includes('simpleAnalysisReady'));
+  assert.ok(source.includes('fieldIntelligenceResult?.status === "READY"'));
+  assert.ok(source.includes('fg-gis-simple-result'));
+});
+
+test('advanced GIS implementation details are hidden unless explicitly opened',()=>{
+  assert.ok(source.includes('advancedOpen'));
+  assert.ok(source.includes('fg-gis-advanced'));
+  assert.ok(css.includes('.fg-gis-workspace:not(.is-advanced) .fg-gis-advanced'));
+  assert.ok(source.includes('guideCopy.advanced'));
+});
+
+test('guided map highlights area selection and removes layer clutter',()=>{
+  assert.ok(source.includes('guided={!advancedOpen}'));
+  assert.ok(source.includes('guideAreaSelection={!selectedParcelId && !manualAnalysisBbox}'));
+  assert.ok(mapSource.includes('guided?: boolean'));
+  assert.ok(mapSource.includes('guideAreaSelection?: boolean'));
+  assert.ok(mapSource.includes('guide-primary'));
+  assert.ok(mapSource.includes('{!guided ? <div className="fg-map-control-card" aria-label={labels.layers}>'));
 });
