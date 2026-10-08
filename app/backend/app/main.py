@@ -91,7 +91,17 @@ async def security_and_request_logging(request: Request, call_next):
     if request.url.path.startswith("/api"):
         response.headers.setdefault("Cache-Control", "no-store")
     if request.url.path == "/service-worker.js":
-        response.headers.setdefault("Cache-Control", "no-cache")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    # Public SPA documents must revalidate so a successful deploy is visible
+    # immediately instead of being masked by a stale browser shell.
+    path_leaf = request.url.path.rsplit("/", 1)[-1]
+    if (
+        request.method == "GET"
+        and not request.url.path.startswith("/api")
+        and not request.url.path.startswith("/assets/")
+        and "." not in path_leaf
+    ):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers.setdefault("X-Request-ID", request_id)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
