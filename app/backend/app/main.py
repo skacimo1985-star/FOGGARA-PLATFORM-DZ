@@ -202,6 +202,9 @@ from starlette.staticfiles import StaticFiles
 _dist = pathlib.Path(__file__).resolve().parents[2] / "dist"
 if _dist.is_dir():
     app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+    _images = _dist / "images"
+    if _images.is_dir():
+        app.mount("/images", StaticFiles(directory=_images), name="images")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str):
