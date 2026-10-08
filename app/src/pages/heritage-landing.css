@@ -127,12 +127,18 @@
   background-size:cover;
   animation:fgMoonHeroIn .8s ease both;
 }
-.fg-moon-hero-media-1,
-.fg-moon-hero-media-2,
-.fg-moon-hero-media-3{
-  background-image:url("/images/oasis-dawn.webp");
-  background-size:cover;
+.fg-moon-hero-media-1{
+  background-image:url("/images/foggara-video-frame-1.webp"),url("/images/oasis-dawn.webp");
   background-position:center 58%;
+}
+.fg-moon-hero-media-2{
+  background-image:url("/images/foggara-video-frame-2.webp"),url("/images/oasis-dawn.webp");
+  background-position:center 52%;
+}
+.fg-moon-hero-media-3{
+  background-image:url("/images/foggara-video-frame-1.webp"),url("/images/oasis-dawn.webp");
+  background-position:center 66%;
+  transform:scale(1.045);
 }
 .fg-moon-hero-overlay{
   z-index:-2;
@@ -141,7 +147,7 @@
     linear-gradient(0deg,#06170576,transparent 45%);
 }
 @keyframes fgMoonHeroIn{from{opacity:.35;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
-.fg-moon-hero-content{width:min(720px,100%);color:#fff}
+.fg-moon-hero-content{width:min(660px,100%);color:#fff;position:relative;z-index:2}
 .fg-moon-hero-eyebrow{
   margin:0 0 13px;
   color:#fff;
@@ -178,6 +184,144 @@
   text-shadow:0 2px 16px #0007;
 }
 .fg-moon-hero-actions{display:flex;flex-wrap:wrap;gap:13px;margin-top:34px}
+
+
+/* Bilingual Figma-led video story */
+.fg-hero-bilingual{
+  position:absolute;
+  z-index:3;
+  inset-inline-end:max(28px,calc((100vw - 1160px)/2));
+  top:150px;
+  width:min(470px,36vw);
+  padding:20px;
+  border:1px solid #ffffff38;
+  background:linear-gradient(145deg,#061407bf,#0c1e0cb0);
+  color:#fff;
+  backdrop-filter:blur(14px) saturate(1.1);
+  box-shadow:0 30px 65px -44px #000;
+}
+.fg-hero-bilingual-head{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  padding-bottom:14px;
+  border-bottom:1px solid #ffffff24;
+}
+.fg-hero-bilingual-head>div{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.fg-hero-bilingual-head>div[dir=rtl]{justify-content:flex-end}
+.fg-hero-bilingual-head span{
+  color:#ddc189;
+  font:800 9px/1 ui-monospace,SFMono-Regular,monospace;
+  letter-spacing:.12em;
+}
+.fg-hero-bilingual-head strong{
+  color:#fff;
+  font-size:14px;
+  line-height:1.35;
+}
+.fg-hero-bilingual-copy{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  padding:15px 0 12px;
+}
+.fg-hero-bilingual-copy p{
+  margin:0;
+  color:#eef3ea;
+  font-size:11px;
+  line-height:1.65;
+}
+.fg-hero-bilingual-copy p[dir=rtl]{
+  border-inline-start:1px solid #ffffff24;
+  padding-inline-start:14px;
+  font-size:12px;
+}
+.fg-hero-bilingual blockquote{
+  margin:0;
+  padding:13px 0 0;
+  display:grid;
+  gap:5px;
+  border-top:1px solid #ffffff24;
+}
+.fg-hero-bilingual blockquote span{
+  color:#e9d6ad;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.45;
+}
+.fg-hero-bilingual blockquote span[dir=rtl]{text-align:right;color:#d9efcf}
+
+.fg-video-story-strip{
+  position:absolute;
+  z-index:6;
+  inset:auto max(72px,calc((100vw - 1160px)/2)) 22px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(150px,210px));
+  gap:8px;
+}
+.fg-video-story-strip button{
+  min-width:0;
+  min-height:64px;
+  display:grid;
+  grid-template-columns:76px 1fr;
+  gap:10px;
+  align-items:center;
+  padding:5px;
+  border:1px solid #ffffff38;
+  background:#061307a8;
+  color:#fff;
+  text-align:start;
+  backdrop-filter:blur(8px);
+  cursor:pointer;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+}
+.fg-video-story-strip button:hover,
+.fg-video-story-strip button.active{
+  border-color:#e2c182;
+  background:#0c2111d9;
+  transform:translateY(-2px);
+}
+.fg-video-thumb{
+  display:block;
+  width:76px;
+  height:52px;
+  background-size:cover;
+  background-position:center;
+}
+.fg-video-thumb-1{background-image:url("/images/foggara-video-frame-1.webp")}
+.fg-video-thumb-2{background-image:url("/images/foggara-video-frame-2.webp")}
+.fg-video-thumb-3{background-image:url("/images/foggara-video-frame-1.webp");background-position:center 70%}
+.fg-video-story-strip button>span:last-child{
+  min-width:0;
+  display:grid;
+  gap:1px;
+}
+.fg-video-story-strip small{
+  color:#d9be88;
+  font:800 8px ui-monospace,SFMono-Regular,monospace;
+}
+.fg-video-story-strip strong{
+  overflow:hidden;
+  color:#fff;
+  font-size:10px;
+  letter-spacing:.06em;
+  text-overflow:ellipsis;
+}
+.fg-video-story-strip em{
+  color:#d7e9d1;
+  font-size:10px;
+  font-style:normal;
+}
+
+@media(max-width:1180px){
+  .fg-hero-bilingual{width:min(430px,38vw);inset-inline-end:68px}
+  .fg-moon-hero-content{width:min(560px,52vw)}
+}
+
 .fg-moon-btn{
   min-height:46px;
   display:inline-flex;
@@ -521,7 +665,11 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-moon-nav::before{display:none}
   .fg-moon-nav a{flex:0 0 auto}
   .fg-moon-nav .fg-moon-nav-cta{margin-inline-start:0}
-  .fg-moon-hero{min-height:650px;padding-inline:68px}
+  .fg-moon-hero{min-height:760px;padding-inline:68px;padding-bottom:130px}
+  .fg-hero-bilingual{position:relative;top:auto;inset:auto;width:min(100%,620px);margin:28px 0 0 0}
+  .fg-moon-hero{align-items:flex-start;flex-direction:column;justify-content:center}
+  .fg-moon-hero-content{width:min(700px,100%)}
+  .fg-video-story-strip{inset:auto 68px 22px;grid-template-columns:repeat(3,minmax(0,1fr))}
   .fg-moon-about{grid-template-columns:1fr;gap:45px}
   .fg-moon-about-visual{min-height:430px}
   .fg-moon-stats{grid-template-columns:repeat(2,1fr)}
@@ -550,7 +698,14 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-moon-topline span{font-size:10px}
   .fg-moon-nav{margin-bottom:-25px;min-height:54px}
   .fg-moon-nav a{min-height:54px;padding:0 11px;font-size:10px}
-  .fg-moon-hero{min-height:610px;padding:92px 24px 72px}
+  .fg-moon-hero{min-height:820px;padding:92px 24px 150px}
+  .fg-hero-bilingual{width:100%;padding:15px}
+  .fg-hero-bilingual-copy{grid-template-columns:1fr;gap:10px}
+  .fg-hero-bilingual-copy p[dir=rtl]{border-inline-start:0;border-top:1px solid #ffffff1f;padding:10px 0 0}
+  .fg-video-story-strip{inset:auto 24px 24px;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .fg-video-story-strip button{grid-template-columns:1fr;padding:4px;min-height:82px}
+  .fg-video-thumb{width:100%;height:46px}
+  .fg-video-story-strip button>span:last-child{display:none}
   .fg-moon-hero h1{font-size:clamp(50px,16vw,76px)}
   .fg-moon-hero-accent{font-size:clamp(27px,8vw,40px)}
   .fg-moon-hero-content>p:not(.fg-moon-hero-eyebrow){font-size:15px}
@@ -598,4 +753,9 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-moon-qr{grid-template-columns:1fr;text-align:center}
   .fg-moon-qr>a{margin:auto}
   .fg-moon-qr>div>div{justify-content:center}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .fg-moon-hero-media{animation:none}
+  .fg-video-story-strip button{transition:none}
 }
