@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 
 const landing=readFileSync(new URL('../src/pages/Landing.tsx',import.meta.url),'utf8');
-const css=readFileSync(new URL('../src/pages/heritage-landing.css',import.meta.url),'utf8');
+const deck=readFileSync(new URL('../src/components/OasisCanvaPresentation.tsx',import.meta.url),'utf8');
 
 test('Landing remains syntactically valid TSX',()=>{
   const result=ts.transpileModule(landing,{
@@ -15,23 +15,15 @@ test('Landing remains syntactically valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('landing embeds the preferred Figma presentation composition',()=>{
-  assert.ok(landing.includes('className="fg-figma-embed"'));
-  assert.ok(landing.includes('fg-figma-embed-frame'));
-  assert.ok(landing.includes('fg-figma-embed-thumbs'));
-  assert.ok(landing.includes('heritageLabel:"HERITAGE FLOW"'));
-  assert.ok(landing.includes('digitalLabel:"DIGITAL FLOW"'));
-  assert.ok(css.includes('EMBEDDED FIGMA PRESENTATION'));
+test('landing embeds the shared Canva oasis presentation',()=>{
+  assert.ok(landing.includes('OasisCanvaPresentation'));
+  assert.ok(landing.includes('<OasisCanvaPresentation lang={lang} compact/>'));
+  assert.ok(deck.includes('FOGGARA-DZ · CANVA PRESENTATION'));
+  assert.ok(deck.includes('SMART AGRICULTURE DEMO'));
+  assert.ok(deck.includes('AGRITECH EXPO'));
 });
 
-test('embedded Figma presentation keeps five synchronized stages',()=>{
-  for(const marker of ['SOURCE / MOTHER GALLERY','KASRIA / WATER SHARING','SEGUIAS / DISTRIBUTION','PARCEL / AGRICULTURAL USE','EVIDENCE / MONITORING'])
-    assert.ok(landing.includes(marker),marker);
-  assert.ok(landing.includes('String(presentationSlide+1).padStart(2,"0")'));
-  assert.ok(landing.includes('setPresentationSlide(index)'));
-});
-
-test('presentation stages link to real platform routes',()=>{
-  for(const route of ['/presentation','/app/nexus','/app/gis','/app/agriculture','/app/review'])
-    assert.ok(landing.includes(`to:"${route}"`)||landing.includes(`to:'${route}'`),route);
+test('Canva sequence preserves the 12-slide platform story',()=>{
+  const markers=['01 · FOGGARA-DZ','02 · HERITAGE','03 · SYSTEM LOGIC','04 · OPERATING CYCLE','05 · WEFEH','06 · PLATFORM','07 · SMART AGRICULTURE','08 · ASSURANCE','09 · WORKFLOW','10 · SIREP OASES','11 · AGRITECH EXPO','12 · CLOSING'];
+  for(const marker of markers) assert.ok(deck.includes(marker),marker);
 });
