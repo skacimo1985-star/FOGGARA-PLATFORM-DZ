@@ -192,6 +192,7 @@ export default function Gis() {
   const [satelliteLoading, setSatelliteLoading] = useState(false);
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
+  const [manualAnalysisBbox, setManualAnalysisBbox] = useState<[number, number, number, number] | null>(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const defaultStart = useMemo(() => {
     const date = new Date();
@@ -271,10 +272,10 @@ export default function Gis() {
         };
 
   const satelliteCopy = lang === "fr"
-    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante", trueColor: "Vue satellite réelle", trueColorLoading: "Chargement satellite…" }
+    ? { title: "Catalogue satellite en direct", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "Du", end: "Au", clouds: "Nuages max.", search: "Rechercher dans la vue", searching: "Recherche…", found: "scènes trouvées", empty: "Aucune scène dans la vue et la période choisies.", metadata: "Métadonnées fournisseur observées — aucune valeur NDVI n’est inventée.", searchParcel: "Rechercher pour la parcelle", searchView: "Rechercher dans la vue", parcelScope: "Parcelle sélectionnée", viewScope: "Vue courante", areaScope: "Zone d’analyse sélectionnée", trueColor: "Vue satellite réelle", trueColorLoading: "Chargement satellite…" }
     : lang === "en"
-      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented.", searchParcel: "Search selected parcel", searchView: "Search current view", parcelScope: "Selected parcel", viewScope: "Current view", trueColor: "Real satellite view", trueColorLoading: "Loading satellite…" }
-      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة", trueColor: "عرض فضائي حقيقي", trueColorLoading: "جارٍ تحميل الصورة الفضائية…" };
+      ? { title: "Live satellite catalogue", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "From", end: "To", clouds: "Max clouds", search: "Search current view", searching: "Searching…", found: "scenes found", empty: "No scenes found for the current view and period.", metadata: "Observed provider metadata — no NDVI value is invented.", searchParcel: "Search selected parcel", searchView: "Search current view", parcelScope: "Selected parcel", viewScope: "Current view", areaScope: "Selected analysis area", trueColor: "Real satellite view", trueColorLoading: "Loading satellite…" }
+      : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة", areaScope: "منطقة التحليل المحددة", trueColor: "عرض فضائي حقيقي", trueColorLoading: "جارٍ تحميل الصورة الفضائية…" };
 
   const analysisCopy = lang === "fr"
     ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", runParcel: "Analyser la parcelle", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
@@ -319,7 +320,7 @@ export default function Gis() {
     [parcels, selectedParcelId],
   );
   const selectedParcelBbox = useMemo(() => parcelBbox(selectedParcel), [selectedParcel]);
-  const analysisBbox = selectedParcelBbox ?? viewportBbox;
+  const analysisBbox = selectedParcelBbox ?? manualAnalysisBbox ?? viewportBbox;
 
   const selectedScene = useMemo(
     () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
@@ -350,6 +351,15 @@ export default function Gis() {
     setSatelliteOverlay(null);
     setAnalysisSaved(false);
   }, [selectedParcelId]);
+
+  useEffect(() => {
+    setSatelliteScenes([]);
+    setSelectedSceneId(null);
+    setAnalysisResult(null);
+    setAnalysisOverlay(null);
+    setSatelliteOverlay(null);
+    setAnalysisSaved(false);
+  }, [manualAnalysisBbox]);
 
   useEffect(() => {
     return () => {
@@ -616,15 +626,56 @@ export default function Gis() {
 
       <ErrorText error={error} />
 
+      <div className="fg-gis-map-first">
+      {data === null && !error ? (
+        <Skeleton className="h-[430px] w-full rounded-2xl" />
+      ) : (
+        <NationalMap
+          sites={data ?? []}
+          wilayas={wilayas}
+          satelliteScenes={satelliteScenes}
+          parcelBoundaries={parcelBoundaries}
+          satelliteOverlay={satelliteOverlay}
+          analysisOverlay={analysisOverlay}
+          selectedSceneId={selectedSceneId}
+          selectedWilaya={wilayaFilter}
+          selectedSiteId={selectedSiteId}
+          selectedParcelId={selectedParcelId}
+          selectedParcelPoint={selectedParcelRecord?.lat != null && selectedParcelRecord?.lon != null
+            ? { lat: selectedParcelRecord.lat, lon: selectedParcelRecord.lon }
+            : null}
+          onViewportChange={setViewportBbox}
+          analysisSelectionBbox={manualAnalysisBbox}
+          onAnalysisSelectionChange={(bbox) => {
+            setManualAnalysisBbox(bbox);
+            if (bbox) {
+              setSelectedParcelId(null);
+              setSelectedSiteId(null);
+            }
+          }}
+          onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
+          onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
+          onSelectSite={(siteId) => void selectSite(siteId)}
+          onSelectParcel={(parcelId) => {
+            setManualAnalysisBbox(null);
+            setSelectedParcelId((current) => current === parcelId ? null : parcelId);
+            setSelectedSiteId(null);
+          }}
+          onDrawParcelBoundary={(geometry) => void saveParcelBoundary(geometry)}
+          locale={lang}
+        />
+      )}
+      </div>
+
       {data !== null && data.length === 0 && parcels.length === 0 ? (
-        <OperationalEmptyState
+        <div className="fg-gis-empty-hint"><OperationalEmptyState
           icon={MapPinned}
           title={startCopy.title}
           body={startCopy.body}
           steps={startCopy.steps}
           primary={{ label: startCopy.setup, to: "/app/setup" }}
           secondary={{ label: startCopy.agriculture, to: "/app/agriculture" }}
-        />
+        /></div>
       ) : null}
 
       <section className="fg-command-kpis" aria-label={copy.layers}>
@@ -649,6 +700,7 @@ export default function Gis() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSelectedParcelId(Number.isFinite(next) && next > 0 ? next : null);
+                  if (Number.isFinite(next) && next > 0) setManualAnalysisBbox(null);
                   setSelectedSiteId(null);
                 }}
               >
@@ -745,41 +797,11 @@ export default function Gis() {
         <ErrorText error={satelliteError} />
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline">LIVE STAC</Badge>
-          <Badge variant="outline">{selectedParcelRecord ? `${satelliteCopy.parcelScope}: ${selectedParcelRecord.name}` : satelliteCopy.viewScope}</Badge>
+          <Badge variant="outline">{selectedParcelRecord ? `${satelliteCopy.parcelScope}: ${selectedParcelRecord.name}` : manualAnalysisBbox ? satelliteCopy.areaScope : satelliteCopy.viewScope}</Badge>
           <span>{satelliteScenes.length} {satelliteCopy.found}</span>
           {satelliteScenes.length === 0 && !satelliteLoading ? <span>{satelliteCopy.empty}</span> : null}
         </div>
       </section>
-
-      {data === null && !error ? (
-        <Skeleton className="h-[430px] w-full rounded-2xl" />
-      ) : (
-        <NationalMap
-          sites={data ?? []}
-          wilayas={wilayas}
-          satelliteScenes={satelliteScenes}
-          parcelBoundaries={parcelBoundaries}
-          satelliteOverlay={satelliteOverlay}
-          analysisOverlay={analysisOverlay}
-          selectedSceneId={selectedSceneId}
-          selectedWilaya={wilayaFilter}
-          selectedSiteId={selectedSiteId}
-          selectedParcelId={selectedParcelId}
-          selectedParcelPoint={selectedParcelRecord?.lat != null && selectedParcelRecord?.lon != null
-            ? { lat: selectedParcelRecord.lat, lon: selectedParcelRecord.lon }
-            : null}
-          onViewportChange={setViewportBbox}
-          onSelectScene={(sceneId) => setSelectedSceneId(sceneId)}
-          onSelectWilaya={(code) => selectWilaya(code === wilayaFilter ? "" : code)}
-          onSelectSite={(siteId) => void selectSite(siteId)}
-          onSelectParcel={(parcelId) => {
-            setSelectedParcelId((current) => current === parcelId ? null : parcelId);
-            setSelectedSiteId(null);
-          }}
-          onDrawParcelBoundary={(geometry) => void saveParcelBoundary(geometry)}
-          locale={lang}
-        />
-      )}
 
       <section className="rounded-2xl border bg-card p-4 shadow-sm" aria-label={analysisCopy.title}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -856,7 +878,7 @@ export default function Gis() {
           <Badge variant="outline">
             {currentRasterBudget.allowed ? analysisCopy.ready : analysisCopy.zoom}
           </Badge>
-          {selectedParcelRecord ? <Badge variant="outline">{selectedParcelRecord.name} · {selectedParcelRecord.area_ha} ha</Badge> : null}
+          {selectedParcelRecord ? <Badge variant="outline">{selectedParcelRecord.name} · {selectedParcelRecord.area_ha} ha</Badge> : manualAnalysisBbox ? <Badge variant="outline">{satelliteCopy.areaScope}</Badge> : null}
           <span className="rounded-md border px-2 py-1 text-muted-foreground">
             {analysisCopy.area}: {currentRasterBudget.areaKm2.toFixed(2)} km²
           </span>
