@@ -307,11 +307,13 @@ export default function Landing() {
       </div>
     </section>
 
-    <div className="fg-global-visual-stage" aria-label="FOGGARA-DZ oasis">
+    <div className="fg-global-visual-stage" aria-label="FOGGARA-DZ field imagery">
       <figure className="fg-global-visual-main"><img src="/images/oasis-dawn.webp" alt="Algerian oasis landscape" loading="lazy"/></figure>
+      <figure className="fg-global-visual-detail fg-global-visual-detail-a" aria-hidden="true"><img src="/images/foggara-video-frame-1.webp" alt="" loading="lazy"/></figure>
+      <figure className="fg-global-visual-detail fg-global-visual-detail-b" aria-hidden="true"><img src="/images/foggara-video-frame-2.webp" alt="" loading="lazy"/></figure>
       <figure className="fg-global-visual-side"><img src="/images/oasis-hero.webp" alt="Oasis and water landscape" loading="lazy"/></figure>
       <div className="fg-global-visual-note">
-        <span>HERITAGE → DATA → EVIDENCE → DECISION</span>
+        <span>HERITAGE → FIELD → DATA → EVIDENCE → DECISION</span>
         <strong>FOGGARA-DZ</strong>
       </div>
     </div>
@@ -355,7 +357,7 @@ export default function Landing() {
         </div>
       </div>
       <aside className="fg-moon-qr" aria-label={copy.openDemo}>
-        <a href={expoUrl} target="_blank" rel="noreferrer"><img src="/expo-qr.svg" alt="FOGGARA AGRITECH EXPO QR" width="92" height="92"/></a>
+        <a href={expoUrl} target="_blank" rel="noreferrer"><img src="/expo-qr.svg" alt="FOGGARA AGRITECH EXPO QR" width="74" height="74"/></a>
         <div>
           <strong>FOGGARA / EXPO</strong>
           <span dir="ltr">foggara-dz.onrender.com/expo</span>
