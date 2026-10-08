@@ -200,21 +200,23 @@ type SoilContextProperty = {
   depth_cm: string;
 };
 
+type CropProfile = {
+  id: string;
+  label: string;
+  declared_crop: string | null;
+  crop_identity_status: string;
+  category: string;
+  priority_indices: string[];
+  modules: string[];
+  limitations: string[];
+};
+
 type FieldIntelligenceStudy = {
   status: "READY" | "NO_USABLE_SCENE";
   study_type?: string;
   bbox_wgs84: [number, number, number, number];
   period: { start: string; end: string };
-  crop_profile: {
-    id: string;
-    label: string;
-    declared_crop: string | null;
-    crop_identity_status: string;
-    category: string;
-    priority_indices: string[];
-    modules: string[];
-    limitations: string[];
-  };
+  crop_profile: CropProfile;
   scene: (SatelliteScene & { acquisition_age_hours?: number | null }) | null;
   quality_indicator?: { score: number; grade: string; usability: string; standard_claim: boolean };
   spectral_processing?: {
@@ -236,7 +238,7 @@ type FieldIntelligenceStudy = {
       attribution: string;
       limitations: string[];
     } | null;
-    profile?: FieldIntelligenceStudy["crop_profile"];
+    profile?: CropProfile;
     interpretation: string;
   }>;
   soil_context: {
@@ -1132,7 +1134,7 @@ export default function Gis() {
               <button
                 type="button"
                 className="rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!currentRasterBudget.allowed || fieldIntelligenceLoading || !sceneStart || !sceneEnd}
+                disabled={!currentRasterBudget.allowed || currentRasterBudget.pixels>250000 || fieldIntelligenceLoading || !sceneStart || !sceneEnd}
                 onClick={() => void analyzeAllField()}
               >
                 {fieldIntelligenceLoading ? fieldCopy.analyzingAll : fieldCopy.analyzeAll}
