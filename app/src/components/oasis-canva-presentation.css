@@ -140,7 +140,7 @@
 .ocp-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--clay),var(--forest));transition:width .3s ease}
 .ocp-compact{width:min(1160px,calc(100% - 48px));margin-top:28px}
 
-@keyframes ocpFade{from{opacity:.2;transform:scale(1.006)}to{opacity:1;transform:scale(1)}}
+@keyframes ocpFade{from{opacity:.2}to{opacity:1}}
 @media(max-width:860px){
   .ocp{width:calc(100% - 28px)}
   .ocp-stage{aspect-ratio:auto;height:min(72vw,620px)}
