@@ -89,6 +89,7 @@ export default function ParcelSentinel({
   const active = parcels.filter(p => !p.archived);
   const { parcelId } = useOperationalContext();
   const parcel = active.find(p => p.id === parcelId) ?? active[0];
+  const resolvedParcelId = parcel?.id ?? null;
   const [start, setStart] = useState(daysAgo(45));
   const [end, setEnd] = useState(today());
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -103,8 +104,8 @@ export default function ParcelSentinel({
   const [lon, setLon] = useState("");
 
   useEffect(() => {
-    if (parcel && parcel.id !== parcelId) setActiveParcelId(parcel.id);
-  }, [parcel?.id, parcelId]);
+    if (resolvedParcelId && resolvedParcelId !== parcelId) setActiveParcelId(resolvedParcelId);
+  }, [resolvedParcelId, parcelId]);
 
   useEffect(() => {
     setScenes([]);
