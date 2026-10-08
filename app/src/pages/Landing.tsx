@@ -178,9 +178,9 @@ export default function Landing() {
   };
 
   const presentation=lang==="fr"?{
-    eyebrow:"CANVA × FIGMA → WEB",
-    title:"UNE PRÉSENTATION QUI DEVIENT UNE EXPÉRIENCE PRODUIT",
-    intro:"Le deck n’est plus une image posée dans la page : il devient une narration interactive qui relie patrimoine, ressources, analyses et décisions réelles.",
+    eyebrow:"FOGGARA-DZ / PRÉSENTATION",
+    title:"VOYEZ COMMENT FOGGARA-DZ TRANSFORME LE TERRAIN EN DÉCISION",
+    intro:"Suivez un parcours visuel guidé : patrimoine, logique de partage, WEFEH, capacités numériques, agriculture intelligente et chaîne de preuve.",
     open:"OUVRIR LA PRÉSENTATION",
     slides:[
       {kicker:"01 · HÉRITAGE",title:"DE L’HÉRITAGE AU JUMEAU NUMÉRIQUE",body:"La foggara fournit une logique lisible : capter, répartir, acheminer et observer. FOGGARA-DZ traduit cette logique en données, preuves, règles et suivi.",flow:"SOURCE → GALERIE → KASRIA → SEGUIA → PARCELLE",to:"/presentation"},
@@ -191,9 +191,9 @@ export default function Landing() {
       {kicker:"06 · ASSURANCE",title:"PREUVE AVANT DÉCISION",body:"Chaque résultat distingue ce qui est observé, vérifié, calculé, inféré ou proposé afin de garder provenance, méthode et validation visibles.",flow:"OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED",to:"/app/review"}
     ]
   }:lang==="en"?{
-    eyebrow:"CANVA × FIGMA → WEB",
-    title:"A PRESENTATION THAT BECOMES A PRODUCT EXPERIENCE",
-    intro:"The deck is no longer a static image inside the page. It becomes an interactive narrative connecting heritage, resources, analysis and real decisions.",
+    eyebrow:"FOGGARA-DZ / PLATFORM PRESENTATION",
+    title:"SEE HOW FOGGARA-DZ TURNS FIELD REALITY INTO DECISIONS",
+    intro:"Follow a guided visual journey through heritage, water-sharing logic, WEFEH, digital capabilities, smart agriculture and the evidence chain.",
     open:"OPEN FULL PRESENTATION",
     slides:[
       {kicker:"01 · HERITAGE",title:"FROM HERITAGE TO DIGITAL TWIN",body:"The Foggara offers a legible operating logic: capture, divide, deliver and observe. FOGGARA-DZ translates that logic into data, evidence, rules and monitoring.",flow:"SOURCE → GALLERY → KASRIA → SEGUIA → PARCEL",to:"/presentation"},
@@ -204,9 +204,9 @@ export default function Landing() {
       {kicker:"06 · ASSURANCE",title:"EVIDENCE BEFORE DECISION",body:"Every result distinguishes what is observed, verified, computed, inferred or proposed so provenance, method and validation remain visible.",flow:"OBSERVED → VERIFIED → COMPUTED → INFERRED → PROPOSED",to:"/app/review"}
     ]
   }:{
-    eyebrow:"CANVA × FIGMA → WEB",
-    title:"عرض يتحول إلى تجربة حقيقية داخل المنصة",
-    intro:"لم يعد العرض صورة ثابتة داخل الصفحة، بل أصبح سردًا تفاعليًا يربط التراث والموارد والتحليل والقرار بالوظائف الحقيقية للمنصة.",
+    eyebrow:"FOGGARA-DZ / عرض المنصة",
+    title:"شاهد كيف تحوّل FOGGARA-DZ الواقع الميداني إلى قرار",
+    intro:"مسار بصري تفاعلي يشرح التراث ومنطق تقاسم المياه وWEFEH والقدرات الرقمية والزراعة الذكية وسلسلة الأدلة.",
     open:"فتح العرض الكامل",
     slides:[
       {kicker:"01 · التراث",title:"من التراث إلى التوأم الرقمي",body:"تقدم الفقارة منطقًا واضحًا: التقاط المورد وتقاسمه ونقله ومتابعته. وتترجم FOGGARA-DZ هذا المنطق إلى بيانات وأدلة وقواعد ومراقبة.",flow:"المصدر ← المعرض ← الكسرية ← الساقية ← القطعة",to:"/presentation"},
