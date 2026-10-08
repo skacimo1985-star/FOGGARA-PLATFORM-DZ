@@ -131,6 +131,54 @@ type RasterAnalysis = {
   };
 };
 
+type StudyScene = {
+  scene_id: string;
+  datetime: string | null;
+  acquisition_age_hours: number | null;
+  cloud_cover_pct: number | null;
+  platform: string | null;
+  provider: string;
+  statistics: { min: number | null; max: number | null; mean: number | null; median: number | null };
+  pixels: { total: number; valid: number; masked: number; valid_fraction: number };
+  formula_version: string;
+  processing_plan_fingerprint: string;
+  quality_indicator: {
+    score: number;
+    grade: string;
+    usability: string;
+    standard_claim: boolean;
+  };
+};
+
+type TimeSeriesStudy = {
+  study_type: string;
+  provider: string;
+  collection: string;
+  sensor_product: string;
+  bbox_wgs84: [number, number, number, number];
+  period: { start: string; end: string };
+  scene_count: number;
+  requested_scene_count: number;
+  series: StudyScene[];
+  trend: {
+    scene_count: number;
+    direction: "increasing" | "decreasing" | "stable" | "insufficient_data";
+    delta: number | null;
+    slope_per_day: number | null;
+    first_mean?: number | null;
+    last_mean?: number | null;
+    interpretation_status: string;
+    note?: string;
+  };
+  quality_summary: { mean_operational_score: number | null; indicator: string };
+  methodology: {
+    quality_framework: string;
+    evidence_chain: Record<string,string>;
+    standards: Array<{id:string;name:string;organization:string;role:string;url:string;claim:string}>;
+  };
+  limitations: string[];
+
+
 function rasterBudget(bbox: [number, number, number, number]) {
   const [west, south, east, north] = bbox;
   const valid = [west, south, east, north].every(Number.isFinite)
@@ -212,6 +260,9 @@ export default function Gis() {
   const [analysisOverlay, setAnalysisOverlay] = useState<AnalysisRasterOverlay | null>(null);
   const [analysisSaving, setAnalysisSaving] = useState(false);
   const [analysisSaved, setAnalysisSaved] = useState(false);
+  const [studyLoading, setStudyLoading] = useState(false);
+  const [studyError, setStudyError] = useState<unknown>(null);
+  const [studyResult, setStudyResult] = useState<TimeSeriesStudy | null>(null);
 
   useEffect(() => {
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
@@ -278,10 +329,10 @@ export default function Gis() {
       : { title: "كتالوج الأقمار الصناعية الحي", provider: "Sentinel-2 L2A · Element 84 Earth Search", start: "من", end: "إلى", clouds: "أقصى غيوم", search: "ابحث في نطاق الخريطة", searching: "جارٍ البحث…", found: "مشاهد موجودة", empty: "لا توجد مشاهد في النطاق والفترة المحددين.", metadata: "بيانات وصفية حقيقية من المزود — لا يتم اختراع أي قيمة NDVI.", searchParcel: "ابحث للقطعة المحددة", searchView: "ابحث في نطاق الخريطة", parcelScope: "القطعة المحددة", viewScope: "نطاق الخريطة", areaScope: "منطقة التحليل المحددة", trueColor: "عرض فضائي حقيقي", trueColorLoading: "جارٍ تحميل الصورة الفضائية…" };
 
   const analysisCopy = lang === "fr"
-    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", runParcel: "Analyser la parcelle", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné" }
+    ? { title: "Analyse satellite réelle", scene: "Scène", index: "Indice", run: "Analyser la vue", runParcel: "Analyser la parcelle", running: "Analyse…", zoom: "Zoomez davantage sur la parcelle avant l’analyse.", ready: "Zone prête", area: "zone estimée", pixels: "pixels 10 m", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", valid: "Pixels valides", masked: "Masqués", computed: "COMPUTED", notVerified: "NON VÉRIFIÉ", selectScene: "Sélectionnez une scène Sentinel-2.", note: "Calcul en direct depuis les COG Sentinel-2 avec masque SCL. Aucun résultat n’est déclaré vérifié.", save: "Enregistrer dans la parcelle", saving: "Enregistrement…", saved: "Enregistré comme INFERRED", sourceRes: "Résolution source", resampled: "rééchantillonné", study: "Étude temporelle", studying: "Étude…", studyTitle: "Étude multi-temporelle réelle", studyScenes: "Scènes analysées", studyTrend: "Tendance", studyDelta: "Variation", studySlope: "Pente / jour", studyQuality: "Qualité opérationnelle", trendIncreasing: "hausse", trendDecreasing: "baisse", trendStable: "stable", trendInsufficient: "données insuffisantes", validPixels: "pixels valides", researchBasis: "Base scientifique et traçabilité" }
     : lang === "en"
-      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", runParcel: "Analyze selected parcel", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled" }
-      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", runParcel: "حلّل القطعة المحددة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات" };
+      ? { title: "Real satellite analysis", scene: "Scene", index: "Index", run: "Analyze current view", runParcel: "Analyze selected parcel", running: "Analyzing…", zoom: "Zoom further into the field before analysis.", ready: "Area ready", area: "estimated area", pixels: "10 m pixels", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", valid: "Valid pixels", masked: "Masked", computed: "COMPUTED", notVerified: "NOT VERIFIED", selectScene: "Select a Sentinel-2 scene.", note: "Computed live from Sentinel-2 COGs with SCL masking. Results are never marked verified.", save: "Save to parcel", saving: "Saving…", saved: "Saved as INFERRED", sourceRes: "Source resolution", resampled: "resampled", study: "Time-series study", studying: "Studying…", studyTitle: "Real multi-temporal study", studyScenes: "Analyzed scenes", studyTrend: "Trend", studyDelta: "Change", studySlope: "Slope / day", studyQuality: "Operational quality", trendIncreasing: "increasing", trendDecreasing: "decreasing", trendStable: "stable", trendInsufficient: "insufficient data", validPixels: "valid pixels", researchBasis: "Scientific basis and traceability" }
+      : { title: "التحليل الفضائي الحقيقي", scene: "المشهد", index: "المؤشر", run: "حلّل نطاق الخريطة", runParcel: "حلّل القطعة المحددة", running: "جارٍ التحليل…", zoom: "كبّر الخريطة أكثر إلى مستوى الحقل قبل التحليل.", ready: "النطاق جاهز", area: "المساحة التقديرية", pixels: "بكسلات 10م", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأعلى", valid: "البكسلات الصالحة", masked: "المحجوبة", computed: "COMPUTED", notVerified: "غير متحقق", selectScene: "اختر مشهد Sentinel-2 أولًا.", note: "حساب حي من ملفات Sentinel-2 COG مع قناع SCL. النتائج لا تُصنّف VERIFIED.", save: "احفظ في سجل القطعة", saving: "جارٍ الحفظ…", saved: "حُفظ كـ INFERRED", sourceRes: "دقة المصدر", resampled: "أعيد أخذ العينات", study: "دراسة زمنية", studying: "جارٍ إعداد الدراسة…", studyTitle: "دراسة فعلية متعددة الأزمنة", studyScenes: "المشاهد المحللة", studyTrend: "الاتجاه", studyDelta: "التغير", studySlope: "الميل / يوم", studyQuality: "الجودة التشغيلية", trendIncreasing: "تصاعدي", trendDecreasing: "تنازلي", trendStable: "مستقر", trendInsufficient: "بيانات غير كافية", validPixels: "بكسلات صالحة", researchBasis: "الأساس العلمي وقابلية التتبع" };
 
   const parcelCopy = lang === "fr"
     ? { title: "Espace parcellaire", select: "Choisir une parcelle", none: "Aucune parcelle", mapped: "Limite cartographiée", unmapped: "Limite à définir", importGeoJson: "Importer GeoJSON", exportGeoJson: "Exporter GeoJSON", clearBoundary: "Supprimer la limite", clearConfirm: "Supprimer la limite cartographique de cette parcelle ?", importError: "Le fichier doit contenir un Polygon GeoJSON.", hint: "Sélectionnez une parcelle, puis dessinez sa limite sur la carte ou importez un Polygon GeoJSON. La validation finale est effectuée par le serveur." }
@@ -333,6 +384,8 @@ export default function Gis() {
     setAnalysisError(null);
     setAnalysisOverlay(null);
     setAnalysisSaved(false);
+    setStudyResult(null);
+    setStudyError(null);
   }, [selectedIndex]);
 
   useEffect(() => {
@@ -350,6 +403,8 @@ export default function Gis() {
     setAnalysisOverlay(null);
     setSatelliteOverlay(null);
     setAnalysisSaved(false);
+    setStudyResult(null);
+    setStudyError(null);
   }, [selectedParcelId]);
 
   useEffect(() => {
@@ -359,6 +414,8 @@ export default function Gis() {
     setAnalysisOverlay(null);
     setSatelliteOverlay(null);
     setAnalysisSaved(false);
+    setStudyResult(null);
+    setStudyError(null);
   }, [manualAnalysisBbox]);
 
   useEffect(() => {
@@ -470,6 +527,29 @@ export default function Gis() {
       setAnalysisError(err);
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  const runTimeSeriesStudy = async () => {
+    if (!currentRasterBudget.allowed || studyLoading || !sceneStart || !sceneEnd) return;
+    setStudyLoading(true);
+    setStudyError(null);
+    setStudyResult(null);
+    try {
+      const params = new URLSearchParams({
+        bbox: analysisBbox.map((value) => Number(value.toFixed(6))).join(","),
+        start: sceneStart,
+        end: sceneEnd,
+        index: selectedIndex,
+        cloud_cover_lte: String(cloudCover),
+        max_scenes: "3",
+      });
+      const result = await api.get<TimeSeriesStudy>(`/remote-sensing/studies/timeseries?${params.toString()}`, 120_000);
+      setStudyResult(result);
+    } catch (err) {
+      setStudyError(err);
+    } finally {
+      setStudyLoading(false);
     }
   };
 
@@ -860,6 +940,14 @@ export default function Gis() {
               >
                 {analysisLoading ? analysisCopy.running : selectedParcelRecord ? analysisCopy.runParcel : analysisCopy.run}
               </button>
+              <button
+                type="button"
+                className="rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!currentRasterBudget.allowed || studyLoading || !sceneStart || !sceneEnd}
+                onClick={() => void runTimeSeriesStudy()}
+              >
+                {studyLoading ? analysisCopy.studying : analysisCopy.study}
+              </button>
               {selectedParcelId && (selectedIndex === "ndvi" || selectedIndex === "lswi") && analysisResult ? (
                 <button
                   type="button"
@@ -889,6 +977,7 @@ export default function Gis() {
         </div>
 
         <ErrorText error={analysisError} />
+        <ErrorText error={studyError} />
 
         {analysisResult ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
@@ -937,6 +1026,41 @@ export default function Gis() {
           </div>
         ) : null}
       </section>
+
+      {studyResult ? (
+        <section className="fg-eo-study" aria-label={analysisCopy.studyTitle}>
+          <div className="fg-eo-study-head">
+            <div>
+              <span>SENTINEL-2 L2A · STAC · QA4EO-INSPIRED TRACEABILITY</span>
+              <h2>{analysisCopy.studyTitle} · {selectedIndex.toUpperCase()}</h2>
+              <p>{studyResult.period.start} → {studyResult.period.end} · {studyResult.provider}</p>
+            </div>
+            <Badge variant="outline">{studyResult.trend.interpretation_status}</Badge>
+          </div>
+          <div className="fg-eo-study-kpis">
+            <div><small>{analysisCopy.studyScenes}</small><strong>{studyResult.scene_count}</strong></div>
+            <div><small>{analysisCopy.studyTrend}</small><strong>{studyResult.trend.direction==="increasing"?analysisCopy.trendIncreasing:studyResult.trend.direction==="decreasing"?analysisCopy.trendDecreasing:studyResult.trend.direction==="stable"?analysisCopy.trendStable:analysisCopy.trendInsufficient}</strong></div>
+            <div><small>{analysisCopy.studyDelta}</small><strong dir="ltr">{studyResult.trend.delta==null?"—":studyResult.trend.delta.toFixed(4)}</strong></div>
+            <div><small>{analysisCopy.studySlope}</small><strong dir="ltr">{studyResult.trend.slope_per_day==null?"—":studyResult.trend.slope_per_day.toFixed(6)}</strong></div>
+            <div><small>{analysisCopy.studyQuality}</small><strong dir="ltr">{studyResult.quality_summary.mean_operational_score==null?"—":`${studyResult.quality_summary.mean_operational_score.toFixed(1)}/100`}</strong></div>
+          </div>
+          <div className="fg-eo-study-series">
+            {studyResult.series.map(scene=><article key={scene.scene_id}>
+              <div><strong>{scene.datetime?new Date(scene.datetime).toLocaleDateString(locale):scene.scene_id}</strong><small>{scene.platform??"Sentinel-2"} · {scene.quality_indicator.grade}/{scene.quality_indicator.usability}</small></div>
+              <b dir="ltr">{scene.statistics.mean==null?"—":scene.statistics.mean.toFixed(4)}</b>
+              <span dir="ltr">{(scene.pixels.valid_fraction*100).toFixed(1)}% {analysisCopy.validPixels}</span>
+              <span dir="ltr">{scene.cloud_cover_pct==null?"—":`${Number(scene.cloud_cover_pct).toFixed(1)}% ☁`}</span>
+            </article>)}
+          </div>
+          <div className="fg-eo-study-method">
+            <strong>{analysisCopy.researchBasis}</strong>
+            <span>{studyResult.methodology.quality_framework}</span>
+            <div>{studyResult.methodology.standards.map(item=><span key={item.id}>{item.organization} · {item.name}</span>)}</div>
+          </div>
+          <p className="fg-footnote">{studyResult.trend.note}</p>
+          {studyResult.limitations.slice(0,2).map(item=><p className="fg-footnote" key={item}>{item}</p>)}
+        </section>
+      ) : null}
 
       {satelliteScenes.length > 0 ? (
         <section className="rounded-2xl border bg-card p-4">
