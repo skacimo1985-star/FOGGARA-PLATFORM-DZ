@@ -12,7 +12,7 @@ import json
 import logging
 import math
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 
 from . import config
 from .audit import audit
@@ -231,17 +231,28 @@ def analyze_parcel(db, parcel: AgriParcel, *, now: datetime | None = None) -> di
     }
 
 
-def run_cycle(*, org_id: int | None = None) -> dict:
+def _eligible_query(*, org_id: int | None = None, after_id: int = 0):
+    query = select(AgriParcel.id).where(
+        AgriParcel.archived.is_(False),
+        AgriParcel.is_demo.is_(False),
+        or_(
+            AgriParcel.boundary_geojson.is_not(None),
+            and_(AgriParcel.lat.is_not(None), AgriParcel.lon.is_not(None)),
+        ),
+        AgriParcel.id > after_id,
+    )
+    if org_id is not None:
+        query = query.where(AgriParcel.org_id == org_id)
+    return query.order_by(AgriParcel.id).limit(config.FIELD_AUTOMATION_BATCH_SIZE)
+
+
+def run_cycle(*, org_id: int | None = None, after_id: int = 0) -> dict:
+    wrapped = False
     with SessionLocal() as db:
-        query = select(AgriParcel.id).where(
-            AgriParcel.archived.is_(False),
-            AgriParcel.is_demo.is_(False),
-        )
-        if org_id is not None:
-            query = query.where(AgriParcel.org_id == org_id)
-        parcel_ids = db.scalars(
-            query.order_by(AgriParcel.id).limit(config.FIELD_AUTOMATION_BATCH_SIZE)
-        ).all()
+        parcel_ids = db.scalars(_eligible_query(org_id=org_id, after_id=after_id)).all()
+        if not parcel_ids and after_id:
+            wrapped = True
+            parcel_ids = db.scalars(_eligible_query(org_id=org_id, after_id=0)).all()
 
     summary = {
         "eligible": len(parcel_ids),
@@ -249,6 +260,8 @@ def run_cycle(*, org_id: int | None = None) -> dict:
         "created": 0,
         "no_scene": 0,
         "failed": 0,
+        "last_parcel_id": int(parcel_ids[-1]) if parcel_ids else 0,
+        "wrapped": wrapped,
     }
     for parcel_id in parcel_ids:
         with SessionLocal() as db:
