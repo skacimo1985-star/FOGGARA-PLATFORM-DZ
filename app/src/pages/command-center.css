@@ -87,3 +87,38 @@
   .fg-map-readout{inset:auto 8px 8px 8px}
   .fg-command-center[dir=rtl] .fg-map-readout{inset:auto 8px 8px 8px}
 }
+
+
+/* GIS map-first operational workspace */
+.fg-gis-map-first{min-width:0}
+.fg-gis-map-first .fg-national-map{
+  padding:14px;
+  border-radius:18px;
+  box-shadow:0 24px 70px -54px #0d2d21;
+}
+.fg-gis-map-first .fg-national-map-canvas{
+  min-height:clamp(560px,68vh,820px);
+  aspect-ratio:auto;
+}
+.fg-gis-map-first .fg-national-map-head{
+  padding:2px 2px 8px;
+}
+.fg-gis-empty-hint{
+  opacity:.92;
+}
+.fg-gis-empty-hint>section{
+  padding:16px;
+  border-style:dashed;
+}
+.fg-gis-empty-hint ol{
+  display:none;
+}
+.fg-gis-workspace .fg-command-kpis{
+  margin-top:-2px;
+}
+@media(max-width:760px){
+  .fg-gis-map-first .fg-national-map{padding:8px}
+  .fg-gis-map-first .fg-national-map-canvas{min-height:68vh}
+  .fg-gis-map-first .fg-national-map-head{display:none}
+  .fg-gis-empty-hint>section{padding:12px}
+}
