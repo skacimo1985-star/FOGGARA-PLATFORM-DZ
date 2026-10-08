@@ -16,7 +16,7 @@ services:
       - key: ENV
         value: prod
       - key: SEED_DEMO
-        value: "true"
+        value: "false"
       - key: DEMO_INSTANCE
         value: "true"
       - key: DEMO_PASSWORD
