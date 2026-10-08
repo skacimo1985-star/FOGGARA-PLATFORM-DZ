@@ -105,13 +105,13 @@ const copy:Record<OasisCanvaLocale,DeckCopy>={
 export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLocale;compact?:boolean}){
   const c=copy[lang];
   const [index,setIndex]=useState(0);
-  const [playing,setPlaying]=useState(!compact);
+  const [playing,setPlaying]=useState(true);
   const slide=c.slides[index];
   const dir=lang==="ar"?"rtl":"ltr";
 
   useEffect(()=>{
     if(!playing||window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
-    const timer=window.setInterval(()=>setIndex(value=>(value+1)%c.slides.length),8500);
+    const timer=window.setInterval(()=>setIndex(value=>(value+1)%c.slides.length),6500);
     return()=>window.clearInterval(timer);
   },[playing,c.slides.length]);
 
@@ -129,7 +129,7 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
     </header>
 
     <div className="ocp-stage">
-      <div className={`ocp-media ocp-media-${slide.visual} ocp-crop-${slide.crop}`} role="img" aria-label={slide.title}>
+      <div key={`media-${index}`} className={`ocp-media ocp-media-${slide.visual} ocp-crop-${slide.crop}`} role="img" aria-label={slide.title}>
         <div className="ocp-shade"/>
         <div className="ocp-counter" dir="ltr">{String(index+1).padStart(2,"0")} / {String(c.slides.length).padStart(2,"0")}</div>
         <div className="ocp-media-copy">
@@ -141,14 +141,16 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
 
       <aside className="ocp-panel">
         <div className="ocp-brand"><strong>FOGGARA-DZ</strong><span>SIREP OASES NEXUS WEFEH-DZ</span></div>
-        <p className="ocp-body">{slide.body}</p>
-        <div className="ocp-progress" aria-hidden="true"><i style={{width:`${progress}%`}}/></div>
-        <div className="ocp-controls">
-          <button type="button" aria-label={c.prev} onClick={()=>{setIndex(value=>(value+c.slides.length-1)%c.slides.length);setPlaying(false)}}><ChevronLeft size={18}/></button>
-          <button type="button" aria-label={playing?c.pause:c.play} className="ocp-play" onClick={()=>setPlaying(value=>!value)}>{playing?<Pause size={17}/>:<Play size={17}/>}<span>{playing?c.pause:c.play}</span></button>
-          <button type="button" aria-label={c.next} onClick={()=>{setIndex(value=>(value+1)%c.slides.length);setPlaying(false)}}><ChevronRight size={18}/></button>
+        <div key={`panel-${index}`} className="ocp-panel-slide">
+          <p className="ocp-body">{slide.body}</p>
+          <div className="ocp-progress" aria-hidden="true"><i style={{width:`${progress}%`}}/></div>
+          <Link className="ocp-link" to={slide.route}>{c.open}<ArrowUpRight size={16}/></Link>
         </div>
-        <Link className="ocp-link" to={slide.route}>{c.open}<ArrowUpRight size={16}/></Link>
+        <div className="ocp-controls">
+          <button type="button" aria-label={c.prev} onClick={()=>setIndex(value=>(value+c.slides.length-1)%c.slides.length)}><ChevronLeft size={18}/></button>
+          <button type="button" aria-label={playing?c.pause:c.play} className="ocp-play" onClick={()=>setPlaying(value=>!value)}>{playing?<Pause size={17}/>:<Play size={17}/>}<span>{playing?c.pause:c.play}</span></button>
+          <button type="button" aria-label={c.next} onClick={()=>setIndex(value=>(value+1)%c.slides.length)}><ChevronRight size={18}/></button>
+        </div>
       </aside>
     </div>
 
