@@ -33,6 +33,14 @@ TRUE_COLOR_ASSETS = {
     "B03": ("green", "B03"),
     "B04": ("red", "B04"),
 }
+MULTI_INDEX_ASSETS = {
+    "B02": ("blue", "B02"),
+    "B03": ("green", "B03"),
+    "B04": ("red", "B04"),
+    "B08": ("nir", "B08"),
+    "B11": ("swir16", "B11"),
+}
+MULTI_INDEX_KEYS = ("ndvi", "evi", "savi", "ndwi", "ndmi", "lswi", "bsi")
 
 
 class ProcessingPlanError(ValueError):
@@ -236,6 +244,68 @@ def build_processing_plan(item: Mapping, index_key: str) -> dict:
         },
     }
 
+
+
+def build_multi_index_plan(item: Mapping) -> dict:
+    """Resolve one trusted plan for the complete FOGGARA spectral screening set."""
+    scene_id = validate_scene_id(str(item.get("id") or ""))
+    if item.get("collection") != SENTINEL_COLLECTION:
+        raise ProcessingPlanError("STAC item is not from the Sentinel-2 L2A collection")
+
+    assets = item.get("assets")
+    if not isinstance(assets, Mapping):
+        raise ProcessingPlanError("STAC item has no asset map")
+
+    resolved = [
+        _resolve_asset(assets, logical_band=band, aliases=aliases)
+        for band, aliases in MULTI_INDEX_ASSETS.items()
+    ]
+    scl = _resolve_asset(assets, logical_band="SCL", aliases=SCL_ASSET_ALIASES)
+    public_assets = [asset.public_dict() for asset in resolved]
+    public_scl = scl.public_dict()
+    effective_source_resolution_m = max(
+        [asset.gsd_m for asset in resolved if asset.gsd_m is not None] or [10.0]
+    )
+    fingerprint_input = {
+        "scene_id": scene_id,
+        "collection": SENTINEL_COLLECTION,
+        "indices": list(MULTI_INDEX_KEYS),
+        "formula_versions": {
+            key: get_index_definition(key).formula_version for key in MULTI_INDEX_KEYS
+        },
+        "assets": public_assets,
+        "scl": public_scl,
+        "masked_scl_classes": list(MASKED_SCL_CLASSES),
+        "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
+    }
+    fingerprint = hashlib.sha256(
+        json.dumps(fingerprint_input, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return {
+        "plan_version": PLAN_VERSION,
+        "fingerprint_sha256": fingerprint,
+        "provider": "Element 84 Earth Search",
+        "collection": SENTINEL_COLLECTION,
+        "scene_id": scene_id,
+        "indices": list(MULTI_INDEX_KEYS),
+        "formula_versions": fingerprint_input["formula_versions"],
+        "source_item_url": item_url(scene_id),
+        "target_resolution_m": 10,
+        "effective_source_resolution_m": effective_source_resolution_m,
+        "required_assets": public_assets,
+        "cloud_mask": {
+            "asset": public_scl,
+            "method": "sentinel-2-scl",
+            "masked_classes": list(MASKED_SCL_CLASSES),
+            "resampling": "nearest",
+        },
+        "provenance": {
+            "provider_metadata": "OBSERVED",
+            "derived_indices": "COMPUTED",
+            "verified": False,
+        },
+    }
 
 
 def build_true_color_plan(item: Mapping) -> dict:
