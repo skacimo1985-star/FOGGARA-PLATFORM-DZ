@@ -5,7 +5,7 @@ never stores provider data, and never upgrades satellite inference to verified e
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 import math
 
 import httpx
@@ -14,6 +14,11 @@ from fastapi import APIRouter, Depends, Query, Response
 from ..deps import api_error, get_current_user
 from ..models import User
 from ..services.remote_sensing_indices import public_index_definitions
+from ..services.remote_sensing_methodology import (
+    acquisition_age_hours,
+    operational_quality_indicator,
+    public_methodology,
+)
 from ..services.remote_sensing_processing import (
     ProcessingPlanError,
     build_processing_plan,
@@ -33,6 +38,8 @@ from ..services.remote_sensing_raster import (
 router = APIRouter(prefix="/api/remote-sensing", tags=["remote-sensing"])
 
 EARTH_SEARCH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
+EARTH_SEARCH_ROOT = "https://earth-search.aws.element84.com/v1"
+COPERNICUS_STAC_ROOT = "https://stac.dataspace.copernicus.eu/v1/"
 SENTINEL_COLLECTION = "sentinel-2-l2a"
 SUPPORTED_INDEX_PATTERN = "^(bsi|evi|lswi|ndmi|ndvi|ndwi|savi)$"
 
@@ -136,6 +143,106 @@ def _scene_from_feature(feature: dict) -> dict:
 
 
 
+def _earth_search_features(
+    search_bbox: list[float],
+    start: date,
+    end: date,
+    cloud_cover_lte: float,
+    limit: int,
+) -> list[dict]:
+    payload = {
+        "collections": [SENTINEL_COLLECTION],
+        "bbox": search_bbox,
+        "datetime": f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z",
+        "query": {"eo:cloud_cover": {"lte": cloud_cover_lte}},
+        "sortby": [{"field": "properties.datetime", "direction": "desc"}],
+        "limit": limit,
+    }
+    try:
+        timeout = httpx.Timeout(12.0, connect=5.0)
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            response = client.post(
+                EARTH_SEARCH_SEARCH_URL,
+                json=payload,
+                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
+            )
+            response.raise_for_status()
+            body = response.json()
+    except (httpx.HTTPError, ValueError):
+        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
+
+    features = body.get("features") if isinstance(body, dict) else None
+    if not isinstance(features, list):
+        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid response")
+    return [feature for feature in features if isinstance(feature, dict)]
+
+
+def _study_pixel_budget(raw_bbox: list[float]) -> int:
+    west, south, east, north = raw_bbox
+    mid_lat = math.radians((south + north) / 2.0)
+    width_m = (east - west) * 111_320.0 * max(math.cos(mid_lat), 0.01)
+    height_m = (north - south) * 110_574.0
+    width = max(1, math.ceil(width_m / 10.0))
+    height = max(1, math.ceil(height_m / 10.0))
+    return width * height
+
+
+def _parse_scene_datetime(value) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _trend_summary(series: list[dict]) -> dict:
+    points = []
+    for row in series:
+        acquired = _parse_scene_datetime(row.get("datetime"))
+        mean = row.get("statistics", {}).get("mean")
+        if acquired is None or not isinstance(mean, (int, float)) or isinstance(mean, bool) or not math.isfinite(float(mean)):
+            continue
+        points.append((acquired, float(mean)))
+    points.sort(key=lambda pair: pair[0])
+    if len(points) < 2:
+        return {
+            "scene_count": len(points),
+            "direction": "insufficient_data",
+            "delta": None,
+            "slope_per_day": None,
+            "interpretation_status": "INFERRED",
+        }
+
+    origin = points[0][0]
+    xs = [(when - origin).total_seconds() / 86400.0 for when, _value in points]
+    ys = [value for _when, value in points]
+    x_mean = sum(xs) / len(xs)
+    y_mean = sum(ys) / len(ys)
+    denominator = sum((x - x_mean) ** 2 for x in xs)
+    slope = None if denominator <= 1e-12 else sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, ys)) / denominator
+    delta = ys[-1] - ys[0]
+    if slope is None or abs(slope) <= 1e-6:
+        direction = "stable"
+    elif slope > 0:
+        direction = "increasing"
+    else:
+        direction = "decreasing"
+    return {
+        "scene_count": len(points),
+        "direction": direction,
+        "delta": round(delta, 6),
+        "slope_per_day": None if slope is None else round(slope, 8),
+        "first_mean": round(ys[0], 6),
+        "last_mean": round(ys[-1], 6),
+        "interpretation_status": "INFERRED",
+        "note": "Mathematical temporal direction only; not an agronomic diagnosis.",
+    }
+
+
 def _provider_item(scene_id: str) -> tuple[str, dict]:
     try:
         safe_scene_id = validate_scene_id(scene_id)
@@ -177,33 +284,8 @@ def catalog_scenes(
         api_error(422, "DATE_RANGE_TOO_LARGE", "catalog search is limited to 366 days")
 
     search_bbox = _parse_bbox(bbox)
-    payload = {
-        "collections": [SENTINEL_COLLECTION],
-        "bbox": search_bbox,
-        "datetime": f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z",
-        "query": {"eo:cloud_cover": {"lte": cloud_cover_lte}},
-        "sortby": [{"field": "properties.datetime", "direction": "desc"}],
-        "limit": limit,
-    }
-
-    try:
-        timeout = httpx.Timeout(12.0, connect=5.0)
-        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
-            response = client.post(
-                EARTH_SEARCH_SEARCH_URL,
-                json=payload,
-                headers={"Accept": "application/geo+json", "User-Agent": "FOGGARA-DZ/remote-sensing"},
-            )
-            response.raise_for_status()
-            body = response.json()
-    except (httpx.HTTPError, ValueError):
-        api_error(502, "REMOTE_PROVIDER_UNAVAILABLE", "Satellite catalogue provider is unavailable")
-
-    features = body.get("features") if isinstance(body, dict) else None
-    if not isinstance(features, list):
-        api_error(502, "REMOTE_PROVIDER_INVALID_RESPONSE", "Satellite catalogue returned an invalid response")
-
-    scenes = [_scene_from_feature(feature) for feature in features if isinstance(feature, dict)]
+    features = _earth_search_features(search_bbox, start, end, cloud_cover_lte, limit)
+    scenes = [_scene_from_feature(feature) for feature in features]
     scenes = [scene for scene in scenes if scene["id"] and scene["geometry"] is not None]
     return {
         "provider": "Element 84 Earth Search",
@@ -216,6 +298,167 @@ def catalog_scenes(
     }
 
 
+
+
+@router.get("/providers")
+def remote_sensing_providers(_user: User = Depends(get_current_user)):
+    return {
+        "operational": [
+            {
+                "id": "element84-earth-search",
+                "name": "Element 84 Earth Search",
+                "stac_root": EARTH_SEARCH_ROOT,
+                "collection": SENTINEL_COLLECTION,
+                "analysis_ready": True,
+                "raster_access": "public Sentinel-2 L2A Cloud Optimized GeoTIFFs",
+                "role": "live discovery and raster computation",
+                "evidence_status": "OBSERVED",
+            }
+        ],
+        "reference_catalogs": [
+            {
+                "id": "copernicus-data-space",
+                "name": "Copernicus Data Space Ecosystem STAC",
+                "stac_root": COPERNICUS_STAC_ROOT,
+                "collection": "sentinel-2-l2a",
+                "analysis_ready_in_foggara": False,
+                "role": "official Copernicus discovery/reference catalog",
+                "note": "FOGGARA does not claim operational raster processing from this provider until its access path is separately validated.",
+            }
+        ],
+        "research_targets": [
+            {
+                "id": "nasa-hls",
+                "name": "NASA Harmonized Landsat Sentinel-2 (HLS)",
+                "status": "planned_not_operational",
+                "resolution_m": 30,
+                "role": "future 2-3 day harmonized Landsat/Sentinel time series",
+            }
+        ],
+    }
+
+
+@router.get("/methodology")
+def remote_sensing_methodology(_user: User = Depends(get_current_user)):
+    return public_methodology()
+
+
+@router.get("/studies/timeseries")
+def study_timeseries(
+    bbox: str = Query(..., min_length=7, max_length=160),
+    start: date = Query(...),
+    end: date = Query(...),
+    index: str = Query(default="ndvi", pattern=SUPPORTED_INDEX_PATTERN),
+    cloud_cover_lte: float = Query(default=30, ge=0, le=100),
+    max_scenes: int = Query(default=3, ge=2, le=4),
+    _user: User = Depends(get_current_user),
+):
+    if start > end:
+        api_error(422, "INVALID_DATE_RANGE", "start date must not be after end date")
+    if (end - start).days > 366:
+        api_error(422, "DATE_RANGE_TOO_LARGE", "time-series study is limited to 366 days")
+
+    raw_bbox = _parse_bbox(bbox)
+    try:
+        validate_analysis_bbox(raw_bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", str(exc))
+
+    estimated_pixels = _study_pixel_budget(raw_bbox)
+    if estimated_pixels > 400_000:
+        api_error(
+            422,
+            "STUDY_AREA_TOO_LARGE",
+            "Multi-temporal study is limited to about 400,000 10 m pixels; select a smaller AOI.",
+        )
+
+    features = _earth_search_features(
+        raw_bbox,
+        start,
+        end,
+        cloud_cover_lte,
+        min(20, max_scenes * 4),
+    )
+
+    series: list[dict] = []
+    skipped: list[dict] = []
+    for feature in features:
+        if len(series) >= max_scenes:
+            break
+        scene = _scene_from_feature(feature)
+        scene_id = scene.get("id")
+        if not scene_id:
+            continue
+        try:
+            plan = build_processing_plan(feature, index)
+            result = compute_index_statistics(plan, raw_bbox)
+        except RasterCapacityError:
+            api_error(429, "RASTER_ANALYSIS_BUSY", "Raster study capacity is busy; retry later")
+        except (ProcessingPlanError, RasterStatisticsError):
+            skipped.append({"scene_id": scene_id, "reason": "processing_unavailable"})
+            continue
+
+        quality = operational_quality_indicator(
+            float(result["pixels"]["valid_fraction"]),
+            scene.get("cloud_cover_pct"),
+        )
+        series.append({
+            "scene_id": scene_id,
+            "datetime": scene.get("datetime"),
+            "acquisition_age_hours": acquisition_age_hours(scene.get("datetime")),
+            "cloud_cover_pct": scene.get("cloud_cover_pct"),
+            "platform": scene.get("platform"),
+            "provider": scene.get("provider"),
+            "statistics": result["statistics"],
+            "pixels": result["pixels"],
+            "mask": result["mask"],
+            "grid": result["grid"],
+            "formula_version": result["formula_version"],
+            "processing_plan_fingerprint": result["processing_plan_fingerprint"],
+            "quality_indicator": quality,
+            "evidence": {
+                "provider_scene": "OBSERVED",
+                "derived_index": "COMPUTED",
+                "study_interpretation": "INFERRED",
+                "verified": False,
+            },
+        })
+
+    series.sort(key=lambda row: str(row.get("datetime") or ""))
+    definitions = {item["key"]: item for item in public_index_definitions()}
+    methodology = public_methodology()
+    quality_scores = [float(row["quality_indicator"]["score"]) for row in series]
+    return {
+        "study_type": "multi_temporal_spectral_index",
+        "provider": "Element 84 Earth Search",
+        "collection": SENTINEL_COLLECTION,
+        "sensor_product": "Sentinel-2 L2A surface reflectance",
+        "bbox_wgs84": raw_bbox,
+        "period": {"start": start.isoformat(), "end": end.isoformat()},
+        "index": definitions.get(index),
+        "scene_count": len(series),
+        "requested_scene_count": max_scenes,
+        "series": series,
+        "trend": _trend_summary(series),
+        "quality_summary": {
+            "mean_operational_score": None if not quality_scores else round(sum(quality_scores) / len(quality_scores), 1),
+            "indicator": "FOGGARA operational screening; not formal uncertainty",
+        },
+        "skipped": skipped,
+        "methodology": {
+            "quality_framework": methodology["quality_framework"],
+            "evidence_chain": methodology["evidence_chain"],
+            "standards": [
+                item for item in methodology["standards_and_guidance"]
+                if item["id"] in {"qa4eo", "stac", "copernicus-s2-l2a"}
+            ],
+        },
+        "limitations": [
+            "Spectral indices are proxies and do not by themselves diagnose nutrient deficiency, disease, yield or absolute soil moisture.",
+            "Scene-level cloud metadata is supplemented by per-pixel SCL masking inside the selected AOI.",
+            "Field or laboratory observations are required before a result can become VERIFIED.",
+        ],
+    }
 
 
 @router.get("/catalog/scenes/{scene_id}/preview.png")
