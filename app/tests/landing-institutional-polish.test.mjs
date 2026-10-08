@@ -7,7 +7,8 @@ const css=readFileSync(new URL('../src/pages/heritage-landing.css',import.meta.u
 
 test('institutional landing keeps a four-image visual story',()=>{
   for(const asset of [
-    '/images/oasis-dawn.webp',
+    '/images/foggara-heritage-poster.webp',
+    '/images/foggara-sprite.webp',
     '/images/foggara-video-frame-2.webp',
     '/images/oasis-hero.webp',
     '/images/foggara-video-frame-1.webp'
@@ -16,7 +17,7 @@ test('institutional landing keeps a four-image visual story',()=>{
   }
   assert.ok(landing.includes('fg-global-visual-heritage'));
   assert.ok(landing.includes('fg-global-visual-evidence'));
-  assert.equal(landing.includes('foggara-heritage-poster.webp'),false);
+  assert.ok(landing.includes('fg-agriculture-template-story'));
 });
 
 test('company capabilities remain visible in all supported languages',()=>{
