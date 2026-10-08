@@ -121,7 +121,7 @@
 }
 .fg-moon-hero-media,.fg-moon-hero-overlay{position:absolute;inset:0}
 .fg-moon-hero-media{
-  z-index:-3;
+  z-index:0;
   background-repeat:no-repeat;
   background-position:center;
   background-size:cover;
@@ -139,8 +139,8 @@
   background-image:url("/images/oasis-dawn.webp");
   background-position:center 58%;
 }
-.fg-moon-hero-overlay{
-  z-index:-2;
+ .fg-moon-hero-overlay{
+  z-index:1;
   background:
     linear-gradient(90deg,#061705e8 0%,#0a1b08bd 37%,#0c170867 65%,#06170542 100%),
     linear-gradient(0deg,#06170576,transparent 45%);
