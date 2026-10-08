@@ -1,233 +1,169 @@
 .ocp{
-  --ocp-green:#214b2d;
-  --ocp-green-dark:#0b2415;
-  --ocp-terracotta:#7b2f1f;
-  --ocp-cream:#f7f1e6;
-  --ocp-sand:#dcc59f;
-  --ocp-ink:#182018;
-  width:min(1240px,calc(100% - 48px));
-  margin:96px auto 108px;
-  color:var(--ocp-ink);
-}
-.ocp-head{
-  display:grid;
-  grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);
-  gap:64px;
-  align-items:end;
-  margin-bottom:32px;
-}
-.ocp-eyebrow{
-  margin:0 0 10px;
-  color:var(--ocp-terracotta);
-  font:800 10px/1.4 ui-monospace,SFMono-Regular,monospace;
-  letter-spacing:.13em;
-}
-.ocp-head h2{
-  margin:0;
-  max-width:820px;
-  color:var(--ocp-green);
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:clamp(44px,5.4vw,74px);
-  line-height:.94;
-  font-weight:650;
-  letter-spacing:-.045em;
-}
-.ocp-head>p{
-  margin:0 0 5px;
-  padding-inline-start:24px;
-  border-inline-start:1px solid #d8d1c6;
-  color:#5c665c;
-  font-size:15px;
-  line-height:1.85;
+  --paper:#f1e8d5;
+  --ink:#171a17;
+  --forest:#1f5b43;
+  --forest-deep:#153b2d;
+  --clay:#b65a37;
+  --sand:#d5b873;
+  --sage:#b9bdae;
+  width:min(1180px,calc(100% - 48px));
+  margin:36px auto 0;
+  color:var(--ink);
 }
 .ocp-stage{
-  display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(350px,.65fr);
-  min-height:640px;
-  overflow:hidden;
-  border:1px solid #dcd5ca;
-  background:var(--ocp-cream);
-  box-shadow:0 34px 74px -58px #000;
-}
-.ocp-media{
   position:relative;
-  min-height:640px;
+  aspect-ratio:16/9;
   overflow:hidden;
-  background-repeat:no-repeat;
-  background-size:cover;
-  background-color:#183221;
-  animation:ocpFade .32s ease both;
+  background:var(--ink);
+  box-shadow:0 28px 70px -46px #000;
 }
-.ocp-media-dawn{background-image:url("/images/oasis-dawn.webp")}
-.ocp-media-hero{background-image:url("/images/oasis-hero.webp")}
-.ocp-crop-a{background-position:center 56%}
-.ocp-crop-b{background-position:center 66%}
-.ocp-crop-c{background-position:center 44%}
-.ocp-shade{
-  position:absolute;
-  inset:0;
+.ocp-slide-shell{position:absolute;inset:0;animation:ocpFade .35s ease both}
+.ocp-page{position:absolute;inset:0;overflow:hidden;font-family:Arial,Helvetica,sans-serif}
+.ocp-page h3{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(34px,4.2vw,66px);line-height:.98;font-weight:500;letter-spacing:-.035em}
+.ocp-page p{margin:28px 0 0;max-width:620px;font-size:clamp(13px,1.35vw,21px);line-height:1.55}
+.ocp-page-dark{background:var(--ink);color:#f8f1df}
+.ocp-page-paper{background:var(--paper);color:var(--ink)}
+.ocp-copy{position:absolute;z-index:3}
+.ocp-mini-block{display:grid;gap:12px;margin-top:38px;font-size:14px}
+.ocp-mini-block strong{color:var(--sand);font-size:12px;letter-spacing:.12em}
+.ocp-mini-block span{display:block}
+
+/* PAGE 1 — exact structure from the supplied design */
+.ocp-page-terrain{display:grid;grid-template-columns:43% 57%}
+.ocp-page-terrain .ocp-copy{position:relative;padding:64px 48px 44px}
+.ocp-page-terrain .ocp-copy h3{max-width:430px}
+.ocp-visual-terrain{
+  position:relative;
   background:
-    linear-gradient(180deg,transparent 24%,#07110832 52%,#071108e8 100%),
-    linear-gradient(90deg,#07110869 0%,transparent 58%);
+    linear-gradient(180deg,#162f2388,#151a1599),
+    url("/images/foggara-video-frame-1.webp") center/cover no-repeat;
 }
-.ocp-counter{
-  position:absolute;
-  z-index:2;
-  top:22px;
-  inset-inline-start:22px;
-  padding:8px 11px;
-  border:1px solid #ffffff73;
-  background:#0b2114a3;
-  color:#fff;
-  font:800 10px/1 ui-monospace,SFMono-Regular,monospace;
-  letter-spacing:.1em;
-  backdrop-filter:blur(8px);
-}
-.ocp-media-copy{
-  position:absolute;
-  z-index:2;
-  inset:auto 34px 32px;
-  max-width:780px;
-  color:#fff;
-}
-.ocp-media-copy p{
-  margin:0 0 9px;
-  color:#e8d2a7;
-  font:800 10px/1.45 ui-monospace,SFMono-Regular,monospace;
-  letter-spacing:.12em;
-}
-.ocp-media-copy h3{
-  margin:0;
-  color:#fff;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:clamp(34px,4.2vw,62px);
-  line-height:.98;
-  font-weight:650;
-  letter-spacing:-.035em;
-  text-shadow:0 4px 22px #0008;
-}
-.ocp-media-copy span{
-  display:block;
-  margin-top:16px;
-  color:#dcebd7;
-  font:800 10px/1.55 ui-monospace,SFMono-Regular,monospace;
-  letter-spacing:.08em;
-}
-.ocp-panel{
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  gap:18px;
-  padding:38px 32px;
-  background:#fffdf8;
-}
-.ocp-brand{
-  padding-bottom:16px;
-  border-bottom:1px solid #ded8cf;
-}
-.ocp-brand strong{
-  display:block;
-  color:var(--ocp-green);
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:28px;
-}
-.ocp-brand span{
-  display:block;
-  margin-top:6px;
-  color:#7d877b;
-  font:700 9px/1.5 ui-monospace,SFMono-Regular,monospace;
-  letter-spacing:.09em;
-}
-.ocp-panel-slide{
-  display:grid;
-  gap:18px;
-  animation:ocpTextFade .36s ease both;
-}
-.ocp-body{
-  margin:0;
-  color:#566056;
-  font-size:14px;
-  line-height:1.85;
-}
-.ocp-progress{
-  height:3px;
-  overflow:hidden;
-  background:#e5e0d7;
-}
-.ocp-progress i{
-  display:block;
-  height:100%;
-  background:linear-gradient(90deg,var(--ocp-terracotta),var(--ocp-green));
-  transition:width .3s ease;
-}
-.ocp-controls{
-  display:grid;
-  grid-template-columns:42px 1fr 42px;
-  gap:9px;
-  align-items:center;
-}
-.ocp-controls button{
-  min-height:42px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  border:1px solid #d6d0c6;
-  background:#fff;
-  color:var(--ocp-green);
-  font:800 10px/1 sans-serif;
-  cursor:pointer;
-}
-.ocp-controls .ocp-play{border-color:var(--ocp-green)}
-.ocp-controls button:hover{background:#edf4eb}
-.ocp-link{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  min-height:45px;
-  padding:0 16px;
-  background:var(--ocp-green);
-  color:#fff;
-  font-size:11px;
-  font-weight:850;
-  letter-spacing:.04em;
-}
-.ocp-link:hover{background:#173a23}
+.ocp-aoi-outline{position:absolute;left:47%;top:42%;width:17%;height:27%;border:3px solid #c46542;border-radius:46% 54% 62% 38%/39% 40% 60% 61%;transform:rotate(10deg);box-shadow:0 0 0 1px #efaf8b55 inset}
+.ocp-expo-mark{display:grid;gap:2px;margin-top:40px;color:#f6f0df}
+.ocp-expo-mark b{font:700 34px/1 Georgia,serif;color:#f3c700}
+.ocp-expo-mark strong{font-size:18px;color:#f3c700;letter-spacing:.02em}
+.ocp-expo-mark span{font-size:15px;color:#f3c700}
 
-.ocp-compact{width:min(1160px,calc(100% - 48px));margin:84px auto 94px}
-.ocp-compact .ocp-stage{min-height:570px}
-.ocp-compact .ocp-media{min-height:570px}
-.ocp-compact .ocp-head h2{font-size:clamp(42px,5vw,66px)}
+/* PAGE 2 */
+.ocp-page-satellite .ocp-copy{left:6%;top:9%;width:35%}
+.ocp-page-satellite .ocp-copy p{color:#315e49}
+.ocp-page-satellite .ocp-mini-block{margin-top:88px}
+.ocp-page-satellite .ocp-mini-block strong{color:var(--clay)}
+.ocp-satellite-board{position:absolute;right:5.5%;top:15%;width:49%;height:72%;display:grid;grid-template-columns:68% 32%;gap:5px;background:#e4c8b7;padding:8px}
+.ocp-sat-main{background:url("/images/foggara-video-frame-2.webp") center/cover no-repeat}
+.ocp-sat-stack{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,1fr);gap:5px}
+.ocp-sat-stack i:nth-child(1){background:url("/images/oasis-dawn.webp") 22% 52%/cover}
+.ocp-sat-stack i:nth-child(2){background:url("/images/foggara-video-frame-1.webp") 68% 36%/cover}
+.ocp-sat-stack i:nth-child(3){background:url("/images/oasis-hero.webp") 72% 42%/cover}
+.ocp-sat-stack i:nth-child(4){background:url("/images/foggara-video-frame-2.webp") 25% 70%/cover}
 
-@keyframes ocpFade{
-  from{opacity:.28}
-  to{opacity:1}
+/* PAGE 3 */
+.ocp-page-water{display:grid;grid-template-columns:42% 58%}
+.ocp-water-image{background:url("/images/oasis-hero.webp") center/cover no-repeat}
+.ocp-page-water .ocp-copy{position:relative;padding:70px 54px}
+.ocp-page-water .ocp-copy p{color:#c1c4bd;max-width:620px}
+.ocp-metric{display:grid;gap:8px;margin-top:28px;padding-left:18px;border-left:6px solid}
+.ocp-metric strong{font-size:12px;letter-spacing:.12em}
+.ocp-metric span{font-size:16px}
+.ocp-metric-green{border-color:var(--forest);color:#8fb9a6}
+.ocp-metric-clay{border-color:var(--clay);color:#d77b5e}
+.ocp-metric-sand{border-color:var(--sand);color:#e5cf91}
+
+/* PAGE 4 */
+.ocp-page-evidence .ocp-copy{left:6%;top:8%;width:82%}
+.ocp-page-evidence .ocp-copy p{color:#315e49}
+.ocp-evidence-grid{position:absolute;left:6%;right:6%;bottom:18%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ocp-evidence-card{min-height:250px;padding:34px 22px;display:grid;grid-template-rows:auto auto 1fr;gap:24px}
+.ocp-evidence-card b{font:600 32px/1 Georgia,serif}
+.ocp-evidence-card strong{font-size:11px;letter-spacing:.12em}
+.ocp-evidence-card span{align-self:end;font-size:13px;line-height:1.55}
+.ocp-evidence-1{background:#bcc0b2}.ocp-evidence-2{background:#dec0aa}.ocp-evidence-3{background:#e8dbb8}.ocp-evidence-4{background:var(--ink);color:#f7efdc}
+
+/* PAGE 5 */
+.ocp-page-decision .ocp-copy{left:6%;top:8%;width:45%}
+.ocp-page-decision .ocp-copy p{color:#babdb7}
+.ocp-decision-row{position:absolute;left:6%;right:8%;bottom:17%;display:grid;grid-template-columns:repeat(3,1fr);gap:48px}
+.ocp-decision-row article{position:relative;min-height:220px;padding:30px;background:#202620;display:flex;flex-direction:column;gap:13px}
+.ocp-decision-row strong{color:var(--sand);font-size:11px;letter-spacing:.11em;margin-bottom:18px}
+.ocp-decision-row span{font-size:16px}
+.ocp-decision-row i{position:absolute;right:-37px;top:50%;width:26px;height:3px;background:var(--sand)}
+
+/* PAGE 6 */
+.ocp-page-ai .ocp-copy{left:6%;top:8%;width:52%}
+.ocp-page-ai .ocp-copy p{color:#315e49}
+.ocp-ai-stack{position:absolute;left:16%;right:14%;bottom:13%;display:flex;flex-direction:column;align-items:center;gap:22px}
+.ocp-ai-stack span{height:62px;display:grid;place-items:center;font-size:11px;font-weight:800;letter-spacing:.04em}
+.ocp-ai-stack span:nth-child(1){width:88%;background:var(--sand)}
+.ocp-ai-stack span:nth-child(2){width:75%;background:var(--clay);color:white}
+.ocp-ai-stack span:nth-child(3){width:62%;background:var(--forest);color:white}
+.ocp-ai-stack span:nth-child(4){width:48%;background:var(--ink);color:white}
+
+/* PAGE 7 */
+.ocp-page-ecosystem .ocp-copy{left:6%;top:8%;width:45%}
+.ocp-page-ecosystem .ocp-copy p{color:#babdb7}
+.ocp-network{position:absolute;left:8%;right:8%;top:37%;bottom:10%}
+.ocp-network strong,.ocp-network span{position:absolute;z-index:2;display:grid;place-items:center;text-align:center;border-radius:10px}
+.ocp-network strong{left:41%;top:4%;width:18%;height:37%;background:var(--clay);font-size:17px}
+.ocp-network span{width:12%;height:20%;font-size:10px;font-weight:800}
+.ocp-network .n1{left:4%;top:21%;background:var(--sand);color:var(--ink)}
+.ocp-network .n2{right:4%;top:21%;background:var(--forest);color:white}
+.ocp-network .n3{left:24%;bottom:0;background:var(--forest);color:white}
+.ocp-network .n4{left:44%;bottom:0;background:var(--sand);color:var(--ink)}
+.ocp-network .n5{right:24%;bottom:0;background:var(--sand);color:var(--ink)}
+.ocp-network i{position:absolute;z-index:1;height:1px;background:#60806c;transform-origin:left center}
+.ocp-network .l1{left:16%;top:31%;width:31%}
+.ocp-network .l2{left:58%;top:31%;width:26%}
+.ocp-network .l3{left:49%;top:38%;width:28%;transform:rotate(129deg)}
+.ocp-network .l4{left:50%;top:38%;width:31%;transform:rotate(90deg)}
+.ocp-network .l5{left:52%;top:38%;width:28%;transform:rotate(51deg)}
+
+/* PAGE 8 */
+.ocp-page-expo{display:grid;grid-template-columns:50% 50%}
+.ocp-page-expo .ocp-copy{position:relative;padding:54px 48px;background:linear-gradient(#143126ee,#151a17f5),url("/images/foggara-video-frame-1.webp") center/cover}
+.ocp-page-expo h3{font-size:clamp(30px,3.4vw,54px);margin-top:40px}
+.ocp-page-expo p{color:#d8d7ce}
+.ocp-expo-badge{font-size:19px;line-height:.88;font-weight:900;color:#f2f1dc}.ocp-expo-badge b{color:#f0c400}
+.ocp-company{display:block;margin-top:34px;color:#f1c44e;font-size:18px}
+.ocp-stand{display:grid;place-items:center;margin-top:16px;min-height:58px;background:var(--forest);font-size:12px;font-weight:800}
+.ocp-page-expo small{display:block;margin-top:16px;font-size:10px;letter-spacing:.09em}
+.ocp-expo-image{background:url("/images/oasis-dawn.webp") center/cover no-repeat}
+
+.ocp-source-mark{position:absolute;z-index:6;right:18px;top:18px;display:flex;gap:10px;align-items:center;padding:8px 10px;background:#101511d9;color:#fff;font:800 9px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:.08em}
+.ocp-source-mark b{color:#e8cf90}
+.ocp-footer-controls{display:grid;grid-template-columns:42px 1fr 42px 42px;gap:8px;align-items:center;padding-top:14px}
+.ocp-footer-controls>button{height:42px;border:1px solid #cfc8bb;background:#fff;color:var(--forest);display:grid;place-items:center;cursor:pointer}
+.ocp-footer-controls>button:hover{background:#eef2ea}
+.ocp-page-tabs{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.ocp-page-tabs button{height:42px;border:1px solid #d4cec4;background:#f7f2e8;color:#667065;font:800 10px/1 ui-monospace,SFMono-Regular,monospace;cursor:pointer}
+.ocp-page-tabs button.active{background:var(--forest);border-color:var(--forest);color:#fff}
+.ocp-progress{height:3px;margin-top:8px;background:#ddd6c9;overflow:hidden}
+.ocp-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--clay),var(--forest));transition:width .3s ease}
+.ocp-compact{width:min(1160px,calc(100% - 48px));margin-top:28px}
+
+@keyframes ocpFade{from{opacity:.2}to{opacity:1}}
+@media(max-width:860px){
+  .ocp{width:calc(100% - 28px)}
+  .ocp-stage{aspect-ratio:auto;height:min(72vw,620px)}
+  .ocp-page h3{font-size:clamp(28px,6vw,48px)}
+  .ocp-page p{font-size:13px;margin-top:18px}
+  .ocp-page-terrain,.ocp-page-water,.ocp-page-expo{grid-template-columns:1fr}
+  .ocp-page-terrain .ocp-copy,.ocp-page-water .ocp-copy,.ocp-page-expo .ocp-copy{position:absolute;inset:0;z-index:3;background:linear-gradient(90deg,#141916f3 0%,#141916d9 52%,#14191677 100%);padding:42px 28px;width:70%}
+  .ocp-visual-terrain,.ocp-water-image,.ocp-expo-image{position:absolute;inset:0}
+  .ocp-page-satellite .ocp-copy,.ocp-page-ai .ocp-copy,.ocp-page-evidence .ocp-copy,.ocp-page-decision .ocp-copy,.ocp-page-ecosystem .ocp-copy{left:6%;top:7%;width:88%}
+  .ocp-mini-block{margin-top:24px}
+  .ocp-satellite-board{top:43%;left:6%;right:6%;width:auto;height:48%}
+  .ocp-evidence-grid{bottom:8%;grid-template-columns:repeat(2,1fr);gap:7px}.ocp-evidence-card{min-height:120px;padding:14px;gap:10px}.ocp-evidence-card span{font-size:10px}
+  .ocp-decision-row{left:5%;right:5%;bottom:8%;gap:10px}.ocp-decision-row article{padding:14px;min-height:145px}.ocp-decision-row i{display:none}.ocp-decision-row span{font-size:11px}
+  .ocp-ai-stack{left:8%;right:8%;bottom:8%;gap:9px}.ocp-ai-stack span{height:44px;font-size:9px}
+  .ocp-network{top:43%}.ocp-network strong{font-size:12px}.ocp-network span{font-size:7px}
+  .ocp-footer-controls{grid-template-columns:40px 1fr 40px 40px}.ocp-page-tabs button{height:40px}
 }
-@keyframes ocpTextFade{
-  from{opacity:0;transform:translateY(8px)}
-  to{opacity:1;transform:translateY(0)}
+@media(max-width:580px){
+  .ocp-stage{height:600px}
+  .ocp-page-terrain .ocp-copy,.ocp-page-water .ocp-copy,.ocp-page-expo .ocp-copy{width:auto;right:0;padding:34px 22px;background:#151a17d9}
+  .ocp-expo-mark{display:none}
+  .ocp-page-tabs button span{font-size:8px}
+  .ocp-source-mark span{display:none}
+  .ocp-evidence-grid{grid-template-columns:1fr 1fr}
 }
-@media(max-width:1050px){
-  .ocp-head{grid-template-columns:1fr;gap:18px}
-  .ocp-head>p{max-width:840px;padding-inline-start:0;border-inline-start:0}
-  .ocp-stage{grid-template-columns:1fr}
-  .ocp-media{min-height:560px}
-  .ocp-panel{display:grid;grid-template-columns:1fr 1fr}
-  .ocp-brand,.ocp-body,.ocp-progress,.ocp-controls,.ocp-link{grid-column:1/-1}
-}
-@media(max-width:700px){
-  .ocp,.ocp-compact{width:calc(100% - 30px);margin:66px auto 76px}
-  .ocp-head h2,.ocp-compact .ocp-head h2{font-size:40px}
-  .ocp-head>p{font-size:14px}
-  .ocp-stage,.ocp-compact .ocp-stage{min-height:0}
-  .ocp-media,.ocp-compact .ocp-media{min-height:500px}
-  .ocp-media-copy{inset:auto 20px 20px}
-  .ocp-media-copy h3{font-size:34px}
-  .ocp-panel{display:flex;padding:24px 18px}
-  .ocp-controls .ocp-play span{display:none}
-}
-@media(prefers-reduced-motion:reduce){
-  .ocp-media,.ocp-panel-slide{animation:none}
-  .ocp-progress i{transition:none}
-}
+@media(prefers-reduced-motion:reduce){.ocp-slide-shell{animation:none}.ocp-progress i{transition:none}}

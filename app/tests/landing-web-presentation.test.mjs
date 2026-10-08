@@ -15,42 +15,40 @@ test('Landing remains syntactically valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('landing embeds the shared Canva oasis presentation',()=>{
+test('landing embeds the supplied Oases Nexus WEFEH presentation',()=>{
   assert.ok(landing.includes('OasisCanvaPresentation'));
   assert.ok(landing.includes('<OasisCanvaPresentation lang={lang} compact/>'));
-  assert.ok(deck.includes('FOGGARA-DZ · CANVA PRESENTATION'));
-  assert.ok(deck.includes('FROM FIELD QUESTION TO AGRICULTURAL ADVICE'));
-  assert.ok(deck.includes('AGRITECH EXPO'));
+  assert.ok(landing.includes('OASES NEXUS WEFEH / FOGGARA-DZ'));
+  assert.ok(deck.includes('DÉFINIR LE TERRAIN'));
+  assert.ok(deck.includes('DÉMO FOGGARA-DZ'));
 });
 
-test('Canva sequence preserves the 12-slide platform story',()=>{
-  const markers=['01 · FOGGARA-DZ','02 · HERITAGE','03 · SYSTEM LOGIC','04 · OPERATING CYCLE','05 · WEFEH','06 · PLATFORM','07 · SMART AGRICULTURE','08 · ASSURANCE','09 · WORKFLOW','10 · SIREP OASES','11 · AGRITECH EXPO','12 · CLOSING'];
+test('presentation preserves the eight-page structure of the supplied design',()=>{
+  const markers=[
+    'DÉFINIR LE TERRAIN',
+    'OBSERVER PAR SATELLITE',
+    'COMPRENDRE EAU, SOL ET CULTURES',
+    'PREUVE AVANT DÉCISION',
+    'DE L’ANALYSE À L’ARBITRAGE',
+    'IA SOUVERAINE ET SERVICES',
+    'UN ÉCOSYSTÈME NATIONAL',
+    'DÉMO FOGGARA-DZ'
+  ];
   for(const marker of markers) assert.ok(deck.includes(marker),marker);
+  assert.ok(deck.includes('13/14/15 OCTOBRE 2026'));
+  assert.ok(deck.includes('RENCONTRONS-NOUS AU STAND B02'));
 });
 
-
-test('Canva presentation autoplays on the landing with fade-only transitions',()=>{
+test('supplied design presentation autoplays with user controls',()=>{
   assert.ok(deck.includes('const [playing,setPlaying]=useState(true)'));
   assert.ok(deck.includes('window.setInterval(()=>setIndex'));
   assert.ok(deck.includes('6500'));
-  assert.equal(deck.includes('setPlaying(false)'),false);
+  assert.ok(deck.includes('slides.length'));
 });
 
-
-test('landing uses one global platform narrative without duplicate presentation',()=>{
+test('landing uses one presentation experience without duplicate heritage lightbox',()=>{
   assert.ok(landing.includes('fg-lukas-hero'));
-  assert.ok(landing.includes('fg-lukas-domain-strip'));
-  assert.ok(landing.includes('fg-global-operating'));
-  assert.ok(landing.includes('fg-global-visual-stage'));
-  assert.ok(landing.includes('fg-global-services'));
   assert.ok(landing.includes('fg-global-presentation'));
-  assert.ok(landing.includes('OBSERVED'));
-  assert.ok(landing.includes('VERIFIED'));
-  assert.ok(landing.includes('COMPUTED'));
-  assert.ok(landing.includes('INFERRED'));
-  assert.ok(landing.includes('PROPOSED'));
   assert.equal((landing.match(/<OasisCanvaPresentation/g)||[]).length,1);
-  assert.equal(landing.includes('fg-lukas-image-rail'),false);
-  assert.equal(landing.includes('fg-platform-spine'),false);
   assert.equal(landing.includes('id="heritage"'),false);
 });

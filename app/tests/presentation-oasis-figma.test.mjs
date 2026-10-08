@@ -16,23 +16,26 @@ test('Presentation.tsx remains valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('presentation uses the shared Canva oasis deck',()=>{
-  assert.ok(source.includes("OasisCanvaPresentation"));
-  assert.ok(source.includes("<OasisCanvaPresentation lang={locale}/>"));
-  assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
-  assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
-  assert.ok(deck.includes('ANCESTRAL WISDOM. MODERN DECISIONS.'));
+test('presentation uses the shared supplied Oases Nexus deck',()=>{
+  assert.ok(source.includes('OasisCanvaPresentation'));
+  assert.ok(source.includes('<OasisCanvaPresentation lang={locale}/>'));
+  assert.ok(deck.includes('DÉFINIR LE TERRAIN'));
+  assert.ok(deck.includes('PREUVE AVANT DÉCISION'));
+  assert.ok(deck.includes('DÉMO FOGGARA-DZ'));
 });
 
-test('Canva deck uses clear oasis images only for its visual media',()=>{
+test('deck mirrors the supplied visual language and uses existing platform media',()=>{
+  assert.ok(deckCss.includes('--paper:#f1e8d5'));
+  assert.ok(deckCss.includes('--ink:#171a17'));
+  assert.ok(deckCss.includes('--forest:#1f5b43'));
+  assert.ok(deckCss.includes('--clay:#b65a37'));
   assert.ok(deckCss.includes('/images/oasis-dawn.webp'));
   assert.ok(deckCss.includes('/images/oasis-hero.webp'));
-  assert.equal(deckCss.includes('/images/foggara-sprite.webp'),false);
-  assert.equal(deckCss.includes('/images/foggara-video-frame-1.webp'),false);
-  assert.equal(deckCss.includes('/images/foggara-video-frame-2.webp'),false);
+  assert.ok(deckCss.includes('/images/foggara-video-frame-1.webp'));
+  assert.ok(deckCss.includes('/images/foggara-video-frame-2.webp'));
 });
 
-test('decision matrix remains available below the Canva presentation',()=>{
+test('decision matrix remains available below the presentation',()=>{
   assert.ok(source.includes('id="matrix"'));
   assert.ok(source.includes('evaluatePresentationMatrix'));
   assert.ok(source.includes('foggara-user-matrix.json'));

@@ -265,7 +265,7 @@ export default function Landing() {
           <span className="fg-lukas-since" dir="ltr">ALGERIA · 2026</span>
           <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
             {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
-              <img src={index===1?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
+              <img src={index===0?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
             </button>)}
           </div>
           <p>{hero.body}</p>
@@ -370,10 +370,10 @@ export default function Landing() {
     <section className="fg-global-presentation" id="presentation" aria-labelledby="fg-presentation-title">
       <header className="fg-global-section-head">
         <div>
-          <p className="fg-eyebrow">FOGGARA / PRESENTATION</p>
+          <p className="fg-eyebrow">OASES NEXUS WEFEH / FOGGARA-DZ</p>
           <h2 id="fg-presentation-title">{copy.presentation}</h2>
         </div>
-        <p>{lang==="fr"?"Un récit visuel unique, automatique et relié aux modules réels de la plateforme.":lang==="en"?"One visual story, autoplaying and linked to the platform’s real modules.":"عرض بصري واحد ومتحرك آليًا، مرتبط مباشرة بوحدات المنصة الفعلية."}</p>
+        <p>{lang==="fr"?"Du terrain à la preuve, de la preuve à l’arbitrage.":lang==="en"?"From field to evidence, from evidence to decision.":"من الميدان إلى الدليل، ومن الدليل إلى القرار."}</p>
       </header>
       <OasisCanvaPresentation lang={lang} compact/>
     </section>

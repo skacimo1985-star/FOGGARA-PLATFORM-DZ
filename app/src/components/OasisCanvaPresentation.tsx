@@ -1,156 +1,205 @@
-import {useEffect,useMemo,useState} from "react";
-import {Link} from "react-router";
-import {ArrowUpRight,ChevronLeft,ChevronRight,Pause,Play} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import "./oasis-canva-presentation.css";
 
-export type OasisCanvaLocale="ar"|"fr"|"en";
+export type OasisCanvaLocale = "ar" | "fr" | "en";
 
-type Slide={
-  kicker:string;
+type Slide = {
   title:string;
-  body:string;
-  meta:string;
-  route:string;
-  visual:"dawn"|"hero";
-  crop:"a"|"b"|"c";
+  body?:string;
+  kind:"terrain"|"satellite"|"water-soil"|"evidence"|"decision"|"ai"|"ecosystem"|"expo";
 };
 
-type DeckCopy={
-  eyebrow:string;
-  heading:string;
-  intro:string;
-  open:string;
-  prev:string;
-  next:string;
-  play:string;
-  pause:string;
-  slides:Slide[];
-};
-
-const copy:Record<OasisCanvaLocale,DeckCopy>={
-  en:{
-    eyebrow:"FOGGARA-DZ · CANVA PRESENTATION",
-    heading:"OASIS-LED PLATFORM PRESENTATION",
-    intro:"The Canva story is now part of the platform itself. Every chapter keeps the oasis as the visual anchor while the content moves from heritage and resource logic to evidence, smart agriculture and action.",
-    open:"OPEN MODULE",
-    prev:"Previous slide",
-    next:"Next slide",
-    play:"Play presentation",
-    pause:"Pause presentation",
-    slides:[
-      {kicker:"01 · FOGGARA-DZ",title:"INTEGRATED DECISIONS. TRACEABLE EVIDENCE.",body:"SIREP OASES NEXUS WEFEH-DZ connects field reality, spatial context, measurements, evidence and decisions in one operational environment.",meta:"WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH",route:"/app",visual:"dawn",crop:"a"},
-      {kicker:"02 · HERITAGE",title:"FROM HERITAGE TO DIGITAL TWIN",body:"The Foggara is the operating inspiration: a shared logic of flow, stewardship and visible allocation translated into modern data, evidence and monitoring.",meta:"HERITAGE → DATA → EVIDENCE → DECISION",route:"/presentation",visual:"hero",crop:"a"},
-      {kicker:"03 · SYSTEM LOGIC",title:"HOW THE FOGGARA WORKS",body:"Source, capture, gallery, outlet, kasria and gardens form a clear physical sequence. FOGGARA-DZ preserves that legibility in the digital model.",meta:"SOURCE → CAPTURE → GALLERY → KASRIA → GARDENS",route:"/presentation",visual:"dawn",crop:"b"},
-      {kicker:"04 · OPERATING CYCLE",title:"FIELD REALITY BECOMES A GOVERNED LOOP",body:"Observe, verify, compute, interpret, propose, act and learn. Each stage keeps method, provenance and responsibility visible.",meta:"OBSERVE → VERIFY → COMPUTE → INTERPRET → PROPOSE → ACT & LEARN",route:"/app/studio",visual:"hero",crop:"b"},
-      {kicker:"05 · WEFEH",title:"ONE NEXUS. FIVE CONNECTED DOMAINS.",body:"Water, energy, food, ecosystem and health are analysed together so constraints, scenarios and trade-offs remain connected.",meta:"WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH",route:"/app/nexus",visual:"dawn",crop:"c"},
-      {kicker:"06 · PLATFORM",title:"FOGGARA-DZ PLATFORM",body:"Evidence registry, spatial intelligence, nexus analysis and a decision workspace turn distributed information into a usable operating system.",meta:"EVIDENCE · GIS · NEXUS · DECISION",route:"/app",visual:"hero",crop:"c"},
-      {kicker:"07 · SMART AGRICULTURE",title:"FROM FIELD QUESTION TO AGRICULTURAL ADVICE",body:"Select a parcel, review satellite and field context, compare options, and keep the reasoning behind irrigation or crop recommendations visible.",meta:"PARCEL → SATELLITE → WEATHER → SOIL/WATER → ADVISORY",route:"/app/agriculture",visual:"dawn",crop:"a"},
-      {kicker:"08 · ASSURANCE",title:"EVIDENCE BEFORE DECISION",body:"FOGGARA-DZ distinguishes observed, verified, computed, inferred and proposed information so users always know what a result actually represents.",meta:"OBSERVED · VERIFIED · COMPUTED · INFERRED · PROPOSED",route:"/app/review",visual:"hero",crop:"a"},
-      {kicker:"09 · WORKFLOW",title:"FROM NEED TO ACTION",body:"A field need moves through evidence, analysis, option review and action while every handoff keeps assumptions and responsibility visible.",meta:"NEED → EVIDENCE → ANALYSIS → OPTION → ACTION",route:"/app/projects",visual:"dawn",crop:"b"},
-      {kicker:"10 · SIREP OASES",title:"SERVICES & ECOSYSTEM",body:"Engineering, water, irrigation, agriculture, measurement, inspection, GIS, IoT and local-first AI connect producers, institutions, laboratories, financiers and experts.",meta:"SERVICES · ACTORS · SHARED OUTCOME",route:"/about",visual:"hero",crop:"b"},
-      {kicker:"11 · AGRITECH EXPO",title:"LIVE DEMO",body:"Visitors can enter without a password, choose a field question, trace the evidence, compare an option and leave feedback for follow-up.",meta:"SCAN → QUESTION → EVIDENCE → OPTION → FEEDBACK",route:"/expo",visual:"dawn",crop:"c"},
-      {kicker:"12 · CLOSING",title:"ANCESTRAL WISDOM. MODERN DECISIONS.",body:"Explore the evidence. Follow the flow. Shape the next decision with a platform designed around Algerian resources and operational reality.",meta:"BUILD · VERIFY · DECIDE · ACT · LEARN",route:"/contact",visual:"hero",crop:"c"}
-    ]
+const slides:Slide[]=[
+  {
+    kind:"terrain",
+    title:"DÉFINIR LE TERRAIN",
+    body:"Dessiner ou sélectionner une zone d’intérêt. Le système calcule immédiatement coordonnées, surface, périmètre et contexte spatial."
   },
-  fr:{
-    eyebrow:"FOGGARA-DZ · PRÉSENTATION CANVA",
-    heading:"UNE PRÉSENTATION PORTÉE PAR L’OASIS",
-    intro:"Le récit Canva devient une partie native de la plateforme. L’oasis reste le repère visuel pendant que le contenu passe du patrimoine aux preuves, à l’agriculture intelligente et à l’action.",
-    open:"OUVRIR LE MODULE",
-    prev:"Diapositive précédente",
-    next:"Diapositive suivante",
-    play:"Lire la présentation",
-    pause:"Mettre en pause",
-    slides:[
-      {kicker:"01 · FOGGARA-DZ",title:"DÉCISIONS INTÉGRÉES. PREUVES TRAÇABLES.",body:"SIREP OASES NEXUS WEFEH-DZ relie terrain, contexte spatial, mesures, preuves et décisions dans un même environnement opérationnel.",meta:"EAU · ÉNERGIE · ALIMENTATION · ÉCOSYSTÈME · SANTÉ",route:"/app",visual:"dawn",crop:"a"},
-      {kicker:"02 · PATRIMOINE",title:"DU PATRIMOINE AU JUMEAU NUMÉRIQUE",body:"La Foggara inspire la logique de fonctionnement : flux, responsabilité et répartition visible, traduits en données, preuves et suivi modernes.",meta:"PATRIMOINE → DONNÉES → PREUVES → DÉCISION",route:"/presentation",visual:"hero",crop:"a"},
-      {kicker:"03 · LOGIQUE DU SYSTÈME",title:"COMMENT FONCTIONNE LA FOGGARA",body:"Source, captage, galerie, sortie, kasria et jardins forment une séquence physique lisible que FOGGARA-DZ conserve dans son modèle numérique.",meta:"SOURCE → CAPTAGE → GALERIE → KASRIA → JARDINS",route:"/presentation",visual:"dawn",crop:"b"},
-      {kicker:"04 · CYCLE OPÉRATIONNEL",title:"LE TERRAIN DEVIENT UNE BOUCLE GOUVERNÉE",body:"Observer, vérifier, calculer, interpréter, proposer, agir et apprendre, avec méthode, provenance et responsabilité visibles.",meta:"OBSERVER → VÉRIFIER → CALCULER → INTERPRÉTER → PROPOSER → AGIR",route:"/app/studio",visual:"hero",crop:"b"},
-      {kicker:"05 · WEFEH",title:"UN NEXUS. CINQ DOMAINES CONNECTÉS.",body:"Eau, énergie, alimentation, écosystème et santé sont analysés ensemble pour garder contraintes, scénarios et arbitrages reliés.",meta:"EAU · ÉNERGIE · ALIMENTATION · ÉCOSYSTÈME · SANTÉ",route:"/app/nexus",visual:"dawn",crop:"c"},
-      {kicker:"06 · PLATEFORME",title:"PLATEFORME FOGGARA-DZ",body:"Registre de preuves, intelligence spatiale, analyse nexus et espace de décision transforment l’information distribuée en système opérationnel.",meta:"PREUVES · SIG · NEXUS · DÉCISION",route:"/app",visual:"hero",crop:"c"},
-      {kicker:"07 · AGRICULTURE INTELLIGENTE",title:"DE LA QUESTION TERRAIN AU CONSEIL AGRICOLE",body:"Sélectionnez une parcelle, examinez le contexte satellite et terrain, comparez les options et gardez le raisonnement de la recommandation visible.",meta:"PARCELLE → SATELLITE → MÉTÉO → SOL/EAU → CONSEIL",route:"/app/agriculture",visual:"dawn",crop:"a"},
-      {kicker:"08 · ASSURANCE",title:"LA PREUVE AVANT LA DÉCISION",body:"FOGGARA-DZ distingue information observée, vérifiée, calculée, inférée et proposée pour rendre chaque résultat interprétable.",meta:"OBSERVED · VERIFIED · COMPUTED · INFERRED · PROPOSED",route:"/app/review",visual:"hero",crop:"a"},
-      {kicker:"09 · PARCOURS",title:"DU BESOIN À L’ACTION",body:"Le besoin terrain passe par les preuves, l’analyse, l’examen des options et l’action tout en gardant hypothèses et responsabilités visibles.",meta:"BESOIN → PREUVE → ANALYSE → OPTION → ACTION",route:"/app/projects",visual:"dawn",crop:"b"},
-      {kicker:"10 · SIREP OASES",title:"SERVICES & ÉCOSYSTÈME",body:"Ingénierie, eau, irrigation, agriculture, mesure, inspection, SIG, IoT et IA locale relient producteurs, institutions, laboratoires, financeurs et experts.",meta:"SERVICES · ACTEURS · RÉSULTAT PARTAGÉ",route:"/about",visual:"hero",crop:"b"},
-      {kicker:"11 · AGRITECH EXPO",title:"DÉMO LIVE",body:"Le visiteur entre sans mot de passe, choisit une question terrain, suit les preuves, compare une option et laisse un retour.",meta:"SCAN → QUESTION → PREUVE → OPTION → FEEDBACK",route:"/expo",visual:"dawn",crop:"c"},
-      {kicker:"12 · CLÔTURE",title:"SAGESSE ANCESTRALE. DÉCISIONS MODERNES.",body:"Explorez les preuves, suivez le flux et préparez la prochaine décision avec une plateforme pensée pour les ressources et réalités algériennes.",meta:"CONSTRUIRE · VÉRIFIER · DÉCIDER · AGIR · APPRENDRE",route:"/contact",visual:"hero",crop:"c"}
-    ]
+  {
+    kind:"satellite",
+    title:"OBSERVER PAR SATELLITE",
+    body:"Sentinel-2 L2A révèle les dynamiques de végétation, d’humidité et de stress sur l’AOI sélectionnée."
   },
-  ar:{
-    eyebrow:"FOGGARA-DZ · عرض CANVA",
-    heading:"عرض تقوده صورة الواحة",
-    intro:"أصبح سرد Canva جزءًا أصليًا من المنصة؛ تبقى الواحة هي المرجع البصري بينما ينتقل المحتوى من التراث إلى الأدلة والزراعة الذكية والتنفيذ.",
-    open:"فتح الوحدة",
-    prev:"الشريحة السابقة",
-    next:"الشريحة التالية",
-    play:"تشغيل العرض",
-    pause:"إيقاف العرض",
-    slides:[
-      {kicker:"01 · FOGGARA-DZ",title:"قرار متكامل. دليل قابل للتتبع.",body:"تربط SIREP OASES NEXUS WEFEH-DZ الواقع الميداني والسياق المكاني والقياسات والأدلة والقرار داخل بيئة تشغيلية واحدة.",meta:"المياه · الطاقة · الغذاء · النظام البيئي · الصحة",route:"/app",visual:"dawn",crop:"a"},
-      {kicker:"02 · التراث",title:"من التراث إلى التوأم الرقمي",body:"تلهم الفقارة منطق التشغيل: التدفق والمسؤولية والتوزيع الواضح، ثم تترجم المنصة ذلك إلى بيانات وأدلة ومتابعة حديثة.",meta:"التراث ← البيانات ← الأدلة ← القرار",route:"/presentation",visual:"hero",crop:"a"},
-      {kicker:"03 · منطق النظام",title:"كيف تعمل الفقارة",body:"المصدر والالتقاط والمعرض والمخرج والكسرية والبساتين تشكل تسلسلًا ماديًا واضحًا، وتحافظ FOGGARA-DZ على هذا الوضوح في النموذج الرقمي.",meta:"المصدر ← الالتقاط ← المعرض ← الكسرية ← البساتين",route:"/presentation",visual:"dawn",crop:"b"},
-      {kicker:"04 · دورة التشغيل",title:"الواقع الميداني يصبح دورة محكومة",body:"ملاحظة، تحقق، حساب، تفسير، اقتراح، تنفيذ وتعلم؛ مع بقاء الطريقة والمصدر والمسؤولية مرئية في كل مرحلة.",meta:"ملاحظة ← تحقق ← حساب ← تفسير ← اقتراح ← تنفيذ",route:"/app/studio",visual:"hero",crop:"b"},
-      {kicker:"05 · WEFEH",title:"ترابط واحد. خمسة مجالات.",body:"تحلل المياه والطاقة والغذاء والنظام البيئي والصحة معًا حتى تبقى القيود والسيناريوهات والمفاضلات مترابطة.",meta:"المياه · الطاقة · الغذاء · النظام البيئي · الصحة",route:"/app/nexus",visual:"dawn",crop:"c"},
-      {kicker:"06 · المنصة",title:"منصة FOGGARA-DZ",body:"سجل الأدلة والذكاء المكاني وتحليل Nexus ومساحة القرار تحول المعلومات المتفرقة إلى نظام عمل متكامل.",meta:"الأدلة · GIS · NEXUS · القرار",route:"/app",visual:"hero",crop:"c"},
-      {kicker:"07 · الزراعة الذكية",title:"من سؤال الحقل إلى التوصية الزراعية",body:"اختر قطعة، راجع السياق الساتلي والميداني، قارن الخيارات واحتفظ بمنطق توصية الري أو المحصول ظاهرًا.",meta:"القطعة ← الأقمار ← الطقس ← التربة/المياه ← التوصية",route:"/app/agriculture",visual:"dawn",crop:"a"},
-      {kicker:"08 · الضمان",title:"الدليل قبل القرار",body:"تميز FOGGARA-DZ بين الملاحظ والمتحقق والمحسوب والمستنتج والمقترح حتى يفهم المستخدم طبيعة كل نتيجة.",meta:"ملاحظ · متحقق · محسوب · مستنتج · مقترح",route:"/app/review",visual:"hero",crop:"a"},
-      {kicker:"09 · المسار",title:"من الحاجة إلى التنفيذ",body:"تنتقل الحاجة الميدانية عبر الأدلة والتحليل ومراجعة الخيارات والتنفيذ مع بقاء الافتراضات والمسؤوليات ظاهرة.",meta:"الحاجة ← الدليل ← التحليل ← الخيار ← التنفيذ",route:"/app/projects",visual:"dawn",crop:"b"},
-      {kicker:"10 · SIREP OASES",title:"الخدمات والمنظومة",body:"الهندسة والمياه والري والزراعة والقياس والتفتيش وGIS وIoT والذكاء المحلي تربط المنتجين والمؤسسات والمخابر والتمويل والخبراء.",meta:"الخدمات · الفاعلون · نتيجة مشتركة",route:"/about",visual:"hero",crop:"b"},
-      {kicker:"11 · AGRITECH EXPO",title:"ديمو مباشر",body:"يدخل الزائر دون كلمة مرور، يختار سؤالًا ميدانيًا، يتتبع الأدلة، يقارن خيارًا ثم يترك رأيه للمتابعة.",meta:"مسح ← سؤال ← دليل ← خيار ← رأي",route:"/expo",visual:"dawn",crop:"c"},
-      {kicker:"12 · الختام",title:"حكمة متوارثة. قرارات حديثة.",body:"استكشف الأدلة، اتبع التدفق، وساهم في القرار التالي عبر منصة مصممة حول الموارد والواقع التشغيلي في الجزائر.",meta:"ابنِ · تحقق · قرر · نفذ · تعلم",route:"/contact",visual:"hero",crop:"c"}
-    ]
+  {
+    kind:"water-soil",
+    title:"COMPRENDRE EAU, SOL ET CULTURES",
+    body:"Les modules croisent mesures terrain, télédétection et modèles. Ils qualifient un état — jamais une certitude absolue."
+  },
+  {
+    kind:"evidence",
+    title:"PREUVE AVANT DÉCISION",
+    body:"Chaque résultat porte son origine, sa date, sa méthode, son niveau de confiance et ses limites d’usage."
+  },
+  {
+    kind:"decision",
+    title:"DE L’ANALYSE À L’ARBITRAGE",
+    body:"FOGGARA ne remplace pas la décision. Il rend les compromis lisibles, comparables et traçables."
+  },
+  {
+    kind:"ai",
+    title:"IA SOUVERAINE ET SERVICES",
+    body:"Une IA locale d’assistance, documentée et contrôlable — au service des analystes, pas à la place de l’expertise."
+  },
+  {
+    kind:"ecosystem",
+    title:"UN ÉCOSYSTÈME NATIONAL",
+    body:"Des acteurs reliés par les projets, les territoires, les preuves et les ressources — dans un cadre commun."
+  },
+  {
+    kind:"expo",
+    title:"DÉMO FOGGARA-DZ",
+    body:"Venez tester la chaîne complète : du terrain à la preuve, de la preuve à l’arbitrage."
   }
-};
+];
+
+const controlCopy={
+  ar:{prev:"الصفحة السابقة",next:"الصفحة التالية",play:"تشغيل العرض",pause:"إيقاف العرض"},
+  fr:{prev:"Page précédente",next:"Page suivante",play:"Lire le design",pause:"Mettre en pause"},
+  en:{prev:"Previous page",next:"Next page",play:"Play design",pause:"Pause design"}
+} as const;
+
+function TerrainSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-dark ocp-page-terrain">
+    <div className="ocp-copy">
+      <h3>{slide.title}</h3>
+      <p>{slide.body}</p>
+      <div className="ocp-mini-block"><strong>AOI / PARCELLE</strong><span>Coordonnées · Surface · Périmètre</span><span>Occupation du sol · Voisinage · Bassin</span></div>
+      <div className="ocp-expo-mark"><b>4<sup>ème</sup> édition</b><strong>13/14/15 OCTOBRE 2026</strong><span>SHERATON ANNABA</span></div>
+    </div>
+    <div className="ocp-visual ocp-visual-terrain"><div className="ocp-aoi-outline"/></div>
+  </div>;
+}
+
+function SatelliteSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-paper ocp-page-satellite">
+    <div className="ocp-copy">
+      <h3>{slide.title}</h3>
+      <p>{slide.body}</p>
+      <div className="ocp-mini-block"><strong>SÉRIE TEMPORELLE</strong><span>Comparer les dates</span><span>Détecter les ruptures</span><span>Documenter l’incertitude</span></div>
+    </div>
+    <div className="ocp-satellite-board">
+      <div className="ocp-sat-main"/>
+      <div className="ocp-sat-stack"><i/><i/><i/><i/></div>
+    </div>
+  </div>;
+}
+
+function WaterSoilSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-dark ocp-page-water">
+    <div className="ocp-water-image"/>
+    <div className="ocp-copy">
+      <h3>{slide.title}</h3>
+      <p>{slide.body}</p>
+      <div className="ocp-metric ocp-metric-green"><strong>EAU</strong><span>Disponibilité · qualité · pression</span></div>
+      <div className="ocp-metric ocp-metric-clay"><strong>SOL</strong><span>Texture · salinité · humidité</span></div>
+      <div className="ocp-metric ocp-metric-sand"><strong>CULTURES</strong><span>Vigueur · stress · phénologie</span></div>
+    </div>
+  </div>;
+}
+
+function EvidenceSlide({slide}:{slide:Slide}){
+  const cards=[
+    ["01","OBSERVÉ","Donnée brute, source et horodatage"],
+    ["02","DÉRIVÉ","Indice ou calcul reproductible"],
+    ["03","MODÉLISÉ","Hypothèses et incertitude explicites"],
+    ["04","VALIDÉ POUR USAGE","Revue humaine et périmètre de décision"]
+  ];
+  return <div className="ocp-page ocp-page-paper ocp-page-evidence">
+    <div className="ocp-copy"><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-evidence-grid">
+      {cards.map(([n,t,b],i)=><article key={t} className={`ocp-evidence-card ocp-evidence-${i+1}`}><b>{n}</b><strong>{t}</strong><span>{b}</span></article>)}
+    </div>
+  </div>;
+}
+
+function DecisionSlide({slide}:{slide:Slide}){
+  const cols=[
+    ["CONTRAINTES",["Eau disponible","Énergie","Sol · santé"]],
+    ["SCÉNARIOS",["Allocation","Cultures","Horizon temporel"]],
+    ["DÉCISION",["Impact WEFEH","Risque","Justification"]]
+  ] as const;
+  return <div className="ocp-page ocp-page-dark ocp-page-decision">
+    <div className="ocp-copy"><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-decision-row">{cols.map(([title,items],index)=><article key={title}><strong>{title}</strong>{items.map(item=><span key={item}>{item}</span>)}{index<2&&<i/>}</article>)}</div>
+  </div>;
+}
+
+function AiSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-paper ocp-page-ai">
+    <div className="ocp-copy"><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-ai-stack">
+      <span>INTERFACES MÉTIER</span>
+      <span>SERVICES GÉOSPATIAUX · MODÈLES WEFEH</span>
+      <span>IA LOCALE · RAG DOCUMENTAIRE</span>
+      <span>DONNÉES SOUVERAINES</span>
+    </div>
+  </div>;
+}
+
+function EcosystemSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-dark ocp-page-ecosystem">
+    <div className="ocp-copy"><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-network">
+      <strong>FOGGARA-DZ<br/>BIEN COMMUN</strong>
+      <span className="n1">INSTITUTIONS</span><span className="n2">TERRITOIRES</span><span className="n3">RECHERCHE</span><span className="n4">AGRICULTEURS</span><span className="n5">ENTREPRISES</span>
+      <i className="l1"/><i className="l2"/><i className="l3"/><i className="l4"/><i className="l5"/>
+    </div>
+  </div>;
+}
+
+function ExpoSlide({slide}:{slide:Slide}){
+  return <div className="ocp-page ocp-page-dark ocp-page-expo">
+    <div className="ocp-copy">
+      <div className="ocp-expo-badge">AGRI<br/>TECH<br/><b>EXPO</b></div>
+      <h3>{slide.title}</h3>
+      <p>{slide.body}</p>
+      <strong className="ocp-company">EURL SIREP OASES NEXUS WEFEH_DZ</strong>
+      <span className="ocp-stand">RENCONTRONS-NOUS AU STAND B02</span>
+      <small>DÉMONSTRATIONS · PILOTES · PARTENARIATS</small>
+    </div>
+    <div className="ocp-expo-image"/>
+  </div>;
+}
+
+function SlideView({slide}:{slide:Slide}){
+  if(slide.kind==="terrain")return <TerrainSlide slide={slide}/>;
+  if(slide.kind==="satellite")return <SatelliteSlide slide={slide}/>;
+  if(slide.kind==="water-soil")return <WaterSoilSlide slide={slide}/>;
+  if(slide.kind==="evidence")return <EvidenceSlide slide={slide}/>;
+  if(slide.kind==="decision")return <DecisionSlide slide={slide}/>;
+  if(slide.kind==="ai")return <AiSlide slide={slide}/>;
+  if(slide.kind==="ecosystem")return <EcosystemSlide slide={slide}/>;
+  return <ExpoSlide slide={slide}/>;
+}
 
 export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLocale;compact?:boolean}){
-  const c=copy[lang];
   const [index,setIndex]=useState(0);
   const [playing,setPlaying]=useState(true);
-  const slide=c.slides[index];
-  const dir=lang==="ar"?"rtl":"ltr";
+  const controls=controlCopy[lang];
 
   useEffect(()=>{
     if(!playing||window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
-    const timer=window.setInterval(()=>setIndex(value=>(value+1)%c.slides.length),6500);
+    const timer=window.setInterval(()=>setIndex(value=>(value+1)%slides.length),6500);
     return()=>window.clearInterval(timer);
-  },[playing,c.slides.length]);
+  },[playing]);
 
-  const progress=useMemo(()=>((index+1)/c.slides.length)*100,[index,c.slides.length]);
+  const progress=useMemo(()=>((index+1)/slides.length)*100,[index]);
 
-  return <section className={`ocp ${compact?"ocp-compact":""}`} dir={dir} aria-labelledby={compact?"ocp-compact-title":"ocp-title"}>
-    <header className="ocp-head">
-      <div>
-        <p className="ocp-eyebrow">{c.eyebrow}</p>
-        <h2 id={compact?"ocp-compact-title":"ocp-title"}>{c.heading}</h2>
-      </div>
-      <p>{c.intro}</p>
-    </header>
-
+  return <section className={`ocp ocp-source-design ${compact?"ocp-compact":""}`} aria-label="Oases Nexus WEFEH">
     <div className="ocp-stage">
-      <div key={`media-${index}`} className={`ocp-media ocp-media-${slide.visual} ocp-crop-${slide.crop}`} role="img" aria-label={slide.title}>
-        <div className="ocp-shade"/>
-        <div className="ocp-counter" dir="ltr">{String(index+1).padStart(2,"0")} / {String(c.slides.length).padStart(2,"0")}</div>
-        <div className="ocp-media-copy">
-          <p>{slide.kicker}</p>
-          <h3>{slide.title}</h3>
-          <span>{slide.meta}</span>
-        </div>
-      </div>
-
-      <aside className="ocp-panel">
-        <div className="ocp-brand"><strong>FOGGARA-DZ</strong><span>SIREP OASES NEXUS WEFEH-DZ</span></div>
-        <div key={`panel-${index}`} className="ocp-panel-slide">
-          <p className="ocp-body">{slide.body}</p>
-          <div className="ocp-progress" aria-hidden="true"><i style={{width:`${progress}%`}}/></div>
-          <Link className="ocp-link" to={slide.route}>{c.open}<ArrowUpRight size={16}/></Link>
-        </div>
-        <div className="ocp-controls">
-          <button type="button" aria-label={c.prev} onClick={()=>setIndex(value=>(value+c.slides.length-1)%c.slides.length)}><ChevronLeft size={18}/></button>
-          <button type="button" aria-label={playing?c.pause:c.play} className="ocp-play" onClick={()=>setPlaying(value=>!value)}>{playing?<Pause size={17}/>:<Play size={17}/>}<span>{playing?c.pause:c.play}</span></button>
-          <button type="button" aria-label={c.next} onClick={()=>setIndex(value=>(value+1)%c.slides.length)}><ChevronRight size={18}/></button>
-        </div>
-      </aside>
+      <div key={index} className="ocp-slide-shell"><SlideView slide={slides[index]}/></div>
+      <div className="ocp-source-mark"><span>OASES NEXUS WEFEH</span><b dir="ltr">{String(index+1).padStart(2,"0")} / 08</b></div>
     </div>
 
+    <div className="ocp-footer-controls">
+      <button type="button" aria-label={controls.prev} onClick={()=>setIndex(value=>(value+slides.length-1)%slides.length)}><ChevronLeft size={18}/></button>
+      <div className="ocp-page-tabs" aria-label="Oases Nexus WEFEH pages">
+        {slides.map((slide,i)=><button key={slide.title} type="button" className={i===index?"active":""} aria-label={slide.title} aria-current={i===index?"true":undefined} onClick={()=>setIndex(i)}><span>{String(i+1).padStart(2,"0")}</span></button>)}
+      </div>
+      <button type="button" className="ocp-play" aria-label={playing?controls.pause:controls.play} onClick={()=>setPlaying(value=>!value)}>{playing?<Pause size={16}/>:<Play size={16}/>}</button>
+      <button type="button" aria-label={controls.next} onClick={()=>setIndex(value=>(value+1)%slides.length)}><ChevronRight size={18}/></button>
+    </div>
+    <div className="ocp-progress" aria-hidden="true"><i style={{width:`${progress}%`}}/></div>
   </section>;
 }
