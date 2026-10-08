@@ -58,7 +58,7 @@ export default function CommandCenter() {
     return Number.isFinite(stored) && stored > 0 ? stored : null;
   });
   const [projectFocus, setProjectFocus] = useState<ProjectFocus>(emptyFocus);
-  const [projectFocusLoading, setProjectFocusLoading] = useState(false);
+  const [projectFocusProjectId, setProjectFocusProjectId] = useState<number | null>(null);
 
   const lang = i18n.language === "fr" ? "fr" : i18n.language === "en" ? "en" : "ar";
   const copy = lang === "fr" ? {
@@ -118,8 +118,9 @@ export default function CommandCenter() {
       const value = <T,>(index: number): T | null =>
         results[index].status === "fulfilled" ? (results[index] as PromiseFulfilledResult<T>).value : null;
 
+      const loadedProjects = value<Paged<Project>>(0)?.items ?? null;
       setSnapshot({
-        projects: value<Paged<Project>>(0)?.items ?? null,
+        projects: loadedProjects,
         sites: value<{ count: number; sites: GisSite[] }>(1)?.sites ?? null,
         telemetry: value<TelemetryReading[]>(2),
         decisions: value<Paged<GovDecision>>(3)?.items ?? null,
@@ -127,6 +128,14 @@ export default function CommandCenter() {
         sensors: value<Sensor[]>(5),
         pending: value<{ measurements: unknown[]; evidences: unknown[] }>(6),
       });
+      if (loadedProjects?.length) {
+        const remembered = Number(localStorage.getItem("foggara.activeProject"));
+        const next = loadedProjects.some(project => project.id === remembered) ? remembered : loadedProjects[0].id;
+        localStorage.setItem("foggara.activeProject", String(next));
+        setActiveProjectId(next);
+      } else {
+        setActiveProjectId(null);
+      }
       setWilayas(value<{ count: number; wilayas: WilayaMeta[] }>(7)?.wilayas ?? []);
       setUpdatedAt(new Date());
     };
@@ -134,29 +143,8 @@ export default function CommandCenter() {
   }, [user?.role]);
 
   useEffect(() => {
-    const projects = snapshot.projects;
-    if (!projects?.length) {
-      setActiveProjectId(null);
-      setProjectFocus(emptyFocus);
-      return;
-    }
-    const remembered = Number(localStorage.getItem("foggara.activeProject"));
-    const next = projects.some(project => project.id === activeProjectId)
-      ? activeProjectId
-      : projects.some(project => project.id === remembered)
-        ? remembered
-        : projects[0].id;
-    if (next && next !== activeProjectId) setActiveProjectId(next);
-    if (next) localStorage.setItem("foggara.activeProject", String(next));
-  }, [snapshot.projects, activeProjectId]);
-
-  useEffect(() => {
-    if (!activeProjectId) {
-      setProjectFocus(emptyFocus);
-      return;
-    }
+    if (!activeProjectId) return;
     let cancelled = false;
-    setProjectFocusLoading(true);
     Promise.allSettled([
       api.get<unknown[]>(`/projects/${activeProjectId}/measurements`),
       api.get<unknown[]>(`/projects/${activeProjectId}/evidences`),
@@ -173,7 +161,8 @@ export default function CommandCenter() {
         humanDecisions: rows(3),
         actions: rows(4),
       });
-    }).finally(() => { if (!cancelled) setProjectFocusLoading(false); });
+      setProjectFocusProjectId(activeProjectId);
+    });
     return () => { cancelled = true; };
   }, [activeProjectId]);
 
@@ -206,6 +195,7 @@ export default function CommandCenter() {
     { label: copy.telemetryLabel, body: "Monitoring · devices · streams", to: "/app/operations", icon: Gauge },
   ];
 
+  const projectFocusLoading = Boolean(activeProjectId && projectFocusProjectId !== activeProjectId);
   const activeProject = snapshot.projects?.find(project => project.id === activeProjectId) ?? null;
   const projectStages = activeProject ? [
     { label: copy.contextStage, value: Number(activeProject.site_id != null) + Number(activeProject.resource_id != null) + Number(activeProject.asset_id != null), icon: MapPinned },
@@ -216,7 +206,7 @@ export default function CommandCenter() {
     { label: copy.actionStage, value: projectFocus.actions.length, icon: Workflow },
   ] : [];
   const completedStages = projectStages.filter(stage => stage.value > 0).length;
-  const readiness = projectStages.length ? Math.round((completedStages / projectStages.length) * 100) : 0;
+  const readiness = projectFocusLoading ? 0 : projectStages.length ? Math.round((completedStages / projectStages.length) * 100) : 0;
 
   const recent = snapshot.telemetry?.slice(0, 5) ?? [];
   const needsSetup = snapshot.projects !== null && snapshot.sites !== null && snapshot.projects.length === 0 && snapshot.sites.length === 0;
