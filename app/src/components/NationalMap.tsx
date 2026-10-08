@@ -379,7 +379,7 @@ export function NationalMap({
   const [satelliteOpacity, setSatelliteOpacity] = useState(96);
   const [analysisOpacity, setAnalysisOpacity] = useState(90);
   const [selectingAnalysisArea, setSelectingAnalysisArea] = useState(false);
-  const [analysisCorner, setAnalysisCorner] = useState<Point | null>(null);
+  const [, setAnalysisCorner] = useState<Point | null>(null);
   const drawingBoundaryRef = useRef(false);
   const measureModeRef = useRef<"none" | "distance" | "area">("none");
   const selectingAnalysisAreaRef = useRef(false);
