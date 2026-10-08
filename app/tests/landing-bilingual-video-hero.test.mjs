@@ -10,9 +10,14 @@ test('landing keeps the rejected bilingual text card removed',()=>{
   assert.equal(landing.includes('Every resource connected. Every decision grounded.'),false);
 });
 
-test('video-derived oasis frames remain available for visual storytelling',()=>{
-  assert.ok(css.includes('/images/foggara-video-frame-1.webp'));
-  assert.ok(css.includes('/images/foggara-video-frame-2.webp'));
+test('reception hero switches between clear oasis images only',()=>{
+  const start=css.indexOf('.fg-moon-hero-media-1{');
+  const end=css.indexOf('.fg-moon-hero-overlay{',start);
+  const heroMedia=css.slice(start,end);
+  assert.ok(heroMedia.includes('/images/oasis-dawn.webp'));
+  assert.ok(heroMedia.includes('/images/oasis-hero.webp'));
+  assert.equal(heroMedia.includes('foggara-video-frame'),false);
+  assert.equal(heroMedia.includes('foggara-sprite'),false);
 });
 
 test('hero remains connected to real routes',()=>{
