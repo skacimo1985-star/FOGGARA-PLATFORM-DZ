@@ -334,9 +334,31 @@ export default function Landing() {
       </div>
     </section>
 
+    <section className="fg-agriculture-template-story" id="heritage-story" aria-labelledby="fg-heritage-story-title">
+      <div className="fg-agriculture-template-copy">
+        <p className="fg-eyebrow">FOGGARA-DZ · ANCESTRAL WISDOM / MODERN SOLUTIONS</p>
+        <h2 id="fg-heritage-story-title">{lang==="fr"?"DU PATRIMOINE AU JUMEAU NUMÉRIQUE":lang==="en"?"FROM HERITAGE TO DIGITAL TWIN":"من التراث إلى التوأم الرقمي"}</h2>
+        <p>{lang==="fr"
+          ?"La logique hydraulique de la foggara devient un parcours numérique exploitable : source, galerie, kasria, seguia et parcelle, puis données, preuves, décision et suivi."
+          :lang==="en"
+            ?"The hydraulic logic of the foggara becomes an operational digital journey: source, gallery, kasria, seguia and parcel, then data, evidence, decision and monitoring."
+            :"تتحول البنية الهيدروليكية للفقارة إلى مسار رقمي تشغيلي: المصدر، النفق، القصرية، الساقية والقطعة، ثم البيانات والدليل والقرار والمتابعة."}</p>
+        <div className="fg-agriculture-template-flow" dir="ltr" aria-label="FOGGARA heritage to digital twin flow">
+          <span>SOURCE</span><b>→</b><span>GALLERY</span><b>→</b><span>KASRIA</span><b>→</b><span>SEGUIA</span><b>→</b><span>PARCEL</span>
+          <i aria-hidden="true"/>
+          <span>DATA</span><b>→</b><span>EVIDENCE</span><b>→</b><span>DECISION</span><b>→</b><span>MONITORING</span>
+        </div>
+        <Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link>
+      </div>
+      <figure className="fg-agriculture-template-art">
+        <img src="/images/foggara-heritage-poster.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
+        <figcaption><span>FIELD HERITAGE</span><strong>FOGGARA → DIGITAL TWIN</strong></figcaption>
+      </figure>
+    </section>
+
     <div className="fg-global-visual-stage" aria-label={institutionCopy.galleryAria}>
       <figure className="fg-global-visual-main">
-        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
+        <img src="/images/foggara-sprite.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">

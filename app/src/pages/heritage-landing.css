@@ -2430,3 +2430,252 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-global-demo{grid-template-columns:1fr!important}
   .fg-global-demo .fg-moon-qr{justify-self:start!important}
 }
+
+
+/* =========================================================
+   AGRICULTURE TEMPLATE INTEGRATION
+   Adapts the supplied AgriCulture split-story/service language
+   to FOGGARA without importing Bootstrap or replacing React.
+   ========================================================= */
+.fg-agriculture-template-story{
+  width:min(1320px,calc(100% - 54px));
+  margin:0 auto 10px;
+  display:grid;
+  grid-template-columns:minmax(0,.88fr) minmax(420px,1.12fr);
+  min-height:680px;
+  background:#f3efe5;
+  border:1px solid #ddd5c5;
+  overflow:hidden;
+}
+.fg-agriculture-template-copy{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:clamp(46px,6vw,86px);
+  background:
+    radial-gradient(circle at 0 0,rgba(111,138,79,.12),transparent 34%),
+    #f5f0e5;
+}
+.fg-agriculture-template-copy .fg-eyebrow{
+  margin:0 0 18px;
+  color:#6a4b2e;
+  letter-spacing:.16em;
+}
+.fg-agriculture-template-copy h2{
+  margin:0;
+  max-width:680px;
+  color:#173b27;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(48px,6.4vw,92px);
+  line-height:.88;
+  font-weight:550;
+  letter-spacing:-.055em;
+}
+.fg-agriculture-template-copy>p:not(.fg-eyebrow){
+  max-width:720px;
+  margin:28px 0 0;
+  color:#445048;
+  font-size:clamp(15px,1.45vw,19px);
+  line-height:1.8;
+}
+.fg-agriculture-template-flow{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px 10px;
+  margin:32px 0 30px;
+}
+.fg-agriculture-template-flow span{
+  display:inline-flex;
+  align-items:center;
+  min-height:32px;
+  padding:7px 10px;
+  border:1px solid #c8c3b4;
+  background:#fffaf0;
+  color:#173b27;
+  font:800 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.09em;
+}
+.fg-agriculture-template-flow b{
+  color:#87633d;
+  font:700 14px/1 Georgia,serif;
+}
+.fg-agriculture-template-flow i{
+  flex-basis:100%;
+  height:0;
+}
+.fg-agriculture-template-copy .fg-moon-btn{
+  align-self:flex-start;
+  min-height:48px;
+  border-radius:0;
+}
+.fg-agriculture-template-art{
+  position:relative;
+  min-height:680px;
+  margin:0;
+  background:#1f2f22;
+  overflow:hidden;
+}
+.fg-agriculture-template-art img{
+  width:100%;
+  height:100%;
+  min-height:680px;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+  filter:saturate(.98) contrast(1.02);
+  transition:transform .55s cubic-bezier(.2,.7,.2,1);
+}
+.fg-agriculture-template-art:hover img{transform:scale(1.015)}
+.fg-agriculture-template-art::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent 60%,rgba(4,15,9,.76) 100%);
+}
+.fg-agriculture-template-art figcaption{
+  position:absolute;
+  z-index:2;
+  left:26px;
+  right:26px;
+  bottom:24px;
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:20px;
+  color:#fff;
+}
+.fg-agriculture-template-art figcaption span{
+  font:800 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.15em;
+  color:#d7e0d9;
+}
+.fg-agriculture-template-art figcaption strong{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(24px,2.4vw,38px);
+  line-height:.95;
+  font-weight:500;
+}
+
+/* The supplied visual material is now a real image-led editorial sequence. */
+.fg-global-visual-stage .fg-global-visual-main img{
+  object-position:center;
+}
+.fg-global-visual-stage .fg-global-visual-main{
+  background:#171a16;
+}
+.fg-global-visual-stage .fg-global-visual-main::before{
+  content:"SUPPLIED FOGGARA VISUAL STORY";
+  position:absolute;
+  z-index:2;
+  top:16px;
+  left:16px;
+  padding:8px 10px;
+  background:rgba(6,19,12,.74);
+  color:#fff;
+  font:800 8px/1 ui-monospace,SFMono-Regular,monospace;
+  letter-spacing:.12em;
+}
+.fg-global-visual-stage figure{position:relative}
+
+/* AgriCulture-inspired numbered service rhythm without importing the template runtime. */
+.fg-global-services{
+  width:100%;
+  max-width:none;
+  padding:100px max(27px,calc((100vw - 1320px)/2)) 110px;
+  background:#f7f7f1;
+}
+.fg-global-services>header{
+  width:min(900px,100%);
+  margin:0 0 52px;
+  text-align:left;
+}
+.fg-moon-landing[dir=rtl] .fg-global-services>header{text-align:right}
+.fg-global-services>header h2{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(46px,5.6vw,82px);
+  line-height:.92;
+  font-weight:500;
+}
+.fg-global-services .fg-moon-offer-grid{
+  grid-template-columns:repeat(3,1fr);
+  gap:1px!important;
+  padding:0!important;
+  background:#cfd8cf;
+  border:1px solid #cfd8cf;
+}
+.fg-global-services .fg-moon-offer-card{
+  display:flex;
+  flex-direction:column;
+  min-height:520px;
+  margin:0;
+  background:#fff;
+  border:0;
+}
+.fg-global-services .fg-moon-offer-mark{
+  min-height:260px;
+  border:0;
+}
+.fg-global-services .fg-moon-offer-card>div:last-child{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  padding:30px!important;
+}
+.fg-moon-landing[dir=rtl] .fg-global-services .fg-moon-offer-card>div:last-child{align-items:flex-end}
+.fg-global-services .fg-moon-offer-card>div:last-child>span{
+  color:#718074;
+  font:800 11px/1 ui-monospace,SFMono-Regular,monospace;
+  letter-spacing:.14em;
+}
+.fg-global-services .fg-moon-offer-card h3{
+  margin:20px 0 10px;
+  color:#173b27;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(28px,2.3vw,38px);
+  line-height:1;
+  font-weight:500;
+}
+.fg-global-services .fg-moon-offer-card p{
+  margin-bottom:26px;
+  color:#59645d;
+  line-height:1.7;
+}
+.fg-global-services .fg-moon-offer-card a{margin-top:auto}
+.fg-global-services .fg-offer-1 .fg-moon-offer-mark{background-image:url("/images/foggara-sprite.webp")!important}
+.fg-global-services .fg-offer-2 .fg-moon-offer-mark{background-image:url("/images/foggara-video-frame-1.webp")!important}
+.fg-global-services .fg-offer-3 .fg-moon-offer-mark{background-image:url("/images/oasis-dawn.webp")!important}
+
+@media(max-width:980px){
+  .fg-agriculture-template-story{
+    grid-template-columns:1fr;
+    min-height:auto;
+  }
+  .fg-agriculture-template-art,
+  .fg-agriculture-template-art img{min-height:520px}
+  .fg-global-services .fg-moon-offer-grid{grid-template-columns:1fr}
+  .fg-global-services .fg-moon-offer-card{
+    display:grid;
+    grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);
+    min-height:0;
+  }
+  .fg-global-services .fg-moon-offer-mark{min-height:300px}
+}
+@media(max-width:650px){
+  .fg-agriculture-template-story{width:calc(100% - 28px)}
+  .fg-agriculture-template-copy{padding:42px 22px}
+  .fg-agriculture-template-copy h2{font-size:clamp(42px,13vw,62px)}
+  .fg-agriculture-template-flow{gap:6px}
+  .fg-agriculture-template-flow span{font-size:7px;padding:6px 7px}
+  .fg-agriculture-template-art,
+  .fg-agriculture-template-art img{min-height:430px}
+  .fg-agriculture-template-art figcaption{
+    left:14px;right:14px;bottom:14px;display:block
+  }
+  .fg-agriculture-template-art figcaption strong{display:block;margin-top:7px}
+  .fg-global-services{padding:74px 14px 80px}
+  .fg-global-services .fg-moon-offer-card{display:block}
+  .fg-global-services .fg-moon-offer-mark{min-height:220px}
+}
