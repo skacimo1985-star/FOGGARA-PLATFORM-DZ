@@ -185,7 +185,7 @@ export default function Landing() {
   },[]);
 
   useEffect(()=>{
-    const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),7000);
+    const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),6000);
     return()=>window.clearInterval(timer);
   },[copy.hero.length]);
 
@@ -212,6 +212,19 @@ export default function Landing() {
   }
 
   const hero=copy.hero[heroSlide];
+  const bilingualHero={
+    enTitle:"FROM HERITAGE TO DIGITAL TWIN",
+    arTitle:"من التراث إلى التوأم الرقمي",
+    enBody:"FOGGARA-DZ is an Algerian integrated decision and evidence platform connecting Water, Energy, Food, Ecosystem and Health — turning field data into verifiable evidence and actionable decisions.",
+    arBody:"FOGGARA-DZ منصة جزائرية متكاملة للقرار والأدلة، تربط المياه والطاقة والغذاء والنظم البيئية والصحة، وتحول بيانات الميدان إلى أدلة قابلة للتحقق وقرارات قابلة للتنفيذ.",
+    enQuote:"“Every resource connected. Every decision grounded.”",
+    arQuote:"«كل مورد مترابط، وكل قرار يستند إلى دليل.»"
+  };
+  const videoFrameLabels=[
+    ["SOURCE","المصدر"],
+    ["KASRIA","الكسرية"],
+    ["FLOW","تدفق المياه"]
+  ];
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -243,9 +256,37 @@ export default function Landing() {
           <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}</Link>
         </div>
       </div>
+
+      <aside className="fg-hero-bilingual" aria-label="FOGGARA-DZ bilingual project introduction">
+        <div className="fg-hero-bilingual-head">
+          <div dir="ltr"><span>FOGGARA-DZ</span><strong>{bilingualHero.enTitle}</strong></div>
+          <div dir="rtl"><span>FOGGARA-DZ</span><strong>{bilingualHero.arTitle}</strong></div>
+        </div>
+        <div className="fg-hero-bilingual-copy">
+          <p dir="ltr">{bilingualHero.enBody}</p>
+          <p dir="rtl">{bilingualHero.arBody}</p>
+        </div>
+        <blockquote>
+          <span dir="ltr">{bilingualHero.enQuote}</span>
+          <span dir="rtl">{bilingualHero.arQuote}</span>
+        </blockquote>
+      </aside>
+
       <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
       <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
-      <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
+      <div className="fg-video-story-strip" role="tablist" aria-label="FOGGARA video story frames">
+        {videoFrameLabels.map(([en,ar],index)=><button
+          type="button"
+          key={en}
+          role="tab"
+          aria-selected={heroSlide===index}
+          className={heroSlide===index?"active":""}
+          onClick={()=>setHeroSlide(index)}
+        >
+          <span className={`fg-video-thumb fg-video-thumb-${index+1}`} aria-hidden="true"/>
+          <span><small dir="ltr">0{index+1}</small><strong dir="ltr">{en}</strong><em dir="rtl">{ar}</em></span>
+        </button>)}
+      </div>
     </section>
 
     <section className="fg-moon-about" id="about">
