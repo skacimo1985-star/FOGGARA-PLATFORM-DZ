@@ -48,6 +48,31 @@ if _AUTOMATION_FLAG not in ("", "true", "false"):
     raise RuntimeError("OPERATIONS_AUTOMATION_ENABLED must be true or false")
 OPERATIONS_AUTOMATION_ENABLED = _AUTOMATION_FLAG == "true" if _AUTOMATION_FLAG else ENV == "prod"
 
+# Real field-intelligence automation. In production it runs in the web lifespan
+# unless explicitly disabled; work is bounded per cycle to protect raster capacity.
+_FIELD_AUTOMATION_FLAG = os.environ.get("FIELD_AUTOMATION_ENABLED", "").strip().lower()
+if _FIELD_AUTOMATION_FLAG not in ("", "true", "false"):
+    raise RuntimeError("FIELD_AUTOMATION_ENABLED must be true or false")
+FIELD_AUTOMATION_ENABLED = (
+    _FIELD_AUTOMATION_FLAG == "true" if _FIELD_AUTOMATION_FLAG else ENV == "prod"
+)
+FIELD_AUTOMATION_INTERVAL_SECONDS = int(
+    os.environ.get("FIELD_AUTOMATION_INTERVAL_SECONDS", "21600")
+)
+if not 900 <= FIELD_AUTOMATION_INTERVAL_SECONDS <= 86400:
+    raise RuntimeError("FIELD_AUTOMATION_INTERVAL_SECONDS must be between 900 and 86400")
+FIELD_AUTOMATION_LOOKBACK_DAYS = int(os.environ.get("FIELD_AUTOMATION_LOOKBACK_DAYS", "45"))
+if not 7 <= FIELD_AUTOMATION_LOOKBACK_DAYS <= 366:
+    raise RuntimeError("FIELD_AUTOMATION_LOOKBACK_DAYS must be between 7 and 366")
+FIELD_AUTOMATION_CLOUD_COVER_LTE = float(
+    os.environ.get("FIELD_AUTOMATION_CLOUD_COVER_LTE", "35")
+)
+if not 0 <= FIELD_AUTOMATION_CLOUD_COVER_LTE <= 100:
+    raise RuntimeError("FIELD_AUTOMATION_CLOUD_COVER_LTE must be between 0 and 100")
+FIELD_AUTOMATION_BATCH_SIZE = int(os.environ.get("FIELD_AUTOMATION_BATCH_SIZE", "12"))
+if not 1 <= FIELD_AUTOMATION_BATCH_SIZE <= 100:
+    raise RuntimeError("FIELD_AUTOMATION_BATCH_SIZE must be between 1 and 100")
+
 if ENV == "prod":
     if not DATABASE_URL.startswith(("postgresql+psycopg://", "postgresql://")):
         raise RuntimeError("ENV=prod requires PostgreSQL DATABASE_URL.")
