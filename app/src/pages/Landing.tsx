@@ -219,40 +219,64 @@ export default function Landing() {
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
     </nav>
 
-    <section className="fg-moon-hero" id="home" aria-labelledby="foggara-title">
+    <section className="fg-moon-hero fg-lukas-hero" id="home" aria-labelledby="foggara-title">
       <div className={`fg-moon-hero-media fg-moon-hero-media-${heroSlide+1}`} aria-hidden="true"/>
       <div className="fg-moon-hero-overlay"/>
-      <div className="fg-moon-hero-content">
-        <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
-        <h1 id="foggara-title">{hero.title}</h1>
-        <span className="fg-moon-hero-accent">{hero.accent}</span>
-        <p>{hero.body}</p>
-        <div className="fg-moon-hero-actions">
-          <a className="fg-moon-btn fg-moon-btn-light" href="#about">{copy.discover}</a>
-          <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}</Link>
+      <div className="fg-lukas-cross fg-lukas-cross-a" aria-hidden="true"/>
+      <div className="fg-lukas-cross fg-lukas-cross-b" aria-hidden="true"/>
+
+      <div className="fg-lukas-hero-grid">
+        <div className="fg-lukas-hero-side">
+          <span className="fg-lukas-since" dir="ltr">ALGERIA · 2026</span>
+          <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
+            {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
+              <img src={index===1?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
+            </button>)}
+          </div>
+          <p>{hero.body}</p>
+        </div>
+
+        <div className="fg-lukas-hero-main">
+          <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
+          <h1 id="foggara-title">{hero.title}<br/><span>{hero.accent}</span></h1>
+          <div className="fg-moon-hero-actions">
+            <a className="fg-moon-btn fg-moon-btn-light" href="#about">{copy.discover}</a>
+            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
+          </div>
         </div>
       </div>
 
       <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
       <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
-      <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
     </section>
+
+    <nav className="fg-lukas-domain-strip" aria-label={t("publicExperience.domains")}>
+      {domains.map(({key,Icon})=><button type="button" key={key} className={active===key?"active":""} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}>
+        <Icon size={18}/><span>{t(`landing.${key}`)}</span>
+      </button>)}
+    </nav>
 
     <div id="presentation">
       <OasisCanvaPresentation lang={lang} compact/>
     </div>
 
-    <section className="fg-moon-about" id="about">
-      <div className="fg-moon-about-copy">
-        <h2>{copy.aboutTitle}<br/><strong>{copy.aboutStrong}</strong></h2>
-        <p>{copy.aboutBody}</p>
-        <Link className="fg-moon-btn fg-moon-btn-dark" to="/about">{copy.readMore}<ArrowUpRight size={17}/></Link>
+    <section className="fg-moon-about fg-lukas-about" id="about">
+      <div className="fg-lukas-about-label">
+        <span>{copy.aboutTitle}</span>
+        <strong>{copy.aboutStrong}</strong>
       </div>
-      <div className="fg-moon-about-visual" aria-label="FOGGARA-DZ oasis">
-        <img className="fg-moon-about-oasis" src="/images/oasis-hero.webp" alt="" loading="lazy" decoding="async"/>
-        <div className="fg-moon-about-badge"><Waves size={24}/><strong>FOGGARA</strong><span>HERITAGE → DATA → DECISION</span></div>
+      <div className="fg-lukas-about-copy">
+        <p>{copy.aboutBody}</p>
+        <Link className="fg-moon-btn fg-moon-btn-green" to="/about">{copy.readMore}<ArrowUpRight size={17}/></Link>
       </div>
     </section>
+
+    <div className="fg-lukas-image-rail" aria-label="FOGGARA-DZ oasis">
+      <figure><img src="/images/oasis-dawn.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
+      <figure><img src="/images/oasis-hero.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
+      <figure><img src="/images/oasis-dawn.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
+      <figure><img src="/images/oasis-hero.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
+    </div>
 
     <section className="fg-moon-stats" aria-label="FOGGARA statistics">
       <article><MapPinned size={30}/><strong>{WILAYAS.length}</strong><span>{copy.stats[0]}</span></article>
@@ -306,8 +330,6 @@ export default function Landing() {
         </div>
       </div>
     </section>
-
-    <nav className="fg-pillars" aria-label={t("publicExperience.domains")}>{domains.map(({key,Icon})=><button type="button" key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?"all":key)}><Icon size={21}/><span>{t(`landing.${key}`)}</span></button>)}</nav>
 
     <section className="fg-platform-spine" aria-label="FOGGARA operating model">
       <div className="fg-spine-journey">
