@@ -77,6 +77,7 @@ const controlCopy={
 
 function CoverSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-cover">
+    <img className="ocp-media-image" src="/images/user-oasis-hero.webp" alt="" aria-hidden="true"/>
     <div className="ocp-cover-shade"/>
     <div className="ocp-cover-copy">
       <span className="ocp-kicker" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</span>
@@ -90,7 +91,7 @@ function CoverSlide({slide}:{slide:Slide}){
 function HeritageSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-dark ocp-page-heritage">
     <div className="ocp-copy"><span className="ocp-kicker">02 / HERITAGE → DIGITAL TWIN</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
-    <div className="ocp-heritage-image"/>
+    <div className="ocp-heritage-image"><img className="ocp-media-image" src="/images/user-heritage-digital-twin.webp" alt="" aria-hidden="true"/></div>
     <div className="ocp-heritage-pipeline" dir="ltr"><span>FOGGARA</span><b>→</b><span>FIELD DATA</span><b>→</b><span>DIGITAL TWIN</span><b>→</b><span>EVIDENCE</span></div>
   </div>;
 }
@@ -167,7 +168,7 @@ function ServicesSlide({slide}:{slide:Slide}){
 
 function ExpoSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-expo-full">
-    <div className="ocp-expo-full-image"/>
+    <div className="ocp-expo-full-image"><img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/></div>
     <div className="ocp-expo-full-shade"/>
     <div className="ocp-copy">
       <span className="ocp-kicker" dir="ltr">11 / AGRITECH EXPO ANNABA 2026</span>
@@ -181,6 +182,7 @@ function ExpoSlide({slide}:{slide:Slide}){
 
 function ClosingSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-closing">
+    <img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/>
     <div className="ocp-closing-shade"/>
     <div className="ocp-closing-copy"><span className="ocp-kicker">12 / FOGGARA-DZ</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
   </div>;

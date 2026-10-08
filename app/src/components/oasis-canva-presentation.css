@@ -272,3 +272,22 @@
   .ocp-action-flow{grid-template-columns:repeat(2,1fr);overflow:auto;max-height:52%;bottom:5%}
   .ocp-expo-qr-small{right:4%;bottom:4%}.ocp-expo-qr-small img{width:46px;height:46px}
 }
+
+
+/* Render critical presentation visuals as real image elements.
+   CSS backgrounds remain fallback only. */
+.ocp-media-image{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  opacity:1;
+  visibility:visible;
+  z-index:0;
+}
+.ocp-heritage-image{overflow:hidden}
+.ocp-heritage-image .ocp-media-image,
+.ocp-expo-full-image .ocp-media-image{position:absolute}
