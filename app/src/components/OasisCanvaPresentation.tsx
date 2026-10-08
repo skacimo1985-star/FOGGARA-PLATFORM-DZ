@@ -152,11 +152,5 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
       </aside>
     </div>
 
-    <div className="ocp-thumbs" role="tablist" aria-label={c.heading}>
-      {c.slides.map((item,i)=><button key={`${item.kicker}-${i}`} type="button" role="tab" aria-selected={index===i} className={index===i?"active":""} onClick={()=>{setIndex(i);setPlaying(false)}}>
-        <span className={`ocp-thumb-media ocp-media-${item.visual} ocp-crop-${item.crop}`} aria-hidden="true"><b dir="ltr">{String(i+1).padStart(2,"0")}</b></span>
-        <span><small>{item.kicker}</small><strong>{item.title}</strong></span>
-      </button>)}
-    </div>
   </section>;
 }
