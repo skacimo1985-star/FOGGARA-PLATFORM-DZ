@@ -28,11 +28,11 @@ test('company capabilities remain visible in all supported languages',()=>{
 
 test('expo QR stays compact and demo routes remain actionable',()=>{
   assert.ok(landing.includes('width="64" height="64"'));
-  assert.ok(landing.includes('to={user?"/app":"/expo"}'));
+  assert.ok(landing.includes('to={user?"/app":"/login"}'));
   assert.ok(css.includes('grid-template-columns:64px 1fr'));
   assert.ok(css.includes('.fg-global-demo{grid-template-columns:1fr}'));
   assert.ok(css.includes('.fg-global-demo-modules'));
-  for(const route of ['/expo','/agriculture-services','/presentation']){
+  for(const route of ['/login','/expo','/agriculture-services','/presentation']){
     assert.ok(landing.includes(route),route);
   }
 });

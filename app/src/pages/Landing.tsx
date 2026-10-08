@@ -276,7 +276,7 @@ export default function Landing() {
           <h1 id="foggara-title">{hero.title}<br/><span>{hero.accent}</span></h1>
           <div className="fg-moon-hero-actions">
             <a className="fg-moon-btn fg-moon-btn-light" href="#operating">{copy.discover}</a>
-            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
+            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/login"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
           </div>
         </div>
       </div>
@@ -385,7 +385,7 @@ export default function Landing() {
         <p>{copy.liveBody}</p>
         <div className="fg-moon-demo-actions">
           <Link className="fg-moon-btn fg-moon-btn-light" to="/expo">{copy.openDemo}<ArrowUpRight size={16}/></Link>
-          <Link className="fg-moon-btn fg-moon-btn-outline" to={user?"/app":"/expo"}>{copy.enter}<ArrowUpRight size={16}/></Link>
+          <Link className="fg-moon-btn fg-moon-btn-outline" to={user?"/app":"/login"}>{copy.enter}<ArrowUpRight size={16}/></Link>
         </div>
         <nav className="fg-global-demo-modules" aria-label={copy.liveDemo}>
           {institutionCopy.demoModules.map(([label,to],index)=><Link to={to} key={label}><span dir="ltr">0{index+1}</span>{label}<ArrowUpRight size={13}/></Link>)}
