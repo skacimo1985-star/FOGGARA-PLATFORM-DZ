@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
-  Activity, ArrowUpRight, Bot, ClipboardCheck, Droplets, FolderKanban,
+  Activity, ArrowUpRight, Bot, ClipboardCheck, FolderKanban,
   Gauge, Layers3, MapPinned, Radio, Satellite, ShieldCheck, Sprout,
   Workflow, Zap,
 } from "lucide-react";
