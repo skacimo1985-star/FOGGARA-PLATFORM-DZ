@@ -254,3 +254,15 @@ def test_expo_insights_aggregate_feedback_without_session_keys(client, world):
     assert len(body["recent_feedback"]) == 2
     assert body["recent_feedback"][0]["suggestion"] == "More local crop data"
     assert "session_key" not in body["recent_feedback"][0]
+
+
+def test_expo_demo_data_is_public_and_has_safe_shape(client):
+    response = client.get("/api/expo/demo-data")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["demo"] is True
+    assert body["label"] == "SYNTHETIC_DEMO_DATA"
+    assert set(body["counts"]) == {"sites", "projects", "parcels", "observations"}
+    assert isinstance(body["sites"], list)
+    assert "users" not in body
+    assert "organizations" not in body
