@@ -6,7 +6,7 @@ import {
   FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
   BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
-  Building2, Waves, ScanLine
+  Building2, ScanLine
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
