@@ -6,15 +6,15 @@ def test_field_automation_runtime_runs_and_stops(monkeypatch):
 
     calls = []
 
-    def cycle():
+    def cycle(**_kwargs):
         calls.append("cycle")
-        return {"eligible": 1, "processed": 1, "created": 7, "no_scene": 0, "failed": 0}
+        return {"eligible": 1, "processed": 1, "created": 7, "no_scene": 0, "failed": 0, "last_parcel_id": 42, "wrapped": False}
 
     monkeypatch.setattr(module, "run_cycle", cycle)
     monkeypatch.setattr(
         module,
         "runtime",
-        {"state": "stopped", "last_run": None, "last_success": None, "summary": None, "error": None},
+        {"state": "stopped", "last_run": None, "last_success": None, "summary": None, "error": None, "cursor": 0},
     )
 
     async def scenario():
@@ -28,6 +28,7 @@ def test_field_automation_runtime_runs_and_stops(monkeypatch):
             assert module.runtime["state"] == "running"
             assert module.runtime["summary"]["created"] == 7
             assert module.runtime["error"] is None
+            assert module.runtime["cursor"] == 42
         finally:
             stop.set()
             await task
