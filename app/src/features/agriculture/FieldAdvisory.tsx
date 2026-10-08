@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrainCircuit, RefreshCw, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 
 type Parcel = {
   id: number;
@@ -63,14 +64,14 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
   };
 
   const active = parcels.filter(p => !p.archived);
-  const [parcelId, setParcelId] = useState<number | null>(active[0]?.id ?? null);
+  const { parcelId } = useOperationalContext();
   const [result, setResult] = useState<Advisory | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (parcelId != null && !parcels.some(p => !p.archived && p.id === parcelId)) {
-      setParcelId(parcels.find(p => !p.archived)?.id ?? null);
+      setActiveParcelId(parcels.find(p => !p.archived)?.id ?? null);
       setResult(null);
     }
   }, [parcels, parcelId]);
@@ -104,7 +105,7 @@ export default function FieldAdvisory({ parcels }: { parcels: Parcel[] }) {
     <p className="fg-muted">{copy.intro}</p>
     <div className="fg-form">
       <label className="fg-field"><span>{copy.parcel}</span>
-        <select value={parcelId ?? ""} onChange={e => { setParcelId(Number(e.target.value)); setResult(null); }}>
+        <select value={parcelId ?? ""} onChange={e => { setActiveParcelId(Number(e.target.value)); setResult(null); }}>
           {active.map(p => <option key={p.id} value={p.id}>{p.name} · {p.crop}</option>)}
         </select>
       </label>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CloudSun, RefreshCw, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 
 type Parcel = {
   id: number;
@@ -96,12 +97,17 @@ export default function ParcelWeather({
   };
 
   const active = parcels.filter(p => !p.archived);
-  const [parcelId, setParcelId] = useState<number | null>(active[0]?.id ?? null);
+  const { parcelId } = useOperationalContext();
   const parcel = active.find(p => p.id === parcelId) ?? active[0];
+  const resolvedParcelId = parcel?.id ?? null;
   const [status, setStatus] = useState<WeatherStatus | null>(null);
   const [data, setData] = useState<WeatherResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (resolvedParcelId && resolvedParcelId !== parcelId) setActiveParcelId(resolvedParcelId);
+  }, [resolvedParcelId, parcelId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,7 +147,7 @@ export default function ParcelWeather({
     <p className="fg-muted">{copy.intro}</p>
     <div className="fg-form">
       <label className="fg-field"><span>{copy.parcel}</span>
-        <select value={parcel.id} onChange={e => setParcelId(Number(e.target.value))}>
+        <select value={parcel.id} onChange={e => setActiveParcelId(Number(e.target.value))}>
           {active.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </label>

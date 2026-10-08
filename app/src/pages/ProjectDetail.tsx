@@ -18,6 +18,7 @@ import { HumanDecisionsSection } from "./project/HumanDecisionsSection";
 import { AssuranceSection } from "./project/AssuranceSection";
 import { AgricultureSection } from "./project/AgricultureSection";
 import "./project-operational.css";
+import { getOperationalContext, setActiveParcelId, setActiveProjectId } from "@/lib/operational-context";
 
 const STATUSES = ["draft", "active", "suspended", "closed"] as const;
 
@@ -41,6 +42,7 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    setActiveProjectId(pid);
     try {
       const [p, m, e, r, a, h, rv, hd] = await Promise.all([
         api.get<Project>(`/projects/${pid}`),
@@ -56,6 +58,10 @@ export default function ProjectDetail() {
       setProject(p); setMeasurements(m); setEvidences(e);
       setRecommendations(r); setActions(a); setHistory(h);
       setReviews(rv); setHumanDecisions(hd);
+      if (!getOperationalContext().parcelId) {
+        const measuredParcel = m.find((row) => row.parcel_id != null)?.parcel_id ?? null;
+        if (measuredParcel) setActiveParcelId(measuredParcel);
+      }
     } catch (err) {
       setError(err);
     } finally {
@@ -104,20 +110,20 @@ export default function ProjectDetail() {
         title: "Chaîne opérationnelle du projet",
         context: "Contexte", data: "Données", evidence: "Preuves", intelligence: "Intelligence",
         decision: "Décisions", action: "Actions", audit: "Audit",
-        connected: "Espaces connectés", gis: "SIG", water: "Eau", decisions: "Décisions", automation: "Automatisation",
+        connected: "Espaces connectés", gis: "SIG", agriculture: "Agriculture", studio: "Décision", monitoring: "Suivi",
       }
     : language === "en"
       ? {
           title: "Project operational chain",
           context: "Context", data: "Data", evidence: "Evidence", intelligence: "Intelligence",
           decision: "Decisions", action: "Actions", audit: "Audit",
-          connected: "Connected workspaces", gis: "GIS", water: "Water", decisions: "Decisions", automation: "Automation",
+          connected: "Connected workspaces", gis: "GIS", agriculture: "Agriculture", studio: "Decision", monitoring: "Monitoring",
         }
       : {
           title: "السلسلة التشغيلية للمشروع",
           context: "السياق", data: "البيانات", evidence: "الأدلة", intelligence: "الذكاء",
           decision: "القرارات", action: "الإجراءات", audit: "التدقيق",
-          connected: "مساحات مترابطة", gis: "GIS", water: "المياه", decisions: "القرارات", automation: "الأتمتة",
+          connected: "مساحات مترابطة", gis: "GIS", agriculture: "الزراعة", studio: "القرار", monitoring: "المتابعة",
         };
 
   const operationalStages = [
@@ -177,10 +183,10 @@ export default function ProjectDetail() {
         <div className="fg-project-connected">
           <span>{operationalCopy.connected}</span>
           <nav>
-            <Link to={project.site_id ? `/app/gis` : "/app/gis"}><MapPinned size={15} />{operationalCopy.gis}</Link>
-            <Link to="/app/water"><Droplets size={15} />{operationalCopy.water}</Link>
-            <Link to="/app/decisions"><Gavel size={15} />{operationalCopy.decisions}</Link>
-            <Link to="/app/automation"><Workflow size={15} />{operationalCopy.automation}</Link>
+            <Link to="/app/gis"><MapPinned size={15} />{operationalCopy.gis}</Link>
+            <Link to="/app/agriculture"><Droplets size={15} />{operationalCopy.agriculture}</Link>
+            <Link to="/app/studio"><Gavel size={15} />{operationalCopy.studio}</Link>
+            <Link to="/app/operations"><Workflow size={15} />{operationalCopy.monitoring}</Link>
           </nav>
         </div>
       </section>

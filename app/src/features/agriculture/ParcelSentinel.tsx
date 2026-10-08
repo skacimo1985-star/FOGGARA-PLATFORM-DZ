@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Satellite, MapPinned, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 import ParcelBoundaryEditor from "./ParcelBoundaryEditor";
 
 type Parcel = {
@@ -86,8 +87,9 @@ export default function ParcelSentinel({
     visual: "التحليل البصري بالأقمار الصناعية", trueColor: "Sentinel-2 · ألوان حقيقية", indexMap: "خريطة المؤشر", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأقصى", validPixels: "البكسلات الصالحة", acquired: "تاريخ الالتقاط", resolution: "دقة المصدر", previewUnavailable: "تم الحساب بنجاح لكن تعذر عرض معاينة الصورة الفضائية.",
   };
   const active = parcels.filter(p => !p.archived);
-  const [parcelId, setParcelId] = useState<number | null>(null);
+  const { parcelId } = useOperationalContext();
   const parcel = active.find(p => p.id === parcelId) ?? active[0];
+  const resolvedParcelId = parcel?.id ?? null;
   const [start, setStart] = useState(daysAgo(45));
   const [end, setEnd] = useState(today());
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -100,6 +102,10 @@ export default function ParcelSentinel({
   const [previewError, setPreviewError] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
+
+  useEffect(() => {
+    if (resolvedParcelId && resolvedParcelId !== parcelId) setActiveParcelId(resolvedParcelId);
+  }, [resolvedParcelId, parcelId]);
 
   useEffect(() => {
     setScenes([]);
@@ -199,7 +205,7 @@ export default function ParcelSentinel({
     <div className="fg-panel-title"><h2><Satellite size={21}/> {text.heading}</h2><span className="fg-badge inferred">COMPUTED → INFERRED</span></div>
     <p className="fg-muted">{text.intro}</p>
     <div className="fg-form">
-      <label className="fg-field"><span>{text.parcel}</span><select value={parcel.id} onChange={e => setParcelId(Number(e.target.value))}>
+      <label className="fg-field"><span>{text.parcel}</span><select value={parcel.id} onChange={e => setActiveParcelId(Number(e.target.value))}>
         {active.map(p => <option key={p.id} value={p.id}>{p.name} — {Number(p.area_ha).toFixed(2)} ha</option>)}
       </select></label>
       <ParcelBoundaryEditor parcel={parcel} onSaved={onSaved}/>
