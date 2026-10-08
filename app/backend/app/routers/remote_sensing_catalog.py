@@ -338,6 +338,7 @@ def field_intelligence_study(
             "Analyze All is limited to about 250,000 10 m pixels; select a smaller field AOI.",
         )
 
+    capabilities = public_field_capabilities()
     features = _earth_search_features(raw_bbox, start, end, cloud_cover_lte, 12)
     selected_feature = None
     selected_plan = None
@@ -366,6 +367,7 @@ def field_intelligence_study(
             "scene": None,
             "domains": {},
             "soil_context": None,
+            "global_sources": capabilities["global_projects"],
             "skipped": skipped,
             "evidence": {"verified": False},
         }
@@ -435,6 +437,7 @@ def field_intelligence_study(
         },
         "domains": domains,
         "soil_context": soil,
+        "global_sources": capabilities["global_projects"],
         "skipped": skipped,
         "follow_up": {
             "time_series": "/api/remote-sensing/studies/timeseries",
