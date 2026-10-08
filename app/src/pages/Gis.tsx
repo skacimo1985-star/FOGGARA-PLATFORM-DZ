@@ -544,7 +544,7 @@ export default function Gis() {
         cloud_cover_lte: String(cloudCover),
         max_scenes: "3",
       });
-      const result = await api.get<TimeSeriesStudy>(`/remote-sensing/studies/timeseries?${params.toString()}`, 120_000);
+      const result = await api.get<TimeSeriesStudy>(`/remote-sensing/studies/timeseries?${params.toString()}`);
       setStudyResult(result);
     } catch (err) {
       setStudyError(err);
