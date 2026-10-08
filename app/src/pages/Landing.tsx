@@ -14,6 +14,7 @@ import { NexusKasria } from "@/components/NexusKasria";
 import { WorkflowGuide } from "@/components/WorkflowGuide";
 import { AgroCapabilities } from "@/components/AgroCapabilities";
 import { ServiceOfferings } from "@/components/ServiceOfferings";
+import { OasisCanvaPresentation } from "@/components/OasisCanvaPresentation";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
@@ -41,7 +42,6 @@ export default function Landing() {
   const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
   const [heroSlide,setHeroSlide]=useState(0);
-  const [presentationSlide,setPresentationSlide]=useState(0);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -177,50 +177,6 @@ export default function Landing() {
     spineBody:"تربط FOGGARA المواقع والقياسات والمشاريع والأدلة والقواعد والقرارات والمتابعة في بيئة تشغيلية واحدة."
   };
 
-  const presentation=lang==="fr"?{
-    eyebrow:"FOGGARA-DZ / PRÉSENTATION FIGMA",
-    title:"DU PATRIMOINE AU JUMEAU NUMÉRIQUE",
-    intro:"La présentation Figma devient une expérience native dans la plateforme : l’image, le texte et les deux flux évoluent ensemble.",
-    open:"OUVRIR LA PRÉSENTATION",
-    heritageLabel:"HERITAGE FLOW",
-    digitalLabel:"DIGITAL FLOW",
-    slides:[
-      {photo:10,kicker:"01 · SOURCE",title:"SOURCE / GALERIE MÈRE",body:"Le récit commence à la source et dans la galerie souterraine. Dans FOGGARA-DZ, cela devient une ressource localisée, identifiée et reliée aux mesures et à son historique.",heritage:"SOURCE → GALERIE",digital:"RESSOURCE → LOCALISATION → DONNÉES",to:"/presentation"},
-      {photo:8,kicker:"02 · PARTAGE",title:"KASRIA / PARTAGE DE L’EAU",body:"La kasria répartit l’eau selon une logique explicite. Numériquement, cela correspond aux règles, priorités, contraintes et scénarios d’allocation.",heritage:"KASRIA → PARTAGE",digital:"RÈGLES → CONTRAINTES → ALLOCATION",to:"/app/nexus"},
-      {photo:6,kicker:"03 · DISTRIBUTION",title:"SEGUIAS / DISTRIBUTION",body:"Les seguias acheminent l’eau vers les zones cultivées. Le jumeau numérique relie réseaux, équipements, zones d’irrigation et mesures opérationnelles.",heritage:"SEGUIA → RÉSEAU",digital:"RÉSEAU → TÉLÉMÉTRIE → SUIVI",to:"/app/gis"},
-      {photo:1,kicker:"04 · PARCELLE",title:"PARCELLE / USAGE AGRICOLE",body:"À la parcelle, l’eau devient une décision agronomique liée à la culture, la météo, le sol, l’eau et au conseil d’irrigation.",heritage:"PARCELLE → CULTURE",digital:"INDICES → MÉTÉO → IRRIGATION",to:"/app/agriculture"},
-      {photo:11,kicker:"05 · PREUVE",title:"PREUVE / SUIVI",body:"Les mesures et observations deviennent des preuves avec source, méthode, date et validation, puis se relient à la décision, au suivi et à l’apprentissage.",heritage:"TERRAIN → MÉMOIRE",digital:"PREUVE → DÉCISION → APPRENTISSAGE",to:"/app/review"}
-    ]
-  }:lang==="en"?{
-    eyebrow:"FOGGARA-DZ / FIGMA PRESENTATION",
-    title:"FROM HERITAGE TO DIGITAL TWIN",
-    intro:"The Figma presentation becomes a native product experience: image, explanation and the two process flows change together.",
-    open:"OPEN FULL PRESENTATION",
-    heritageLabel:"HERITAGE FLOW",
-    digitalLabel:"DIGITAL FLOW",
-    slides:[
-      {photo:10,kicker:"01 · SOURCE",title:"SOURCE / MOTHER GALLERY",body:"The story begins at the water source and underground gallery. In FOGGARA-DZ this becomes a located, identified resource linked to measurements and history.",heritage:"SOURCE → GALLERY",digital:"RESOURCE → LOCATION → DATA",to:"/presentation"},
-      {photo:8,kicker:"02 · SHARING",title:"KASRIA / WATER SHARING",body:"The kasria divides water through an explicit allocation logic. Digitally, that maps to rules, priorities, constraints and allocation scenarios.",heritage:"KASRIA → SHARING",digital:"RULES → CONSTRAINTS → ALLOCATION",to:"/app/nexus"},
-      {photo:6,kicker:"03 · DISTRIBUTION",title:"SEGUIAS / DISTRIBUTION",body:"Seguias carry water toward cultivated areas. The digital twin links networks, equipment, irrigation zones and operational measurements.",heritage:"SEGUIA → NETWORK",digital:"NETWORK → TELEMETRY → MONITORING",to:"/app/gis"},
-      {photo:1,kicker:"04 · PARCEL",title:"PARCEL / AGRICULTURAL USE",body:"At parcel level, water becomes an agronomic decision informed by crop condition, weather, soil, water context and irrigation advice.",heritage:"PARCEL → CROP",digital:"INDICES → WEATHER → IRRIGATION",to:"/app/agriculture"},
-      {photo:11,kicker:"05 · EVIDENCE",title:"EVIDENCE / MONITORING",body:"Measurements and observations become evidence with source, method, timestamp and validation, then connect to decision, monitoring and learning.",heritage:"FIELD → MEMORY",digital:"EVIDENCE → DECISION → LEARNING",to:"/app/review"}
-    ]
-  }:{
-    eyebrow:"FOGGARA-DZ / عرض FIGMA",
-    title:"من التراث إلى التوأم الرقمي",
-    intro:"يتحول عرض Figma إلى تجربة أصلية داخل المنصة؛ تتغير الصورة والشرح ومسارا التراث والرقمنة معًا.",
-    open:"فتح العرض الكامل",
-    heritageLabel:"مسار التراث",
-    digitalLabel:"المسار الرقمي",
-    slides:[
-      {photo:10,kicker:"01 · المصدر",title:"المصدر / المعرض الأم",body:"تبدأ القصة من مصدر المياه والمعرض الجوفي. في FOGGARA-DZ تصبح البداية موردًا محدد الموقع والهوية ويمكن ربطه بالقياسات والسجل.",heritage:"المصدر ← المعرض",digital:"المورد ← الموقع ← البيانات",to:"/presentation"},
-      {photo:8,kicker:"02 · التقاسم",title:"الكسرية / تقاسم المياه",body:"تقسم الكسرية المياه وفق منطق توزيع واضح. رقميًا يقابل ذلك القواعد والأولويات والقيود وسيناريوهات التخصيص.",heritage:"الكسرية ← التقاسم",digital:"القواعد ← القيود ← التخصيص",to:"/app/nexus"},
-      {photo:6,kicker:"03 · التوزيع",title:"السواقي / التوزيع",body:"تنقل السواقي المياه نحو المناطق المزروعة. في التوأم الرقمي ترتبط الشبكات والمعدات ومناطق الري والقياسات التشغيلية.",heritage:"الساقية ← الشبكة",digital:"الشبكة ← القياس ← المتابعة",to:"/app/gis"},
-      {photo:1,kicker:"04 · القطعة",title:"القطعة / الاستخدام الزراعي",body:"عند القطعة تتحول المياه إلى قرار زراعي يعتمد على حالة المحصول والطقس والتربة والمياه ونصيحة الري.",heritage:"القطعة ← المحصول",digital:"المؤشرات ← الطقس ← الري",to:"/app/agriculture"},
-      {photo:11,kicker:"05 · الدليل",title:"الدليل / المتابعة",body:"تتحول القياسات والملاحظات إلى أدلة تحفظ المصدر والطريقة والتاريخ والتحقق، ثم ترتبط بالقرار والمتابعة والتعلم.",heritage:"الميدان ← الذاكرة",digital:"الدليل ← القرار ← التعلم",to:"/app/review"}
-    ]
-  };
-
   useEffect(()=>{
     let cancelled=false;
     api.get<{visitors:number;feedback:number}>("/expo/stats")
@@ -233,13 +189,6 @@ export default function Landing() {
     const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),6000);
     return()=>window.clearInterval(timer);
   },[copy.hero.length]);
-
-  useEffect(()=>{
-    const reduceMotion=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if(reduceMotion)return;
-    const timer=window.setInterval(()=>setPresentationSlide(value=>(value+1)%presentation.slides.length),8000);
-    return()=>window.clearInterval(timer);
-  },[presentation.slides.length]);
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
@@ -264,7 +213,6 @@ export default function Landing() {
   }
 
   const hero=copy.hero[heroSlide];
-  const presentationCurrent=presentation.slides[presentationSlide];
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -303,62 +251,9 @@ export default function Landing() {
       <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
     </section>
 
-    <section className="fg-figma-embed" id="presentation" aria-labelledby="fg-presentation-title">
-      <header className="fg-figma-embed-head">
-        <div>
-          <p className="fg-eyebrow">{presentation.eyebrow}</p>
-          <h2 id="fg-presentation-title">{presentation.title}</h2>
-        </div>
-        <p>{presentation.intro}</p>
-      </header>
-
-      <div className="fg-figma-embed-frame">
-        <div className={`fg-figma-embed-visual fg-photo-${String(presentationCurrent.photo).padStart(2,"0")}`} role="img" aria-label={presentationCurrent.title}>
-          <div className="fg-figma-embed-shade"/>
-          <span className="fg-figma-embed-index" dir="ltr">{String(presentationSlide+1).padStart(2,"0")} / 05</span>
-          <div className="fg-figma-embed-caption">
-            <p>{presentationCurrent.kicker}</p>
-            <h3>{presentationCurrent.title}</h3>
-          </div>
-        </div>
-
-        <aside className="fg-figma-embed-panel">
-          <div className="fg-figma-embed-brand">
-            <strong>FOGGARA-DZ</strong>
-            <span>SIREP OASES NEXUS WEFEH-DZ</span>
-          </div>
-          <p className="fg-figma-embed-body">{presentationCurrent.body}</p>
-          <div className="fg-figma-embed-flow">
-            <small>{presentation.heritageLabel}</small>
-            <strong>{presentationCurrent.heritage}</strong>
-          </div>
-          <div className="fg-figma-embed-flow digital">
-            <small>{presentation.digitalLabel}</small>
-            <strong>{presentationCurrent.digital}</strong>
-          </div>
-          <div className="fg-figma-embed-nav">
-            <button type="button" aria-label="Previous presentation slide" onClick={()=>setPresentationSlide(value=>(value+presentation.slides.length-1)%presentation.slides.length)}><ChevronLeft size={18}/></button>
-            <div>{presentation.slides.map((_,index)=><i key={index} className={presentationSlide===index?"active":""}/>)}</div>
-            <button type="button" aria-label="Next presentation slide" onClick={()=>setPresentationSlide(value=>(value+1)%presentation.slides.length)}><ChevronRight size={18}/></button>
-          </div>
-          <Link className="fg-moon-btn fg-moon-btn-dark" to={presentationCurrent.to}>{presentation.open}<ArrowUpRight size={17}/></Link>
-        </aside>
-      </div>
-
-      <div className="fg-figma-embed-thumbs" role="tablist" aria-label={presentation.title}>
-        {presentation.slides.map((slide,index)=><button
-          type="button"
-          key={slide.title}
-          role="tab"
-          aria-selected={presentationSlide===index}
-          className={presentationSlide===index?"active":""}
-          onClick={()=>setPresentationSlide(index)}
-        >
-          <span className={`fg-figma-embed-thumb fg-photo-${String(slide.photo).padStart(2,"0")}`}><b dir="ltr">{index+1}</b></span>
-          <span><small>{slide.kicker}</small><strong>{slide.title}</strong></span>
-        </button>)}
-      </div>
-    </section>
+    <div id="presentation">
+      <OasisCanvaPresentation lang={lang} compact/>
+    </div>
 
     <section className="fg-moon-about" id="about">
       <div className="fg-moon-about-copy">
