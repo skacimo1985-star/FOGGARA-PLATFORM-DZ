@@ -99,14 +99,15 @@ export default function ParcelWeather({
   const active = parcels.filter(p => !p.archived);
   const { parcelId } = useOperationalContext();
   const parcel = active.find(p => p.id === parcelId) ?? active[0];
+  const resolvedParcelId = parcel?.id ?? null;
   const [status, setStatus] = useState<WeatherStatus | null>(null);
   const [data, setData] = useState<WeatherResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (parcel && parcel.id !== parcelId) setActiveParcelId(parcel.id);
-  }, [parcel?.id, parcelId]);
+    if (resolvedParcelId && resolvedParcelId !== parcelId) setActiveParcelId(resolvedParcelId);
+  }, [resolvedParcelId, parcelId]);
 
   useEffect(() => {
     let cancelled = false;
