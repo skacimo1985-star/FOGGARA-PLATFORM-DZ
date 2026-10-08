@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ErrorText, DemoBadge } from "@/components/common";
 import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
+import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 import "./command-center.css";
 
 type SpatialFeature = {
@@ -326,7 +327,7 @@ export default function Gis() {
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
-  const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
+  const { projectId: activeProjectId, parcelId: selectedParcelId } = useOperationalContext();
   const [parcels, setParcels] = useState<ParcelRecord[]>([]);
   const boundaryImportRef = useRef<HTMLInputElement | null>(null);
   const [boundaryBusy, setBoundaryBusy] = useState(false);
@@ -469,10 +470,25 @@ export default function Gis() {
     setSearchParams(next);
   };
 
-  const selectedSite = useMemo(
-    () => (data ?? []).find((entry) => entry.site.id === selectedSiteId) ?? null,
-    [data, selectedSiteId],
+  const activeProjectSiteId = useMemo(
+    () => (data ?? []).find((entry) => entry.projects.some((project) => project.id === activeProjectId))?.site.id ?? null,
+    [data, activeProjectId],
   );
+  const scopedParcels = useMemo(
+    () => activeProjectSiteId ? parcels.filter((parcel) => parcel.site_id === activeProjectSiteId) : parcels,
+    [parcels, activeProjectSiteId],
+  );
+  const selectedSite = useMemo(
+    () => (data ?? []).find((entry) => entry.site.id === (selectedSiteId ?? activeProjectSiteId)) ?? null,
+    [data, selectedSiteId, activeProjectSiteId],
+  );
+
+  useEffect(() => {
+    if (!activeProjectSiteId || !scopedParcels.length) return;
+    if (!selectedParcelId || !scopedParcels.some((parcel) => parcel.id === selectedParcelId)) {
+      setActiveParcelId(scopedParcels[0].id);
+    }
+  }, [activeProjectSiteId, scopedParcels, selectedParcelId]);
 
   const selectedParcel = useMemo(
     () => parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId) ?? null,
@@ -708,10 +724,11 @@ export default function Gis() {
         area_ha: Math.max(0.01, Number((budget.areaKm2 * 100).toFixed(4))),
         location: `GIS AOI ${((south+north)/2).toFixed(5)}, ${((west+east)/2).toFixed(5)}`,
         boundary_geojson: bboxPolygon(manualAnalysisBbox),
+        site_id: activeProjectSiteId,
         stage: "initial",
       });
       await refreshParcelSpatialData();
-      setSelectedParcelId(created.id);
+      setActiveParcelId(created.id);
       setManualAnalysisBbox(null);
       setNewFieldName("");
       setFieldIntelligenceResult(null);
@@ -887,7 +904,7 @@ export default function Gis() {
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
           selectedWilaya={wilayaFilter}
-          selectedSiteId={selectedSiteId}
+          selectedSiteId={selectedParcelId ? null : (selectedSiteId ?? activeProjectSiteId)}
           selectedParcelId={selectedParcelId}
           selectedParcelPoint={selectedParcelRecord?.lat != null && selectedParcelRecord?.lon != null
             ? { lat: selectedParcelRecord.lat, lon: selectedParcelRecord.lon }
@@ -897,7 +914,7 @@ export default function Gis() {
           onAnalysisSelectionChange={(bbox) => {
             setManualAnalysisBbox(bbox);
             if (bbox) {
-              setSelectedParcelId(null);
+              setActiveParcelId(null);
               setSelectedSiteId(null);
             }
           }}
@@ -906,7 +923,7 @@ export default function Gis() {
           onSelectSite={(siteId) => void selectSite(siteId)}
           onSelectParcel={(parcelId) => {
             setManualAnalysisBbox(null);
-            setSelectedParcelId((current) => current === parcelId ? null : parcelId);
+            setActiveParcelId(selectedParcelId === parcelId ? null : parcelId);
             setSelectedSiteId(null);
           }}
           onDrawParcelBoundary={(geometry) => void saveParcelBoundary(geometry)}
@@ -947,13 +964,13 @@ export default function Gis() {
                 value={selectedParcelId ?? ""}
                 onChange={(event) => {
                   const next = Number(event.target.value);
-                  setSelectedParcelId(Number.isFinite(next) && next > 0 ? next : null);
+                  setActiveParcelId(Number.isFinite(next) && next > 0 ? next : null);
                   if (Number.isFinite(next) && next > 0) setManualAnalysisBbox(null);
                   setSelectedSiteId(null);
                 }}
               >
                 <option value="">{parcelCopy.none}</option>
-                {parcels.map((parcel) => (
+                {scopedParcels.map((parcel) => (
                   <option key={parcel.id} value={parcel.id}>
                     #{parcel.id} · {parcel.name} · {parcel.location}
                   </option>
