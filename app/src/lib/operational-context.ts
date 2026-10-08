@@ -49,10 +49,12 @@ export function getOperationalContext() {
 
 export function setActiveProjectId(projectId: number | null) {
   if (typeof window === "undefined") return;
+  syncFromStorage();
   if (projectId) window.localStorage.setItem(PROJECT_KEY, String(projectId));
   else window.localStorage.removeItem(PROJECT_KEY);
-  window.localStorage.removeItem(PARCEL_KEY);
-  current = { projectId, parcelId: null };
+  const projectChanged = current.projectId !== projectId;
+  if (projectChanged) window.localStorage.removeItem(PARCEL_KEY);
+  current = { projectId, parcelId: projectChanged ? null : current.parcelId };
   emit();
 }
 
