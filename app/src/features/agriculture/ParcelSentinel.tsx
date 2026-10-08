@@ -21,17 +21,21 @@ type Scene = {
 };
 type SceneResult = { scenes: Scene[]; sample_geometry: string; sample_bbox_wgs84: number[] };
 type SatelliteIndex = "ndvi" | "lswi" | "ndmi" | "ndwi" | "bsi" | "savi" | "evi";
+type SatelliteStatistics = {
+  statistics: { min: number | null; max: number | null; mean: number | null; median: number | null };
+  pixels: { total: number; valid: number; masked: number; valid_fraction: number };
+  processing_plan_fingerprint: string;
+  grid?: { resolution_m?: number | null; effective_source_resolution_m?: number | null; resampled?: boolean };
+  mask?: { method?: string; cloud_masked_pixel_count?: number; geometry_mask_applied?: boolean };
+};
 type AnalysisResult = {
   created: boolean;
   observation: { id: number; metric: string; value: number; observed_at: string; evidence_status: string };
-  statistics?: {
-    pixels: { valid_fraction: number };
-    processing_plan_fingerprint: string;
-    grid?: { effective_source_resolution_m?: number | null; resampled?: boolean };
-  };
+  statistics?: SatelliteStatistics;
   sample_geometry: string;
   provenance: string;
 };
+type PreviewState = { trueColorUrl: string; indexUrl: string };
 
 const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = (n: number) => {
@@ -59,6 +63,7 @@ export default function ParcelSentinel({
     missing: "Ajoutez une parcelle réelle d’abord.", info: "Sans contour, l’analyse utilise un carré estimé autour du centre. Avec un contour enregistré, les statistiques sont masquées au polygone réel. Résultat INFÉRÉ et non vérifié sur le terrain.",
     saved: "Indice enregistré", duplicate: "Scène déjà enregistrée pour cet indice", load: "Consultation du catalogue…",
     busy: "Analyse raster en cours…", error: "La requête a échoué. Vérifiez les coordonnées, le fournisseur ou le masque nuageux.",
+    visual: "Analyse satellitaire visuelle", trueColor: "Sentinel-2 · vraies couleurs", indexMap: "Carte de l’indice", mean: "Moyenne", median: "Médiane", min: "Minimum", max: "Maximum", validPixels: "Pixels valides", acquired: "Acquisition", resolution: "Résolution source", previewUnavailable: "Le calcul a réussi, mais l’aperçu raster n’a pas pu être affiché.",
   } : lang === "en" ? {
     heading: "Real Sentinel-2 · parcel indices", intro: "Find real L2A scenes, compute SCL-masked Sentinel indices, and save the traceable mean to your parcel.",
     parcel: "Parcel", from: "From", to: "To", search: "Search scenes",
@@ -68,6 +73,7 @@ export default function ParcelSentinel({
     missing: "Add a real parcel first.", info: "Without a boundary, analysis uses an approximate square around the centre. With a saved boundary, statistics are masked to the real polygon. Result remains INFERRED, not ground verified.",
     saved: "Index saved", duplicate: "Scene already recorded for this index", load: "Checking satellite catalogue…",
     busy: "Processing raster…", error: "Request failed. Check coordinates, provider availability and cloud mask.",
+    visual: "Visual satellite analysis", trueColor: "Sentinel-2 · true color", indexMap: "Index map", mean: "Mean", median: "Median", min: "Minimum", max: "Maximum", validPixels: "Valid pixels", acquired: "Acquired", resolution: "Source resolution", previewUnavailable: "The calculation succeeded, but the raster preview could not be displayed.",
   } : {
     heading: "Sentinel-2 حقيقي · مؤشرات القطعة", intro: "ابحث عن مشاهد Sentinel-2 L2A الحقيقية واحسب المؤشرات الطيفية مع حجب الغيوم ثم احفظ المتوسط القابل للتتبع في سجل القطعة.",
     parcel: "القطعة الزراعية", from: "من", to: "إلى", search: "بحث عن المشاهد",
@@ -77,6 +83,7 @@ export default function ParcelSentinel({
     missing: "أنشئ قطعة زراعية حقيقية أولاً.", info: "بدون حدود مرسومة يستخدم التحليل مربعًا تقديريًا حول المركز؛ وعند حفظ الحدود تُقص الإحصاءات على البوليغون الحقيقي. تبقى النتيجة INFERRED وليست قياسًا ميدانيًا متحققًا.",
     saved: "تم حفظ المؤشر", duplicate: "هذا المشهد محفوظ سابقًا لهذا المؤشر", load: "جاري البحث في فهرس الأقمار…",
     busy: "جاري تحليل الصورة…", error: "فشلت العملية. تحقق من الإحداثيات وتوفر المزود وجودة المشهد.",
+    visual: "التحليل البصري بالأقمار الصناعية", trueColor: "Sentinel-2 · ألوان حقيقية", indexMap: "خريطة المؤشر", mean: "المتوسط", median: "الوسيط", min: "الأدنى", max: "الأقصى", validPixels: "البكسلات الصالحة", acquired: "تاريخ الالتقاط", resolution: "دقة المصدر", previewUnavailable: "تم الحساب بنجاح لكن تعذر عرض معاينة الصورة الفضائية.",
   };
   const active = parcels.filter(p => !p.archived);
   const [parcelId, setParcelId] = useState<number | null>(null);
@@ -89,6 +96,8 @@ export default function ParcelSentinel({
   const [busy, setBusy] = useState<"scenes" | "compute" | "coords" | null>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [previewError, setPreviewError] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
 
@@ -96,8 +105,17 @@ export default function ParcelSentinel({
     setScenes([]);
     setSceneId("");
     setResult(null);
+    setPreview(null);
+    setPreviewError("");
     setError("");
   }, [parcel?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.trueColorUrl) URL.revokeObjectURL(preview.trueColorUrl);
+      if (preview?.indexUrl) URL.revokeObjectURL(preview.indexUrl);
+    };
+  }, [preview]);
 
   if (!parcel) {
     return <section className="fg-panel"><h2>{text.heading}</h2><p>{text.missing}</p></section>;
@@ -106,7 +124,7 @@ export default function ParcelSentinel({
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
     if (!hasCoords) return;
-    setBusy("scenes"); setError(""); setResult(null); setScenes([]); setSceneId("");
+    setBusy("scenes"); setError(""); setPreviewError(""); setResult(null); setPreview(null); setScenes([]); setSceneId("");
     try {
       const query = new URLSearchParams({ start, end, cloud_cover_lte: "30" });
       const data = await api.get<SceneResult>(`/agriculture/parcels/${parcel.id}/remote-sensing/scenes?${query}`);
@@ -121,11 +139,29 @@ export default function ParcelSentinel({
 
   const handleAnalyze = async () => {
     if (!sceneId || busy) return;
-    setBusy("compute"); setError(""); setResult(null);
+    setBusy("compute"); setError(""); setPreviewError(""); setResult(null); setPreview(null);
     try {
       const value = await api.post<AnalysisResult>(`/agriculture/parcels/${parcel.id}/remote-sensing/analyze`, {scene_id: sceneId, index});
-      setResult(value);
+      let statistics = value.statistics;
+      if (!statistics) {
+        const query = new URLSearchParams({scene_id: sceneId, index});
+        statistics = await api.get<SatelliteStatistics>(`/agriculture/parcels/${parcel.id}/remote-sensing/statistics?${query}`);
+      }
+      setResult({...value, statistics});
       if (value.created) await onSaved();
+
+      try {
+        const sceneQuery = new URLSearchParams({scene_id: sceneId});
+        const indexQuery = new URLSearchParams({scene_id: sceneId, index});
+        const trueColorBlob = await api.getBlob(`/agriculture/parcels/${parcel.id}/remote-sensing/true-color.png?${sceneQuery}`, 60_000);
+        const indexBlob = await api.getBlob(`/agriculture/parcels/${parcel.id}/remote-sensing/preview.png?${indexQuery}`, 60_000);
+        setPreview({
+          trueColorUrl: URL.createObjectURL(trueColorBlob),
+          indexUrl: URL.createObjectURL(indexBlob),
+        });
+      } catch {
+        setPreviewError(text.previewUnavailable);
+      }
     } catch {
       setError(text.error);
     } finally {
@@ -151,7 +187,15 @@ export default function ParcelSentinel({
       setBusy(null);
     }
   };
-  return <section className="fg-panel" aria-label={text.heading}>
+  const selectedScene = scenes.find(scene => scene.id === sceneId);
+  const stats = result?.statistics;
+  const statItems = stats ? [
+    [text.mean, stats.statistics.mean],
+    [text.median, stats.statistics.median],
+    [text.min, stats.statistics.min],
+    [text.max, stats.statistics.max],
+  ] as const : [];
+  return <section className="fg-panel fg-satellite-console" aria-label={text.heading}>
     <div className="fg-panel-title"><h2><Satellite size={21}/> {text.heading}</h2><span className="fg-badge inferred">COMPUTED → INFERRED</span></div>
     <p className="fg-muted">{text.intro}</p>
     <div className="fg-form">
@@ -176,10 +220,10 @@ export default function ParcelSentinel({
           <button className="fg-secondary" type="submit" disabled={busy !== null}><RefreshCw size={16}/> {busy === "scenes" ? text.load : text.search}</button>
         </form>
         {scenes.length > 0 && <div className="fg-form">
-          <label className="fg-field"><span>{text.scene}</span><select value={sceneId} onChange={e => {setSceneId(e.target.value);setResult(null);}}>
+          <label className="fg-field"><span>{text.scene}</span><select value={sceneId} onChange={e => {setSceneId(e.target.value);setResult(null);setPreview(null);setPreviewError("");}}>
             {scenes.map(s => <option key={s.id} value={s.id}>{s.datetime?.slice(0,10) ?? "—"} · {s.cloud_cover_pct ?? "?"}% {text.clouds} · {s.id}</option>)}
           </select></label>
-          <label className="fg-field"><span>{text.index}</span><select value={index} onChange={e => {setIndex(e.target.value as SatelliteIndex);setResult(null);}}>
+          <label className="fg-field"><span>{text.index}</span><select value={index} onChange={e => {setIndex(e.target.value as SatelliteIndex);setResult(null);setPreview(null);setPreviewError("");}}>
             <option value="ndvi">NDVI · vegetation · 10 m</option>
             <option value="evi">EVI · vegetation response · 10 m</option>
             <option value="savi">SAVI · soil-adjusted vegetation · 10 m</option>
@@ -192,15 +236,29 @@ export default function ParcelSentinel({
         </div>}
         {!busy && !error && scenes.length === 0 && <small className="fg-muted">{text.noScenes}</small>}
       </>}
-      {result && <div role="status" className="fg-result">
-        <strong>{result.created ? text.saved : text.duplicate}</strong>
-        <div>{result.observation.metric.toUpperCase()}: <strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong></div>
-        <small>{new Date(result.observation.observed_at).toLocaleDateString()} · {result.observation.evidence_status}</small>
-        {result.statistics && <small>
-          Valid pixels: {(result.statistics.pixels.valid_fraction * 100).toFixed(1)}%
-          {result.statistics.grid?.effective_source_resolution_m ? ` · source ${result.statistics.grid.effective_source_resolution_m} m` : ""}
-          {result.statistics.grid?.resampled ? " · resampled for analysis" : ""}
-        </small>}
+      {result && <div role="status" className="fg-satellite-result">
+        <div className="fg-satellite-result-head">
+          <div><small>FOGGARA / SENTINEL-2 L2A</small><strong>{text.visual}</strong></div>
+          <span className="fg-badge inferred">COMPUTED → INFERRED</span>
+        </div>
+        <div className="fg-satellite-kpis">
+          <div><small>{result.observation.metric.toUpperCase()}</small><strong dir="ltr">{Number(result.observation.value).toFixed(4)}</strong><span>{result.created ? text.saved : text.duplicate}</span></div>
+          {statItems.map(([label,value])=><div key={label}><small>{label}</small><strong dir="ltr">{value==null?"—":Number(value).toFixed(4)}</strong></div>)}
+          {stats&&<div><small>{text.validPixels}</small><strong dir="ltr">{(stats.pixels.valid_fraction*100).toFixed(1)}%</strong><span dir="ltr">{stats.pixels.valid}/{stats.pixels.total}</span></div>}
+        </div>
+        <div className="fg-satellite-scene-meta">
+          <span><b>{text.acquired}</b>{selectedScene?.datetime?.slice(0,10) ?? new Date(result.observation.observed_at).toISOString().slice(0,10)}</span>
+          <span><b>{text.clouds}</b>{selectedScene?.cloud_cover_pct ?? "—"}%</span>
+          <span><b>{text.resolution}</b>{stats?.grid?.effective_source_resolution_m ?? "—"} m</span>
+          <span><b>PROVIDER</b>{selectedScene?.provider ?? "element84-earth-search"}</span>
+        </div>
+        {preview&&<div className="fg-satellite-visuals">
+          <figure><div><img src={preview.trueColorUrl} alt={`${text.trueColor} · ${parcel.name}`}/></div><figcaption><Satellite size={15}/><strong>{text.trueColor}</strong><span>{selectedScene?.datetime?.slice(0,10) ?? ""}</span></figcaption></figure>
+          <figure><div><img src={preview.indexUrl} alt={`${text.indexMap} ${index.toUpperCase()} · ${parcel.name}`}/></div><figcaption><Satellite size={15}/><strong>{text.indexMap} · {index.toUpperCase()}</strong><span>COMPUTED · SCL MASKED</span></figcaption></figure>
+        </div>}
+        {preview&&<div className={`fg-satellite-legend fg-satellite-legend-${index}`}><span>-1</span><i/><span>+1</span></div>}
+        {previewError&&<p className="fg-satellite-preview-error">{previewError}</p>}
+        <p className="fg-footnote">Sentinel-2 L2A · {result.sample_geometry} · {result.provenance} · {result.observation.evidence_status}</p>
       </div>}
       {error && <p className="fg-error" role="alert">{error}</p>}
       <p className="fg-footnote">{text.info} {parcel.boundary_geojson ? " · PARCEL_BOUNDARY_GEOJSON" : " · POINT_CENTERED_ESTIMATE"}</p>
