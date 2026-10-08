@@ -1,12 +1,13 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link,NavLink,useLocation,useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
-import {Globe,LogOut,Workflow,Compass,FolderKanban,Wrench,Gauge,BarChart3,Map,Radio,Building2,ClipboardCheck,ScrollText,Gavel,Activity,FlaskConical,Menu,X,Network,ShieldCheck,Layers,SlidersHorizontal,Droplets,Sprout,MessageSquareText, type LucideIcon} from 'lucide-react';
+import {Globe,LogOut,Workflow,Compass,FolderKanban,Wrench,Gauge,BarChart3,Map,Radio,Building2,ClipboardCheck,ScrollText,Gavel,Activity,FlaskConical,Menu,X,Network,ShieldCheck,Layers,SlidersHorizontal,Droplets,Sprout,MessageSquareText,ArrowUpRight, type LucideIcon} from 'lucide-react';
 import {useAuth} from '@/context/useAuth';
 import {setLocale,type Locale} from '@/lib/i18n';
 import {WILAYAS} from '@/lib/wilayas';
 import {ThemeControl} from '@/components/ThemeControl';
 import {WorkspaceSearch} from '@/components/WorkspaceSearch';
+import {api} from '@/lib/api';
 
 function AlgeriaClock() {
   const [now, setNow] = useState(new Date());
@@ -21,11 +22,16 @@ function AlgeriaClock() {
 }
 
 type Item={to:string;key:string;icon:LucideIcon;end?:boolean};
+type ProjectOption={id:number;title:string};
 const groups:{key:string;items:Item[]}[]=[
- {key:'os.groupCore',items:[{to:'/app',key:'os.workspace',icon:Network,end:true},{to:'/app/nexus',key:'nav.nexus',icon:Network},{to:'/app/agriculture',key:'nav.agriculture',icon:Sprout},{to:'/app/projects',key:'nav.projects',icon:FolderKanban},{to:'/app/resources',key:'nexus.title',icon:Layers},{to:'/app/explore',key:'nav.explore',icon:Compass},{to:'/app/gis',key:'nav.gis',icon:Map},{to:'/app/water',key:'nav.water',icon:Droplets}]},
- {key:'os.groupIntelligence',items:[{to:'/app/automation',key:'automation.title',icon:Workflow},{to:'/app/operations',key:'nav.operations',icon:Activity},{to:'/app/studio',key:'os.studio',icon:SlidersHorizontal},{to:'/app/decisions',key:'nav.decisions',icon:Gavel},{to:'/app/analytics',key:'nav.analytics',icon:BarChart3},{to:'/app/simulator',key:'nav.simulator',icon:FlaskConical},{to:'/app/telemetry',key:'nav.telemetry',icon:Activity},{to:'/app/iot',key:'nav.iot',icon:Radio}]},
- {key:'os.groupAssurance',items:[{to:'/app/metrology',key:'nav.metrology',icon:Gauge},{to:'/app/services',key:'nav.services',icon:Wrench},{to:'/app/opportunities',key:'opportunities.title',icon:Compass},{to:'/app/vde',key:'nav.vde',icon:ShieldCheck},{to:'/app/account',key:'nav.account',icon:Building2},{to:'/app/org',key:'nav.org',icon:Building2},{to:'/app/audit',key:'nav.audit',icon:ScrollText}]},
+ {key:'os.groupCore',items:[{to:'/app',key:'os.workspace',icon:Network,end:true},{to:'/app/projects',key:'nav.projects',icon:FolderKanban},{to:'/app/gis',key:'nav.gis',icon:Map},{to:'/app/agriculture',key:'nav.agriculture',icon:Sprout},{to:'/app/studio',key:'os.studio',icon:SlidersHorizontal}]},
+ {key:'os.groupIntelligence',items:[{to:'/app/operations',key:'nav.operations',icon:Activity},{to:'/app/telemetry',key:'nav.telemetry',icon:Radio},{to:'/app/services',key:'nav.services',icon:Wrench}]},
+ {key:'os.groupAssurance',items:[{to:'/app/vde',key:'nav.vde',icon:ShieldCheck},{to:'/app/org',key:'nav.org',icon:Building2},{to:'/app/audit',key:'nav.audit',icon:ScrollText}]},
 ];
+const advancedItems:Item[]=[
+ {to:'/app/nexus',key:'nav.nexus',icon:Network},{to:'/app/resources',key:'nexus.title',icon:Layers},{to:'/app/explore',key:'nav.explore',icon:Compass},{to:'/app/water',key:'nav.water',icon:Droplets},{to:'/app/automation',key:'automation.title',icon:Workflow},{to:'/app/decisions',key:'nav.decisions',icon:Gavel},{to:'/app/analytics',key:'nav.analytics',icon:BarChart3},{to:'/app/simulator',key:'nav.simulator',icon:FlaskConical},{to:'/app/iot',key:'nav.iot',icon:Radio},{to:'/app/metrology',key:'nav.metrology',icon:Gauge},{to:'/app/opportunities',key:'opportunities.title',icon:Compass},{to:'/app/account',key:'nav.account',icon:Building2}
+];
+const allDestinations=[...groups.flatMap(group=>group.items),...advancedItems];
 function Brand(){return <Link to="/" className="os-brand"><img className="os-brand-symbol" src="/sirep-brand.svg" alt="SIREP OASES NEXUS WEFEH DZ"/><span><strong dir="ltr">FOGGARA<span className="os-brand-dz"> / DZ</span></strong><small dir="ltr">SIREP · NEXUS WEFEH</small></span></Link>;}
 export function Layout({children}:{children:ReactNode}){const {t,i18n}=useTranslation();const {user,logout}=useAuth();const location=useLocation();const navigate=useNavigate();const [open,setOpen]=useState(false);const [wilaya,setWilaya]=useState(()=>localStorage.getItem('wilaya')||'');const locale=(i18n.language||'ar') as Locale;const mainRef=useRef<HTMLElement>(null);const workspace=!!user&&location.pathname.startsWith('/app');const active=groups.flatMap(g=>g.items).filter(item=>item.end?location.pathname===item.to:location.pathname.startsWith(item.to)).sort((a,b)=>b.to.length-a.to.length)[0];
  useEffect(()=>{window.scrollTo(0,0);mainRef.current?.focus({preventScroll:true});},[location.pathname]);
