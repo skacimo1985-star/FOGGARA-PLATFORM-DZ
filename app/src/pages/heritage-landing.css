@@ -128,17 +128,17 @@
   animation:fgMoonHeroIn .8s ease both;
 }
 .fg-moon-hero-media-1{
-  background-image:url("/images/foggara-video-frame-1.webp"),url("/images/oasis-dawn.webp");
+  background-image:url("/images/oasis-dawn.webp");
   background-position:center 58%;
 }
 .fg-moon-hero-media-2{
-  background-image:url("/images/foggara-video-frame-2.webp"),url("/images/oasis-dawn.webp");
+  background-image:url("/images/oasis-hero.webp");
   background-position:center 52%;
 }
 .fg-moon-hero-media-3{
-  background-image:url("/images/foggara-video-frame-1.webp"),url("/images/oasis-dawn.webp");
-  background-position:center 66%;
-  transform:scale(1.045);
+  background-image:url("/images/oasis-dawn.webp");
+  background-position:center 72%;
+  transform:scale(1.025);
 }
 .fg-moon-hero-overlay{
   z-index:-2;
