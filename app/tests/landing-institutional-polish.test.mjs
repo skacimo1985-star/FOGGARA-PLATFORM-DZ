@@ -26,6 +26,13 @@ test('company capabilities remain visible in all supported languages',()=>{
   assert.ok(landing.includes('fg-global-capabilities'));
 });
 
+test('expo QR remains outside the hero composition',()=>{
+  const heroStart=landing.indexOf('<section className="fg-moon-hero fg-lukas-hero"');
+  const heroEnd=landing.indexOf('<nav className="fg-lukas-domain-strip"',heroStart);
+  const hero=landing.slice(heroStart,heroEnd);
+  assert.equal(hero.includes('expo-qr.svg'),false);
+});
+
 test('expo QR stays compact and demo routes remain actionable',()=>{
   assert.ok(landing.includes('width="64" height="64"'));
   assert.ok(landing.includes('to={user?"/app":"/login"}'));
