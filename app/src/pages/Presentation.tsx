@@ -1,8 +1,9 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Link,useLocation} from 'react-router';
 import {useTranslation} from 'react-i18next';
-import {ArrowUpRight,ArrowLeft,ArrowRight,ChevronDown,Download,Expand,Minimize,Pause,Play,RotateCcw,ShieldCheck,SlidersHorizontal} from 'lucide-react';
+import {ArrowUpRight,ChevronDown,Download,RotateCcw,ShieldCheck,SlidersHorizontal} from 'lucide-react';
 import {NexusKasria} from '@/components/NexusKasria';
+import {OasisCanvaPresentation} from '@/components/OasisCanvaPresentation';
 import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
 import {evaluatePresentationMatrix,type MatrixAxis} from '@/lib/presentation-matrix';
 import './presentation.css';
@@ -11,63 +12,17 @@ const copy={
  fr:{eyebrow:'FOGGARA-DZ / PRÉSENTATION',title:'DU PATRIMOINE AU JUMEAU NUMÉRIQUE',intro:'Une présentation visuelle qui relie la logique de la Foggara traditionnelle à l’architecture numérique : de la source et du partage de l’eau aux données, preuves, décisions et suivi.',explore:'OUVRIR LA PLATEFORME',workspace:'Espace de travail',presentation:'Présentation interactive',architecture:'De la Foggara à la décision numérique',architectureSub:'Sélectionnez une étape : l’image et l’explication évoluent ensemble pour montrer la relation entre le système hydraulique et FOGGARA-DZ.',steps:['SOURCE / GALERIE MÈRE','KASRIA / PARTAGE DE L’EAU','SEGUIAS / DISTRIBUTION','PARCELLE / USAGE AGRICOLE','PREUVE / SUIVI'],descriptions:['Le récit commence à la source et dans la galerie souterraine. Dans FOGGARA-DZ, cela devient une ressource localisée, identifiée et reliée aux mesures et à son historique.','La kasria répartit l’eau selon une logique explicite. Numériquement, cela correspond aux règles, priorités, contraintes et scénarios d’allocation.','Les seguias acheminent l’eau vers les zones cultivées. Le jumeau numérique relie réseaux, équipements, zones d’irrigation et mesures opérationnelles.','À la parcelle, l’eau devient une décision agronomique liée à la culture, la météo, le sol, l’eau et au conseil d’irrigation.','Les mesures et observations deviennent des preuves avec source, méthode, date et validation, puis se relient à la décision, au suivi et à l’apprentissage.'],tags:[['Ressource','Localisation','Historique'],['Règles','Priorités','Allocation'],['Réseau','Mesure','Suivi'],['Culture','Sol','Irrigation'],['Source','Validation','Audit']],play:'Lire la présentation',pause:'Mettre en pause',full:'Plein écran',exit:'Quitter le plein écran',prev:'Étape précédente',next:'Étape suivante',matrix:'Composez votre matrice',matrixSub:'Exploration calculée avec vos entrées. Aucune mesure préremplie ni recommandation opérationnelle validée.',weight:'Poids',value:'Valeur',lower:'Borne basse',upper:'Borne haute',direction:'Objectif',maximize:'Maximiser',minimize:'Minimiser',hard:'Contrainte stricte : valeur dans les bornes',criteria:'Critères',incomplete:'Renseignez les valeurs, bornes et poids pour calculer.',blocked:'Scénario bloqué : une contrainte stricte est dépassée.',ready:'Utilité pondérée calculée',score:'Score du scénario',formula:'Utilité = normalisation entre vos bornes, inversée pour minimiser. Score = somme des utilités × poids / somme des poids. Une violation stricte bloque le résultat.',reset:'Réinitialiser',export:'Exporter entrées et résultat',unsaved:'Session non enregistrée • Calcul dans le navigateur • Aucun envoi au serveur',method:'Algorithme',notEvidence:'Le score sert à la comparaison mathématique. Ce n’est ni une probabilité, ni un certificat de sécurité, ni une preuve vérifiée.',footer:'FOGGARA-DZ · EURL SIREP Oasis Nexus WEFEH',empty:'Aucune donnée opérationnelle dans cette présentation',modules:'Un système relié. Des parcours clairs.',modulesSub:'Passez de la présentation au domaine ou à l’outil souhaité.',evidence:'Preuves et revue',decision:'Moteur de décision',collab:'Data rooms et collaboration',sovereign:'Hébergement souverain visé',sovereignSub:'L’exploitation nécessite un serveur, une base de données et une infrastructure validée. Cette présentation ne prouve pas la conformité et ne commande aucun équipement.'},
  en:{eyebrow:'FOGGARA-DZ / PLATFORM PRESENTATION',title:'FROM HERITAGE TO DIGITAL TWIN',intro:'A visual presentation connecting the logic of the traditional Foggara to the digital platform: from source and water sharing to data, evidence, decisions and monitoring.',explore:'OPEN PLATFORM',workspace:'Workspace',presentation:'Interactive presentation',architecture:'From Foggara to digital decision',architectureSub:'Select a stage. The image and explanation change together to show how the hydraulic system maps to FOGGARA-DZ capabilities.',steps:['SOURCE / MOTHER GALLERY','KASRIA / WATER SHARING','SEGUIAS / DISTRIBUTION','PARCEL / AGRICULTURAL USE','EVIDENCE / MONITORING'],descriptions:['The story begins at the water source and underground gallery. In FOGGARA-DZ this becomes a located, identified resource linked to measurements and history.','The kasria divides water through an explicit allocation logic. Digitally, that maps to rules, priorities, constraints and allocation scenarios.','Seguias carry water toward cultivated areas. The digital twin links networks, equipment, irrigation zones and operational measurements.','At parcel level, water becomes an agronomic decision informed by crop condition, weather, soil, water context and irrigation advice.','Measurements and observations become evidence with source, method, timestamp and validation, then connect to decision, monitoring and learning.'],tags:[['Resource','Location','History'],['Rules','Priorities','Allocation'],['Network','Measurement','Monitoring'],['Crop','Soil','Irrigation'],['Source','Validation','Audit']],play:'Play presentation',pause:'Pause presentation',full:'Fullscreen',exit:'Exit fullscreen',prev:'Previous stage',next:'Next stage',matrix:'Shape your decision matrix',matrixSub:'A live calculation from your inputs. No prefilled field data or approved operational recommendation.',weight:'Weight',value:'Value',lower:'Lower bound',upper:'Upper bound',direction:'Objective',maximize:'Maximize',minimize:'Minimize',hard:'Hard constraint: value within bounds',criteria:'Criteria',incomplete:'Complete values, bounds and weights to calculate.',blocked:'Scenario blocked: a hard constraint is violated.',ready:'Calculated weighted utility',score:'Scenario score',formula:'Utility = normalize within your bounds, inverted when minimizing. Score = sum of utility × weight / sum of weights. A hard violation blocks the result.',reset:'Reset',export:'Export inputs and result',unsaved:'Unsaved session • Calculated in your browser • No server transmission',method:'Algorithm',notEvidence:'This score is a mathematical comparison metric, not a probability, safety certificate or verified evidence.',footer:'FOGGARA-DZ · EURL SIREP Oasis Nexus WEFEH',empty:'No operational data in this presentation',modules:'A connected system. Clear pathways.',modulesSub:'Move from the presentation to the domain or tool you need.',evidence:'Evidence & review',decision:'Decision engine',collab:'Data rooms & collaboration',sovereign:'Sovereign hosting target',sovereignSub:'Operations require a server, database and validated hosting infrastructure. This presentation is not compliance evidence and does not control field equipment.'}
 };
-const presentationPhotos=[10,8,6,1,11] as const;
-const presentationFlows={
- ar:{heritage:'المصدر ← المعرض ← الكسرية ← الساقية ← القطعة',digital:'البيانات ← الأدلة ← القرار ← المتابعة'},
- fr:{heritage:'SOURCE → GALERIE → KASRIA → SEGUIA → PARCELLE',digital:'DONNÉES → PREUVES → DÉCISION → SUIVI'},
- en:{heritage:'SOURCE → GALLERY → KASRIA → SEGUIA → PARCEL',digital:'DATA → EVIDENCE → DECISION → MONITORING'}
-} as const;
 const initialAxes=():MatrixAxis[]=>NEXUS_DOMAINS.map(d=>({key:d.key,weight:0,value:'',lower:'',upper:'',direction:'maximize',hard:false}));
 export default function Presentation(){
- const storyRef=useRef<HTMLElement>(null); const location=useLocation();
+ const location=useLocation();
  useEffect(()=>{if(location.hash==="#matrix")document.getElementById("matrix")?.scrollIntoView({block:"start"});},[location.hash]);
- const {t,i18n}=useTranslation();const locale=i18n.language.startsWith('fr')?'fr':i18n.language.startsWith('en')?'en':'ar';const c=copy[locale];const flows=presentationFlows[locale];
- const [active,setActive]=useState('all'),[step,setStep]=useState(0),[playing,setPlaying]=useState(false),[expanded,setExpanded]=useState(false),[axes,setAxes]=useState(initialAxes);
- useEffect(()=>{if(!playing)return;const timer=setInterval(()=>setStep(v=>{if(v===4)return 0;return v+1;}),6500);return()=>clearInterval(timer);},[playing]);
- useEffect(()=>{const change=()=>setExpanded(document.fullscreenElement===storyRef.current);const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&document.fullscreenElement===storyRef.current)void document.exitFullscreen();};document.addEventListener('fullscreenchange',change);document.addEventListener('keydown',escape);return()=>{document.removeEventListener('fullscreenchange',change);document.removeEventListener('keydown',escape);};},[]);
- const toggleFullscreen=()=>{if(document.fullscreenElement)void document.exitFullscreen();else void storyRef.current?.requestFullscreen().catch(()=>{});};
+ const {t,i18n}=useTranslation();const locale=i18n.language.startsWith('fr')?'fr':i18n.language.startsWith('en')?'en':'ar';const c=copy[locale];
+ const [active,setActive]=useState('all'),[axes,setAxes]=useState(initialAxes);
  const result=evaluatePresentationMatrix(axes),selected=NEXUS_DOMAINS.find(d=>d.key===active);
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
  const exportResult=()=>{const file=new Blob([JSON.stringify({algorithm:'bounded-weighted-utility-browser-v1',status:'UNSAVED_USER_SCENARIO',created_at:new Date().toISOString(),inputs:axes,result},null,2)],{type:'application/json'});const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='foggara-user-matrix.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <div className="fp-presentation">
- <section ref={storyRef} className={`fp-figma-presentation ${expanded?'fp-figma-fullscreen':''}`} aria-labelledby="fp-figma-title">
-  <header className="fp-figma-head">
-   <div><p className="fp-overline">{c.eyebrow}</p><h1 id="fp-figma-title">{c.title}</h1></div>
-   <p>{c.intro}</p>
-  </header>
-  <div className="fp-figma-frame">
-   <div className={`fp-figma-visual fp-figma-photo-${String(presentationPhotos[step]).padStart(2,'0')}`} role="img" aria-label={c.steps[step]}>
-    <div className="fp-figma-visual-shade"/>
-    <span className="fp-figma-index" dir="ltr">{String(step+1).padStart(2,'0')} / 05</span>
-    <div className="fp-figma-caption">
-     <p>{c.steps[step]}</p>
-     <h2>{c.descriptions[step]}</h2>
-    </div>
-   </div>
-   <aside className="fp-figma-panel">
-    <div className="fp-figma-brand"><strong>FOGGARA-DZ</strong><span>SIREP OASES NEXUS WEFEH-DZ</span></div>
-    <div className="fp-figma-flow"><small>HERITAGE FLOW</small><strong>{flows.heritage}</strong></div>
-    <div className="fp-figma-flow digital"><small>DIGITAL FLOW</small><strong>{flows.digital}</strong></div>
-    <div className="fp-figma-tags">{c.tags[step].map(tag=><span key={tag}>{tag}</span>)}</div>
-    <div className="fp-figma-actions">
-     <button type="button" onClick={()=>setPlaying(!playing)} aria-label={playing?c.pause:c.play}>{playing?<Pause size={17}/>:<Play size={17}/>}<span>{playing?c.pause:c.play}</span></button>
-     <button type="button" onClick={toggleFullscreen} aria-label={expanded?c.exit:c.full}>{expanded?<Minimize size={17}/>:<Expand size={17}/>}<span>{expanded?c.exit:c.full}</span></button>
-    </div>
-    <div className="fp-figma-nav">
-     <button type="button" disabled={step===0} onClick={()=>{setStep(step-1);setPlaying(false);}} aria-label={c.prev}><ArrowLeft size={18}/></button>
-     <div>{c.steps.map((_,i)=><i key={i} className={i===step?'active':''}/>)}</div>
-     <button type="button" disabled={step===4} onClick={()=>{setStep(step+1);setPlaying(false);}} aria-label={c.next}><ArrowRight size={18}/></button>
-    </div>
-    <Link to="/app" className="fp-button">{c.explore}<ArrowUpRight size={17}/></Link>
-   </aside>
-  </div>
-  <div className="fp-figma-thumbs" role="tablist" aria-label={c.presentation}>
-   {c.steps.map((title,i)=><button type="button" key={title} role="tab" aria-selected={step===i} className={step===i?'active':''} onClick={()=>{setStep(i);setPlaying(false);}}>
-    <span className={`fp-figma-thumb fp-figma-thumb-${String(presentationPhotos[i]).padStart(2,'0')}`}><b dir="ltr">{i+1}</b></span>
-    <span><small>{String(i+1).padStart(2,'0')}</small><strong>{title}</strong></span>
-   </button>)}
-  </div>
- </section>
+ <OasisCanvaPresentation lang={locale}/>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
  <section id="presentation" className="fp-figma-bridge">
   <div className="fp-section-heading"><div><p className="fp-overline">WEFEH / NEXUS</p><h2>{c.architecture}</h2><p>{c.architectureSub}</p></div></div>

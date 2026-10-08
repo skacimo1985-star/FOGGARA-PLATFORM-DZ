@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 
 const source=readFileSync(new URL('../src/pages/Presentation.tsx',import.meta.url),'utf8');
-const css=readFileSync(new URL('../src/pages/presentation.css',import.meta.url),'utf8');
+const deck=readFileSync(new URL('../src/components/OasisCanvaPresentation.tsx',import.meta.url),'utf8');
+const deckCss=readFileSync(new URL('../src/components/oasis-canva-presentation.css',import.meta.url),'utf8');
 
 test('Presentation.tsx remains valid TSX',()=>{
   const result=ts.transpileModule(source,{
@@ -15,18 +16,24 @@ test('Presentation.tsx remains valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('previous Figma composition is restored as the presentation experience',()=>{
-  assert.ok(source.includes("title:'FROM HERITAGE TO DIGITAL TWIN'"));
-  assert.ok(source.includes('presentationPhotos=[10,8,6,1,11]'));
-  assert.ok(source.includes('fp-figma-frame'));
-  assert.ok(source.includes('fp-figma-thumbs'));
-  assert.ok(source.includes('HERITAGE FLOW'));
-  assert.ok(source.includes('DIGITAL FLOW'));
-  assert.ok(css.includes('RESTORED FIGMA PRESENTATION'));
-  assert.ok(css.includes('/images/foggara-sprite.webp'));
+test('presentation uses the shared Canva oasis deck',()=>{
+  assert.ok(source.includes("OasisCanvaPresentation"));
+  assert.ok(source.includes("<OasisCanvaPresentation lang={locale}/>"));
+  assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
+  assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
+  assert.ok(deck.includes('ANCESTRAL WISDOM. MODERN DECISIONS.'));
 });
 
-test('presentation preserves five synchronized Foggara stages',()=>{
-  for(const marker of ['SOURCE / MOTHER GALLERY','KASRIA / WATER SHARING','SEGUIAS / DISTRIBUTION','PARCEL / AGRICULTURAL USE','EVIDENCE / MONITORING'])
-    assert.ok(source.includes(marker),marker);
+test('Canva deck uses clear oasis images only for its visual media',()=>{
+  assert.ok(deckCss.includes('/images/oasis-dawn.webp'));
+  assert.ok(deckCss.includes('/images/oasis-hero.webp'));
+  assert.equal(deckCss.includes('/images/foggara-sprite.webp'),false);
+  assert.equal(deckCss.includes('/images/foggara-video-frame-1.webp'),false);
+  assert.equal(deckCss.includes('/images/foggara-video-frame-2.webp'),false);
+});
+
+test('decision matrix remains available below the Canva presentation',()=>{
+  assert.ok(source.includes('id="matrix"'));
+  assert.ok(source.includes('evaluatePresentationMatrix'));
+  assert.ok(source.includes('foggara-user-matrix.json'));
 });
