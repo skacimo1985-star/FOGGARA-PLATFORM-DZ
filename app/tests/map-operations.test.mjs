@@ -33,3 +33,12 @@ test("selected satellite raster is labelled as a scene rather than a generic sat
   assert.match(source, /Scène vraie couleur/);
   assert.match(source, /مشهد حقيقي الألوان/);
 });
+
+
+test("operational map exposes a direct analysis-area selector", () => {
+  assert.match(source, /analysisSelectionBbox/);
+  assert.match(source, /onAnalysisSelectionChange/);
+  assert.match(source, /analysis-selection/);
+  assert.match(source, /Select analysis area/);
+  assert.match(source, /حدد منطقة التحليل/);
+});
