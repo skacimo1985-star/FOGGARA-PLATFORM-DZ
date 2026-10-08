@@ -254,30 +254,37 @@ export default function Landing() {
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
     </nav>
 
-    <section className="fg-moon-hero fg-lukas-hero" id="home" aria-labelledby="foggara-title">
+    <section className="fg-moon-hero fg-lukas-hero fg-rebuilt-hero" id="home" aria-labelledby="foggara-title">
       <div className={`fg-moon-hero-media fg-moon-hero-media-${heroSlide+1}`} aria-hidden="true"/>
       <div className="fg-moon-hero-overlay"/>
-      <div className="fg-lukas-cross fg-lukas-cross-a" aria-hidden="true"/>
-      <div className="fg-lukas-cross fg-lukas-cross-b" aria-hidden="true"/>
 
-      <div className="fg-lukas-hero-grid">
-        <div className="fg-lukas-hero-side">
-          <span className="fg-lukas-since" dir="ltr">ALGERIA · 2026</span>
-          <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
-            {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
-              <img src={index===0?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
-            </button>)}
-          </div>
-          <p>{hero.body}</p>
+      <div className="fg-rebuilt-hero-top">
+        <span dir="ltr">ALGERIA · NATIONAL INTEGRATED PLATFORM · 2026</span>
+        <strong dir="ltr">SIREP OASES NEXUS WEFEH-DZ</strong>
+      </div>
+
+      <div className="fg-rebuilt-hero-center">
+        <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
+        <h1 id="foggara-title">
+          <span className="fg-rebuilt-sirep">SIREP OASES</span>
+          <span className="fg-rebuilt-foggara">FOGGARA-DZ</span>
+          <span className="fg-rebuilt-nexus">NEXUS WEFEH</span>
+        </h1>
+        <p className="fg-rebuilt-lead">{hero.body}</p>
+        <div className="fg-moon-hero-actions">
+          <a className="fg-moon-btn fg-moon-btn-light" href="#operating">{copy.discover}</a>
+          <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/login"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
         </div>
+      </div>
 
-        <div className="fg-lukas-hero-main">
-          <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
-          <h1 id="foggara-title">{hero.title}<br/><span>{hero.accent}</span></h1>
-          <div className="fg-moon-hero-actions">
-            <a className="fg-moon-btn fg-moon-btn-light" href="#operating">{copy.discover}</a>
-            <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/login"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
-          </div>
+      <div className="fg-rebuilt-hero-bottom">
+        <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
+          {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
+            <img src={index===0?"/images/oasis-hero.webp":index===1?"/images/foggara-video-frame-1.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
+          </button>)}
+        </div>
+        <div className="fg-rebuilt-domain-line" dir="ltr">
+          <span>WATER</span><span>ENERGY</span><span>FOOD</span><span>ECOSYSTEM</span><span>HEALTH</span>
         </div>
       </div>
 
