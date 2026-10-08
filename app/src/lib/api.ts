@@ -51,9 +51,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const controller = new AbortController();
   const isLongRunningAnalysis = path.startsWith("/remote-sensing/catalog/scenes/") && path.includes("/statistics?");
-  const timeoutMs = path.startsWith("/auth/") || path === "/org/invitations/accept" || isLongRunningAnalysis
-    ? 60_000
-    : DEFAULT_TIMEOUT_MS;
+  const isLongRunningStudy = path.startsWith("/remote-sensing/studies/");
+  const timeoutMs = isLongRunningStudy
+    ? 120_000
+    : path.startsWith("/auth/") || path === "/org/invitations/accept" || isLongRunningAnalysis
+      ? 60_000
+      : DEFAULT_TIMEOUT_MS;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   let body;
