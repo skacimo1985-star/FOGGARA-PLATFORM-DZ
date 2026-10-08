@@ -2,18 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
-  Workflow, ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse,
-  FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
-  BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
+  ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse,
+  ShieldCheck, Users, MapPinned, BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
   Building2, ScanLine
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
-import { NexusKasria } from "@/components/NexusKasria";
-import { WorkflowGuide } from "@/components/WorkflowGuide";
-import { AgroCapabilities } from "@/components/AgroCapabilities";
-import { ServiceOfferings } from "@/components/ServiceOfferings";
 import { OasisCanvaPresentation } from "@/components/OasisCanvaPresentation";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
@@ -28,11 +23,6 @@ const domains = [
   {key:"health",Icon:HeartPulse}
 ];
 
-const workspaces = [
-  {key:"projects",Icon:FolderKanban,to:"/app/projects"},
-  {key:"review",Icon:ShieldCheck,to:"/app/review"},
-  {key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}
-];
 
 type Locale = "ar" | "fr" | "en";
 
@@ -148,22 +138,50 @@ export default function Landing() {
   const normalizedToolQuery=toolQuery.trim().toLocaleLowerCase();
   const visibleTools=toolDeck.filter(tool=>!normalizedToolQuery||`${tool.title} ${tool.body}`.toLocaleLowerCase().includes(normalizedToolQuery));
 
-  const narrative=lang==="fr"?{
-    real:"FOGGARA RÉELLE",digital:"FOGGARA NUMÉRIQUE",intelligence:"INTELLIGENCE WEFEH",
-    national:`${WILAYAS.length} wilayas`,evidence:"5 états de preuve",cycle:"11 étapes décisionnelles",
-    spine:"Du terrain à la décision, sans casser la traçabilité.",
-    spineBody:"FOGGARA relie les sites, mesures, projets, preuves, règles, décisions et suivi dans un même espace opérationnel."
+
+
+  const operatingCopy=lang==="fr"?{
+    eyebrow:"DU TERRAIN À LA DÉCISION",
+    title:"UNE CHAÎNE OPÉRATIONNELLE CLAIRE.",
+    body:"Chaque étape ouvre un module réel de FOGGARA-DZ. Le terrain reste la référence; les calculs, modèles et recommandations conservent leur niveau de preuve.",
+    steps:[
+      ["DÉFINIR LE TERRAIN","Dessiner ou sélectionner l’AOI. Coordonnées, surface, périmètre et contexte spatial.","AOI · WGS84 · GeoJSON"],
+      ["OBSERVER PAR SATELLITE","Sentinel-2 L2A et séries temporelles pour la végétation, l’humidité et les ruptures.","OBSERVED → COMPUTED"],
+      ["COMPRENDRE EAU, SOL & CULTURES","Croiser télédétection, mesures terrain et modèles sans transformer une estimation en certitude.","WATER · SOIL · CROPS"],
+      ["PREUVE AVANT DÉCISION","Origine, date, méthode, confiance et limites restent visibles avant toute recommandation.","5 EVIDENCE STATES"],
+      ["ANALYSER & ARBITRER","Comparer contraintes, scénarios, risques et impacts WEFEH avant l’action et le suivi.","SCENARIOS · DECISION"]
+    ]
   }:lang==="en"?{
-    real:"REAL FOGGARA",digital:"DIGITAL FOGGARA",intelligence:"WEFEH INTELLIGENCE",
-    national:`${WILAYAS.length} wilayas`,evidence:"5 evidence states",cycle:"11 decision stages",
-    spine:"From field reality to decision, without losing provenance.",
-    spineBody:"FOGGARA links sites, measurements, projects, evidence, rules, decisions and monitoring in one operational environment."
+    eyebrow:"FROM FIELD TO DECISION",
+    title:"ONE CLEAR OPERATING CHAIN.",
+    body:"Every stage opens a real FOGGARA-DZ module. Field reality remains the reference while calculations, models and recommendations keep their evidence level.",
+    steps:[
+      ["DEFINE THE FIELD","Draw or select the AOI. Coordinates, area, perimeter and spatial context are calculated.","AOI · WGS84 · GeoJSON"],
+      ["OBSERVE BY SATELLITE","Sentinel-2 L2A and time series for vegetation, moisture and change detection.","OBSERVED → COMPUTED"],
+      ["UNDERSTAND WATER, SOIL & CROPS","Combine remote sensing, field measurements and models without turning estimates into certainty.","WATER · SOIL · CROPS"],
+      ["EVIDENCE BEFORE DECISION","Source, date, method, confidence and limitations stay visible before recommendations.","5 EVIDENCE STATES"],
+      ["ANALYZE & ARBITRATE","Compare constraints, scenarios, risks and WEFEH impacts before action and monitoring.","SCENARIOS · DECISION"]
+    ]
   }:{
-    real:"الفقارة الحقيقية",digital:"الفقارة الرقمية",intelligence:"ذكاء WEFEH",
-    national:`${WILAYAS.length} ولاية`,evidence:"5 حالات للأدلة",cycle:"11 مرحلة للقرار",
-    spine:"من الواقع الميداني إلى القرار دون فقدان سلسلة الإثبات.",
-    spineBody:"تربط FOGGARA المواقع والقياسات والمشاريع والأدلة والقواعد والقرارات والمتابعة في بيئة تشغيلية واحدة."
+    eyebrow:"من الميدان إلى القرار",
+    title:"سلسلة تشغيلية واحدة وواضحة.",
+    body:"كل مرحلة تفتح وحدة فعلية داخل FOGGARA-DZ. يبقى الواقع الميداني هو المرجع، بينما تحتفظ الحسابات والنماذج والتوصيات بمستوى الدليل الخاص بها.",
+    steps:[
+      ["تحديد المجال","ارسم أو اختر منطقة AOI ليتم حساب الإحداثيات والمساحة والمحيط والسياق المكاني.","AOI · WGS84 · GeoJSON"],
+      ["الرصد بالأقمار الصناعية","Sentinel-2 L2A وسلاسل زمنية لمتابعة الغطاء النباتي والرطوبة والتغيرات.","OBSERVED → COMPUTED"],
+      ["فهم المياه والتربة والمحاصيل","دمج الاستشعار عن بعد والقياسات الميدانية والنماذج دون تحويل التقدير إلى حقيقة مؤكدة.","WATER · SOIL · CROPS"],
+      ["الدليل قبل القرار","يبقى مصدر النتيجة وتاريخها وطريقتها وثقتها وحدود استخدامها ظاهرة قبل التوصية.","5 EVIDENCE STATES"],
+      ["التحليل والمفاضلة","مقارنة القيود والسيناريوهات والمخاطر وتأثيرات WEFEH قبل التنفيذ والمتابعة.","SCENARIOS · DECISION"]
+    ]
   };
+
+  const operatingSteps=[
+    {Icon:MapPinned,to:"/app/gis",...{title:operatingCopy.steps[0][0],body:operatingCopy.steps[0][1],meta:operatingCopy.steps[0][2]}},
+    {Icon:Satellite,to:"/app/agriculture",...{title:operatingCopy.steps[1][0],body:operatingCopy.steps[1][1],meta:operatingCopy.steps[1][2]}},
+    {Icon:FlaskConical,to:"/agriculture-services",...{title:operatingCopy.steps[2][0],body:operatingCopy.steps[2][1],meta:operatingCopy.steps[2][2]}},
+    {Icon:ShieldCheck,to:"/app/studio",...{title:operatingCopy.steps[3][0],body:operatingCopy.steps[3][1],meta:operatingCopy.steps[3][2]}},
+    {Icon:BrainCircuit,to:"/app/nexus",...{title:operatingCopy.steps[4][0],body:operatingCopy.steps[4][1],meta:operatingCopy.steps[4][2]}}
+  ];
 
   useEffect(()=>{
     let cancelled=false;
@@ -240,7 +258,7 @@ export default function Landing() {
           <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
           <h1 id="foggara-title">{hero.title}<br/><span>{hero.accent}</span></h1>
           <div className="fg-moon-hero-actions">
-            <a className="fg-moon-btn fg-moon-btn-light" href="#about">{copy.discover}</a>
+            <a className="fg-moon-btn fg-moon-btn-light" href="#operating">{copy.discover}</a>
             <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}<ArrowUpRight size={15}/></Link>
           </div>
         </div>
@@ -256,11 +274,29 @@ export default function Landing() {
       </button>)}
     </nav>
 
-    <div id="presentation">
-      <OasisCanvaPresentation lang={lang} compact/>
-    </div>
+    <section className="fg-global-operating" id="operating" aria-labelledby="fg-operating-title">
+      <header className="fg-global-section-head">
+        <div>
+          <p className="fg-eyebrow">{operatingCopy.eyebrow}</p>
+          <h2 id="fg-operating-title">{operatingCopy.title}</h2>
+        </div>
+        <p>{operatingCopy.body}</p>
+      </header>
+      <div className="fg-global-operating-grid">
+        {operatingSteps.map(({Icon,to,title,body,meta},index)=><Link to={to} className="fg-global-step" key={title}>
+          <span className="fg-global-step-index" dir="ltr">0{index+1}</span>
+          <Icon size={24}/>
+          <h3>{title}</h3>
+          <p>{body}</p>
+          <footer><span dir="ltr">{meta}</span><ArrowUpRight size={16}/></footer>
+        </Link>)}
+      </div>
+      <div className="fg-global-evidence-strip" dir="ltr">
+        <span>OBSERVED</span><span>VERIFIED</span><span>COMPUTED</span><span>INFERRED</span><span>PROPOSED</span>
+      </div>
+    </section>
 
-    <section className="fg-moon-about fg-lukas-about" id="about">
+    <section className="fg-moon-about fg-lukas-about fg-global-about" id="about">
       <div className="fg-lukas-about-label">
         <span>{copy.aboutTitle}</span>
         <strong>{copy.aboutStrong}</strong>
@@ -271,21 +307,23 @@ export default function Landing() {
       </div>
     </section>
 
-    <div className="fg-lukas-image-rail" aria-label="FOGGARA-DZ oasis">
-      <figure><img src="/images/oasis-dawn.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
-      <figure><img src="/images/oasis-hero.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
-      <figure><img src="/images/oasis-dawn.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
-      <figure><img src="/images/oasis-hero.webp" alt="FOGGARA-DZ oasis landscape" loading="lazy"/></figure>
+    <div className="fg-global-visual-stage" aria-label="FOGGARA-DZ oasis">
+      <figure className="fg-global-visual-main"><img src="/images/oasis-dawn.webp" alt="Algerian oasis landscape" loading="lazy"/></figure>
+      <figure className="fg-global-visual-side"><img src="/images/oasis-hero.webp" alt="Oasis and water landscape" loading="lazy"/></figure>
+      <div className="fg-global-visual-note">
+        <span>HERITAGE → DATA → EVIDENCE → DECISION</span>
+        <strong>FOGGARA-DZ</strong>
+      </div>
     </div>
 
-    <section className="fg-moon-stats" aria-label="FOGGARA statistics">
+    <section className="fg-moon-stats fg-global-stats" aria-label="FOGGARA statistics">
       <article><MapPinned size={30}/><strong>{WILAYAS.length}</strong><span>{copy.stats[0]}</span></article>
       <article><ScanLine size={30}/><strong>5</strong><span>{copy.stats[1]}</span></article>
       <article><Users size={30}/><strong>{expoStats.visitors}</strong><span>{copy.stats[2]}</span></article>
       <article><ShieldCheck size={30}/><strong>{expoStats.feedback}</strong><span>{copy.stats[3]}</span></article>
     </section>
 
-    <section className="fg-moon-offer" id="services">
+    <section className="fg-moon-offer fg-global-services" id="services">
       <header><h2>{copy.offerTitle} <strong>{copy.offerStrong}</strong></h2><p>{copy.offerBody}</p></header>
       <div className="fg-moon-offer-grid">
         {copy.offers.map(([title,body,to],index)=><article key={title} className={`fg-moon-offer-card fg-offer-${index+1}`}>
@@ -295,9 +333,18 @@ export default function Landing() {
       </div>
     </section>
 
+    <section className="fg-global-presentation" id="presentation" aria-labelledby="fg-presentation-title">
+      <header className="fg-global-section-head">
+        <div>
+          <p className="fg-eyebrow">FOGGARA / PRESENTATION</p>
+          <h2 id="fg-presentation-title">{copy.presentation}</h2>
+        </div>
+        <p>{lang==="fr"?"Un récit visuel unique, automatique et relié aux modules réels de la plateforme.":lang==="en"?"One visual story, autoplaying and linked to the platform’s real modules.":"عرض بصري واحد ومتحرك آليًا، مرتبط مباشرة بوحدات المنصة الفعلية."}</p>
+      </header>
+      <OasisCanvaPresentation lang={lang} compact/>
+    </section>
 
-
-    <section className="fg-moon-demo" id="demo">
+    <section className="fg-moon-demo fg-global-demo" id="demo">
       <div>
         <p className="fg-eyebrow">AGRITECH EXPO / FOGGARA-DZ</p>
         <h2>{copy.liveDemo}</h2>
@@ -331,40 +378,7 @@ export default function Landing() {
       </div>
     </section>
 
-    <section className="fg-platform-spine" aria-label="FOGGARA operating model">
-      <div className="fg-spine-journey">
-        <span><i>01</i>{narrative.real}</span><ArrowUpRight size={17}/><span><i>02</i>{narrative.digital}</span><ArrowUpRight size={17}/><span><i>03</i>{narrative.intelligence}</span>
-      </div>
-      <div className="fg-spine-copy"><div><p className="fg-eyebrow">FIELD → EVIDENCE → DECISION</p><h2>{narrative.spine}</h2><p>{narrative.spineBody}</p></div>
-        <div className="fg-spine-facts"><span><MapPinned size={18}/><b>{WILAYAS.length}</b><small>{narrative.national}</small></span><span><ShieldCheck size={18}/><b>5</b><small>{narrative.evidence}</small></span><span><Database size={18}/><b>11</b><small>{narrative.cycle}</small></span><span><BrainCircuit size={18}/><b>WEFEH</b><small>Water · Energy · Food · Ecosystem · Health</small></span></div>
-      </div>
-    </section>
-
-    <section className="fg-landing-network">
-      <div><p className="fg-eyebrow">WEFEH / NEXUS</p><h2 className="fg-section-title">{t("publicExperience.network")}</h2><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/presentation">{t("publicExperience.presentation")}<ArrowUpRight size={16}/></Link></div>
-      <div className="fg-landing-scene"><NexusKasria active={active} onSelect={setActive}/>
-        <div className="fg-landing-selection" aria-live="polite" aria-atomic="true"><span>{t(active==="all"?"publicExperience.network":`landing.${active}`)}</span>
-          <p>{t(`publicExperience.domainCopy.${active}`)}</p><Link to={active==="all"?"/app/nexus":`/app/explore/${active}`}>{t("publicExperience.explore")}<ArrowUpRight size={14}/></Link></div>
-      </div>
-    </section>
-
-    <ServiceOfferings/>
-    <AgroCapabilities compact/>
-
-    <section className="fg-editorial" id="ecosystem"><div><p className="fg-eyebrow">01 / WEFEH</p><h2>{t("publicExperience.ecosystemTitle")}</h2></div>
-      <div><p>{t("publicExperience.ecosystemBody")}</p><p>{t("publicExperience.evidenceBody")}</p><Link className="fg-link" to="/about">{t("publicExperience.about")}<ArrowUpRight size={16}/></Link></div></section>
-
-    <WorkflowGuide/>
-
-    <section className="fg-automation-banner"><Workflow size={26}/><div><p className="fg-eyebrow">FOGGARA / AUTOMATION</p><h2>{t("automation.publicTitle")}</h2><p>{t("automation.publicBody")}</p></div><Link to="/app/automation" className="fg-button">{t("automation.open")}<ArrowUpRight size={17}/></Link></section>
-
-    <section id="collaboration" aria-labelledby="collaboration-title"><div className="fg-landing-section-heading"><div><p className="fg-eyebrow">02 / {t("publicExperience.collaboration")}</p><h2 id="collaboration-title" className="fg-section-title">{t("publicExperience.collaborationTitle")}</h2></div><Users size={32}/></div>
-      <div className="fg-services-grid">{workspaces.map(({key,Icon,to},i)=><article className="fg-service" key={key}><span dir="ltr">0{i+1} / FOGGARA</span><Icon size={28}/><h3>{t(`publicExperience.${key}Title`)}</h3><p>{t(`publicExperience.${key}Body`)}</p><Link to={to} className="fg-link">{t("publicExperience.openWorkspace")}<ArrowUpRight size={15}/></Link></article>)}</div></section>
-
-    <section className="fg-feature"><div><p className="fg-eyebrow">03 / {t("publicExperience.decision")}</p><h2>{t("publicExperience.decisionTitle")}</h2><p>{t("publicExperience.decisionBody")}</p><Link to="/app/studio" className="fg-button">{t("publicExperience.decisionOpen")}<ArrowUpRight size={17}/></Link></div>
-      <ol className="fg-flow">{["resources","reviewed","analysis","human"].map((key,i)=><li key={key}><b dir="ltr">0{i+1}</b><span>{t(`publicExperience.steps.${key}`)}</span></li>)}</ol></section>
-
-    <section className="fg-landing-cta"><div><p className="fg-eyebrow">04 / SIREP OASES</p><h2>{t("publicExperience.ctaTitle")}</h2><p>{t("publicExperience.ctaBody")}</p></div><Link to="/contact" className="fg-button">{t("publicExperience.contact")}<ArrowUpRight size={18}/></Link></section>
+    <section className="fg-landing-cta fg-global-cta"><div><p className="fg-eyebrow">04 / SIREP OASES</p><h2>{t("publicExperience.ctaTitle")}</h2><p>{t("publicExperience.ctaBody")}</p></div><Link to="/contact" className="fg-button">{t("publicExperience.contact")}<ArrowUpRight size={18}/></Link></section>
 
     <footer className="fg-landing-footer"><span dir="ltr">FOGGARA-DZ · SIREP OASES NEXUS WEFEH-DZ</span><nav aria-label={t("publicExperience.legal")}><Link to="/privacy">{t("publicExperience.privacy")}</Link><Link to="/terms">{t("publicExperience.terms")}</Link><Link to="/rights">{t("publicExperience.rights")}</Link></nav><p>{t("publicExperience.scope")}</p><a href="#home" className="fg-link">{t("publicExperience.top")}<ArrowDown className="fg-up" size={14}/></a></footer>
   </div>;
