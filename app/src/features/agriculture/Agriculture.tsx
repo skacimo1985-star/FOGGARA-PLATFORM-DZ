@@ -72,6 +72,7 @@ export default function Agriculture({demo=false}:{demo?:boolean}) {
  const notify=()=>{setToast(t('saved'));}; useEffect(()=>{if(toast){const timer=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(timer);}},[toast]);
  const refresh=useCallback(async ()=>{if(demo)return;setLoading(true);setError('');try{const [p,o,pl,ta,pr]=await Promise.all([api.get<Parcel[]>('/agriculture/parcels'),api.get<Observation[]>('/agriculture/observations'),api.get<Plan[]>('/agriculture/plans'),api.get<Task[]>('/agriculture/tasks'),api.get<ProjectRef[]>('/projects')]);setParcels(p);setObs(o);setPlans(pl);setTasks(ta);setProjects(pr);const context=getOperationalContext();const contextProject=pr.find(project=>project.id===context.projectId);const candidates=p.filter(parcel=>!parcel.archived&&(!contextProject?.site_id||parcel.site_id===contextProject.site_id));if(candidates.length&&!candidates.some(parcel=>parcel.id===context.parcelId))setActiveParcelId(candidates[0].id);}catch{setError(translate(lang,'connection'));}finally{setLoading(false);}},[demo,lang]);
  useEffect(()=>{void refresh();},[refresh]);
+ useEffect(()=>{setEvidenceProjectId(activeProjectId?String(activeProjectId):'');setServiceSummary(null);},[activeProjectId]);
  const workspaceRef = useRef({mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks});
  workspaceRef.current = {mode:demo?'DEMO_SYNTHETIC':'ORGANIZATION_RECORDS',parcels,observations,plans,tasks};
  useEffect(()=>{
