@@ -6,6 +6,7 @@ import { Activity, ArrowUpLeft, Check, Layers3, Plus, RefreshCw, ShieldCheck, Sp
 import { api, type Paged } from "@/lib/api";
 import { useAuth } from "@/context/useAuth";
 import type { Project } from "@/types";
+import { useOperationalContext } from "@/lib/operational-context";
 import "./operations.css";
 
 type Item = {
@@ -65,15 +66,16 @@ function Review({row,resource,disabled,onReview}:{
     <button className="fg-button" disabled={disabled}>{t("productionCopy.saveReview")}</button>
   </form>;
 }
-function ProjectSelector({projects}:{projects:Project[]}) {
+function ProjectSelector({projects,activeProjectId}:{projects:Project[];activeProjectId:number|null}) {
   const {t}=useTranslation();
-  return <Field label={t("productionCopy.project")}><select name="project_id" className={inputClass} required>
+  return <Field label={t("productionCopy.project")}><select name="project_id" className={inputClass} required defaultValue={activeProjectId??""}>
     <option value="">{t("productionCopy.selectAProject")}</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_demo?" · DEMO":""}</option>)}
   </select></Field>;
 }
 export default function Operations() {
   const {t,i18n}=useTranslation(); const labels=getLabels(t);
   const {user} = useAuth();
+  const {projectId:activeProjectId}=useOperationalContext();
   const [tab,setTab] = useState<Resource>("evaluations");
   const [page,setPage] = useState(1);
   const [data,setData] = useState<Partial<Record<Resource,Paged<Item>>>>({});
@@ -121,7 +123,7 @@ export default function Operations() {
   };
   const s=(f:FormData,k:string)=>String(f.get(k)||"");
   const n=(f:FormData,k:string)=>Number(f.get(k));
-  const projectField = <ProjectSelector projects={projects}/>;
+  const projectField = <ProjectSelector projects={projects} activeProjectId={activeProjectId}/>;
   const current=data[tab];
   const actionsDisabled=busy||loading;
   return <div className="fg-console" dir={i18n.dir()} lang={i18n.language}>
