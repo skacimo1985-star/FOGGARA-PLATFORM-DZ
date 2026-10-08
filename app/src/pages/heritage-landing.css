@@ -2063,6 +2063,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
     grid-row:4;
     min-width:0;
   }
+  .fg-global-demo{grid-template-columns:1fr}
   .fg-global-demo .fg-moon-qr{justify-self:start}
   .fg-global-demo-modules{grid-template-columns:1fr}
 }
