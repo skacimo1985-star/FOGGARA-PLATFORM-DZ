@@ -73,6 +73,44 @@ FIELD_AUTOMATION_BATCH_SIZE = int(os.environ.get("FIELD_AUTOMATION_BATCH_SIZE", 
 if not 1 <= FIELD_AUTOMATION_BATCH_SIZE <= 100:
     raise RuntimeError("FIELD_AUTOMATION_BATCH_SIZE must be between 1 and 100")
 
+
+# Optional real MQTT edge ingestion. This is intentionally off until a broker is
+# commissioned; REST edge ingest remains available independently.
+_MQTT_EDGE_FLAG = os.environ.get("MQTT_EDGE_ENABLED", "false").strip().lower()
+if _MQTT_EDGE_FLAG not in ("true", "false"):
+    raise RuntimeError("MQTT_EDGE_ENABLED must be true or false")
+MQTT_EDGE_ENABLED = _MQTT_EDGE_FLAG == "true"
+MQTT_BROKER_HOST = os.environ.get("MQTT_BROKER_HOST", "").strip()
+MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", "8883"))
+if not 1 <= MQTT_BROKER_PORT <= 65535:
+    raise RuntimeError("MQTT_BROKER_PORT must be between 1 and 65535")
+_MQTT_TLS_FLAG = os.environ.get("MQTT_TLS", "true").strip().lower()
+if _MQTT_TLS_FLAG not in ("true", "false"):
+    raise RuntimeError("MQTT_TLS must be true or false")
+MQTT_TLS = _MQTT_TLS_FLAG == "true"
+MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "").strip()
+MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
+MQTT_TOPIC_PREFIX = os.environ.get("MQTT_TOPIC_PREFIX", "foggara").strip().strip("/")
+MQTT_RECONNECT_SECONDS = float(os.environ.get("MQTT_RECONNECT_SECONDS", "10"))
+if not 2 <= MQTT_RECONNECT_SECONDS <= 300:
+    raise RuntimeError("MQTT_RECONNECT_SECONDS must be between 2 and 300")
+if MQTT_EDGE_ENABLED:
+    if (
+        not MQTT_BROKER_HOST
+        or "/" in MQTT_BROKER_HOST
+        or "://" in MQTT_BROKER_HOST
+        or any(ch.isspace() for ch in MQTT_BROKER_HOST)
+    ):
+        raise RuntimeError("MQTT_BROKER_HOST must be a hostname only")
+    if not MQTT_TOPIC_PREFIX or any(ch.isspace() for ch in MQTT_TOPIC_PREFIX):
+        raise RuntimeError("MQTT_TOPIC_PREFIX must be a non-empty topic segment")
+    if bool(MQTT_USERNAME) != bool(MQTT_PASSWORD):
+        raise RuntimeError("MQTT_USERNAME and MQTT_PASSWORD must be configured together")
+    if ENV == "prod" and not MQTT_TLS:
+        _trusted_internal_mqtt_hosts = {"localhost", "127.0.0.1", "::1", "mosquitto", "mqtt", "foggara-mqtt"}
+        if MQTT_BROKER_HOST not in _trusted_internal_mqtt_hosts:
+            raise RuntimeError("Production external MQTT requires TLS")
+
 if ENV == "prod":
     if not DATABASE_URL.startswith(("postgresql+psycopg://", "postgresql://")):
         raise RuntimeError("ENV=prod requires PostgreSQL DATABASE_URL.")
