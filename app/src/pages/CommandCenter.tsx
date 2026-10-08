@@ -10,6 +10,7 @@ import { api, type Paged } from "@/lib/api";
 import type { Device, GisSite, GovDecision, Project, Sensor, TelemetryReading, WilayaMeta } from "@/types";
 import { useAuth } from "@/context/useAuth";
 import { NationalMap } from "@/components/NationalMap";
+import { getOperationalContext, setActiveProjectId, useOperationalContext } from "@/lib/operational-context";
 import "./command-center.css";
 
 type ProjectFocus = {
@@ -53,10 +54,7 @@ export default function CommandCenter() {
   const [snapshot, setSnapshot] = useState<Snapshot>(initial);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(() => {
-    const stored = Number(localStorage.getItem("foggara.activeProject"));
-    return Number.isFinite(stored) && stored > 0 ? stored : null;
-  });
+  const { projectId: activeProjectId } = useOperationalContext();
   const [projectFocus, setProjectFocus] = useState<ProjectFocus>(emptyFocus);
   const [projectFocusProjectId, setProjectFocusProjectId] = useState<number | null>(null);
 
@@ -129,9 +127,8 @@ export default function CommandCenter() {
         pending: value<{ measurements: unknown[]; evidences: unknown[] }>(6),
       });
       if (loadedProjects?.length) {
-        const remembered = Number(localStorage.getItem("foggara.activeProject"));
-        const next = loadedProjects.some(project => project.id === remembered) ? remembered : loadedProjects[0].id;
-        localStorage.setItem("foggara.activeProject", String(next));
+        const remembered = getOperationalContext().projectId;
+        const next = remembered && loadedProjects.some(project => project.id === remembered) ? remembered : loadedProjects[0].id;
         setActiveProjectId(next);
       } else {
         setActiveProjectId(null);
@@ -245,7 +242,7 @@ export default function CommandCenter() {
           </div>
           <label className="fg-project-selector">
             <span>{copy.activeProject}</span>
-            <select value={activeProjectId ?? ""} onChange={event => { const next=Number(event.target.value)||null; setActiveProjectId(next); if(next)localStorage.setItem("foggara.activeProject",String(next)); }}>
+            <select value={activeProjectId ?? ""} onChange={event => setActiveProjectId(Number(event.target.value)||null)}>
               <option value="">—</option>
               {(snapshot.projects ?? []).map(project => <option key={project.id} value={project.id}>{project.title}</option>)}
             </select>
