@@ -6,7 +6,7 @@ import {
   FolderKanban, ShieldCheck, Users, LockKeyhole, MapPinned, Database,
   BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
   Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
-  Building2, Waves, ScanLine, Pause, Play, Maximize2, Minimize2
+  Building2, Waves, ScanLine
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
@@ -41,9 +41,6 @@ export default function Landing() {
   const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
   const [heroSlide,setHeroSlide]=useState(0);
-  const [heritageSlide,setHeritageSlide]=useState(0);
-  const [heritagePlaying,setHeritagePlaying]=useState(true);
-  const [heritageFullscreen,setHeritageFullscreen]=useState(false);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -127,56 +124,6 @@ export default function Landing() {
     toolsEyebrow:"FOGGARA / الخدمات الرقمية",toolsTitle:"اختر الأداة وابدأ مباشرة.",toolsBody:"بحث سريع ودخول مباشر ونتائج قابلة للتتبع.",search:"ابحث: أقمار، طقس، تربة، GIS، ذكاء…",open:"فتح",public:"عام",workspace:"مساحة عمل",noResults:"لا توجد خدمة مطابقة."
   };
 
-  const heritagePresentation=lang==="fr"?{
-    kicker:"FOGGARA-DZ · PATRIMOINE → INTELLIGENCE",
-    national:"PLATEFORME NATIONALE ALGÉRIENNE INTÉGRÉE",
-    title:"DE L’HÉRITAGE",
-    accent:"AU JUMEAU NUMÉRIQUE",
-    intro:"Le patrimoine hydraulique devient une présentation vivante du modèle FOGGARA : source → galerie → kasria → seguia → parcelle, puis données → preuves → décision → suivi.",
-    legacyFlow:"SOURCE → GALERIE → KASRIA → SEGUIA → PARCELLE",
-    digitalFlow:"DONNÉES → PREUVES → DÉCISION → SUIVI",
-    present:"MODE PRÉSENTATION",exit:"QUITTER LA PRÉSENTATION",
-    slides:[
-      {photo:10,title:"SOURCE / GALERIE MÈRE",eyebrow:"01 · CAPTAGE",body:"L’eau est captée dans la galerie souterraine et circule par gravité. Dans FOGGARA-DZ, cette étape correspond à l’origine de la ressource et à sa localisation traçable.",digital:"RESSOURCE → LOCALISATION → DONNÉE"},
-      {photo:8,title:"KASRIA / PARTAGE DE L’EAU",eyebrow:"02 · RÉPARTITION",body:"La kasria répartit l’eau entre plusieurs branches. Le jumeau numérique traduit cette logique en règles, priorités, contraintes et scénarios de distribution.",digital:"RÈGLES → CONTRAINTES → ALLOCATION"},
-      {photo:6,title:"SEGUIAS / DISTRIBUTION",eyebrow:"03 · ACHEMINEMENT",body:"Les seguias transportent l’eau jusqu’aux zones cultivées. La plateforme suit les réseaux, équipements, zones d’irrigation et flux opérationnels.",digital:"RÉSEAU → TÉLÉMÉTRIE → SUIVI"},
-      {photo:1,title:"PARCELLE / USAGE AGRICOLE",eyebrow:"04 · PRODUCTION",body:"L’eau atteint la parcelle et devient une décision agronomique : besoin réel, état de culture, météo, sol, humidité et conseil d’irrigation.",digital:"PARCELLE → ANALYSE → CONSEIL"},
-      {photo:11,title:"PREUVE / MÉMOIRE DU TERRAIN",eyebrow:"05 · TRAÇABILITÉ",body:"Les repères patrimoniaux et mesures de terrain deviennent des preuves : source, date, méthode, validation et historique pour chaque décision.",digital:"PREUVE → DÉCISION → APPRENTISSAGE"}
-    ]
-  }:lang==="en"?{
-    kicker:"FOGGARA-DZ · HERITAGE → INTELLIGENCE",
-    national:"ALGERIAN NATIONAL INTEGRATED PLATFORM",
-    title:"FROM HERITAGE",
-    accent:"TO DIGITAL TWIN",
-    intro:"The heritage system becomes a living presentation of the FOGGARA model: source → gallery → kasria → seguia → parcel, then data → evidence → decision → monitoring.",
-    legacyFlow:"SOURCE → GALLERY → KASRIA → SEGUIA → PARCEL",
-    digitalFlow:"DATA → EVIDENCE → DECISION → MONITORING",
-    present:"PRESENTATION MODE",exit:"EXIT PRESENTATION",
-    slides:[
-      {photo:10,title:"SOURCE / MOTHER GALLERY",eyebrow:"01 · CAPTURE",body:"Water is captured in the underground gallery and moves by gravity. In FOGGARA-DZ this becomes the traceable origin of the resource and its location.",digital:"RESOURCE → LOCATION → DATA"},
-      {photo:8,title:"KASRIA / WATER SHARING",eyebrow:"02 · DISTRIBUTION",body:"The kasria divides water between branches. The digital twin translates that logic into rules, priorities, constraints and allocation scenarios.",digital:"RULES → CONSTRAINTS → ALLOCATION"},
-      {photo:6,title:"SEGUIAS / DELIVERY",eyebrow:"03 · FLOW",body:"Seguias move water toward cultivated areas. The platform follows networks, equipment, irrigation zones and operational flows.",digital:"NETWORK → TELEMETRY → MONITORING"},
-      {photo:1,title:"PARCEL / AGRICULTURAL USE",eyebrow:"04 · PRODUCTION",body:"At parcel level, water becomes an agronomic decision shaped by crop condition, weather, soil, moisture and irrigation advice.",digital:"PARCEL → ANALYSIS → ADVISORY"},
-      {photo:11,title:"EVIDENCE / FIELD MEMORY",eyebrow:"05 · TRACEABILITY",body:"Heritage markers and field measurements become evidence: source, date, method, validation and history for every decision.",digital:"EVIDENCE → DECISION → LEARNING"}
-    ]
-  }:{
-    kicker:"FOGGARA-DZ · التراث ← الذكاء",
-    national:"المنصة الجزائرية الوطنية المتكاملة",
-    title:"من التراث",
-    accent:"إلى التوأم الرقمي",
-    intro:"يتحول نظام الفقارة إلى عرض حي لنموذج FOGGARA: المصدر ← المعرض ← الكسرية ← الساقية ← القطعة، ثم البيانات ← الأدلة ← القرار ← المتابعة.",
-    legacyFlow:"المصدر ← المعرض ← الكسرية ← الساقية ← القطعة",
-    digitalFlow:"البيانات ← الأدلة ← القرار ← المتابعة",
-    present:"وضع العرض",exit:"الخروج من العرض",
-    slides:[
-      {photo:10,title:"المصدر / المعرض الأم",eyebrow:"01 · الالتقاط",body:"يتم التقاط المياه داخل المعرض الجوفي وتتحرك بالجاذبية. في FOGGARA-DZ تصبح هذه المرحلة أصل المورد وموقعه القابل للتتبع.",digital:"المورد ← الموقع ← البيانات"},
-      {photo:8,title:"الكسرية / تقاسم المياه",eyebrow:"02 · التوزيع",body:"تقسم الكسرية المياه بين عدة فروع. يترجم التوأم الرقمي هذا المنطق إلى قواعد وأولويات وقيود وسيناريوهات توزيع.",digital:"القواعد ← القيود ← التخصيص"},
-      {photo:6,title:"السواقي / النقل",eyebrow:"03 · التدفق",body:"تنقل السواقي المياه نحو المساحات المزروعة، بينما تتابع المنصة الشبكات والمعدات ومناطق الري والتدفقات التشغيلية.",digital:"الشبكة ← القياس ← المتابعة"},
-      {photo:1,title:"القطعة / الاستخدام الزراعي",eyebrow:"04 · الإنتاج",body:"عند القطعة تتحول المياه إلى قرار زراعي يرتبط بحالة المحصول والطقس والتربة والرطوبة ونصيحة الري.",digital:"القطعة ← التحليل ← التوصية"},
-      {photo:11,title:"الدليل / ذاكرة الميدان",eyebrow:"05 · التتبع",body:"تتحول المعالم التراثية والقياسات الميدانية إلى أدلة تشمل المصدر والتاريخ والطريقة والتحقق والسجل لكل قرار.",digital:"الدليل ← القرار ← التعلم"}
-    ]
-  };
-
   const toolLabels=lang==="fr"?{
     expo:["MODE AGRITECH","Carte live, compteur visiteurs et feedback public."],
     satellite:["INTELLIGENCE SATELLITE","Sentinel-2 réel, NDVI, EVI, SAVI, NDWI, NDMI, LSWI et BSI."],
@@ -243,36 +190,7 @@ export default function Landing() {
   },[copy.hero.length]);
 
   useEffect(()=>{
-    if(!heritagePlaying)return;
-    const reduceMotion=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if(reduceMotion)return;
-    const timer=window.setInterval(
-      ()=>setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length),
-      8500
-    );
-    return()=>window.clearInterval(timer);
-  },[heritagePlaying,heritagePresentation.slides.length]);
-
-  useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
-      if(heritageFullscreen){
-        if(event.key==="Escape"){
-          setHeritageFullscreen(false);
-          return;
-        }
-        if(event.key==="ArrowLeft"){
-          event.preventDefault();
-          setHeritagePlaying(false);
-          setHeritageSlide(value=>(value+heritagePresentation.slides.length-1)%heritagePresentation.slides.length);
-          return;
-        }
-        if(event.key==="ArrowRight"){
-          event.preventDefault();
-          setHeritagePlaying(false);
-          setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length);
-          return;
-        }
-      }
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
         event.preventDefault();
         toolSearchRef.current?.focus();
@@ -283,14 +201,7 @@ export default function Landing() {
     };
     window.addEventListener("keydown",onKey);
     return()=>window.removeEventListener("keydown",onKey);
-  },[heritageFullscreen,heritagePresentation.slides.length]);
-
-  useEffect(()=>{
-    if(!heritageFullscreen)return;
-    const previous=document.body.style.overflow;
-    document.body.style.overflow="hidden";
-    return()=>{document.body.style.overflow=previous;};
-  },[heritageFullscreen]);
+  },[]);
 
   async function copyExpoLink(){
     try{
@@ -301,7 +212,6 @@ export default function Landing() {
   }
 
   const hero=copy.hero[heroSlide];
-  const heritageCurrent=heritagePresentation.slides[heritageSlide];
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -324,11 +234,10 @@ export default function Landing() {
       <div className={`fg-moon-hero-media fg-moon-hero-media-${heroSlide+1}`} aria-hidden="true"/>
       <div className="fg-moon-hero-overlay"/>
       <div className="fg-moon-hero-content">
-        <p className="fg-moon-hero-eyebrow">{heritagePresentation.national}</p>
+        <p className="fg-moon-hero-eyebrow">{hero.eyebrow}</p>
         <h1 id="foggara-title">{hero.title}</h1>
         <span className="fg-moon-hero-accent">{hero.accent}</span>
         <p>{hero.body}</p>
-        <div className="fg-moon-hero-signature" dir="ltr">SIREP OASES NEXUS WEFEH-DZ · WATER · ENERGY · FOOD · ECOSYSTEM · HEALTH</div>
         <div className="fg-moon-hero-actions">
           <a className="fg-moon-btn fg-moon-btn-light" href="#about">{copy.discover}</a>
           <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}</Link>
@@ -368,62 +277,23 @@ export default function Landing() {
       </div>
     </section>
 
-    <section className={`fg-heritage-presentation ${heritageFullscreen?"is-fullscreen":""}`} id="heritage" aria-labelledby="fg-heritage-presentation-title">
-      <div className="fg-heritage-presentation-head">
-        <div>
-          <p className="fg-heritage-kicker">{heritagePresentation.kicker}</p>
-          <h2 id="fg-heritage-presentation-title">{heritagePresentation.title}<br/><strong>{heritagePresentation.accent}</strong></h2>
-        </div>
-        <div className="fg-heritage-head-side">
-          <p className="fg-heritage-intro">{heritagePresentation.intro}</p>
-          <button type="button" className="fg-heritage-present-button" aria-pressed={heritageFullscreen} onClick={()=>setHeritageFullscreen(value=>!value)}>
-            {heritageFullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}
-            {heritageFullscreen?heritagePresentation.exit:heritagePresentation.present}
-          </button>
-        </div>
+    <section className="fg-moon-heritage fg-foggara-visual-demo" id="heritage">
+      <div className="fg-moon-heritage-copy">
+        <p className="fg-eyebrow">DEMO / FOGGARA HERITAGE</p>
+        <h2>{copy.heritageTitle}<br/><strong>{copy.heritageStrong}</strong></h2>
+        <p>{copy.heritageBody}</p>
+        <Link className="fg-moon-btn fg-moon-btn-dark" to="/app/nexus">{copy.heritageAction}<ArrowUpRight size={17}/></Link>
       </div>
-
-      <div className="fg-heritage-presentation-stage">
-        <div className="fg-heritage-visual">
-          <div key={heritageCurrent.photo} className={`fg-moon-photo fg-photo-${String(heritageCurrent.photo).padStart(2,"0")}`} role="img" aria-label={heritageCurrent.title}/>
-          <div className="fg-heritage-index" dir="ltr">{String(heritageSlide+1).padStart(2,"0")} / 05</div>
-          <div className="fg-heritage-visual-controls">
-            <button type="button" aria-label="Previous heritage slide" onClick={()=>{setHeritagePlaying(false);setHeritageSlide(value=>(value+heritagePresentation.slides.length-1)%heritagePresentation.slides.length);}}><ChevronLeft size={18}/></button>
-            <button type="button" aria-label={heritagePlaying?"Pause presentation":"Play presentation"} aria-pressed={!heritagePlaying} onClick={()=>setHeritagePlaying(value=>!value)}>{heritagePlaying?<Pause size={16}/>:<Play size={16}/>}</button>
-            <button type="button" aria-label="Next heritage slide" onClick={()=>{setHeritagePlaying(false);setHeritageSlide(value=>(value+1)%heritagePresentation.slides.length);}}><ChevronRight size={18}/></button>
-          </div>
-          <div className="fg-heritage-caption">
-            <span>{heritageCurrent.eyebrow}</span>
-            <h3>{heritageCurrent.title}</h3>
-            <p>{heritageCurrent.body}</p>
-          </div>
+      <div className="fg-foggara-demo-stage">
+        <figure className="fg-foggara-demo-feature">
+          <img src="/images/foggara-heritage-poster.webp" alt="La Foggara — système traditionnel de partage des eaux" loading="lazy" decoding="async"/>
+          <figcaption>LA FOGGARA · DEMO VISUEL</figcaption>
+        </figure>
+        <div className="fg-foggara-demo-photos" aria-label="Foggara documentary demo">
+          {[1,3,4,5,6,7,8,10,11].map((photo,index)=><figure key={photo}>
+            <div className={`fg-moon-photo fg-photo-${String(photo).padStart(2,"0")}`} role="img" aria-label={copy.gallery[index%copy.gallery.length]}/>
+          </figure>)}
         </div>
-
-        <div className="fg-heritage-narrative">
-          <div className="fg-heritage-flow fg-heritage-flow-legacy"><span>HERITAGE FLOW</span><strong>{heritagePresentation.legacyFlow}</strong></div>
-          <div className="fg-heritage-flow fg-heritage-flow-digital"><span>DIGITAL FLOW</span><strong>{heritagePresentation.digitalFlow}</strong></div>
-          <div className="fg-heritage-digital-card">
-            <span>{heritageCurrent.eyebrow}</span>
-            <strong>{heritageCurrent.digital}</strong>
-            <p>{heritageCurrent.body}</p>
-          </div>
-          <Link className="fg-moon-btn fg-moon-btn-dark" to="/app/nexus">{copy.heritageAction}<ArrowUpRight size={17}/></Link>
-        </div>
-      </div>
-
-      <div className="fg-heritage-progress" aria-hidden="true"><span style={{width:`${((heritageSlide+1)/heritagePresentation.slides.length)*100}%`}}/></div>
-      <div className="fg-heritage-thumbnails" role="tablist" aria-label={heritagePresentation.title}>
-        {heritagePresentation.slides.map((slide,index)=><button
-          type="button"
-          key={slide.title}
-          role="tab"
-          aria-selected={heritageSlide===index}
-          className={heritageSlide===index?"active":""}
-          onClick={()=>{setHeritagePlaying(false);setHeritageSlide(index);}}
-        >
-          <span className="fg-heritage-thumb-image"><i className={`fg-moon-photo fg-photo-${String(slide.photo).padStart(2,"0")}`}/><b dir="ltr">{index+1}</b></span>
-          <span className="fg-heritage-thumb-copy"><small>{slide.eyebrow}</small><strong>{slide.title}</strong></span>
-        </button>)}
       </div>
     </section>
 
