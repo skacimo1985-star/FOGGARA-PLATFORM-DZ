@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..audit import audit
 from ..db import get_db
 from ..deps import api_error, get_current_user
@@ -23,6 +24,20 @@ from ..schemas import (DeviceIn, DeviceOut, SensorIn, SensorOut,
 from ..services.telemetry_service import validate_reading
 
 router = APIRouter(prefix="/api/telemetry", tags=["telemetry"])
+
+
+def _reject_inline_credentials(value, path="configuration"):
+    forbidden = ("password", "passwd", "secret", "token", "api_key", "apikey", "credential")
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            lowered = str(key).lower()
+            if any(term in lowered for term in forbidden):
+                api_error(422, "INLINE_CREDENTIAL_FORBIDDEN",
+                          f"Store credentials in server environment/secrets, not {path}.{key}")
+            _reject_inline_credentials(nested, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, nested in enumerate(value):
+            _reject_inline_credentials(nested, f"{path}[{index}]")
 
 
 def _owned_sensor(db: Session, org_id: int, sensor_id: int) -> Sensor:
@@ -61,8 +76,14 @@ def list_devices(user: User = Depends(get_current_user), db: Session = Depends(g
 @router.post("/devices", response_model=DeviceOut, status_code=201)
 def create_device(payload: DeviceIn, user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
-    d = Device(org_id=user.org_id, protocol="simulated", is_simulated=True,
-               is_demo=True, **payload.model_dump())
+    data = payload.model_dump()
+    protocol = data.pop("protocol")
+    _reject_inline_credentials(data.get("configuration", {}))
+    if protocol != "simulated" and user.role not in ("reviewer", "admin"):
+        api_error(403, "ROLE_REQUIRED", "Reviewer or admin role is required to commission real edge devices")
+    simulated = protocol == "simulated"
+    d = Device(org_id=user.org_id, protocol=protocol, is_simulated=simulated,
+               is_demo=simulated, **data)
     db.add(d)
     db.flush()
     audit(db, user, "create", "device", entity_id=d.id)
@@ -92,9 +113,11 @@ def create_sensor(payload: SensorIn, user: User = Depends(get_current_user),
             and payload.max_value <= payload.min_value:
         api_error(422, "RANGE_ORDER", "max_value must exceed min_value")
     data = payload.model_dump()
+    _reject_inline_credentials(data.get("configuration", {}))
     data.setdefault("subject_type", device.subject_type)
     data.setdefault("subject_id", device.subject_id)
-    s = Sensor(org_id=user.org_id, is_simulated=True, is_demo=True, **data)
+    s = Sensor(org_id=user.org_id, is_simulated=device.is_simulated,
+               is_demo=device.is_demo, **data)
     db.add(s)
     db.flush()
     audit(db, user, "create", "sensor", entity_id=s.id)
@@ -135,6 +158,30 @@ def ingest_telemetry(payload: TelemetryIngestIn, response: Response,
           meta={"sensor_id": sensor.id, "quality": quality})
     db.commit()
     return reading
+
+
+@router.get("/edge/status")
+def edge_runtime_status(user: User = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    """Operational status for commissioned MQTT ingestion without exposing secrets."""
+    from ..mqtt_edge_runtime import runtime as mqtt_runtime
+
+    commissioned = db.scalar(
+        select(func.count()).select_from(Device).where(
+            Device.org_id == user.org_id,
+            Device.protocol == "mqtt",
+            Device.is_simulated.is_(False),
+            Device.status == "active",
+        )
+    ) or 0
+    return {
+        "enabled": config.MQTT_EDGE_ENABLED,
+        "configured": bool(config.MQTT_BROKER_HOST) if config.MQTT_EDGE_ENABLED else False,
+        "protocol": "mqtt",
+        "topic_pattern": f"{config.MQTT_TOPIC_PREFIX}/<org_id>/<sensor_id>/telemetry",
+        "commissioned_devices": int(commissioned),
+        "runtime": dict(mqtt_runtime),
+    }
 
 
 @router.post("/edge/ingest", response_model=TelemetryOut, status_code=201)
