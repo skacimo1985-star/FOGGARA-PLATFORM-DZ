@@ -138,6 +138,11 @@
   font:700 9px/1.5 ui-monospace,SFMono-Regular,monospace;
   letter-spacing:.09em;
 }
+.ocp-panel-slide{
+  display:grid;
+  gap:18px;
+  animation:ocpTextFade .36s ease both;
+}
 .ocp-body{
   margin:0;
   color:#566056;
@@ -196,8 +201,12 @@
 .ocp-compact .ocp-head h2{font-size:clamp(42px,5vw,66px)}
 
 @keyframes ocpFade{
-  from{opacity:.35}
+  from{opacity:.28}
   to{opacity:1}
+}
+@keyframes ocpTextFade{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
 }
 @media(max-width:1050px){
   .ocp-head{grid-template-columns:1fr;gap:18px}
@@ -219,6 +228,6 @@
   .ocp-controls .ocp-play span{display:none}
 }
 @media(prefers-reduced-motion:reduce){
-  .ocp-media{animation:none}
+  .ocp-media,.ocp-panel-slide{animation:none}
   .ocp-progress i{transition:none}
 }
