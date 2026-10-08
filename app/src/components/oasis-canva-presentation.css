@@ -56,7 +56,7 @@
   background-repeat:no-repeat;
   background-size:cover;
   background-color:#183221;
-  animation:ocpReveal .45s cubic-bezier(.2,.7,.2,1) both;
+  animation:ocpFade .32s ease both;
 }
 .ocp-media-dawn{background-image:url("/images/oasis-dawn.webp")}
 .ocp-media-hero{background-image:url("/images/oasis-hero.webp")}
@@ -195,9 +195,9 @@
 .ocp-compact .ocp-media{min-height:570px}
 .ocp-compact .ocp-head h2{font-size:clamp(42px,5vw,66px)}
 
-@keyframes ocpReveal{
-  from{opacity:.45;transform:scale(1.012)}
-  to{opacity:1;transform:scale(1)}
+@keyframes ocpFade{
+  from{opacity:.35}
+  to{opacity:1}
 }
 @media(max-width:1050px){
   .ocp-head{grid-template-columns:1fr;gap:18px}
