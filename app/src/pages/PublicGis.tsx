@@ -1,7 +1,7 @@
 import {useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
-import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity} from "lucide-react";
+import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf, Droplets,CalendarDays,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
 import {NationalMap,type SatelliteScene} from "@/components/NationalMap";
 import {useAuth} from "@/context/useAuth";
 import {api} from "@/lib/api";
@@ -13,15 +13,17 @@ import "./public-gis.css";
 
 type Bbox=[number,number,number,number];
 type SceneList={provider:string;collection:string;live:boolean;count:number;scenes:SatelliteScene[]};
+type IndexKey="ndvi"|"ndmi";
 type Preview={
   status:"READY"|"NO_USABLE_SCENE";
   product:string;
+  index?:IndexKey;
   scene:{id:string;datetime:string|null;cloud_cover_pct:number|null;provider:string|null}|null;
   area_ha_estimated:number;
   geometry_mask_applied?:boolean;
-  indices?:{ndvi?:{statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
+  indices?:Partial<Record<IndexKey,{statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
     pixels?:{total:number;valid:number;valid_fraction:number};
-    mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}}};
+    mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}}>>;
   evidence:{verified:boolean};
   persisted:boolean;
 };
@@ -72,6 +74,19 @@ const copy={
     dateStart:"From",dateEnd:"To",provider:"Scene catalog: Element 84 Earth Search · Sentinel-2 L2A",signIn:"Sign in to save",
   },
 } as const;
+
+const wb={
+  ar:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"مساحة العمل الجغرافية",subtitle:"الاستشعار عن بعد وإدارة المساحات",workspace:"منصة فقارة",visitor:"معاينة عامة",account:"حساب المؤسسة",left:"إعداد الدراسة",map:"الخريطة التشغيلية",right:"تحليلات الحقل",drawing:"حدود الحقل",drawingHelp:"ارسم مضلعًا أو مستطيلًا على الخريطة. تتوفر أدوات القياس والطبقات ضمن الخريطة.",coordinates:"الإحداثيات",chooseCoords:"تحديد المنطقة بالإحداثيات",selected:"تم تحديد المساحة",pending:"بانتظار تحديد الحقل",scenePanel:"المرئيات الفضائية",catalog:"Sentinel-2 L2A",searchPrompt:"اختَر منطقة ثم ابحث عن صور الأقمار الصناعية الحقيقية.",sceneNone:"لا توجد مشاهد في الفترة المطلوبة.",acquired:"تاريخ الالتقاط",cloud:"الغطاء السحابي",selectScene:"اختيار المشهد",analysis:"التحليل الطيفي",vegetation:"حيوية الغطاء النباتي",canopyWater:"مؤشر ماء الغطاء النباتي",active:"المؤشر المحدد",computed:"نتيجة محسوبة",estimated:"تقدير فضائي لا يعوض القياس الميداني",notRun:"لم تُنفذ المعالجة بعد",emptyResult:"حدّد منطقة وابحث عن المشاهد، ثم شغّل التحليل للحصول على نتيجة حقيقية.",resultUnavailable:"تعذّر إيجاد مشهد صالح أو بكسلات صالحة للحساب.",mask:"قناع المضلع",maskApplied:"مطبق",quality:"جودة العينة",sampleCount:"بكسلات صالحة",range:"القيمة الدنيا / العليا",provenance:"الدليل والمصدر",limitations:"لا يمكن استنتاج NPK أو pH أو الأمراض أو كميات الري من هذه المؤشرات وحدها.",satellite:"مصدر البيانات الخارجي",backend:"الحساب على خادم فقارة",aoi:"المنطقة المحددة",surface:"المساحة",resolution:"دقة المعالجة الاسمية",roi:"WGS84",processing:"المعالجة جارية",waiting:"بانتظار البيانات",geoAction:"استخدم الإحداثيات إذا لم تظهر الخريطة",invalidDate:"اختر فترة صالحة لا تتجاوز 31 يومًا.",pixelBudget:"النطاق يتجاوز قدرة التحليل العام؛ اختر مساحة أصغر.",export:"تصدير GeoJSON",reset:"إعادة تعيين",save:"حفظ داخل المؤسسة",stepOne:"01 · المنطقة",stepTwo:"02 · المشهد",stepThree:"03 · التحليل",sceneSpecific:"تُحسب النتيجة للمشهد المختار من الخادم نفسه، لا من بيانات تجريبية.", indexNdmiNote:"NDMI يصف تغيرات ماء الغطاء النباتي، لا رطوبة التربة المقاسة.", noAccess:"المعاينة لا تحفظ بيانات المؤسسة"
+  },
+  fr:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"Atelier géospatial",subtitle:"Télédétection et gestion des parcelles",workspace:"Plateforme FOGGARA",visitor:"Accès public",account:"Espace organisation",left:"Paramètres de l'étude",map:"Carte opérationnelle",right:"Analyse de la parcelle",drawing:"Limites de la parcelle",drawingHelp:"Dessinez un polygone ou un rectangle directement sur la carte. Mesures et couches sont intégrées.",coordinates:"Coordonnées",chooseCoords:"Choisir par coordonnées",selected:"Zone sélectionnée",pending:"En attente de parcelle",scenePanel:"Acquisitions satellitaires",catalog:"Sentinel-2 L2A",searchPrompt:"Définissez une zone pour chercher les acquisitions réelles.",sceneNone:"Aucune scène pour cette période.",acquired:"Date d'acquisition",cloud:"Nuages",selectScene:"Choisir cette scène",analysis:"Indices spectraux",vegetation:"Vigueur végétale",canopyWater:"Eau de la canopée",active:"Indice actif",computed:"Indice calculé",estimated:"Estimation spatiale, non validée sur le terrain",notRun:"Aucun calcul lancé",emptyResult:"Sélectionnez une zone et recherchez des scènes, puis lancez le calcul réel.",resultUnavailable:"Aucune scène ou pixel valide disponible pour ce calcul.",mask:"Masque polygonal",maskApplied:"Appliqué",quality:"Qualité des pixels",sampleCount:"Pixels valides",range:"Valeur min. / max.",provenance:"Preuves et provenance",limitations:"NDVI et NDMI ne mesurent pas le NPK, le pH, les maladies ou les besoins en irrigation.",satellite:"Fournisseur externe",backend:"Calcul sur le serveur FOGGARA",aoi:"Zone d'intérêt",surface:"Superficie",resolution:"Résolution nominale",roi:"WGS84",processing:"Traitement en cours",waiting:"Données non analysées",geoAction:"Saisir des coordonnées si la carte est indisponible",invalidDate:"Choisissez une période valide de 31 jours maximum.",pixelBudget:"Zone trop grande pour l'aperçu public ; réduire l'emprise.",export:"Exporter GeoJSON",reset:"Réinitialiser",save:"Enregistrer dans l'organisation",stepOne:"01 · Zone",stepTwo:"02 · Acquisition",stepThree:"03 · Analyse",sceneSpecific:"Calcul sur la scène choisie, jamais sur des données simulées.",indexNdmiNote:"NDMI est un proxy d'eau dans le couvert végétal, pas une mesure d'humidité du sol.",noAccess:"L'aperçu n'enregistre aucune donnée privée"
+  },
+  en:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"Geospatial workspace",subtitle:"Remote sensing & field monitoring",workspace:"FOGGARA Platform",visitor:"Public workspace",account:"Organization workspace",left:"Study setup",map:"Operational map",right:"Field intelligence",drawing:"Field boundary",drawingHelp:"Draw a polygon or rectangle directly on the map; measurement and layers are built into the viewer.",coordinates:"Coordinates",chooseCoords:"Select by coordinates",selected:"Area selected",pending:"Waiting for field",scenePanel:"Satellite acquisitions",catalog:"Sentinel-2 L2A",searchPrompt:"Define an area to search for real satellite acquisitions.",sceneNone:"No acquisitions found for this period.",acquired:"Acquisition date",cloud:"Cloud cover",selectScene:"Select acquisition",analysis:"Spectral analysis",vegetation:"Vegetation vigor",canopyWater:"Canopy water proxy",active:"Active index",computed:"Computed result",estimated:"Satellite estimate, not field verified",notRun:"Analysis not run",emptyResult:"Select an area, search acquisitions and run a real raster analysis.",resultUnavailable:"No valid scene or valid pixels available for the requested calculation.",mask:"Polygon mask",maskApplied:"Applied",quality:"Valid pixel coverage",sampleCount:"Valid pixels",range:"Minimum / maximum",provenance:"Evidence and provenance",limitations:"These indices cannot measure NPK, pH, crop disease or irrigation quantities by themselves.",satellite:"External data provider",backend:"Processed on FOGGARA backend",aoi:"Area of interest",surface:"Estimated area",resolution:"Nominal resolution",roi:"WGS84",processing:"Processing request",waiting:"Awaiting observations",geoAction:"Use coordinates if the map is unavailable",invalidDate:"Select a valid date window of 31 days or less.",pixelBudget:"AOI exceeds the public preview budget; select a smaller field.",export:"Export GeoJSON",reset:"Reset selection",save:"Save in organization",stepOne:"01 · Area",stepTwo:"02 · Imagery",stepThree:"03 · Analysis",sceneSpecific:"Computed for the selected acquisition, never from mock data.",indexNdmiNote:"NDMI is a vegetation canopy-water proxy, not measured soil moisture.",noAccess:"Public previews do not save organization data"
+  }
+} as const;
+
 const today=new Date();
 const begin=new Date(today);begin.setUTCDate(today.getUTCDate()-30);
 const ISO=(d:Date)=>d.toISOString().slice(0,10);
@@ -82,7 +97,11 @@ export default function PublicGis(){
   const {user}=useAuth();
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
   const t=copy[lang];
+  const v=wb[lang];
   const [retry,setRetry]=useState(0);
+  const [index,setIndex]=useState<IndexKey>("ndvi");
+  const [hasSearched,setHasSearched]=useState(false);
+  const [showCoordinates,setShowCoordinates]=useState(false);
   const [area,setArea]=useState<FoggaraPolygon|null>(null);
   const [latitude,setLatitude]=useState("");
   const [longitude,setLongitude]=useState("");
@@ -100,10 +119,13 @@ export default function PublicGis(){
   const [end,setEnd]=useState(ISO(today));
   const bbox=area?boundsOfPolygon(area):null;
   const pixels=bbox?pixelEstimate(bbox):0;
-  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=1600&&start&&end&&start<=end);
+  const rangeDays=(new Date(end+"T00:00:00Z").getTime()-new Date(start+"T00:00:00Z").getTime())/86400000;
+  const rangeValid=Number.isFinite(rangeDays)&&rangeDays>=0&&rangeDays<=31&&end<=ISO(new Date());
+  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=1600&&rangeValid);
   const change=(poly:FoggaraPolygon|null)=>{
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
+    setHasSearched(false);
   };
   function selectCoordinates(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -121,20 +143,20 @@ export default function PublicGis(){
     change(polygon);
   }
   async function searchScenes(){
-    if(!bbox||searching)return;
+    if(!bbox||searching||!rangeValid)return;
     setSearching(true);setSearchError(null);setScenes([]);setSelectedSceneId(null);
     try{
       const params=new URLSearchParams({bbox:bbox.join(","),start,end,cloud_cover_lte:"35",limit:"8"});
       const found=await api.get<SceneList>(`/expo/satellite/scenes?${params.toString()}`);
       setScenes(found.scenes);
       if(found.scenes[0])setSelectedSceneId(found.scenes[0].id);
-    }catch(e){setSearchError(e);}finally{setSearching(false);}
+    }catch(e){setSearchError(e);}finally{setSearching(false);setHasSearched(true);}
   }
   async function preview(){
     if(!area||!allowed||computing)return;
     setComputing(true);setPreviewError(null);setResult(null);
     try{
-      const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end});
+      const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
       setResult(response);
     }catch(e){setPreviewError(e);}finally{setComputing(false);}
   }
@@ -150,8 +172,11 @@ export default function PublicGis(){
     a.click();URL.revokeObjectURL(url);
   };
   const selected=scenes.find(x=>x.id===selectedSceneId);
-  const ndvi=result?.indices?.ndvi?.statistics?.mean;
-  const count=result?.indices?.ndvi?.pixels?.valid;
+  const activeMetrics=result?.indices?.[index];
+  const ndvi=activeMetrics?.statistics?.mean;
+  const count=activeMetrics?.pixels?.valid;
+  const coverage=activeMetrics?.pixels?.valid_fraction;
+  const range=activeMetrics?.statistics;
   return <main className="fg-public-gis" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
     <header className="fg-public-gis-intro">
       <div>
