@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity} from "lucide-react";
@@ -28,7 +28,7 @@ type Preview={
 const copy={
   ar:{
     kicker:"FOGGARA-DZ · نظام جغرافي وتشخيص فضائي",title:"حلّل موقعك داخل فقارة",intro:"حدد قطعة على الخريطة، وابحث عن مشاهد Sentinel-2 الحقيقية ثم احسب NDVI داخل حدود القطعة، دون مغادرة المنصة.",
-    step1:"1 · حدد الموقع",step2:"2 · مشاهد الأقمار الصناعية",step3:"3 · معاينة NDVI",select:"ارسم مضلعًا أو حدد مستطيلًا بواسطة أدوات الخريطة.",
+    coordinateTitle:"تحديد الموقع بالإحداثيات عند تعذر رسم الخريطة",latitude:"خط العرض",longitude:"خط الطول",side:"طول ضلع المربع بالمتر",setCoordinates:"تحديد وتحليل الموقع",invalidCoordinates:"الإحداثيات خارج الجزائر أو مساحة الاختيار غير صالحة.",step1:"1 · حدد الموقع",step2:"2 · مشاهد الأقمار الصناعية",step3:"3 · معاينة NDVI",select:"ارسم مضلعًا أو حدد مستطيلًا بواسطة أدوات الخريطة.",
     selectFirst:"اختر منطقة صغيرة على الخريطة أولًا. تتوفر معاينة NDVI للمساحات التي لا يتجاوز مستطيلها 1600 بكسل Sentinel.",
     bounds:"إحداثيات المنطقة WGS84",area:"المساحة التقريبية",search:"ابحث عن مشاهد حقيقية",searching:"يُبحث الآن…",
     run:"احسب NDVI الحقيقي",running:"جارٍ الحساب…",limit:"لتجربة NDVI، صغّر التحديد إلى ما يقارب 16 هكتارًا من مساحة المستطيل المحيط كحد أقصى.",
@@ -43,7 +43,7 @@ const copy={
   },
   fr:{
     kicker:"FOGGARA-DZ · SIG & observation spatiale",title:"Analysez votre terrain dans FOGGARA",intro:"Dessinez une parcelle, recherchez de vraies scènes Sentinel-2 et calculez le NDVI dans son périmètre sans quitter FOGGARA.",
-    step1:"1 · Définir la zone",step2:"2 · Scènes satellite",step3:"3 · Aperçu NDVI",select:"Dessinez un polygone ou sélectionnez un rectangle sur la carte.",
+    coordinateTitle:"Définir la parcelle par coordonnées si la carte ne fonctionne pas",latitude:"Latitude",longitude:"Longitude",side:"Côté en mètres",setCoordinates:"Définir et analyser la zone",invalidCoordinates:"Coordonnées hors d’Algérie ou surface invalide.",step1:"1 · Définir la zone",step2:"2 · Scènes satellite",step3:"3 · Aperçu NDVI",select:"Dessinez un polygone ou sélectionnez un rectangle sur la carte.",
     selectFirst:"Sélectionnez une petite zone. L'aperçu NDVI est limité à 1 600 pixels Sentinel dans l'emprise.",
     bounds:"Coordonnées WGS84",area:"Surface estimée",search:"Chercher des scènes réelles",searching:"Recherche en cours…",
     run:"Calculer le vrai NDVI",running:"Calcul en cours…",limit:"Réduisez la zone à environ 16 hectares d'emprise au maximum pour l'aperçu NDVI.",
@@ -58,7 +58,7 @@ const copy={
   },
   en:{
     kicker:"FOGGARA-DZ · GIS & satellite intelligence",title:"Analyze your field inside FOGGARA",intro:"Draw a field or choose an area, find real Sentinel-2 acquisitions and compute polygon-clipped NDVI without leaving the platform.",
-    step1:"1 · Select area",step2:"2 · Satellite scenes",step3:"3 · NDVI preview",select:"Draw a polygon or select a rectangle with the map tools.",
+    coordinateTitle:"Use coordinates if the map does not load",latitude:"Latitude",longitude:"Longitude",side:"Square side (metres)",setCoordinates:"Select area for analysis",invalidCoordinates:"Coordinates outside Algeria or invalid selection size.",step1:"1 · Select area",step2:"2 · Satellite scenes",step3:"3 · NDVI preview",select:"Draw a polygon or select a rectangle with the map tools.",
     selectFirst:"Choose a small area first. NDVI preview is limited to 1,600 Sentinel pixels in the bounding area.",
     bounds:"WGS84 bounds",area:"Estimated area",search:"Search real scenes",searching:"Searching…",
     run:"Compute real NDVI",running:"Computing…",limit:"Shrink the selection to about 16 hectares of bounding extent or less for NDVI preview.",
@@ -84,6 +84,10 @@ export default function PublicGis(){
   const t=copy[lang];
   const [retry,setRetry]=useState(0);
   const [area,setArea]=useState<FoggaraPolygon|null>(null);
+  const [latitude,setLatitude]=useState("");
+  const [longitude,setLongitude]=useState("");
+  const [sideMeters,setSideMeters]=useState("100");
+  const [coordinateError,setCoordinateError]=useState(false);
   const [selection,setSelection]=useState<Bbox|null>(null);
   const [scenes,setScenes]=useState<SatelliteScene[]>([]);
   const [selectedSceneId,setSelectedSceneId]=useState<string|null>(null);
@@ -101,6 +105,21 @@ export default function PublicGis(){
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
   };
+  function selectCoordinates(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    const lat=Number(latitude),lon=Number(longitude),side=Number(sideMeters);
+    if(!latitude.trim()||!longitude.trim()||!Number.isFinite(lat)||!Number.isFinite(lon)
+      ||!Number.isFinite(side)||side<20||side>300||lat<18.4||lat>37.5||lon< -8.8||lon>12.2){
+      setCoordinateError(true);return;
+    }
+    const halfLat=side/2/110574;
+    const halfLon=side/2/(111320*Math.cos(lat*Math.PI/180));
+    const bounds:Bbox=[lon-halfLon,lat-halfLat,lon+halfLon,lat+halfLat];
+    const polygon=rectanglePolygon(bounds);
+    if(!boundsOfPolygon(polygon)){setCoordinateError(true);return;}
+    setCoordinateError(false);
+    change(polygon);
+  }
   async function searchScenes(){
     if(!bbox||searching)return;
     setSearching(true);setSearchError(null);setScenes([]);setSelectedSceneId(null);
@@ -147,6 +166,14 @@ export default function PublicGis(){
     </header>
     <section className="fg-public-gis-map" aria-label={t.tools}>
       <h2>{t.step1}</h2><p>{t.select}</p>
+      <form className="fg-public-gis-coordinate-entry" onSubmit={selectCoordinates}>
+        <strong>{t.coordinateTitle}</strong>
+        <label>{t.latitude}<input type="number" required min="18.4" max="37.5" step="any" placeholder="33.80000" value={latitude} onChange={e=>setLatitude(e.target.value)}/></label>
+        <label>{t.longitude}<input type="number" required min="-8.8" max="12.2" step="any" placeholder="2.87000" value={longitude} onChange={e=>setLongitude(e.target.value)}/></label>
+        <label>{t.side}<input type="number" required min="20" max="300" step="10" value={sideMeters} onChange={e=>setSideMeters(e.target.value)}/></label>
+        <button type="submit">{t.setCoordinates}</button>
+        {coordinateError?<span role="alert">{t.invalidCoordinates}</span>:null}
+      </form>
       <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
         satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={setSelectedSceneId}
         draftParcelBoundary={area}

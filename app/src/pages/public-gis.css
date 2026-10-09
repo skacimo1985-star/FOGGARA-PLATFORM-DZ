@@ -60,3 +60,13 @@
 .fg-public-gis-attribution{max-width:1320px;margin:20px auto 0;font-size:11px;color:#70836f;line-height:1.7;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 @media(max-width:830px){.fg-public-gis-workflow{grid-template-columns:1fr}.fg-public-gis-handoff{flex-direction:column;align-items:stretch}.fg-public-gis-handoff>a{align-self:flex-start}}
 @media(max-width:450px){.fg-public-gis-tool{padding:16px}.fg-public-gis-scenes{grid-template-columns:1fr}.fg-public-gis-handoff{padding:18px}.fg-public-gis-date-row{flex-direction:column;align-items:stretch}}
+
+/* No-WebGL fallback: direct numeric site selection remains usable even when map
+   tiles or the browser's graphics engine are unavailable. */
+.fg-public-gis-coordinate-entry{display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:15px 17px;margin:13px 0 17px;background:#f9fdf8;border:1px solid #c6ddcc;border-radius:13px}
+.fg-public-gis-coordinate-entry>strong{width:100%;font-size:13px;font-weight:800;color:#184d39}
+.fg-public-gis-coordinate-entry label{display:grid;gap:5px;flex:1 1 130px;color:#335c46;font-size:12px;font-weight:750;min-width:0}
+.fg-public-gis-coordinate-entry input{width:100%;min-width:0;min-height:40px;border:1px solid #b7d3bf;border-radius:8px;padding:7px 10px;background:#fff;color:#153d2c;font:inherit;font-variant-numeric:tabular-nums}
+.fg-public-gis-coordinate-entry button{min-height:40px;padding:9px 16px;border-radius:9px;border:0;background:#18583d;color:#fff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.fg-public-gis-coordinate-entry>span[role=alert]{flex:1 1 100%;font-size:12px;color:#963e30}
+@media(max-width:600px){.fg-public-gis-coordinate-entry{padding:12px;gap:9px}.fg-public-gis-coordinate-entry label{flex-basis:42%}.fg-public-gis-coordinate-entry button{width:100%}}
