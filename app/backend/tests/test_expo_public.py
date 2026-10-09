@@ -361,3 +361,18 @@ def test_foggara_public_ndvi_preview_rejects_unverified_acquisition_from_future(
     response = client.post("/api/expo/satellite/ndvi-preview", json=data)
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "FUTURE_DATE"
+
+
+def test_foggara_public_preview_refuses_unmasked_statistics(client, monkeypatch):
+    monkeypatch.setattr(expo, "_earth_search_features", lambda *_args: [scene()])
+    monkeypatch.setattr(expo, "build_processing_plan", lambda _item, _index: {"scene_id": scene()["id"]})
+    monkeypatch.setattr(expo, "compute_index_statistics", lambda *_args, **_kwargs: {
+        "statistics": {"min": 0, "max": 1, "mean": 0.99, "median": 1},
+        "pixels": {"total": 100, "valid": 100, "valid_fraction": 1},
+        "mask": {"geometry_mask_applied": False},
+    })
+    response = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload())
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "NO_USABLE_SCENE"
+    assert response.json()["indices"] == {}
+    assert response.json()["skipped"][0]["reason"] == "polygon_mask_not_applied"
