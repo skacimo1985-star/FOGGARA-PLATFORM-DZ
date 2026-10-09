@@ -1156,7 +1156,7 @@ export default function Gis() {
             <>
               <div><span>{guideCopy.vegetation}</span><strong dir="ltr">{ndviMean == null ? "—" : ndviMean.toFixed(3)}</strong><small>NDVI</small></div>
               <div><span>{guideCopy.moisture}</span><strong dir="ltr">{moistureMean == null ? "—" : moistureMean.toFixed(3)}</strong><small>NDMI / NDWI / LSWI</small></div>
-              <div><span>{guideCopy.soil}</span><strong dir="ltr">{soilPh == null ? "—" : soilPh.toFixed(2)}</strong><small>pH · 0–20 cm</small></div>
+              <div><span>{guideCopy.soil}</span><strong dir="ltr">{soilPh == null ? "—" : soilPh.toFixed(2)}</strong><small>{soilPh == null ? (lang==="ar"?"pH · قياس مخبري مطلوب":lang==="fr"?"pH · analyse labo requise":"pH · laboratory test needed") : "pH · modèle spatial (INFERRED)"}</small></div>
               <div><span>{guideCopy.quality}</span><strong dir="ltr">{fieldIntelligenceResult.quality_indicator?.score ?? "—"}</strong><small>{fieldIntelligenceResult.quality_indicator?.grade ?? "NOT VERIFIED"}</small></div>
               <p className="fg-gis-result-provenance">
                 {fieldIntelligenceResult.geometry_mask_applied
