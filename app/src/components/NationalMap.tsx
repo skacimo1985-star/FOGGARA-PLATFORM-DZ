@@ -1213,7 +1213,7 @@ export function NationalMap({
               ) : null}
             </div>
           ) : null}
-          {selectedParcelId && onDrawParcelBoundary ? (
+          {onDrawParcelBoundary ? (
             <div className="fg-map-control-card fg-map-draw-card">
               {!drawingBoundary ? (
                 <button
