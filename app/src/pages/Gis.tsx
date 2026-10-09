@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MapPinned } from "lucide-react";
 import { api } from "@/lib/api";
 import {polygonAreaHectares,polygonBoundingBox} from "@/lib/geojson-area";
+import {readFoggaraAoi,clearFoggaraAoi,boundsOfPolygon} from "@/lib/foggara-aoi";
 import type { GisSite, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -352,6 +353,14 @@ export default function Gis() {
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
   const [manualAnalysisBbox, setManualAnalysisBbox] = useState<[number, number, number, number] | null>(null);
   const [draftPolygon,setDraftPolygon] = useState<PolygonGeometry | null>(null);
+  // User-drawn AOIs from the FOGGARA public map remain local until signed-in save.
+  useEffect(()=>{
+    const pending=readFoggaraAoi();
+    if(!pending)return;
+    const box=boundsOfPolygon(pending);
+    if(box){setManualAnalysisBbox(box);setDraftPolygon(pending);setActiveParcelId(null);setSelectedSiteId(null);}
+    clearFoggaraAoi();
+  },[]);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldCrop, setNewFieldCrop] = useState("");
   const [fieldSaving, setFieldSaving] = useState(false);
@@ -574,11 +583,12 @@ export default function Gis() {
   );
 
   useEffect(() => {
-    if (!activeProjectSiteId || !scopedParcels.length) return;
+    // A freshly selected visitor field takes priority over the user's last project.
+    if (manualAnalysisBbox || draftPolygon || !activeProjectSiteId || !scopedParcels.length) return;
     if (!selectedParcelId || !scopedParcels.some((parcel) => parcel.id === selectedParcelId)) {
       setActiveParcelId(scopedParcels[0].id);
     }
-  }, [activeProjectSiteId, scopedParcels, selectedParcelId]);
+  }, [activeProjectSiteId, scopedParcels, selectedParcelId, manualAnalysisBbox, draftPolygon]);
 
   const selectedParcel = useMemo(
     () => parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId) ?? null,
