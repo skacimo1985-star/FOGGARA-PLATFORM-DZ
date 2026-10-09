@@ -10,7 +10,7 @@ const Account = lazy(() => import("@/pages/Account"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const Agriculture = lazy(() => import("@/features/agriculture/Agriculture"));
 const Presentation = lazy(() => import("@/pages/Presentation"));
-const Landing = lazy(() => import("@/pages/FarmLanding"));
+const Landing = lazy(() => import("@/pages/OasisRestoredLanding"));
 const AgricultureServices = lazy(() => import("@/pages/AgricultureServices"));
 const Demo = lazy(() => import("@/pages/Demo"));
 const Login = lazy(() => import("@/pages/Login"));
