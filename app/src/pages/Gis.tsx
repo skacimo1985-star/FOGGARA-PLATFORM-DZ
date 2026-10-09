@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { MapPinned } from "lucide-react";
+import { MapPinned,FileDown } from "lucide-react";
+import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
 import { api } from "@/lib/api";
 import {polygonAreaHectares,polygonBoundingBox} from "@/lib/geojson-area";
 import {readFoggaraAoi,clearFoggaraAoi,boundsOfPolygon} from "@/lib/foggara-aoi";
@@ -224,6 +225,7 @@ type CropProfile = {
 type FieldIntelligenceStudy = {
   status: "READY" | "NO_USABLE_SCENE";
   study_type?: string;
+  geometry_mask_applied?: boolean;
   bbox_wgs84: [number, number, number, number];
   period: { start: string; end: string };
   crop_profile: CropProfile;
@@ -610,6 +612,29 @@ export default function Gis() {
     () => (data ?? []).flatMap((entry) => entry.projects).find((project) => project.id === activeProjectId) ?? null,
     [data, activeProjectId],
   );
+  // Export requires an explicitly selected AOI or a recorded polygon; never
+  // silently export the whole viewport as a purported agricultural parcel.
+  const reportGeometry = selectedParcelRecord?.boundary_geojson ?? draftPolygon
+    ?? (manualAnalysisBbox ? bboxPolygon(manualAnalysisBbox) : null);
+  const reportBbox = reportGeometry ? polygonBoundingBox(reportGeometry) : null;
+  const reportReadyForEvidence=Boolean(reportBbox&&fieldIntelligenceResult
+    && reportBbox.every((value,i)=>Math.abs(value-fieldIntelligenceResult.bbox_wgs84[i])<0.00001)
+    && fieldIntelligenceResult.period.start===sceneStart && fieldIntelligenceResult.period.end===sceneEnd);
+  const reportIndex = selectedIndex==="ndmi"?"ndmi":"ndvi";
+  const reportIndexData=reportReadyForEvidence&&fieldIntelligenceResult?.status==="READY"
+    ?Object.values(fieldIntelligenceResult.domains).find(d=>d.indices?.[reportIndex])?.indices?.[reportIndex]
+    :null;
+  const reportEvidence:FieldPdfEvidence=reportReadyForEvidence&&fieldIntelligenceResult?{
+    index:reportIndex,status:fieldIntelligenceResult.status,
+    scene:fieldIntelligenceResult.scene?{
+      id:fieldIntelligenceResult.scene.id,
+      datetime:fieldIntelligenceResult.scene.datetime??null,
+      cloud_cover_pct:fieldIntelligenceResult.scene.cloud_cover_pct??null,
+      provider:fieldIntelligenceResult.scene.provider??null,
+    }:null,
+    geometry_mask_applied:fieldIntelligenceResult.geometry_mask_applied===true,
+    metrics:reportIndexData??null,verified:fieldIntelligenceResult.evidence?.verified===true,
+  }:null;
   const fieldIndexMean = (key: string) => {
     if (!fieldIntelligenceResult || fieldIntelligenceResult.status !== "READY") return null;
     for (const domain of Object.values(fieldIntelligenceResult.domains)) {
@@ -1009,6 +1034,12 @@ export default function Gis() {
           <p className="fg-command-eyebrow">{copy.eyebrow}</p>
           <h1>{copy.title}</h1>
         </div>
+        <button type="button" disabled={!reportGeometry||!reportBbox}
+          className="fg-field-pdf-button"
+          title={lang==="ar"?"حفظ التقرير كملف PDF من نافذة الطباعة":lang==="fr"?"Enregistrer le rapport au format PDF depuis l'impression":"Save report as PDF from print dialog"}
+          onClick={()=>printFoggaraFieldReport(selectedParcelRecord?.name||newFieldName||null,selectedParcelId)}>
+          <FileDown size={16}/>{lang==="ar"?"تقرير PDF":lang==="fr"?"Rapport PDF":"PDF report"}
+        </button>
         <select
           aria-label={t("gis.filterWilaya")}
           className="rounded-md border bg-background px-3 py-2 text-sm"
@@ -1705,6 +1736,12 @@ export default function Gis() {
           </div>
         )}
       </section>
+      {reportGeometry&&reportBbox?<FieldPdfReport lang={lang} geometry={reportGeometry} bbox={reportBbox}
+        estimatedAreaHa={polygonAreaHectares(reportGeometry)}
+        fieldName={selectedParcelRecord?.name||newFieldName||null}
+        crop={selectedParcelRecord?.crop||newFieldCrop||null} fieldId={selectedParcelId}
+        period={{start:sceneStart,end:sceneEnd}} evidence={reportEvidence} createdAt={new Date().toISOString()}
+      />:null}
     </div>
   );
 }
