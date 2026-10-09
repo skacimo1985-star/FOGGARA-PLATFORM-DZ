@@ -23,7 +23,7 @@ test("homepage restores the historical full-width oasis visual without the Moon 
 
 test("historical oasis and three additional illustrations exist as actual WEBP files",()=>{
   for(const asset of ["oasis-dawn.webp","oasis-dawn-mobile.webp","oasis-hero.webp","foggara-heritage-poster.webp","foggara-sprite.webp"]){
-    assert.ok(page.includes(asset),asset);
+    assert.ok(page.includes(asset)||read("../src/components/OasisPhotoGallery.tsx").includes(asset),asset);
     const b=readFileSync(new URL("../public/images/"+asset,import.meta.url));
     assert.equal(b.subarray(0,4).toString("ascii"),"RIFF",asset);
     assert.equal(b.subarray(8,12).toString("ascii"),"WEBP",asset);
@@ -36,6 +36,7 @@ test("farm template services link to real routes while public Expo stays accessi
   }
   assert.ok(page.includes('id="farm-services"'));
   assert.ok(page.includes('id="oasis-gallery"'));
+  assert.ok(page.includes('<OasisPhotoGallery lang={lang}/>'));
   assert.ok(page.includes('OasisCanvaPresentation lang={lang} compact siteSevenSlides'));
   assert.ok(page.includes("DAHXhRSdmV4"));
   const deck=read("../src/components/OasisCanvaPresentation.tsx");
@@ -68,4 +69,21 @@ test("restored gallery uses a bounded three-image layout with neutral poster bac
   assert.ok(css.includes("background:#e9e5d8"));
   assert.ok(css.includes("width:min(100%,1080px)"));
   assert.ok(css.includes("height:600px"));
+});
+
+test("curated gallery auto-discovers only real binary photos and keeps old fallback",()=>{
+  const manifest=read("../src/components/oasisVisuals.ts");
+  const gallery=read("../src/components/OasisPhotoGallery.tsx");
+  const deck=read("../src/components/OasisCanvaPresentation.tsx");
+  const galleryCss=read("../src/components/oasis-photo-gallery.css");
+  assert.ok(manifest.includes('import.meta.glob("../assets/oasis-gallery/*.webp"'));
+  assert.equal((manifest.match(/\{id:"/g)||[]).length,13);
+  assert.ok(gallery.includes("availableOasisPhotos.length ? availableOasisPhotos : fallback"));
+  assert.ok(gallery.includes('aria-pressed={filter===option}'));
+  assert.ok(gallery.includes("loading=\"lazy\""));
+  assert.ok(gallery.includes("AI-generated or AI-edited illustrations"));
+  assert.ok(deck.includes('getOasisPhoto("sunset-over-oasis")'));
+  assert.ok(deck.includes('getOasisPhoto("kasria-water-distribution")'));
+  assert.ok(deck.includes('getOasisPhoto("oasis-palm-reflection")'));
+  assert.ok(galleryCss.includes("grid-template-columns:repeat(3,minmax(0,1fr))"));
 });
