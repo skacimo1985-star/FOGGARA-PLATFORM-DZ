@@ -376,3 +376,53 @@ def test_foggara_public_preview_refuses_unmasked_statistics(client, monkeypatch)
     assert response.json()["status"] == "NO_USABLE_SCENE"
     assert response.json()["indices"] == {}
     assert response.json()["skipped"][0]["reason"] == "polygon_mask_not_applied"
+
+
+def test_foggara_ndmi_is_real_canopy_index_with_same_polygon_quality_mask(client, monkeypatch):
+    chosen = scene()
+    seen = {}
+    monkeypatch.setattr(expo, "_earth_search_features", lambda *_args: [chosen])
+    monkeypatch.setattr(expo, "build_processing_plan", lambda _item, index: {
+        "index": index, "scene_id": chosen["id"],
+    })
+    def calculate(plan, bbox, geometry_wgs84=None):
+        seen["plan"] = plan
+        seen["geometry"] = geometry_wgs84
+        return {
+            "statistics": {"min": 0.09, "max": 0.52, "mean": 0.28, "median": 0.26},
+            "pixels": {"total": 64, "valid": 55, "valid_fraction": 0.859375},
+            "mask": {"geometry_mask_applied": True, "outside_geometry_pixel_count": 6},
+        }
+    monkeypatch.setattr(expo, "compute_index_statistics", calculate)
+    payload = public_preview_payload()
+    payload.update({"index": "ndmi", "scene_id": chosen["id"]})
+    response = client.post("/api/expo/satellite/ndvi-preview", json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "READY"
+    assert body["index"] == "ndmi"
+    assert body["indices"]["ndmi"]["statistics"]["mean"] == 0.28
+    assert body["evidence"] == {"scene": "OBSERVED", "ndmi": "COMPUTED", "verified": False}
+    assert seen["plan"]["index"] == "ndmi"
+    assert seen["geometry"]["type"] == "Polygon"
+
+
+def test_foggara_selected_acquisition_not_in_trusted_stac_results_produces_no_fake_result(client, monkeypatch):
+    monkeypatch.setattr(expo, "_earth_search_features", lambda *_args: [scene()])
+    monkeypatch.setattr(expo, "compute_index_statistics",
+                        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("must not run")))
+    payload = public_preview_payload()
+    payload["scene_id"] = "S2B_UNTRUSTED_2026_05_04"
+    response = client.post("/api/expo/satellite/ndvi-preview", json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "NO_USABLE_SCENE"
+    assert body["indices"] == {}
+    assert body["scene"] is None
+
+
+def test_foggara_index_selection_accepts_only_supported_sentinel_indices(client):
+    payload = public_preview_payload()
+    payload["index"] = "soil_ph"
+    response = client.post("/api/expo/satellite/ndvi-preview", json=payload)
+    assert response.status_code == 422

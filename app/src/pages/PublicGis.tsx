@@ -1,7 +1,7 @@
 import {useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
-import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity} from "lucide-react";
+import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
 import {NationalMap,type SatelliteScene} from "@/components/NationalMap";
 import {useAuth} from "@/context/useAuth";
 import {api} from "@/lib/api";
@@ -10,18 +10,21 @@ import {polygonAreaHectares} from "@/lib/geojson-area";
 import {boundsOfPolygon,rectanglePolygon,saveFoggaraAoi,type FoggaraPolygon} from "@/lib/foggara-aoi";
 import {ErrorText} from "@/components/common";
 import "./public-gis.css";
+import "./foggara-field-workbench.css";
 
 type Bbox=[number,number,number,number];
 type SceneList={provider:string;collection:string;live:boolean;count:number;scenes:SatelliteScene[]};
+type IndexKey="ndvi"|"ndmi";
 type Preview={
   status:"READY"|"NO_USABLE_SCENE";
   product:string;
+  index?:IndexKey;
   scene:{id:string;datetime:string|null;cloud_cover_pct:number|null;provider:string|null}|null;
   area_ha_estimated:number;
   geometry_mask_applied?:boolean;
-  indices?:{ndvi?:{statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
+  indices?:Partial<Record<IndexKey,{statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
     pixels?:{total:number;valid:number;valid_fraction:number};
-    mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}}};
+    mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}}>>;
   evidence:{verified:boolean};
   persisted:boolean;
 };
@@ -72,6 +75,19 @@ const copy={
     dateStart:"From",dateEnd:"To",provider:"Scene catalog: Element 84 Earth Search · Sentinel-2 L2A",signIn:"Sign in to save",
   },
 } as const;
+
+const wb={
+  ar:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"مساحة العمل الجغرافية",subtitle:"الاستشعار عن بعد وإدارة المساحات",workspace:"منصة فقارة",visitor:"معاينة عامة",account:"حساب المؤسسة",left:"إعداد الدراسة",map:"الخريطة التشغيلية",right:"تحليلات الحقل",drawing:"حدود الحقل",drawingHelp:"ارسم مضلعًا أو مستطيلًا على الخريطة. تتوفر أدوات القياس والطبقات ضمن الخريطة.",coordinates:"الإحداثيات",chooseCoords:"تحديد المنطقة بالإحداثيات",selected:"تم تحديد المساحة",pending:"بانتظار تحديد الحقل",scenePanel:"المرئيات الفضائية",catalog:"Sentinel-2 L2A",searchPrompt:"اختَر منطقة ثم ابحث عن صور الأقمار الصناعية الحقيقية.",sceneNone:"لا توجد مشاهد في الفترة المطلوبة.",acquired:"تاريخ الالتقاط",cloud:"الغطاء السحابي",selectScene:"اختيار المشهد",analysis:"التحليل الطيفي",vegetation:"حيوية الغطاء النباتي",canopyWater:"مؤشر ماء الغطاء النباتي",active:"المؤشر المحدد",computed:"نتيجة محسوبة",estimated:"تقدير فضائي لا يعوض القياس الميداني",notRun:"لم تُنفذ المعالجة بعد",emptyResult:"حدّد منطقة وابحث عن المشاهد، ثم شغّل التحليل للحصول على نتيجة حقيقية.",resultUnavailable:"تعذّر إيجاد مشهد صالح أو بكسلات صالحة للحساب.",mask:"قناع المضلع",maskApplied:"مطبق",quality:"جودة العينة",sampleCount:"بكسلات صالحة",range:"القيمة الدنيا / العليا",provenance:"الدليل والمصدر",limitations:"لا يمكن استنتاج NPK أو pH أو الأمراض أو كميات الري من هذه المؤشرات وحدها.",satellite:"مصدر البيانات الخارجي",backend:"الحساب على خادم فقارة",aoi:"المنطقة المحددة",surface:"المساحة",resolution:"دقة المعالجة الاسمية",roi:"WGS84",processing:"المعالجة جارية",waiting:"بانتظار البيانات",geoAction:"استخدم الإحداثيات إذا لم تظهر الخريطة",invalidDate:"اختر فترة صالحة لا تتجاوز 31 يومًا.",pixelBudget:"النطاق يتجاوز قدرة التحليل العام؛ اختر مساحة أصغر.",export:"تصدير GeoJSON",reset:"إعادة تعيين",save:"حفظ داخل المؤسسة",stepOne:"01 · المنطقة",stepTwo:"02 · المشهد",stepThree:"03 · التحليل",sceneSpecific:"تُحسب النتيجة للمشهد المختار من الخادم نفسه، لا من بيانات تجريبية.", indexNdmiNote:"NDMI يصف تغيرات ماء الغطاء النباتي، لا رطوبة التربة المقاسة.", noAccess:"المعاينة لا تحفظ بيانات المؤسسة"
+  },
+  fr:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"Atelier géospatial",subtitle:"Télédétection et gestion des parcelles",workspace:"Plateforme FOGGARA",visitor:"Accès public",account:"Espace organisation",left:"Paramètres de l'étude",map:"Carte opérationnelle",right:"Analyse de la parcelle",drawing:"Limites de la parcelle",drawingHelp:"Dessinez un polygone ou un rectangle directement sur la carte. Mesures et couches sont intégrées.",coordinates:"Coordonnées",chooseCoords:"Choisir par coordonnées",selected:"Zone sélectionnée",pending:"En attente de parcelle",scenePanel:"Acquisitions satellitaires",catalog:"Sentinel-2 L2A",searchPrompt:"Définissez une zone pour chercher les acquisitions réelles.",sceneNone:"Aucune scène pour cette période.",acquired:"Date d'acquisition",cloud:"Nuages",selectScene:"Choisir cette scène",analysis:"Indices spectraux",vegetation:"Vigueur végétale",canopyWater:"Eau de la canopée",active:"Indice actif",computed:"Indice calculé",estimated:"Estimation spatiale, non validée sur le terrain",notRun:"Aucun calcul lancé",emptyResult:"Sélectionnez une zone et recherchez des scènes, puis lancez le calcul réel.",resultUnavailable:"Aucune scène ou pixel valide disponible pour ce calcul.",mask:"Masque polygonal",maskApplied:"Appliqué",quality:"Qualité des pixels",sampleCount:"Pixels valides",range:"Valeur min. / max.",provenance:"Preuves et provenance",limitations:"NDVI et NDMI ne mesurent pas le NPK, le pH, les maladies ou les besoins en irrigation.",satellite:"Fournisseur externe",backend:"Calcul sur le serveur FOGGARA",aoi:"Zone d'intérêt",surface:"Superficie",resolution:"Résolution nominale",roi:"WGS84",processing:"Traitement en cours",waiting:"Données non analysées",geoAction:"Saisir des coordonnées si la carte est indisponible",invalidDate:"Choisissez une période valide de 31 jours maximum.",pixelBudget:"Zone trop grande pour l'aperçu public ; réduire l'emprise.",export:"Exporter GeoJSON",reset:"Réinitialiser",save:"Enregistrer dans l'organisation",stepOne:"01 · Zone",stepTwo:"02 · Acquisition",stepThree:"03 · Analyse",sceneSpecific:"Calcul sur la scène choisie, jamais sur des données simulées.",indexNdmiNote:"NDMI est un proxy d'eau dans le couvert végétal, pas une mesure d'humidité du sol.",noAccess:"L'aperçu n'enregistre aucune donnée privée"
+  },
+  en:{
+    suite:"FOGGARA FIELD INTELLIGENCE",dashboard:"Geospatial workspace",subtitle:"Remote sensing & field monitoring",workspace:"FOGGARA Platform",visitor:"Public workspace",account:"Organization workspace",left:"Study setup",map:"Operational map",right:"Field intelligence",drawing:"Field boundary",drawingHelp:"Draw a polygon or rectangle directly on the map; measurement and layers are built into the viewer.",coordinates:"Coordinates",chooseCoords:"Select by coordinates",selected:"Area selected",pending:"Waiting for field",scenePanel:"Satellite acquisitions",catalog:"Sentinel-2 L2A",searchPrompt:"Define an area to search for real satellite acquisitions.",sceneNone:"No acquisitions found for this period.",acquired:"Acquisition date",cloud:"Cloud cover",selectScene:"Select acquisition",analysis:"Spectral analysis",vegetation:"Vegetation vigor",canopyWater:"Canopy water proxy",active:"Active index",computed:"Computed result",estimated:"Satellite estimate, not field verified",notRun:"Analysis not run",emptyResult:"Select an area, search acquisitions and run a real raster analysis.",resultUnavailable:"No valid scene or valid pixels available for the requested calculation.",mask:"Polygon mask",maskApplied:"Applied",quality:"Valid pixel coverage",sampleCount:"Valid pixels",range:"Minimum / maximum",provenance:"Evidence and provenance",limitations:"These indices cannot measure NPK, pH, crop disease or irrigation quantities by themselves.",satellite:"External data provider",backend:"Processed on FOGGARA backend",aoi:"Area of interest",surface:"Estimated area",resolution:"Nominal resolution",roi:"WGS84",processing:"Processing request",waiting:"Awaiting observations",geoAction:"Use coordinates if the map is unavailable",invalidDate:"Select a valid date window of 31 days or less.",pixelBudget:"AOI exceeds the public preview budget; select a smaller field.",export:"Export GeoJSON",reset:"Reset selection",save:"Save in organization",stepOne:"01 · Area",stepTwo:"02 · Imagery",stepThree:"03 · Analysis",sceneSpecific:"Computed for the selected acquisition, never from mock data.",indexNdmiNote:"NDMI is a vegetation canopy-water proxy, not measured soil moisture.",noAccess:"Public previews do not save organization data"
+  }
+} as const;
+
 const today=new Date();
 const begin=new Date(today);begin.setUTCDate(today.getUTCDate()-30);
 const ISO=(d:Date)=>d.toISOString().slice(0,10);
@@ -82,7 +98,11 @@ export default function PublicGis(){
   const {user}=useAuth();
   const lang=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
   const t=copy[lang];
+  const v=wb[lang];
   const [retry,setRetry]=useState(0);
+  const [index,setIndex]=useState<IndexKey>("ndvi");
+  const [hasSearched,setHasSearched]=useState(false);
+  const [showCoordinates,setShowCoordinates]=useState(false);
   const [area,setArea]=useState<FoggaraPolygon|null>(null);
   const [latitude,setLatitude]=useState("");
   const [longitude,setLongitude]=useState("");
@@ -100,10 +120,13 @@ export default function PublicGis(){
   const [end,setEnd]=useState(ISO(today));
   const bbox=area?boundsOfPolygon(area):null;
   const pixels=bbox?pixelEstimate(bbox):0;
-  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=1600&&start&&end&&start<=end);
+  const rangeDays=(new Date(end+"T00:00:00Z").getTime()-new Date(start+"T00:00:00Z").getTime())/86400000;
+  const rangeValid=Number.isFinite(rangeDays)&&rangeDays>=0&&rangeDays<=31&&end<=ISO(new Date());
+  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=1600&&rangeValid);
   const change=(poly:FoggaraPolygon|null)=>{
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
+    setHasSearched(false);
   };
   function selectCoordinates(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -121,20 +144,20 @@ export default function PublicGis(){
     change(polygon);
   }
   async function searchScenes(){
-    if(!bbox||searching)return;
+    if(!bbox||searching||!rangeValid)return;
     setSearching(true);setSearchError(null);setScenes([]);setSelectedSceneId(null);
     try{
       const params=new URLSearchParams({bbox:bbox.join(","),start,end,cloud_cover_lte:"35",limit:"8"});
       const found=await api.get<SceneList>(`/expo/satellite/scenes?${params.toString()}`);
       setScenes(found.scenes);
       if(found.scenes[0])setSelectedSceneId(found.scenes[0].id);
-    }catch(e){setSearchError(e);}finally{setSearching(false);}
+    }catch(e){setSearchError(e);}finally{setSearching(false);setHasSearched(true);}
   }
   async function preview(){
     if(!area||!allowed||computing)return;
     setComputing(true);setPreviewError(null);setResult(null);
     try{
-      const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end});
+      const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
       setResult(response);
     }catch(e){setPreviewError(e);}finally{setComputing(false);}
   }
@@ -150,95 +173,160 @@ export default function PublicGis(){
     a.click();URL.revokeObjectURL(url);
   };
   const selected=scenes.find(x=>x.id===selectedSceneId);
-  const ndvi=result?.indices?.ndvi?.statistics?.mean;
-  const count=result?.indices?.ndvi?.pixels?.valid;
-  return <main className="fg-public-gis" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
-    <header className="fg-public-gis-intro">
-      <div>
-        <p className="fg-public-gis-kicker"><Sprout size={18}/>{t.kicker}</p>
-        <h1>{t.title}</h1><p>{t.intro}</p>
-        <div className="fg-public-gis-ident"><span><Globe2 size={16}/>{t.public}</span><span><Database size={16}/>FOGGARA-DZ / WEFEH</span></div>
+  const activeMetrics=result?.indices?.[index];
+  const ndvi=activeMetrics?.statistics?.mean;
+  const count=activeMetrics?.pixels?.valid;
+  const coverage=activeMetrics?.pixels?.valid_fraction;
+  const range=activeMetrics?.statistics;
+
+  return <main className="fg-public-gis fg-field-shell" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
+    <header className="fg-field-topbar">
+      <div className="fg-field-brand">
+        <div className="fg-field-brand-mark" aria-hidden="true"><Sprout size={23}/></div>
+        <div className="fg-field-brand-copy"><strong>FOGGARA-DZ <span>GIS</span></strong><small>{v.suite}</small></div>
       </div>
-      <Link className="fg-public-gis-cta" onClick={persist} to={user?"/app/gis":"/login?mode=team"}
-        state={user?undefined:{from:{pathname:"/app/gis"}}}>
-        <ShieldCheck size={18}/>{t.signIn}<ArrowUpRight size={18}/>
-      </Link>
+      <div className="fg-field-top-title"><strong>{v.dashboard}</strong><small>{v.subtitle}</small></div>
+      <div className="fg-field-top-actions">
+        <span className="fg-field-access"><span className="fg-field-status-dot"/>{v.visitor}</span>
+        <Link to={user?"/app/gis":"/login?mode=team"} state={user?undefined:{from:{pathname:"/app/gis"}}}
+          onClick={persist} className="fg-field-account-link"><ShieldCheck size={16}/>{v.account}<ArrowUpRight size={15}/></Link>
+      </div>
     </header>
-    <section className="fg-public-gis-map" aria-label={t.tools}>
-      <h2>{t.step1}</h2><p>{t.select}</p>
-      <form className="fg-public-gis-coordinate-entry" onSubmit={selectCoordinates}>
-        <strong>{t.coordinateTitle}</strong>
-        <label>{t.latitude}<input type="number" required min="18.4" max="37.5" step="any" placeholder="33.80000" value={latitude} onChange={e=>setLatitude(e.target.value)}/></label>
-        <label>{t.longitude}<input type="number" required min="-8.8" max="12.2" step="any" placeholder="2.87000" value={longitude} onChange={e=>setLongitude(e.target.value)}/></label>
-        <label>{t.side}<input type="number" required min="20" max="300" step="10" value={sideMeters} onChange={e=>setSideMeters(e.target.value)}/></label>
-        <button type="submit">{t.setCoordinates}</button>
-        {coordinateError?<span role="alert">{t.invalidCoordinates}</span>:null}
-      </form>
-      <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
-        satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={setSelectedSceneId}
-        draftParcelBoundary={area}
-        analysisSelectionBbox={selection}
-        onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
-        onDrawParcelBoundary={geometry=>change(geometry)}
-      />
-      <div className="fg-public-gis-actions">
-        <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}>{t.retry}</button>
-        <button type="button" disabled={!area} onClick={exportGeometry}>{t.export}</button>
-        {bbox?<span dir="ltr">{t.bounds}: {bbox.map(x=>x.toFixed(5)).join(", ")}</span>:<span>{t.empty}</span>}
-        {area?<span>{t.area}: {polygonAreaHectares(area).toFixed(2)} ha</span>:null}
-      </div>
-    </section>
-    <section className="fg-public-gis-workflow" aria-label="FOGGARA FIELD">
-      <div className="fg-public-gis-tool">
-        <h2><Satellite size={22}/>{t.step2}</h2>
-        <div className="fg-public-gis-date-row">
-          <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{setStart(e.target.value);setResult(null);setScenes([]);}}/></label>
-          <label>{t.dateEnd}<input type="date" min={start} max={ISO(today)} value={end} onChange={e=>{setEnd(e.target.value);setResult(null);setScenes([]);}}/></label>
+
+    <div className="fg-field-workspace">
+      <aside className="fg-field-pane fg-field-setup" aria-label={v.left}>
+        <header className="fg-field-pane-title">
+          <div><small>{v.stepOne}</small><h2><LocateFixed size={19}/>{v.left}</h2></div>
+          <span className="fg-field-tool-icon"><Layers3 size={18}/></span>
+        </header>
+        <section className="fg-field-setup-section">
+          <h3>{v.drawing}</h3>
+          <p>{v.drawingHelp}</p>
+          <div className={area?"fg-field-aoi-state selected":"fg-field-aoi-state"}>
+            <span className="fg-field-state-icon">{area?<CheckCircle2 size={18}/>:<MapPinned size={18}/>}</span>
+            <div><strong>{area?v.selected:v.pending}</strong><small>{area?v.roi+" · GEOJSON":v.chooseCoords}</small></div>
+          </div>
+          {area&&bbox?<div className="fg-field-selection-facts">
+            <div><span>{v.surface}</span><strong>{polygonAreaHectares(area).toFixed(3)} <small>ha</small></strong></div>
+            <div><span>{v.resolution}</span><strong>10–20 <small>m</small></strong></div>
+            <div className="fg-field-extent"><span>{v.coordinates}</span><code dir="ltr">{bbox.map(x=>x.toFixed(5)).join("  ·  ")}</code></div>
+          </div>:null}
+          <button type="button" className="fg-field-inline-tool" aria-expanded={showCoordinates} onClick={()=>setShowCoordinates(x=>!x)}>
+            <LocateFixed size={16}/>{v.geoAction}
+          </button>
+          {showCoordinates?<form className="fg-public-gis-coordinate-entry" onSubmit={selectCoordinates}>
+            <strong>{t.coordinateTitle}</strong>
+            <label>{t.latitude}<input type="number" required min="18.4" max="37.5" step="any" placeholder="33.80000" value={latitude} onChange={e=>setLatitude(e.target.value)}/></label>
+            <label>{t.longitude}<input type="number" required min="-8.8" max="12.2" step="any" placeholder="2.87000" value={longitude} onChange={e=>setLongitude(e.target.value)}/></label>
+            <label>{t.side}<input type="number" required min="20" max="300" step="10" value={sideMeters} onChange={e=>setSideMeters(e.target.value)}/></label>
+            <button type="submit">{t.setCoordinates}</button>
+            {coordinateError?<span role="alert">{t.invalidCoordinates}</span>:null}
+          </form>:null}
+        </section>
+        <section className="fg-field-setup-section">
+          <div className="fg-field-section-head"><small>{v.stepTwo}</small><Satellite size={19}/></div>
+          <h3>{v.scenePanel}</h3>
+          <p className="fg-field-catalog-name"><CloudSun size={16}/>{v.catalog}</p>
+          <div className="fg-public-gis-date-row">
+            <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{setStart(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+            <label>{t.dateEnd}<input type="date" min={start} max={ISO(new Date())} value={end} onChange={e=>{setEnd(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+          </div>
+          {!rangeValid?<p className="fg-field-inline-warning" role="status">{v.invalidDate}</p>:null}
+          <button type="button" className="fg-public-gis-action fg-field-search" disabled={!bbox||searching||!rangeValid}
+            onClick={()=>void searchScenes()}>{searching?<Loader2 size={17} className="fg-field-spin"/>:<Satellite size={17}/>}
+            {searching?t.searching:t.search}<ArrowUpRight size={16}/>
+          </button>
+          <ErrorText error={searchError}/>
+          {scenes.length>0?<div className="fg-field-scene-list" aria-live="polite">
+            <div className="fg-field-scene-head"><strong>{scenes.length} {t.count}</strong><small>S2 L2A</small></div>
+            {scenes.slice(0,8).map(scene=><button type="button" key={scene.id}
+              className={scene.id===selectedSceneId?"fg-field-scene active":"fg-field-scene"}
+              aria-pressed={scene.id===selectedSceneId}
+              title={scene.id}
+              onClick={()=>{setSelectedSceneId(scene.id);setResult(null);setPreviewError(null);}}>
+              <span className="fg-field-scene-check">{scene.id===selectedSceneId?<CheckCircle2 size={17}/>:<Satellite size={17}/>}</span>
+              <span><strong dir="ltr">{scene.datetime?.slice(0,10)??"—"}</strong><small>{scene.platform??"Sentinel-2"} · {t.cloud}: {scene.cloud_cover_pct?.toFixed(0)??"—"}%</small></span>
+            </button>)}
+          </div>:hasSearched&&!searching&&!searchError?<p className="fg-field-empty-list">{v.sceneNone}</p>:<p className="fg-field-empty-list">{v.searchPrompt}</p>}
+        </section>
+        <div className="fg-field-setup-footer">
+          <button type="button" disabled={!area} onClick={exportGeometry}><Download size={16}/>{v.export}</button>
+          <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}><RefreshCw size={16}/>{v.reset}</button>
         </div>
-        <button type="button" className="fg-public-gis-action" disabled={!bbox||searching||!start||!end||start>end} onClick={()=>void searchScenes()}>
-          {searching?t.searching:t.search}<ArrowUpRight size={17}/>
-        </button>
-        <ErrorText error={searchError}/>
-        <p className="fg-public-gis-source">{t.provider}</p>
-        {scenes.length>0?<div className="fg-public-gis-scenes" aria-live="polite">
-          <strong>{scenes.length} {t.count}</strong>
-          {scenes.slice(0,8).map(scene=><button type="button" key={scene.id} className={scene.id===selectedSceneId?"active":""}
-            onClick={()=>setSelectedSceneId(scene.id)}>
-            <span>{scene.datetime?.slice(0,10)??scene.id}</span>
-            <small>{scene.platform??"Sentinel-2"} · {scene.cloud_cover_pct?.toFixed(1)??"—"}% ☁</small>
-          </button>)}
-        </div>:null}
-        {selected?<p>{t.date}: <strong dir="ltr">{selected.datetime?.slice(0,10)??"—"}</strong> · {t.cloud}: {selected.cloud_cover_pct?.toFixed(1)??"—"}%</p>:null}
-      </div>
-      <div className="fg-public-gis-tool">
-        <h2><Activity size={22}/>{t.step3}</h2>
-        <p>{t.local}</p>
-        <button type="button" className="fg-public-gis-action" disabled={!allowed||computing} onClick={()=>void preview()}>
-          {computing?t.running:t.run}<ArrowUpRight size={17}/>
-        </button>
-        {area&&!allowed?<p className="fg-public-gis-warning">{t.limit}</p>:!area?<p>{t.selectFirst}</p>:null}
-        <ErrorText error={previewError}/>
-        <div className="fg-public-gis-result" aria-live="polite">
-          {result?.status==="READY" ? <>
-            <span>{t.indices}</span>
-            <strong className="fg-public-gis-ndvi" dir="ltr">{typeof ndvi==="number"?ndvi.toFixed(3):"—"}</strong>
-            <span>{t.pixels}: {count??0}</span>
-            <small>{t.date}: {result.scene?.datetime?.slice(0,10)??"—"} · {t.observed}: {result.scene?.provider??"Element 84"}</small>
-            <p><ShieldCheck size={16}/>{t.notVerified}</p>
-          </>:result?.status==="NO_USABLE_SCENE"?<p>{t.noScene}</p>:<p>{t.noResult}</p>}
+      </aside>
+
+      <section className="fg-field-map-panel fg-public-gis-map" aria-label={v.map}>
+        <div className="fg-field-map-top">
+          <div><small>{v.workspace} / GIS</small><h2><MapIcon size={20}/>{v.map}</h2></div>
+          <div className="fg-field-map-pills">
+            <span><span className="fg-field-live-dot"/>{v.roi}</span>
+            <span>MapLibre · OSM</span>
+          </div>
         </div>
-        <small className="fg-public-gis-limits">{t.limits}</small>
-      </div>
-    </section>
-    <section className="fg-public-gis-handoff">
-      <div><h2><MapPinned size={24}/>{t.save}</h2><p>{t.saveNote}</p></div>
-      <Link to={user?"/app/gis":"/login?mode=team"} onClick={persist}
-        state={user?undefined:{from:{pathname:"/app/gis"}}}>
-        {t.signIn}<ArrowUpRight size={18}/>
-      </Link>
-    </section>
-    <footer className="fg-public-gis-attribution">
-      <Ruler size={15}/> FOGGARA-DZ GIS · MapLibre GL JS · OpenStreetMap © contributors · Sentinel-2/Copernicus · Element 84 Earth Search · Rasterio
-    </footer>
+        <div className="fg-field-map-stage">
+          <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
+            satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{setSelectedSceneId(sceneId);setResult(null);}}
+            draftParcelBoundary={area}
+            analysisSelectionBbox={selection}
+            onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
+            onDrawParcelBoundary={geometry=>change(geometry)}
+          />
+        </div>
+        <div className="fg-field-map-bottom">
+          <div><MapPinned size={16}/>{bbox?<span dir="ltr">{bbox.map(x=>x.toFixed(4)).join(" / ")}</span>:v.pending}</div>
+          <div>{area?<><CheckCircle2 size={15}/>{polygonAreaHectares(area).toFixed(2)} ha</>:<><Info size={15}/>{v.drawingHelp}</>}</div>
+        </div>
+      </section>
+
+      <aside className="fg-field-pane fg-field-insights" aria-label={v.right}>
+        <header className="fg-field-pane-title"><div><small>{v.stepThree}</small><h2><Activity size={20}/>{v.right}</h2></div><span className="fg-field-tool-icon"><Leaf size={19}/></span></header>
+        <section className="fg-field-insight-section">
+          <h3>{v.analysis}</h3>
+          <div className="fg-field-index-picker" role="group" aria-label={v.active}>
+            <button type="button" aria-pressed={index==="ndvi"} className={index==="ndvi"?"active":""}
+              onClick={()=>{setIndex("ndvi");setResult(null);setPreviewError(null);}}><Leaf size={16}/>NDVI<small>{v.vegetation}</small></button>
+            <button type="button" aria-pressed={index==="ndmi"} className={index==="ndmi"?"active":""}
+              onClick={()=>{setIndex("ndmi");setResult(null);setPreviewError(null);}}><Droplets size={16}/>NDMI<small>{v.canopyWater}</small></button>
+          </div>
+          <div className="fg-field-analysis-card" aria-live="polite">
+            {result?.status==="READY"&&typeof ndvi==="number"?<>
+              <div className="fg-field-analysis-label"><span>{v.computed}</span><span>{index.toUpperCase()}</span></div>
+              <strong className="fg-field-analysis-value" dir="ltr">{ndvi.toFixed(3)}</strong>
+              <div className="fg-field-spectrum" role="img" aria-label={v.active+" "+ndvi.toFixed(3)}>
+                <div className="fg-field-spectrum-marker" style={{left:(((Math.max(-1,Math.min(1,ndvi))+1)/2)*100)+"%"}}/>
+              </div>
+              <div className="fg-field-spectrum-labels" dir="ltr"><span>−1.0</span><span>0</span><span>+1.0</span></div>
+              <div className="fg-field-quality">
+                <div><span>{v.quality}</span><strong>{typeof coverage==="number"?(coverage*100).toFixed(1)+"%":"—"}</strong></div>
+                <div className="fg-field-quality-track"><span style={{width:Math.max(0,Math.min(100,(coverage??0)*100))+"%"}}/></div>
+              </div>
+              <div className="fg-field-metrics"><div><span>{v.sampleCount}</span><strong dir="ltr">{count??"—"}</strong></div><div><span>{v.range}</span><strong dir="ltr">{range?.min?.toFixed(3)??"—"} / {range?.max?.toFixed(3)??"—"}</strong></div></div>
+            </>:result?.status==="NO_USABLE_SCENE"?<div className="fg-field-no-data"><Info size={26}/><strong>{v.waiting}</strong><p>{v.resultUnavailable}</p></div>
+            :<div className="fg-field-no-data"><Activity size={29}/><strong>{v.notRun}</strong><p>{v.emptyResult}</p></div>}
+          </div>
+          {area&&!allowed?<p className="fg-field-inline-warning" role="status">{!rangeValid?v.invalidDate:v.pixelBudget}</p>:null}
+          <button type="button" className="fg-public-gis-action fg-field-analyze" disabled={!allowed||computing}
+            onClick={()=>void preview()}>{computing?<Loader2 size={18} className="fg-field-spin"/>:<Activity size={18}/>}
+            {computing?v.processing:t.run.replace("NDVI",index.toUpperCase())}<ArrowUpRight size={16}/></button>
+          <ErrorText error={previewError}/>
+          <small className="fg-field-limit-label">{t.limits}</small>
+        </section>
+        <section className="fg-field-insight-section fg-field-evidence">
+          <h3><ShieldCheck size={17}/>{v.provenance}</h3>
+          <div className="fg-field-evidence-row"><span>{v.acquired}</span><strong dir="ltr">{result?.scene?.datetime?.slice(0,10)??selected?.datetime?.slice(0,10)??"—"}</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.satellite}</span><strong>Element 84 · S2 L2A</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.backend}</span><strong>Rasterio · COMPUTED</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.mask}</span><strong>{result?.geometry_mask_applied?v.maskApplied:"—"}</strong></div>
+          <p className="fg-field-evidence-disclaimer"><Info size={16}/>{index==="ndmi"?v.indexNdmiNote:v.limitations}</p>
+          <p className="fg-field-evidence-caption">{v.sceneSpecific} {v.estimated}</p>
+        </section>
+        <Link className="fg-field-save-cta" to={user?"/app/gis":"/login?mode=team"}
+          state={user?undefined:{from:{pathname:"/app/gis"}}} onClick={persist}>
+          <Database size={17}/>{v.save}<ArrowUpRight size={16}/>
+        </Link>
+        <p className="fg-field-save-note">{v.noAccess}</p>
+      </aside>
+    </div>
+    <footer className="fg-field-footer"><span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span><span>MapLibre GL JS · OpenStreetMap © contributors · Copernicus Sentinel-2 · Element 84 · Rasterio</span></footer>
   </main>;
 }
