@@ -383,7 +383,26 @@ export default function Landing() {
         </div>
         <p>{lang==="fr"?"Du terrain à la preuve, de la preuve à l’arbitrage.":lang==="en"?"From field to evidence, from evidence to decision.":"من الميدان إلى الدليل، ومن الدليل إلى القرار."}</p>
       </header>
-      <OasisCanvaPresentation lang={lang} compact/>
+      <div className="fg-canva-original-design">
+        <div className="fg-canva-source-header">
+          <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
+          <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noreferrer">
+            {lang==="ar"?"فتح عرض Canva الأصلي":lang==="fr"?"Voir la présentation Canva originale":"Open original Canva presentation"} <ArrowUpRight size={15}/>
+          </a>
+        </div>
+        <iframe
+          src="https://www.canva.com/design/DAHXhnIEguc/view?embed"
+          title={lang==="ar"?"عرض فقارة من Canva":lang==="fr"?"Présentation FOGGARA issue de Canva":"FOGGARA original Canva presentation"}
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+        <p>{lang==="ar"?"محتوى العرض مأخوذ من التصميم الذي قدمته، مع استبعاد الشريحة الفضائية المكررة.":lang==="fr"?"Présentation issue de votre design, avec suppression de la diapositive satellite dupliquée.":"Presentation based on the supplied design, with the duplicate satellite slide omitted."}</p>
+      </div>
+      <details className="fg-canva-native-fallback">
+        <summary>{lang==="ar"?"نسخة عرض الموقع التفاعلية":lang==="fr"?"Version interactive intégrée au site":"Interactive site presentation"}</summary>
+        <OasisCanvaPresentation lang={lang} compact/>
+      </details>
     </section>
 
     <section className="fg-moon-demo fg-global-demo" id="demo">
