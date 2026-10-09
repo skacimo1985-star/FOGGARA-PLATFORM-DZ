@@ -63,11 +63,12 @@
 .os-public-shell:has(.fg-landing) .os-header{z-index:30}
 .fg-landing .fg-public-nav{z-index:35}
 .fg-landing .fg-landing-hero{position:relative}
-.fg-landing .fg-oasis-image{z-index:0}
+.fg-landing .fg-oasis-image,.fg-landing .fg-oasis-image img{z-index:0}
 .fg-landing .fg-landing-hero:after{z-index:1;pointer-events:none}
 .fg-landing .fg-landing-copy{position:relative;z-index:2}
 .fg-landing .fg-heritage-bottom{z-index:2}
 .fg-landing .fg-landing-hero h1{overflow-wrap:anywhere}
+.fg-landing .fg-heritage-expo .fg-hero-qr-code{width:140px;height:140px;padding:10px;border-radius:12px}
 .fg-landing .fg-heritage-expo .fg-hero-qr-code img{width:116px;height:116px;max-width:100%;object-fit:contain}
 .fg-landing .fg-heritage-expo .fg-hero-qr{width:min(100%,290px);justify-self:center}
 .fg-landing .fg-restored-services,.fg-landing .fg-restored-gallery,.fg-landing .fg-restored-presentation{padding-block:clamp(42px,6vw,85px)}
