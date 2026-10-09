@@ -16,9 +16,11 @@ test('Presentation.tsx remains valid TSX',()=>{
   assert.equal(errors.length,0,errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,'\n')).join('\n'));
 });
 
-test('presentation uses the shared supplied Oases Nexus deck',()=>{
-  assert.ok(source.includes('OasisCanvaPresentation'));
-  assert.ok(source.includes('<OasisCanvaPresentation lang={locale}/>'));
+test('presentation uses the same five-stage illustrated story as homepage, not an obsolete Canva source',()=>{
+  assert.ok(source.includes('FoggaraStoryPresentation'));
+  assert.ok(source.includes('<FoggaraStoryPresentation lang={locale}/>'));
+  assert.equal(source.includes('canva.com'),false);
+  assert.ok(source.includes('fp-story-intro'));
   assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
   assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
   assert.ok(deck.includes('AGRITECH EXPO — LIVE DEMO'));
