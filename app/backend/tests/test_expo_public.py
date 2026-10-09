@@ -267,3 +267,97 @@ def test_expo_demo_data_is_public_and_has_safe_shape(client):
     assert isinstance(body["sites"], list)
     assert "users" not in body
     assert "organizations" not in body
+
+
+def public_preview_payload(west=2.0, south=33.0, east=2.001, north=33.001):
+    from datetime import date, timedelta
+    end = date.today()
+    return {
+        "boundary_geojson": {
+            "type": "Polygon",
+            "coordinates": [[[west, south], [east, south], [east, north], [west, north], [west, south]]],
+        },
+        "start": (end - timedelta(days=12)).isoformat(),
+        "end": end.isoformat(),
+    }
+
+
+def test_foggara_native_ndvi_preview_computes_real_masked_field_result(client, monkeypatch):
+    from app.services import remote_sensing_raster
+    seen = {}
+    monkeypatch.setattr(expo, "_earth_search_features", lambda bbox, *_args: [scene()])
+    monkeypatch.setattr(expo, "build_processing_plan", lambda item, index: {
+        "scene_id": item["id"], "index": index,
+    })
+
+    def spectral(plan, bbox, geometry_wgs84=None):
+        seen["plan"] = plan
+        seen["bbox"] = bbox
+        seen["geometry"] = geometry_wgs84
+        return {
+            "statistics": {"min": 0.1, "max": 0.7, "mean": 0.41, "median": 0.4},
+            "pixels": {"total": 90, "valid": 72, "valid_fraction": 0.8},
+            "mask": {"geometry_mask_applied": True, "outside_geometry_pixel_count": 28},
+        }
+    monkeypatch.setattr(expo, "compute_index_statistics", spectral)
+    response = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload())
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["product"] == "FOGGARA FIELD / NDVI PREVIEW"
+    assert body["status"] == "READY"
+    assert body["indices"]["ndvi"]["statistics"]["mean"] == 0.41
+    assert body["indices"]["ndvi"]["pixels"]["valid"] == 72
+    assert body["geometry_mask_applied"] is True
+    assert body["scene"]["id"] == scene()["id"]
+    assert body["evidence"] == {"scene": "OBSERVED", "ndvi": "COMPUTED", "verified": False}
+    assert body["persisted"] is False
+    assert seen["geometry"]["type"] == "Polygon"
+    assert seen["bbox"] == [2.0, 33.0, 2.001, 33.001]
+    assert seen["plan"]["index"] == "ndvi"
+
+
+def test_foggara_public_ndvi_preview_reports_missing_scenes_without_fake_indices(client, monkeypatch):
+    monkeypatch.setattr(expo, "_earth_search_features", lambda *_args: [])
+    response = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload())
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "NO_USABLE_SCENE"
+    assert body["indices"] == {}
+    assert body["scene"] is None
+    assert body["persisted"] is False
+
+
+def test_foggara_preview_rejects_large_and_non_algerian_polygons_before_provider_io(client, monkeypatch):
+    monkeypatch.setattr(expo, "_earth_search_features",
+                        lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not run")))
+    too_large = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload(
+        west=2.0, south=33.0, east=2.02, north=33.02,
+    ))
+    assert too_large.status_code == 422
+    assert too_large.json()["detail"]["code"] == "PREVIEW_TOO_LARGE"
+
+    outside = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload(
+        west=-12, south=33.0, east=-11.999, north=33.001,
+    ))
+    assert outside.status_code == 422
+    assert outside.json()["detail"]["code"] == "PREVIEW_OUTSIDE_ALGERIA"
+
+
+def test_foggara_public_ndvi_preview_is_rate_limited(client, monkeypatch):
+    monkeypatch.setattr(expo, "_earth_search_features", lambda *_args: [])
+    for _ in range(3):
+        allowed = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload())
+        assert allowed.status_code == 200, allowed.text
+    blocked = client.post("/api/expo/satellite/ndvi-preview", json=public_preview_payload())
+    assert blocked.status_code == 429
+    assert blocked.json()["detail"]["code"] == "RATE_LIMITED"
+
+
+def test_foggara_public_ndvi_preview_rejects_unverified_acquisition_from_future(client):
+    from datetime import date, timedelta
+    data = public_preview_payload()
+    data["start"] = date.today().isoformat()
+    data["end"] = (date.today() + timedelta(days=1)).isoformat()
+    response = client.post("/api/expo/satellite/ndvi-preview", json=data)
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "FUTURE_DATE"
