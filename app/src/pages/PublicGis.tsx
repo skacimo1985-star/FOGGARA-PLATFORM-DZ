@@ -17,6 +17,14 @@ type SceneList={provider:string;collection:string;live:boolean;count:number;scen
 type IndexKey="ndvi"|"ndmi";
 type SavedField={id:number;name:string;crop:string;area_ha:number;location:string;site_id:number|null;lat:number|null;lon:number|null;boundary_geojson:FoggaraPolygon|null;archived:boolean;is_demo:boolean};
 type OperationalStatus={database:{connected:boolean;engine:string};organization:{sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number}};
+type SavedParcelStudy={status:"READY"|"NO_USABLE_SCENE";scene:Preview["scene"];parcel_id:number|null;
+  geometry_mask_applied:boolean;sample_geometry:string;
+  domains?:{vegetation?:{indices?:{ndvi?:PreviewIndex}};canopy_moisture?:{indices?:{ndmi?:PreviewIndex}}}};
+  evidence:{verified:boolean};};
+type PreviewIndex={statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
+  pixels?:{total:number;valid:number;valid_fraction:number};
+  mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}};
+
 type Preview={
   status:"READY"|"NO_USABLE_SCENE";
   product:string;
@@ -154,7 +162,7 @@ export default function PublicGis(){
   const pixels=bbox?pixelEstimate(bbox):0;
   const rangeDays=(new Date(end+"T00:00:00Z").getTime()-new Date(start+"T00:00:00Z").getTime())/86400000;
   const rangeValid=Number.isFinite(rangeDays)&&rangeDays>=0&&rangeDays<=31&&end<=ISO(new Date());
-  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=1600&&rangeValid);
+  const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=(user&&savedFieldId!==null?250_000:1600)&&rangeValid);
   const change=(poly:FoggaraPolygon|null)=>{
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
@@ -207,8 +215,24 @@ export default function PublicGis(){
     if(!area||!allowed||computing)return;
     setComputing(true);setPreviewError(null);setResult(null);
     try{
-      const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
-      setResult(response);
+      if(user&&savedFieldId!==null){
+        // Authenticated evidence: server reads the authoritative saved geometry
+        // from this user's organization and masks every spectral index to it.
+        const params=new URLSearchParams({parcel_id:String(savedFieldId),start,end,
+          include_soil:"false",cloud_cover_lte:"35"});
+        if(selectedSceneId)params.set("scene_id",selectedSceneId);
+        const study=await api.get<SavedParcelStudy>(`/remote-sensing/studies/field-intelligence?${params.toString()}`);
+        const actual=study.status==="READY"
+          ?index==="ndvi"?study.domains?.vegetation?.indices?.ndvi:study.domains?.canopy_moisture?.indices?.ndmi
+          :undefined;
+        setResult({status:study.status,product:"FOGGARA FIELD / "+index.toUpperCase(),
+          index,scene:study.scene,area_ha_estimated:polygonAreaHectares(area),
+          geometry_mask_applied:study.geometry_mask_applied,
+          indices:actual?{[index]:actual}:{},evidence:study.evidence,persisted:false});
+      }else{
+        const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
+        setResult(response);
+      }
     }catch(e){setPreviewError(e);}finally{setComputing(false);}
   }
   const persist=()=>{if(area)saveFoggaraAoi(area);};
@@ -385,7 +409,7 @@ export default function PublicGis(){
             onClick={()=>void preview()}>{computing?<Loader2 size={18} className="fg-field-spin"/>:<Activity size={18}/>}
             {computing?v.processing:t.run.replace("NDVI",index.toUpperCase())}<ArrowUpRight size={16}/></button>
           <ErrorText error={previewError}/>
-          <small className="fg-field-limit-label">{t.limits}</small>
+          <small className="fg-field-limit-label">{user&&savedFieldId!==null?(lang==="ar"?"تحليل حدود القطعة المحفوظة من قاعدة المؤسسة، دون تعديل بياناتها":lang==="fr"?"Analyse de la limite enregistrée dans la base d’organisation":"Analysis uses the saved field boundary in the organization database"):t.limits}</small>
         </section>
         <section className="fg-field-insight-section fg-field-evidence">
           <h3><ShieldCheck size={17}/>{v.provenance}</h3>
