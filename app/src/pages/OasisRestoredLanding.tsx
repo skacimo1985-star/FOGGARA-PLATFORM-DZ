@@ -12,6 +12,7 @@ import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
 import {OasisCanvaPresentation} from "@/components/OasisCanvaPresentation";
+import {OasisPhotoGallery} from "@/components/OasisPhotoGallery";
 import "./oasis-original-landing.css";
 const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
 const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"review",Icon:ShieldCheck,to:"/app/review"},{key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}];
@@ -218,11 +219,7 @@ export default function Landing() {
     </section>
     <section className="fg-restored-gallery" id="oasis-gallery" aria-labelledby="fg-restored-gallery-title">
       <h2 id="fg-restored-gallery-title">{restoredContent.gallery}</h2>
-      <div className="fg-restored-photo-grid">{[
-        "/images/oasis-hero.webp",
-        "/images/foggara-heritage-poster.webp",
-        "/images/foggara-sprite.webp"
-      ].map((src,index)=><figure key={src}><img src={src} alt={restoredContent.imageLabels[index]} loading="lazy" decoding="async"/><figcaption>{restoredContent.imageLabels[index]}</figcaption></figure>)}</div>
+      <OasisPhotoGallery lang={lang}/>
     </section>
     <section className="fg-restored-presentation" id="oasis-presentation" aria-labelledby="fg-restored-presentation-title">
       <div className="fg-restored-heading"><p className="fg-eyebrow">FOGGARA-DZ · SIREP OASES NEXUS WEFEH</p><h2 id="fg-restored-presentation-title">{restoredContent.deck}</h2><p>{restoredContent.deckText}</p>
