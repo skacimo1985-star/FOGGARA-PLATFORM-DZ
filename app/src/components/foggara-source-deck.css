@@ -1,0 +1,45 @@
+/* Faithful editorial palette from the supplied 8-slide PowerPoint, without
+   reproducing text overlap or screen-sized absolute coordinates. */
+.fg-source-deck{--fg-paper:#f2ecde;--fg-dark:#171b18;--fg-forest:#19503f;--fg-clay:#b45b3c;--fg-gold:#d8be7b;max-width:1120px;width:100%;margin:24px auto 0;border:1px solid #d1dacc;border-radius:15px;overflow:hidden;background:#edf2e8;box-shadow:0 16px 42px #172c1d19;font-family:"Hanken Grotesk","Tajawal",system-ui,sans-serif}
+.fg-source-slide{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.87fr);align-items:stretch;min-height:505px;isolation:isolate}
+.fg-source-slide-dark{background:var(--fg-dark);color:#f9f7ee}
+.fg-source-slide-paper{background:var(--fg-paper);color:#172a20}
+.fg-source-copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:clamp(36px,5vw,62px) clamp(24px,4.3vw,59px);text-align:start;overflow-wrap:anywhere}
+.fg-source-brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;letter-spacing:.12em;font-weight:780}
+.fg-source-slide-dark .fg-source-brand{color:#e5cf96}
+.fg-source-slide-paper .fg-source-brand{color:#8b5235}
+.fg-source-brand span{padding:5px 10px;border:1px solid currentColor;border-radius:18px;font-size:10px;letter-spacing:.09em}
+.fg-source-copy h3{font-family:inherit;font-size:clamp(29px,3.35vw,49px);line-height:1.12;letter-spacing:-.025em;font-weight:820;max-width:100%;margin:clamp(22px,3vw,36px) 0 0;text-wrap:balance;overflow-wrap:anywhere}
+.fg-source-summary{margin:19px 0 0;font-size:clamp(13px,1.2vw,16px);line-height:1.75;max-width:555px}
+.fg-source-slide-dark .fg-source-summary{color:#e1e8da}
+.fg-source-slide-paper .fg-source-summary{color:#425f50}
+.fg-source-list{width:100%;margin:26px 0 0;padding:18px 20px;border-inline-start:4px solid var(--fg-clay);background:#8bb6a212;min-width:0}
+.fg-source-slide-paper .fg-source-list{background:#e0d7c57b}
+.fg-source-list>strong{display:block;letter-spacing:.06em;font-size:12px;font-weight:800;line-height:1.5}
+.fg-source-list ul{list-style:none;display:grid;gap:10px;margin:12px 0 0;padding:0}
+.fg-source-list li{position:relative;font-size:clamp(12px,1.06vw,14px);line-height:1.52;padding-inline-start:15px;max-width:100%;overflow-wrap:anywhere}
+.fg-source-list li:before{content:"";position:absolute;inset-inline-start:0;top:.66em;width:6px;height:6px;border-radius:50%;background:var(--fg-clay)}
+.fg-source-slide-dark .fg-source-list li{color:#eaf0e7}
+.fg-source-slide-paper .fg-source-list li{color:#264b39}
+.fg-source-expo{display:inline-flex;align-items:center;gap:9px;min-height:40px;margin-top:20px;padding:11px 18px;border-radius:8px;background:var(--fg-forest);font-size:13px;color:#fff;text-decoration:none;font-weight:760}
+.fg-source-expo:hover{background:#25694f;color:#fff}
+.fg-source-pictures{position:relative;display:grid;grid-template-rows:minmax(0,3fr) minmax(0,1.15fr);height:100%;min-height:505px;background:#1b362b;overflow:hidden}
+.fg-source-pictures figure{position:relative;margin:0;min-height:0;overflow:hidden}
+.fg-source-pictures img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.fg-source-pictures figure.secondary{border-top:5px solid #f4e9d7}
+.fg-source-pictures figcaption{position:absolute;bottom:0;inset-inline:0;padding:10px 13px;background:linear-gradient(0deg,#10281fe0,transparent);color:#fff;font-size:11px;line-height:1.5;text-shadow:0 1px 2px #0005}
+.fg-source-progress{position:absolute;z-index:3;inset-block-start:21px;inset-inline-end:22px;display:inline-flex;padding:8px 12px;background:#143529df;border:1px solid #f1f5ec44;border-radius:6px;color:#fff;font-size:11px;font-weight:760;font-variant-numeric:tabular-nums}
+.fg-source-navigation{display:flex;align-items:stretch;gap:8px;padding:13px;background:#f1f5ed;min-height:76px}
+.fg-source-navigation>button{width:42px;min-width:42px;border-radius:9px;border:1px solid #c8d7c7;background:#fff;color:#134634;display:grid;place-items:center;cursor:pointer}
+.fg-source-steps{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;flex:1;min-width:0}
+.fg-source-steps button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 3px;border:1px solid transparent;border-radius:7px;background:transparent;color:#315947;font:inherit;cursor:pointer}
+.fg-source-steps button.selected{background:#dce9d7;color:#134631;border-color:#b4d0ae}
+.fg-source-steps button span{font-weight:820;font-size:13px;font-variant-numeric:tabular-nums}
+.fg-source-steps button small{display:block;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-size:8px;line-height:1.35}
+.fg-source-deck :is(button,a):focus-visible{outline:3px solid #ba663e;outline-offset:3px}
+.fg-source-illustration-note{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;padding:8px 15px 13px;background:#f1f5ed;color:#57705e;text-align:center;font-size:11px;line-height:1.55}
+.fg-source-illustration-note svg{flex-shrink:0}
+@media(max-width:900px){.fg-source-slide{grid-template-columns:minmax(0,1fr) minmax(0,.8fr)}.fg-source-copy{padding:36px 28px}.fg-source-copy h3{font-size:clamp(27px,3.4vw,39px)}.fg-source-pictures{min-height:490px}.fg-source-list{margin-top:20px;padding:15px}.fg-source-steps button small{display:none}}
+@media(max-width:680px){.fg-source-deck{border-radius:12px}.fg-source-slide{display:flex;flex-direction:column;min-height:0}.fg-source-copy{padding:29px 23px 26px}.fg-source-copy h3{font-size:clamp(28px,6.7vw,38px);margin-top:20px;line-height:1.2}.fg-source-summary{font-size:14px}.fg-source-list{margin-top:19px}.fg-source-pictures{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:1fr;min-height:0;height:220px}.fg-source-pictures figure.secondary{border-top:0;border-inline-start:4px solid #f4e9d7}.fg-source-pictures figcaption{font-size:10px;padding:6px}.fg-source-progress{inset-block-start:12px;inset-inline-end:12px}.fg-source-navigation{padding:9px;gap:4px;min-height:64px}.fg-source-navigation>button{min-width:34px;width:34px}.fg-source-steps{gap:0}.fg-source-steps button{padding:5px 0}.fg-source-steps button span{font-size:11px}.fg-source-illustration-note{padding:8px 12px 12px}}
+@media(max-width:390px){.fg-source-copy{padding:24px 17px}.fg-source-pictures{height:185px}.fg-source-navigation{gap:2px}.fg-source-steps button span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.fg-source-deck *{scroll-behavior:auto;transition:none}}

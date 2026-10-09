@@ -3,7 +3,7 @@ import {Link,useLocation} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {ArrowUpRight,ChevronDown,Download,RotateCcw,ShieldCheck,SlidersHorizontal} from 'lucide-react';
 import {NexusKasria} from '@/components/NexusKasria';
-import {FoggaraStoryPresentation} from '@/components/FoggaraVisualStory';
+import {FoggaraSourceDeck} from '@/components/FoggaraSourceDeck';
 import '@/components/foggara-visual-story.css';
 import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
 import {evaluatePresentationMatrix,type MatrixAxis} from '@/lib/presentation-matrix';
@@ -30,7 +30,7 @@ export default function Presentation(){
   <p>{c.intro}</p>
  </section>
  <div className="fp-native-deck fp-native-deck-visible">
-  <FoggaraStoryPresentation lang={locale}/>
+  <FoggaraSourceDeck lang={locale}/>
  </div>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
  <section id="presentation" className="fp-figma-bridge">

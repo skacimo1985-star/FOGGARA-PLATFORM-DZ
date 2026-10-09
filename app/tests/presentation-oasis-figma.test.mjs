@@ -17,10 +17,21 @@ test('Presentation.tsx remains valid TSX',()=>{
 });
 
 test('presentation uses the same five-stage illustrated story as homepage, not an obsolete Canva source',()=>{
-  assert.ok(source.includes('FoggaraStoryPresentation'));
-  assert.ok(source.includes('<FoggaraStoryPresentation lang={locale}/>'));
+  assert.ok(source.includes('FoggaraSourceDeck'));
+  assert.ok(source.includes('<FoggaraSourceDeck lang={locale}/>'));
   assert.equal(source.includes('canva.com'),false);
   assert.ok(source.includes('fp-story-intro'));
+  const sourceDeck=readFileSync(new URL('../src/components/FoggaraSourceDeck.tsx',import.meta.url),'utf8');
+  assert.ok(sourceDeck.includes('DÉFINIR LE TERRAIN'));
+  assert.ok(sourceDeck.includes('OBSERVER PAR SATELLITE'));
+  assert.ok(sourceDeck.includes('COMPRENDRE EAU, SOL ET CULTURES'));
+  assert.ok(sourceDeck.includes('PREUVE AVANT DÉCISION'));
+  assert.ok(sourceDeck.includes('DE L’ANALYSE À L’ARBITRAGE'));
+  assert.ok(sourceDeck.includes('IA SOUVERAINE ET SERVICES'));
+  assert.ok(sourceDeck.includes('UN ÉCOSYSTÈME NATIONAL'));
+  assert.ok(sourceDeck.includes('RENCONTRONS-NOUS AU STAND B02'));
+  assert.ok(sourceDeck.includes('getOasisPhoto(id)'));
+  assert.ok(sourceDeck.includes('ui.note'));
   assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
   assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
   assert.ok(deck.includes('AGRITECH EXPO — LIVE DEMO'));
