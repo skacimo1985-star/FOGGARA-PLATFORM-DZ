@@ -225,6 +225,7 @@ type CropProfile = {
 type FieldIntelligenceStudy = {
   status: "READY" | "NO_USABLE_SCENE";
   study_type?: string;
+  geometry_mask_applied?: boolean;
   bbox_wgs84: [number, number, number, number];
   period: { start: string; end: string };
   crop_profile: CropProfile;
@@ -631,7 +632,7 @@ export default function Gis() {
       cloud_cover_pct:fieldIntelligenceResult.scene.cloud_cover_pct??null,
       provider:fieldIntelligenceResult.scene.provider??null,
     }:null,
-    geometry_mask_applied:Boolean(reportIndexData)&&Boolean(fieldIntelligenceResult.spectral_processing?.mask),
+    geometry_mask_applied:fieldIntelligenceResult.geometry_mask_applied===true,
     metrics:reportIndexData??null,verified:fieldIntelligenceResult.evidence?.verified===true,
   }:null;
   const fieldIndexMean = (key: string) => {
