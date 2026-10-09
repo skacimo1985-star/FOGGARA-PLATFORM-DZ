@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 import math
-from typing import Annotated
+from typing import Annotated, Literal
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Request
@@ -348,6 +348,8 @@ class PublicFieldPreviewIn(ExpoInput):
     boundary_geojson: dict
     start: date
     end: date
+    index: Literal["ndvi", "ndmi"] = "ndvi"
+    scene_id: str | None = Field(default=None, min_length=6, max_length=180)
 
 
 @router.post("/satellite/ndvi-preview")
@@ -382,14 +384,18 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
     if _study_pixel_budget(bbox) > 1600:
         api_error(422, "PREVIEW_TOO_LARGE", "Select a smaller polygon (maximum 1,600 estimated Sentinel pixels)")
 
-    features = _earth_search_features(bbox, payload.start, payload.end, 35.0, 4)
+    features = _earth_search_features(bbox, payload.start, payload.end, 35.0, 8)
+    # Select only a scene returned by the trusted fixed STAC provider and
+    # within this AOI/date/cloud query. No arbitrary asset URL accepted.
+    if payload.scene_id:
+        features = [feature for feature in features if feature.get("id") == payload.scene_id]
     skipped = []
     for feature in features:
         scene = _scene_from_feature(feature)
         if not scene.get("id") or scene.get("geometry") is None:
             continue
         try:
-            plan = build_processing_plan(feature, "ndvi")
+            plan = build_processing_plan(feature, payload.index)
         except ProcessingPlanError:
             skipped.append({"scene_id": scene["id"], "reason": "required_bands_unavailable"})
             continue
@@ -409,11 +415,12 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
         valid = int(result.get("pixels", {}).get("valid") or 0)
         mean = result.get("statistics", {}).get("mean")
         if valid == 0 or not isinstance(mean, (int, float)) or not math.isfinite(mean) or not (-1 <= mean <= 1):
-            skipped.append({"scene_id": scene["id"], "reason": "no_valid_ndvi_pixels"})
+            skipped.append({"scene_id": scene["id"], "reason": "no_valid_index_pixels"})
             continue
         return {
             "status": "READY",
-            "product": "FOGGARA FIELD / NDVI PREVIEW",
+            "product": f"FOGGARA FIELD / {payload.index.upper()} PREVIEW",
+            "index": payload.index,
             "scene": {
                 "id": scene["id"], "datetime": scene.get("datetime"),
                 "cloud_cover_pct": scene.get("cloud_cover_pct"),
@@ -422,19 +429,20 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
             "bbox_wgs84": bbox,
             "area_ha_estimated": meta["estimated_area_ha"],
             "geometry_mask_applied": bool(result.get("mask", {}).get("geometry_mask_applied")),
-            "indices": {"ndvi": {
+            "indices": {payload.index: {
                 "statistics": result.get("statistics"),
                 "pixels": result.get("pixels"),
                 "mask": result.get("mask"),
             }},
-            "evidence": {"scene": "OBSERVED", "ndvi": "COMPUTED", "verified": False},
+            "evidence": {"scene": "OBSERVED", payload.index: "COMPUTED", "verified": False},
             "persisted": False,
-            "interpretation": "NDVI measures spectral vegetation greenness, not crop yield, disease, nutrient content or soil moisture.",
+            "interpretation": ("NDVI estimates spectral vegetation greenness, not yield, plant disease or soil chemistry." if payload.index == "ndvi" else "NDMI is a vegetation-canopy moisture proxy, not measured soil moisture, irrigation requirement or groundwater availability."),
             "limitations": ["Visitor preview is not saved to an organization.", "Remote imagery may not be available for the requested period."],
         }
     return {
         "status": "NO_USABLE_SCENE",
-        "product": "FOGGARA FIELD / NDVI PREVIEW",
+        "product": f"FOGGARA FIELD / {payload.index.upper()} PREVIEW",
+        "index": payload.index,
         "bbox_wgs84": bbox,
         "area_ha_estimated": meta["estimated_area_ha"],
         "indices": {},
