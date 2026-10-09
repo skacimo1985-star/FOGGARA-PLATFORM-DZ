@@ -45,7 +45,7 @@
 .fml-hero-content{padding-top:86px;padding-bottom:95px;position:relative;z-index:1}
 .fml-overline,.fml-eyebrow{text-transform:none;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--fml-leaf)}
 .fml-overline{color:var(--fml-lime);max-width:700px}
-.fml-mark{margin-top:14px!important;color:#d5efd4;font:700 13px/1.6 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.11em}
+.fml-mark{margin-top:14px;color:#d5efd4;font:700 13px/1.6 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.11em}
 .fml-mark span{padding:0 5px}
 .fml-hero h1{
   margin-top:17px;
@@ -59,16 +59,16 @@
   max-width:100%;
 }
 .fml-hero h2{margin-top:17px;max-width:800px;font-size:clamp(23px,2.6vw,36px);line-height:1.25;font-weight:750;color:#f8fff9}
-.fml-hero-lead{margin-top:18px!important;max-width:620px;font-size:clamp(15px,1.25vw,18px);line-height:1.75;color:#ebf4ed}
+.fml-hero-lead{margin-top:18px;max-width:620px;font-size:clamp(15px,1.25vw,18px);line-height:1.75;color:#ebf4ed}
 .fml-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:29px}
 .fml-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;min-height:49px;padding:13px 22px;border-radius:6px;border:1px solid transparent;font-size:14px;font-weight:800;line-height:1.4;transition:background .2s,color .2s}
 .fml-btn svg{flex:0 0 auto}
-.fml-btn-accent{background:var(--fml-lime);color:#173b2c!important;border-color:var(--fml-lime)}
+.fml-btn-accent{background:var(--fml-lime);color:#173b2c;border-color:var(--fml-lime)}
 .fml-btn-accent:hover,.fml-btn-accent:focus-visible{background:#e4ffb8;border-color:#e4ffb8}
-.fml-btn-outline{color:#fff!important;border-color:#e6f6e2a3;background:#13372f88}
-.fml-btn-outline:hover,.fml-btn-outline:focus-visible{background:#fff1;color:#fff!important}
+.fml-btn-outline{color:#fff;border-color:#e6f6e2a3;background:#13372f88}
+.fml-btn-outline:hover,.fml-btn-outline:focus-visible{background:#fff1;color:#fff}
 .fml-hero-caption{position:absolute;z-index:1;bottom:27px;right:max(24px,calc((100vw - 1180px)/2));font:700 11px/1.4 "Hanken Grotesk",sans-serif;letter-spacing:.15em;color:#e1f4dd}
-.fml-domains{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fff;box-shadow:0 9px 30px #123b2120;position:relative;z-index:2;margin-top:-19px!important;padding:14px;border-radius:8px}
+.fml-domains{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fff;box-shadow:0 9px 30px #123b2120;position:relative;z-index:2;margin-top:-19px;padding:14px;border-radius:8px}
 .fml-domain{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 8px;color:var(--fml-forest);border-inline-end:1px solid #dde6d9;font-size:12px;font-weight:800;min-width:0}
 .fml-domain:last-child{border-inline-end:0}
 .fml-domain svg{color:var(--fml-leaf);flex:0 0 auto}
@@ -79,7 +79,7 @@
 .fml-about-text h2,.fml-section-heading h2,.fml-process-intro h2,.fml-presentation-copy h2,.fml-expo h2{margin-top:12px;font-size:clamp(29px,3.4vw,49px);line-height:1.15;font-weight:800;letter-spacing:-.026em;color:var(--fml-forest);overflow-wrap:anywhere}
 .fml-page[lang="ar"] :is(.fml-about-text h2,.fml-section-heading h2,.fml-process-intro h2,.fml-presentation-copy h2,.fml-expo h2){letter-spacing:0;line-height:1.3}
 .fml-about-text>p:not(.fml-eyebrow),.fml-section-heading>p:not(.fml-eyebrow),.fml-process .fml-tool-directory p,.fml-presentation-copy>p:not(.fml-eyebrow),.fml-expo>div>p:not(.fml-eyebrow){margin-top:17px;font-size:16px;line-height:1.8;color:var(--fml-muted)}
-.fml-text-link{display:inline-flex;gap:8px;align-items:center;margin-top:24px;font-size:14px;font-weight:800;color:var(--fml-leaf)!important}
+.fml-text-link{display:inline-flex;gap:8px;align-items:center;margin-top:24px;font-size:14px;font-weight:800;color:var(--fml-leaf)}
 .fml-text-link:hover{text-decoration:underline}
 .fml-figures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:37px}
 .fml-figures>div{border-top:1px solid #c9d7c5;padding-top:13px}
@@ -109,7 +109,7 @@
 .fml-process-steps strong{font-size:14px;line-height:1.55;font-weight:800;color:var(--fml-forest)}
 .fml-tool-directory{display:grid;grid-template-columns:.75fr 1.25fr;gap:46px;margin-top:67px;padding:33px 34px;background:#fff;border:1px solid #d6e4d2;border-radius:8px}
 .fml-tool-directory h3{font-size:clamp(23px,2.4vw,30px);line-height:1.3;color:var(--fml-forest)}
-.fml-tool-directory p{font-size:15px!important}
+.fml-tool-directory p{font-size:15px}
 .fml-tool-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .fml-tool-links a{min-height:50px;display:flex;align-items:center;justify-content:space-between;gap:13px;padding:12px 15px;background:#f1f6ed;border-radius:5px;color:var(--fml-forest);font-size:13px;font-weight:800}
 .fml-tool-links a:hover{background:#e1eed8;color:#17653a}
@@ -122,8 +122,8 @@
 .fml-presentation-copy h2{color:#fff;max-width:610px}
 .fml-presentation-copy>p:not(.fml-eyebrow){color:#e2f0e3}
 .fml-presentation-copy .fml-btn{margin-top:26px}
-.fml-canva-link{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin-top:23px;color:#c9efa4!important;text-decoration:underline!important;font-size:13px;font-weight:700}
-.fml-expo{display:flex;align-items:center;justify-content:space-between;gap:40px;background:#1e5338;margin-top:90px!important;margin-bottom:90px!important;padding:clamp(30px,4vw,62px);border-radius:8px;color:#fff}
+.fml-canva-link{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin-top:23px;color:#c9efa4;text-decoration:underline;font-size:13px;font-weight:700}
+.fml-expo{display:flex;align-items:center;justify-content:space-between;gap:40px;background:#1e5338;margin-top:90px;margin-bottom:90px;padding:clamp(30px,4vw,62px);border-radius:8px;color:#fff}
 .fml-expo>div:first-child{min-width:0;flex:1}
 .fml-expo .fml-eyebrow{color:#d7eb9f}
 .fml-expo h2{color:#fff}
@@ -171,7 +171,7 @@
  .fml-presentation-image{min-height:250px}
  .fml-presentation-image img{max-height:330px}
  .fml-presentation-copy{padding:36px 24px 46px}
- .fml-expo{flex-direction:column;align-items:stretch;margin-top:65px!important;margin-bottom:65px!important}
+ .fml-expo{flex-direction:column;align-items:stretch;margin-top:65px;margin-bottom:65px}
  .fml-expo-actions{flex-direction:row;flex-wrap:wrap}
  .fml-footer>.fml-wrap{flex-direction:column}
 }
