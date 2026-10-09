@@ -79,7 +79,7 @@ export default function Landing() {
     {key:"satellite",Icon:Satellite,to:"/app/agriculture",scope:"workspace"},
     {key:"weather",Icon:CloudSun,to:"/app/agriculture",scope:"workspace"},
     {key:"soil",Icon:FlaskConical,to:"/agriculture-services",scope:"public"},
-    {key:"gis",Icon:Map,to:"/app/gis",scope:"workspace"},
+    {key:"gis",Icon:Map,to:user?"/app/gis":"/gis",scope:user?"workspace":"public"},
     {key:"ai",Icon:BrainCircuit,to:"/app/agriculture",scope:"workspace"},
   ].map(item=>({...item,title:toolLabels[item.key as keyof typeof toolLabels][0],body:toolLabels[item.key as keyof typeof toolLabels][1]}));
   const normalizedToolQuery=toolQuery.trim().toLocaleLowerCase();
@@ -212,7 +212,7 @@ export default function Landing() {
       <div className="fg-restored-service-grid">{restoredContent.services.map(([title,body,to],index)=>
         <article key={to} className={"fg-restored-service fg-restored-service-"+(index+1)}>
           <span className="fg-restored-service-number" dir="ltr">0{index+1} / WEFEH</span><h3>{title}</h3><p>{body}</p>
-          <Link to={to} className="fg-restored-service-link">{heritage.discover}<ArrowUpRight size={16}/></Link>
+          <Link to={to==="/app/gis"&&!user?"/gis":to} className="fg-restored-service-link">{heritage.discover}<ArrowUpRight size={16}/></Link>
         </article>)}</div>
     </section>
     <section className="fg-restored-gallery" id="oasis-gallery" aria-labelledby="fg-restored-gallery-title">
