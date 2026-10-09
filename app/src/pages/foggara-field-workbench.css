@@ -1,0 +1,182 @@
+
+/* FOGGARA FIELD INTELLIGENCE — an actual map-first GIS workbench.
+   Deliberately isolates its styles from the landing and dashboard design. */
+.fg-field-shell{--field-ink:#16372f;--field-muted:#5d746b;--field-line:#dfebe3;--field-green:#167449;--field-honey:#d6b678;min-height:100vh;padding:0!important;max-width:none!important;margin:0;background:#eff3ef;color:var(--field-ink);font-family:"Hanken Grotesk","Tajawal",system-ui,sans-serif}
+.fg-field-shell :is(button,input,a):focus-visible{outline:3px solid #dbaf50;outline-offset:2px}
+.fg-field-shell button{font-family:inherit}
+.fg-field-topbar{display:flex;gap:20px;align-items:center;justify-content:space-between;min-height:78px;padding:12px 24px;background:linear-gradient(107deg,#0c332b,#164936);color:#f8f9f4;border-bottom:1px solid #38614d}
+.fg-field-brand{display:flex;align-items:center;gap:12px;min-width:215px}
+.fg-field-brand-mark{display:grid;place-items:center;background:#d4bc79;color:#163d2e;border:1px solid #efdea9;width:43px;height:43px;border-radius:13px;box-shadow:0 6px 18px #071a1655}
+.fg-field-brand-copy{display:flex;flex-direction:column;gap:2px}
+.fg-field-brand-copy strong{font-size:16px;font-weight:840;letter-spacing:.055em}
+.fg-field-brand-copy strong span{color:#e0c88b}
+.fg-field-brand-copy small{font-size:9px;letter-spacing:.17em;color:#c6dbcf;font-weight:710}
+.fg-field-top-title{display:flex;align-items:flex-start;flex-direction:column;min-width:0;gap:3px}
+.fg-field-top-title strong{font-size:clamp(15px,1.35vw,22px);line-height:1.35;font-weight:790}
+.fg-field-top-title small{font-size:11px;color:#bfd6c9;line-height:1.5}
+.fg-field-top-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+.fg-field-access{display:inline-flex;gap:7px;align-items:center;border:1px solid #568575;border-radius:24px;padding:8px 12px;font-size:11px;font-weight:690;color:#e6f3e9}
+.fg-field-status-dot,.fg-field-live-dot{display:inline-block;width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#73d3a5;box-shadow:0 0 0 4px #4caf7840}
+.fg-field-account-link{display:inline-flex;gap:9px;align-items:center;justify-content:center;padding:12px 15px;border-radius:9px;background:#e3d0a2;color:#1b3d2d!important;text-decoration:none;font-size:12px;font-weight:780;transition:background .18s}
+.fg-field-account-link:hover{background:#f1e2ba}
+.fg-field-workspace{display:grid;grid-template-columns:clamp(275px,22.5vw,320px) minmax(0,1fr) clamp(290px,23vw,335px);max-width:1900px;margin:0 auto;align-items:stretch;min-height:calc(100vh - 123px)}
+.fg-field-pane{background:#fff;min-width:0;max-width:100%;display:flex;flex-direction:column;border-inline-end:1px solid var(--field-line)}
+.fg-field-insights{border-inline-end:0;border-inline-start:1px solid var(--field-line);background:#fffdf9}
+.fg-field-pane-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px 21px 18px;border-bottom:1px solid var(--field-line)}
+.fg-field-pane-title>div{min-width:0}
+.fg-field-pane-title small,.fg-field-section-head small{font-size:10px;letter-spacing:.13em;font-weight:800;color:#7b897f}
+.fg-field-pane-title h2{display:flex;align-items:center;gap:9px;margin:7px 0 0;font-size:18px;font-weight:820;line-height:1.38;overflow-wrap:anywhere}
+.fg-field-pane-title svg{color:#21784d;flex-shrink:0}
+.fg-field-tool-icon{width:36px;height:36px;border:1px solid #d5e8d8;border-radius:10px;background:#f2f8f0;display:grid;place-items:center;flex-shrink:0}
+.fg-field-setup-section,.fg-field-insight-section{padding:22px 21px 20px;border-bottom:1px solid var(--field-line);display:flex;flex-direction:column;gap:14px}
+.fg-field-setup-section h3,.fg-field-insight-section h3{font-size:15px;font-weight:810;line-height:1.45;margin:0;color:#254938}
+.fg-field-setup-section>p,.fg-field-insight-section>p{font-size:12px;color:#64796b;margin:0;line-height:1.8}
+.fg-field-aoi-state{display:flex;align-items:center;gap:11px;padding:13px 12px;border:1px dashed #bdcec0;background:#f6faf4;border-radius:11px}
+.fg-field-aoi-state.selected{border:1px solid #88c7a3;background:#eff9f2}
+.fg-field-state-icon{display:grid;place-items:center;color:#639477;flex-shrink:0}
+.fg-field-aoi-state.selected .fg-field-state-icon{color:#19734b}
+.fg-field-aoi-state>div{display:grid;min-width:0;gap:4px}
+.fg-field-aoi-state strong{font-size:12px;font-weight:800}
+.fg-field-aoi-state small{font-size:10px;color:var(--field-muted)}
+.fg-field-selection-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fg-field-selection-facts>div{display:grid;gap:6px;padding:10px 11px;border:1px solid #d7e5db;border-radius:9px;background:#fff}
+.fg-field-selection-facts span{font-size:10px;color:#627f6e;font-weight:680}
+.fg-field-selection-facts strong{font-size:17px;color:#224f35;font-variant-numeric:tabular-nums;line-height:1.25}
+.fg-field-selection-facts strong small{font-size:11px}
+.fg-field-selection-facts .fg-field-extent{grid-column:1/-1}
+.fg-field-extent code{display:block;line-height:1.7;font-size:10px;color:#2e5542;white-space:normal;overflow-wrap:anywhere}
+.fg-field-inline-tool{width:100%;display:flex;align-items:center;gap:8px;justify-content:flex-start;text-align:start;padding:10px 11px;border:1px solid #d5e7d8;border-radius:9px;background:#f7faf5;color:#265b3e;cursor:pointer;font-size:12px;font-weight:770;line-height:1.5}
+.fg-field-inline-tool:hover{border-color:#83b89c;background:#ecf5ed}
+.fg-field-shell .fg-public-gis-coordinate-entry{margin:0;width:100%;padding:13px;gap:10px;border:1px solid #d8e7d8;background:#f7faf6}
+.fg-field-shell .fg-public-gis-coordinate-entry label{flex-basis:100%;font-size:11px}
+.fg-field-shell .fg-public-gis-coordinate-entry>strong{font-size:12px}
+.fg-field-shell .fg-public-gis-coordinate-entry input{min-height:38px;background:#fff}
+.fg-field-shell .fg-public-gis-coordinate-entry button{width:100%}
+.fg-field-section-head{display:flex;justify-content:space-between;align-items:center}
+.fg-field-section-head svg{color:#277e52}
+.fg-field-catalog-name{display:flex;align-items:center;gap:8px;padding:8px 10px!important;border-radius:7px;background:#edf4ee;color:#306148!important;font-size:11px!important;font-weight:750}
+.fg-field-shell .fg-public-gis-date-row{gap:9px}
+.fg-field-shell .fg-public-gis-date-row label{font-size:10px;min-width:100px;flex-basis:105px}
+.fg-field-shell .fg-public-gis-date-row input{padding:8px 7px;min-height:39px;font-size:11px}
+.fg-field-shell .fg-public-gis-action{background:#236748;border:1px solid #245b3c;min-height:43px;gap:9px;transition:background .2s}
+.fg-field-shell .fg-public-gis-action:not(:disabled):hover{background:#145c3d}
+.fg-field-shell .fg-public-gis-action:disabled{opacity:.45}
+.fg-field-search{width:100%}
+.fg-field-empty-list{padding:12px;border:1px dashed #d3e0d5;border-radius:9px;color:#799081!important;font-size:11px!important;line-height:1.65}
+.fg-field-inline-warning{padding:9px 11px;background:#fff2df;border-inline-start:3px solid #b97f24;border-radius:6px;color:#87561d!important;line-height:1.7;font-size:11px!important}
+.fg-field-scene-list{display:grid;gap:7px;max-height:340px;overflow-y:auto}
+.fg-field-scene-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fg-field-scene-head strong{font-size:11px;color:#356c4d}
+.fg-field-scene-head small{font-size:10px;color:#768b79}
+.fg-field-scene{width:100%;border:1px solid #d9e5d9;background:#fff;display:flex;text-align:start;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:border .17s}
+.fg-field-scene.active{background:#eef9f0;border-color:#83c9a1;box-shadow:inset 3px 0 #1b8853}
+.fg-field-scene-check{width:22px;height:22px;border-radius:7px;background:#f0f6ef;display:grid;place-items:center;color:#34815a;flex-shrink:0}
+.fg-field-scene>span:last-child{display:grid;gap:4px;min-width:0}
+.fg-field-scene strong{font-size:12px;font-weight:780;color:#244e36}
+.fg-field-scene small{font-size:10px;color:#667d6e;line-height:1.4}
+.fg-field-setup-footer{display:flex;gap:7px;flex-wrap:wrap;padding:18px 20px;margin-top:auto}
+.fg-field-setup-footer button{display:inline-flex;gap:7px;align-items:center;flex:1;min-width:125px;justify-content:center;border:1px solid #d2dfd5;background:#f8faf7;color:#2b6041;padding:11px 10px;font-size:11px;font-weight:750;border-radius:9px;cursor:pointer}
+.fg-field-setup-footer button:disabled{opacity:.45;cursor:default}
+.fg-field-map-panel{display:flex;flex-direction:column;min-width:0;background:#e3ebe1;position:relative}
+.fg-field-map-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 19px;background:#f9fcf8;border-bottom:1px solid #dbe8da}
+.fg-field-map-top>div:first-child{min-width:0}
+.fg-field-map-top>div:first-child>small{font-size:10px;letter-spacing:.07em;color:#688777}
+.fg-field-map-top h2{display:flex;align-items:center;gap:9px;margin:5px 0 0;color:#1f5237;font-size:17px;font-weight:820}
+.fg-field-map-pills{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px}
+.fg-field-map-pills>span{display:inline-flex;align-items:center;gap:7px;border:1px solid #d3e2d2;background:#fff;padding:7px 9px;border-radius:20px;font-size:10px;color:#3a6b50}
+.fg-field-map-stage{position:relative;height:min(78vh,830px);min-height:560px;overflow:hidden}
+.fg-field-map-stage .fg-national-map{height:100%;width:100%;display:flex;flex-direction:column;min-width:0;padding:0!important;border:0!important;box-shadow:none!important;background:#e2eade;border-radius:0!important;overflow:hidden}
+.fg-field-map-stage .fg-national-map-head{display:none}
+.fg-field-map-stage .fg-national-map-canvas{flex:1 1 auto;width:100%;min-height:560px!important;height:100%!important;aspect-ratio:auto!important;border-radius:0!important;margin:0!important;overflow:hidden}
+.fg-field-map-stage .fg-national-map-foot{display:none}
+.fg-field-map-stage .fg-maplibre-host{background:#d8e8dc}
+.fg-field-map-stage .fg-map-control-stack{inset-block-start:14px;inset-inline-end:14px;gap:7px;max-width:min(340px,calc(100% - 75px))}
+.fg-field-map-stage .fg-map-control-card{backdrop-filter:blur(12px);background:#fffffff0;border:1px solid #d4e2d3;box-shadow:0 5px 20px #173a2820}
+.fg-field-map-bottom{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:13px 18px;background:#f8fcf7;border-top:1px solid #cfdfd1}
+.fg-field-map-bottom>div{display:flex;gap:7px;align-items:center;font-size:11px;color:#457358;line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.fg-field-map-bottom>div:last-child{max-width:60%}
+.fg-field-map-bottom svg{color:#237e52;flex-shrink:0}
+.fg-field-insight-section{gap:15px}
+.fg-field-index-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fg-field-index-picker button{display:flex;align-items:flex-start;flex-direction:column;gap:6px;min-width:0;padding:12px;border:1px solid #dbe5dc;border-radius:11px;color:#365f48;background:#f9fbf8;cursor:pointer;font-size:13px;font-weight:850}
+.fg-field-index-picker button svg{color:#53896c}
+.fg-field-index-picker button small{font-size:10px;font-weight:600;color:#688575;line-height:1.4;text-align:start}
+.fg-field-index-picker button.active{border-color:#64a781;background:#ecf6ee;box-shadow:inset 0 -3px #2b8655}
+.fg-field-analysis-card{min-height:265px;padding:18px 16px;display:flex;flex-direction:column;gap:11px;border-radius:13px;background:#153e30;color:#edf9ef;box-shadow:0 11px 22px #173b2824}
+.fg-field-analysis-label{display:flex;justify-content:space-between;gap:7px;align-items:center}
+.fg-field-analysis-label span:first-child{font-size:11px;color:#c6dfcc}
+.fg-field-analysis-label span:last-child{font-size:10px;letter-spacing:.08em;color:#ead39c;border:1px solid #9eaf8a70;border-radius:19px;padding:6px 9px}
+.fg-field-analysis-value{font-size:clamp(42px,4.7vw,65px);line-height:1.1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:#f6f9f1;font-weight:780}
+.fg-field-spectrum{position:relative;height:11px;border-radius:99px;margin-top:5px;background:linear-gradient(90deg,#a5533d,#d4b55e,#99b880,#3a9862,#126745)}
+.fg-field-spectrum-marker{position:absolute;top:-6px;transform:translateX(-50%);height:23px;width:3px;background:#fff;border-radius:3px;border:1px solid #153e30;box-shadow:0 0 0 2px #fff7}
+.fg-field-spectrum-labels{display:flex;justify-content:space-between;color:#c9ddce;font-variant-numeric:tabular-nums;font-size:9px}
+.fg-field-quality{display:grid;gap:7px;margin-top:5px}
+.fg-field-quality>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#d6e9d8}
+.fg-field-quality>div:first-child strong{font-variant-numeric:tabular-nums}
+.fg-field-quality-track{height:6px;border-radius:30px;background:#6b8776a8;overflow:hidden}
+.fg-field-quality-track span{display:block;height:100%;background:#a9dcad;border-radius:30px}
+.fg-field-metrics{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:4px}
+.fg-field-metrics>div{display:grid;gap:4px}
+.fg-field-metrics span{color:#c2d8c8;font-size:10px}
+.fg-field-metrics strong{font-size:12px;color:#fff;font-variant-numeric:tabular-nums}
+.fg-field-no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;flex:1;text-align:center;padding:25px 12px}
+.fg-field-no-data svg{color:#dfc98d}
+.fg-field-no-data strong{font-size:16px;color:#fff;font-weight:790}
+.fg-field-no-data p{margin:0;font-size:11px;color:#c4d9cc;line-height:1.8}
+.fg-field-analyze{width:100%;justify-content:center}
+.fg-field-limit-label{font-size:10px;color:#748675;line-height:1.7}
+.fg-field-evidence{background:#fffdf8;border-bottom:0}
+.fg-field-evidence h3{display:flex;align-items:center;gap:8px;font-size:14px}
+.fg-field-evidence h3 svg{color:#258354}
+.fg-field-evidence-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #e9eee6;padding:0 0 11px}
+.fg-field-evidence-row span{color:#6d8374;font-size:11px}
+.fg-field-evidence-row strong{font-size:11px;color:#295640;font-weight:760;max-width:60%;text-align:end;overflow-wrap:anywhere}
+.fg-field-evidence-disclaimer{display:flex;gap:9px;margin:0;border-radius:9px;background:#f5f0e3;color:#77602d!important;padding:11px;font-size:11px!important}
+.fg-field-evidence-disclaimer svg{flex-shrink:0;margin-top:3px}
+.fg-field-evidence-caption{font-size:10px!important;color:#889486!important}
+.fg-field-save-cta{display:flex;align-items:center;justify-content:center;gap:9px;padding:12px;border-radius:10px;background:#1c6b48;color:#fff!important;text-decoration:none;font-size:12px;font-weight:790;margin:0 20px}
+.fg-field-save-cta:hover{background:#15563c}
+.fg-field-save-note{margin:7px 20px 16px;color:#738377;font-size:10px;line-height:1.6;text-align:center}
+.fg-field-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:13px 22px;background:#e6eee5;color:#4c7057;border-top:1px solid #d2e1d6;font-size:10px;line-height:1.6}
+.fg-field-spin{animation:fg-field-rotate 1.5s linear infinite}
+@keyframes fg-field-rotate{to{transform:rotate(360deg)}}
+@media(max-width:1170px){
+  .fg-field-workspace{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fg-field-map-panel{grid-column:1/-1;grid-row:1}
+  .fg-field-setup{grid-column:1;grid-row:2}
+  .fg-field-insights{grid-column:2;grid-row:2}
+  .fg-field-map-stage{height:570px;min-height:470px}
+  .fg-field-map-stage .fg-national-map-canvas{min-height:470px!important}
+}
+@media(max-width:730px){
+  .fg-field-topbar{padding:12px 15px;min-height:66px;gap:12px;flex-wrap:wrap}
+  .fg-field-brand{min-width:0}
+  .fg-field-brand-copy strong{font-size:13px}
+  .fg-field-brand-copy small{font-size:8px}
+  .fg-field-top-title{display:none}
+  .fg-field-top-actions{margin-inline-start:auto}
+  .fg-field-account-link{padding:9px 10px;font-size:11px}
+  .fg-field-access{display:none}
+  .fg-field-workspace{grid-template-columns:minmax(0,1fr)}
+  .fg-field-map-panel,.fg-field-setup,.fg-field-insights{grid-column:1}
+  .fg-field-map-panel{grid-row:1}
+  .fg-field-setup{grid-row:2}
+  .fg-field-insights{grid-row:3}
+  .fg-field-map-top{padding:12px 15px}
+  .fg-field-map-pills>span:last-child{display:none}
+  .fg-field-map-stage{height:490px;min-height:490px}
+  .fg-field-map-stage .fg-national-map-canvas{min-height:490px!important}
+  .fg-field-map-bottom{padding:10px 13px}
+  .fg-field-map-bottom>div:last-child{display:none}
+  .fg-field-map-stage .fg-map-control-stack{max-width:min(290px,calc(100% - 55px))}
+  .fg-field-pane-title,.fg-field-setup-section,.fg-field-insight-section{padding-inline:18px}
+  .fg-field-save-cta{margin:0 18px}
+}
+@media(max-width:430px){
+  .fg-field-map-stage{height:465px;min-height:465px}
+  .fg-field-map-stage .fg-national-map-canvas{min-height:465px!important}
+  .fg-field-map-stage .fg-map-control-stack{inset-block-start:7px;inset-inline-end:5px;max-width:calc(100% - 48px)}
+  .fg-field-brand-mark{width:36px;height:36px}
+  .fg-field-map-pills{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.fg-field-shell *{transition:none!important;animation:none!important}}
