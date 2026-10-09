@@ -40,11 +40,15 @@ class ParcelIn(Input):
                 raise ValueError(str(exc)) from exc
             self.boundary_geojson = normalized
             self.lon, self.lat = meta['centroid']
+            self.area_ha = meta['estimated_area_ha']
+            # Persist the server-computed geometry area, never a user-supplied bbox guess.
+            self.area_ha = meta['estimated_area_ha']
         elif (self.lat is None) != (self.lon is None):
             raise ValueError('Latitude and longitude must be supplied together')
         return self
 
 class ParcelUpdate(Input):
+    area_ha: float | None = Field(default=None, gt=0, le=100000)
     stage: Literal['initial', 'development', 'mid', 'late'] | None = None
     archived: bool | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
