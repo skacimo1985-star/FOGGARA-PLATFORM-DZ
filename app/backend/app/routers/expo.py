@@ -401,8 +401,12 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
         except RasterStatisticsError:
             skipped.append({"scene_id": scene["id"], "reason": "remote_raster_unavailable"})
             continue
-        valid = int(result.get("pixels", {}).get("valid", 0))
-        if valid == 0:
+        # Never publish a numerical field result if the polygon mask did not run.
+        if not result.get("mask", {}).get("geometry_mask_applied"):
+            skipped.append({"scene_id": scene["id"], "reason": "polygon_mask_not_applied"})
+            continue
+        valid = int(result.get("pixels", {}).get("valid") or 0)
+        if valid == 0 or result.get("statistics", {}).get("mean") is None:
             skipped.append({"scene_id": scene["id"], "reason": "no_cloud_free_pixels"})
             continue
         return {
