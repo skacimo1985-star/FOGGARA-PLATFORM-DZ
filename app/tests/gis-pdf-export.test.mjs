@@ -31,7 +31,7 @@ test("FOGGARA PDF report documents source and explicitly differentiates uncomput
   assert.ok(pdf.includes('evidence.scene?.datetime'));
   assert.ok(pdf.includes('Sentinel-2 L2A'));
   assert.ok(pdf.includes('Rasterio'));
-  assert.ok(pdf.includes('not verified'));
+  assert.ok(pdf.includes('not ground verified'));
   assert.ok(pdf.includes('reportRef'));
 });
 
