@@ -3,7 +3,8 @@ import {Link,useLocation} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {ArrowUpRight,ChevronDown,Download,RotateCcw,ShieldCheck,SlidersHorizontal} from 'lucide-react';
 import {NexusKasria} from '@/components/NexusKasria';
-import {OasisCanvaPresentation} from '@/components/OasisCanvaPresentation';
+import {FoggaraStoryPresentation} from '@/components/FoggaraVisualStory';
+import '@/components/foggara-visual-story.css';
 import {NEXUS_DOMAINS} from '@/lib/nexus-domains';
 import {evaluatePresentationMatrix,type MatrixAxis} from '@/lib/presentation-matrix';
 import './presentation.css';
@@ -23,17 +24,13 @@ export default function Presentation(){
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
  const exportResult=()=>{const file=new Blob([JSON.stringify({algorithm:'bounded-weighted-utility-browser-v1',status:'UNSAVED_USER_SCENARIO',created_at:new Date().toISOString(),inputs:axes,result},null,2)],{type:'application/json'});const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='foggara-user-matrix.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <div className="fp-presentation">
- <section className="fp-original-canva" aria-label="FOGGARA Canva presentation">
-  <div className="fp-source-head">
-   <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
-   <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noopener noreferrer">
-    {locale==="ar"?"فتح المصدر الأصلي على Canva":locale==="fr"?"Voir la présentation originale sur Canva":"View original Canva presentation"} <ArrowUpRight size={15}/>
-   </a>
-  </div>
-  <p className="fp-source-note">{locale==="ar"?"العرض التفاعلي أدناه يعمل داخل المنصة، والمصدر الأصلي متاح عبر Canva.":locale==="fr"?"La version interactive fonctionne directement ci-dessous ; la source originale reste sur Canva.":"The interactive site version works below; the original source remains available on Canva."}</p>
+ <section className="fp-story-intro" aria-label="FOGGARA-DZ">
+  <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
+  <h2>{c.architecture}</h2>
+  <p>{c.intro}</p>
  </section>
  <div className="fp-native-deck fp-native-deck-visible">
-  <OasisCanvaPresentation lang={locale}/>
+  <FoggaraStoryPresentation lang={locale}/>
  </div>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
  <section id="presentation" className="fp-figma-bridge">

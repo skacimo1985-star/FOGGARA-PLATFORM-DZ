@@ -12,8 +12,8 @@ test("homepage restores the historical full-width oasis visual without the Moon 
   assert.ok(app.includes('import("@/pages/OasisRestoredLanding")'));
   assert.ok(page.includes('className="fg-public fg-landing"'));
   assert.ok(page.includes('className="fg-landing-hero"'));
-  assert.ok(page.includes('className="fg-oasis-image"'));
-  assert.ok(page.includes('oasis-dawn-mobile.webp'));
+  assert.ok(page.includes('<OasisHeroMedia lang={lang}/>'));
+  assert.ok(page.includes('foggara-visual-story.css'));
   assert.ok(css.includes("min-height:720px"));
   assert.ok(css.includes("full-bleed")||css.includes("Full-bleed"));
   assert.equal(page.includes("fg-moon-landing"),false);
@@ -23,7 +23,7 @@ test("homepage restores the historical full-width oasis visual without the Moon 
 
 test("historical oasis and three additional illustrations exist as actual WEBP files",()=>{
   for(const asset of ["oasis-dawn.webp","oasis-dawn-mobile.webp","oasis-hero.webp","foggara-heritage-poster.webp","foggara-sprite.webp"]){
-    assert.ok(page.includes(asset)||read("../src/components/OasisPhotoGallery.tsx").includes(asset),asset);
+    // Historical assets remain valid fallback files even when the new photo-led hero uses curated media.
     const b=readFileSync(new URL("../public/images/"+asset,import.meta.url));
     assert.equal(b.subarray(0,4).toString("ascii"),"RIFF",asset);
     assert.equal(b.subarray(8,12).toString("ascii"),"WEBP",asset);
@@ -37,14 +37,33 @@ test("farm template services link to real routes while public Expo stays accessi
   assert.ok(page.includes('id="farm-services"'));
   assert.ok(page.includes('id="oasis-gallery"'));
   assert.ok(page.includes('<OasisPhotoGallery lang={lang}/>'));
-  assert.ok(page.includes('OasisCanvaPresentation lang={lang} compact siteSevenSlides'));
-  assert.ok(page.includes("DAHXhRSdmV4"));
-  const deck=read("../src/components/OasisCanvaPresentation.tsx");
-  assert.ok(deck.includes("[0,2,4,5,6,9,11]"));
-  assert.ok(deck.includes("siteSevenSlides"));
+  assert.ok(page.includes('<FoggaraStoryPresentation lang={lang}/>'));
+  assert.equal(page.includes("canva.com"),false);
+  assert.equal(page.includes("restoredContent.original"),false);
   assert.ok(!page.includes("<iframe"));
   assert.ok(css.includes("max-width:560px"));
   assert.ok(css.includes("fg-hero-qr-code img{width:116px"));
+});
+
+test("photo-led hero and platform presentation share five chapters, no Canva sales link",()=>{
+  const visual=read("../src/components/FoggaraVisualStory.tsx");
+  const style=read("../src/components/foggara-visual-story.css");
+  const full=read("../src/pages/Presentation.tsx");
+  assert.ok(page.includes('<OasisHeroMedia lang={lang}/>'));
+  assert.ok(page.includes('<FoggaraStoryPresentation lang={lang}/>'));
+  assert.ok(full.includes('<FoggaraStoryPresentation lang={locale}/>'));
+  assert.equal(full.includes("canva.com"),false);
+  assert.ok(visual.includes('getOasisPhoto(photo.id)'));
+  assert.ok(visual.includes('aria-pressed={active===index}'));
+  assert.ok(visual.includes('aria-current={i===index?"step":undefined}'));
+  assert.ok(visual.includes('role="region"'));
+  for(const id of ['heritage','water','agri','evidence','nexus']){
+    assert.ok(visual.includes('id:"'+id+'"'),id);
+  }
+  assert.ok(style.includes('grid-template')||style.includes('.fg-story-chapters'));
+  assert.ok(style.includes('max-width:590px'));
+  assert.ok(style.includes('@media(max-width:700px)'));
+  assert.ok(style.includes('prefers-reduced-motion'));
 });
 
 test("seven-slide presentation avoids cut-off closing titles and random service tiles",()=>{
