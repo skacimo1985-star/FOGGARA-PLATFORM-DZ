@@ -3029,3 +3029,63 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
     bottom:12px;inset-inline-end:12px;
   }
 }
+
+
+/* CANVA_ORIGINAL_EMBED_2026_10_09 */
+.fg-canva-original-design{
+  width:min(1180px,calc(100% - 44px));
+  margin:32px auto 16px;
+  padding:16px;
+  background:#13221b;
+  border:1px solid #477158;
+  box-shadow:0 22px 60px #11201530;
+  color:#fff;
+}
+.fg-canva-source-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:0 0 16px;
+}
+.fg-canva-source-header span{
+  font:700 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.06em;color:#e4e7d9;
+}
+.fg-canva-source-header a{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:14px;color:#c9f39f;text-decoration:underline;text-underline-offset:3px;
+}
+.fg-canva-original-design iframe{
+  display:block;
+  width:100%;
+  aspect-ratio:16/9;
+  min-height:240px;
+  border:0;
+  background:#ebeadf url("/images/oasis-dawn.webp") center/cover no-repeat;
+}
+.fg-canva-original-design>p{
+  margin:14px 0 0;
+  color:#d9e3d7;
+  font-size:13px;
+  line-height:1.6;
+}
+.fg-canva-native-fallback{
+  width:min(1180px,calc(100% - 44px));
+  margin:20px auto 30px;
+}
+.fg-canva-native-fallback>summary{
+  cursor:pointer;
+  padding:12px 18px;
+  color:#194c35;
+  background:#f0f1e6;
+  border:1px solid #d7dfd6;
+  font-size:14px;
+  font-weight:750;
+}
+.fg-canva-native-fallback[open] .ocp{width:100%;margin-top:18px;}
+@media(max-width:640px){
+  .fg-canva-original-design{padding:10px}
+  .fg-canva-original-design iframe{min-height:180px;}
+}
