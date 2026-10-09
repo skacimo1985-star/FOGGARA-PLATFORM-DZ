@@ -577,11 +577,12 @@ export default function Gis() {
   );
 
   useEffect(() => {
-    if (!activeProjectSiteId || !scopedParcels.length) return;
+    // Never replace an AOI the user is actively drawing with the first saved parcel.
+    if (manualAnalysisBbox || draftPolygon || !activeProjectSiteId || !scopedParcels.length) return;
     if (!selectedParcelId || !scopedParcels.some((parcel) => parcel.id === selectedParcelId)) {
       setActiveParcelId(scopedParcels[0].id);
     }
-  }, [activeProjectSiteId, scopedParcels, selectedParcelId]);
+  }, [activeProjectSiteId, scopedParcels, selectedParcelId, manualAnalysisBbox, draftPolygon]);
 
   const selectedParcel = useMemo(
     () => parcelBoundaries.find((feature) => feature.properties.id === selectedParcelId) ?? null,
@@ -591,7 +592,12 @@ export default function Gis() {
     () => parcels.find((parcel) => parcel.id === selectedParcelId) ?? null,
     [parcels, selectedParcelId],
   );
-  const selectedParcelBbox = useMemo(() => parcelBbox(selectedParcel), [selectedParcel]);
+  const selectedParcelBbox = useMemo(
+    () => selectedParcelRecord?.boundary_geojson
+      ? polygonBoundingBox(selectedParcelRecord.boundary_geojson)
+      : parcelBbox(selectedParcel),
+    [selectedParcelRecord, selectedParcel],
+  );
   const analysisBbox = selectedParcelBbox ?? manualAnalysisBbox ?? viewportBbox;
 
   const selectedScene = useMemo(
