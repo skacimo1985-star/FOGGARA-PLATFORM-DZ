@@ -7,6 +7,7 @@ the Algeria viewport with bounded provider requests.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import math
 from typing import Annotated
 
 import httpx
@@ -406,8 +407,9 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
             skipped.append({"scene_id": scene["id"], "reason": "polygon_mask_not_applied"})
             continue
         valid = int(result.get("pixels", {}).get("valid") or 0)
-        if valid == 0 or result.get("statistics", {}).get("mean") is None:
-            skipped.append({"scene_id": scene["id"], "reason": "no_cloud_free_pixels"})
+        mean = result.get("statistics", {}).get("mean")
+        if valid == 0 or not isinstance(mean, (int, float)) or not math.isfinite(mean) or not (-1 <= mean <= 1):
+            skipped.append({"scene_id": scene["id"], "reason": "no_valid_ndvi_pixels"})
             continue
         return {
             "status": "READY",
