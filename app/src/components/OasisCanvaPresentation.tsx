@@ -91,7 +91,7 @@ function CoverSlide({slide}:{slide:Slide}){
 function HeritageSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-dark ocp-page-heritage">
     <div className="ocp-copy"><span className="ocp-kicker">02 / HERITAGE → DIGITAL TWIN</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
-    <div className="ocp-heritage-image"><img className="ocp-media-image" src="/images/user-heritage-digital-twin.webp" alt="" aria-hidden="true"/></div>
+    <div className="ocp-heritage-image"><img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/></div>
     <div className="ocp-heritage-pipeline" dir="ltr"><span>FOGGARA</span><b>→</b><span>FIELD DATA</span><b>→</b><span>DIGITAL TWIN</span><b>→</b><span>EVIDENCE</span></div>
   </div>;
 }
@@ -217,7 +217,7 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
 
   const progress=useMemo(()=>((index+1)/slides.length)*100,[index,slides.length]);
 
-  return <section className={`ocp ocp-source-design ${compact?"ocp-compact":""}`} aria-label="FOGGARA-DZ Nexus">
+  return <section className={`ocp ocp-source-design ${compact?"ocp-compact":""}`} lang={lang} dir={lang==="ar"?"rtl":"ltr"} aria-label="FOGGARA-DZ Nexus">
     <div className="ocp-stage">
       <div key={`${lang}-${index}`} className="ocp-slide-shell"><SlideView slide={slides[index]}/></div>
       <div className="ocp-source-mark"><span>FOGGARA-DZ NEXUS</span><b dir="ltr">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</b></div>
