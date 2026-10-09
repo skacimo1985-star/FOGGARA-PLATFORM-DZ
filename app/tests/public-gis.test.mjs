@@ -24,7 +24,7 @@ test("FOGGARA visitor GIS has native drawing, live scenes and a real NDVI previe
   assert.ok(page.includes('api.post<Preview>("/expo/satellite/ndvi-preview"'));
   assert.ok(page.includes('NDVI'));
   assert.ok(page.includes('saveFoggaraAoi(area)'));
-  assert.ok(page.includes('to={user?"/app/gis":"/login"}'));
+  assert.ok(page.includes('to={user?"/app/gis":"/login?mode=team"}'));
   assert.ok(page.includes('from:{pathname:"/app/gis"}'));
   assert.ok(!page.includes('https://www.openstreetmap.org/#map'));
   assert.ok(!page.includes('"/gis/operational-status"'));
@@ -45,6 +45,10 @@ test("a guest-drawn geometry passes into the protected FOGGARA workspace",()=>{
   assert.ok(handoff.includes('FOGGARA_AOI_KEY="foggara_gis_aoi_v1"'));
   assert.ok(handoff.includes('sessionStorage.setItem'));
   assert.ok(handoff.includes('boundsOfPolygon(value:unknown)'));
+  const login=read("../src/pages/Login.tsx");
+  assert.ok(login.includes('new URLSearchParams(location.search).get("mode") === "team"'));
+  assert.ok(login.includes('teamMode?"order-1 lg:order-1'));
+
   assert.ok(!handoff.includes('localStorage'));
 });
 
