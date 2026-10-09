@@ -1,0 +1,64 @@
+/* Browser-native PDF layout for FOGGARA-DZ field reports.
+   Print > Save as PDF preserves selectable Arabic, French and English text. */
+.fg-field-pdf-sheet{display:none}
+.fg-field-pdf-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:39px;border:1px solid #a7c9b2;border-radius:9px;padding:9px 12px;background:#edf7ef;color:#185a3c;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.fg-field-pdf-button:disabled{opacity:.4;cursor:not-allowed}
+.fg-field-pdf-button:not(:disabled):hover{background:#dceee1;border-color:#6aab84}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+  html,body,#root{background:#fff!important;height:auto!important;overflow:visible!important;max-width:100%!important}
+  body *{visibility:hidden!important}
+  .fg-field-shell{padding:0!important;margin:0!important;min-height:auto!important;height:auto!important;overflow:visible!important}
+  .fg-field-shell > :not(.fg-field-pdf-sheet){display:none!important}
+  .fg-field-pdf-sheet,.fg-field-pdf-sheet *{visibility:visible!important}
+  .fg-field-pdf-sheet{display:block!important;position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;overflow:visible!important;background:#fff!important;color:#173d2e!important;font-family:"Tajawal","Hanken Grotesk",Arial,sans-serif!important;font-size:10px!important;line-height:1.45!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .fg-field-pdf-sheet *{box-sizing:border-box!important}
+  .fg-pdf-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px 13px;background:#124635!important;border-radius:10px;color:white!important}
+  .fg-pdf-logo{min-width:130px;display:flex;flex-direction:column;gap:2px;color:#fff!important;line-height:1.12}
+  .fg-pdf-logo span{font:800 25px/1.1 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.08em;color:white!important}
+  .fg-pdf-logo strong{font-size:17px;color:#e6ce8a!important}
+  .fg-pdf-logo small{max-width:140px;color:#d3e6d5!important;font:650 6px/1.7 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.04em}
+  .fg-pdf-header>div:last-child{display:grid;gap:5px;text-align:start;max-width:375px}
+  .fg-pdf-header h1{color:#fff!important;font-size:19px!important;font-weight:850;margin:0;line-height:1.4}
+  .fg-pdf-header p{color:#cfe0d1!important;font-size:9px!important;margin:0;line-height:1.5}
+  .fg-pdf-meta{display:flex;flex-wrap:wrap;gap:9px;justify-content:space-between;padding:10px 1px 6px;color:#587060!important;border-bottom:1px solid #d8e6da;font-size:9px}
+  .fg-pdf-meta b{color:#1f5f40!important;unicode-bidi:isolate}
+  .fg-pdf-section{padding:12px 0 0;break-inside:avoid}
+  .fg-pdf-section h2{display:flex;align-items:center;gap:8px;margin:0 0 9px;color:#173d2f!important;font-size:14px!important;font-weight:850;border-bottom:1px solid #dfebe1;padding-bottom:7px}
+  .fg-pdf-section h2>span{display:grid;place-items:center;flex-shrink:0;width:26px;height:24px;border-radius:6px;background:#e5f2e8!important;color:#1c7145!important;font:800 11px/1 "Hanken Grotesk",Arial,sans-serif}
+  .fg-pdf-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+  .fg-pdf-tiles>div{display:flex;flex-direction:column;gap:4px;border:1px solid #dce9dd;border-radius:6px;padding:7px;background:#f8fbf8!important;min-width:0}
+  .fg-pdf-tiles label{font-size:8px;color:#657c6d}
+  .fg-pdf-tiles strong{font-size:10px;font-weight:820;color:#164d33;overflow-wrap:anywhere}
+  .fg-pdf-small{font-size:9px;color:#58725e;margin:7px 0 0}
+  .fg-pdf-geo{display:grid;grid-template-columns:1.12fr .88fr;gap:11px;margin-top:10px}
+  .fg-pdf-geometry{border:1px solid #dce8df;border-radius:7px;padding:8px;background:#f8fbf9!important}
+  .fg-pdf-geometry p{font-size:9px;font-weight:800;margin:0 0 6px;color:#37634c}
+  .fg-pdf-geometry svg{width:100%;height:134px;display:block}
+  .fg-pdf-geometry small{display:block;color:#738577;font-size:7px}
+  .fg-pdf-extent{border:1px solid #dce8df;border-radius:7px;padding:10px;display:grid;align-content:start;gap:6px}
+  .fg-pdf-extent h3{margin:0 0 3px;color:#286445!important;font-size:10px!important;font-weight:800}
+  .fg-pdf-extent h3:not(:first-child){margin-top:8px;border-top:1px solid #dce8df;padding-top:8px}
+  .fg-pdf-extent>div{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:0 0 4px;border-bottom:1px dotted #e1e8e1}
+  .fg-pdf-extent span{font-size:9px;color:#62796c}
+  .fg-pdf-extent b{font-size:9px;color:#24553c;font-variant-numeric:tabular-nums}
+  .fg-pdf-result-hero{display:grid;grid-template-columns:.8fr .7fr 1.5fr;gap:8px;background:#164b36!important;padding:11px;border-radius:8px}
+  .fg-pdf-result-hero>div{display:grid;gap:4px}
+  .fg-pdf-result-hero label{font-size:8px;color:#d4e4d5!important}
+  .fg-pdf-result-hero strong{font-size:17px;color:#fff!important;font-weight:830}
+  .fg-pdf-result-hero>div:last-child strong{font-size:10px!important;color:#f5e5ba!important;line-height:1.55}
+  .fg-pdf-table{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin-top:9px}
+  .fg-pdf-table>div{display:flex;gap:8px;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e6eee6;min-width:0}
+  .fg-pdf-table span{font-size:9px;color:#687d6e}
+  .fg-pdf-table strong{font-size:9px;color:#284d38;font-weight:800;text-align:end;min-width:0}
+  .fg-pdf-break{overflow-wrap:anywhere}
+  .fg-pdf-no-data{border:1px solid #dce6dd;border-radius:7px;padding:15px;color:#5b7565;background:#f6faf7!important;font-size:10px}
+  .fg-pdf-notes{border:0}
+  .fg-pdf-notes ul{margin:5px 0 0;padding-inline-start:20px;display:grid;gap:4px}
+  .fg-pdf-notes li{font-size:9px;line-height:1.55;color:#506759;break-inside:avoid}
+  .fg-pdf-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:2px solid #306c4a;margin-top:17px;padding-top:8px;font-size:8px;line-height:1.5;color:#456953!important}
+  .fg-pdf-footer strong{font-size:8px!important;color:#235c3e!important}
+  .fg-pdf-footer span{font:700 7px/1.6 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.04em;text-align:end}
+  a[href]:after{content:none!important}
+  .fg-field-shell .fg-field-pdf-button{display:none!important}
+}
