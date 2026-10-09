@@ -48,7 +48,7 @@ test("quality, source and field limits must be disclosed and responsive",()=>{
   assert.ok(p.includes('v.indexNdmiNote'));
   assert.ok(p.includes('v.limitations'));
   assert.ok(p.includes('!rangeValid?v.invalidDate:v.pixelBudget'));
-  assert.ok(p.includes('pixels<=1600&&rangeValid'));
+  assert.ok(p.includes('pixels<=(user&&savedFieldId!==null?250_000:1600)&&rangeValid'));
   assert.ok(p.includes('v.estimated'));
   assert.ok(p.includes('saveFoggaraAoi(area)'));
 });
