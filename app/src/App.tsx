@@ -38,6 +38,7 @@ const Telemetry = lazy(() => import("@/pages/Telemetry"));
 const Simulator = lazy(() => import("@/pages/Simulator"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Gis = lazy(() => import("@/pages/Gis"));
+const PublicGis = lazy(() => import("@/pages/PublicGis"));
 const Iot = lazy(() => import("@/pages/Iot"));
 const Vde = lazy(() => import("@/pages/Vde"));
 const OrganizationPage = lazy(() => import("@/pages/Organization"));
@@ -73,6 +74,13 @@ function RouteBoundary({children}:{children:ReactNode}) {
   return <ErrorBoundary key={location.pathname}><div className="os-route-view"><Suspense fallback={<div role="status" className="p-8 text-center text-muted-foreground">{t('common.loading')}</div>}>{children}</Suspense></div></ErrorBoundary>;
 }
 
+// GIS public entry never exposes authenticated organization records.
+function GisAccess(){
+  const {user,loading}=useAuth();
+  if(loading)return <div role="status" className="p-8 text-center text-muted-foreground">…</div>;
+  return user?<Gis/>:<Navigate to="/gis" replace/>;
+}
+
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -97,6 +105,7 @@ export default function App() {
             <Route path="/app/agriculture" element={<Protected><Agriculture /></Protected>} />
             <Route path="/app/nexus" element={<Protected><NexusWorkspace /></Protected>} />
             <Route path="/presentation" element={<Presentation />} />
+            <Route path="/gis" element={<PublicGis />} />
             <Route path="/login" element={<Login />} />
             <Route path="/expo" element={<Expo />} />
             <Route path="/register" element={<Onboarding />} />
@@ -116,7 +125,7 @@ export default function App() {
             <Route path="/app/telemetry" element={<Protected><Telemetry /></Protected>} />
             <Route path="/app/simulator" element={<Protected><Simulator /></Protected>} />
             <Route path="/app/analytics" element={<Protected><Analytics /></Protected>} />
-            <Route path="/app/gis" element={<Protected><Gis /></Protected>} />
+            <Route path="/app/gis" element={<GisAccess />} />
             <Route path="/app/iot" element={<Protected><Iot /></Protected>} />
             <Route path="/app/vde" element={<Protected><Vde /></Protected>} />
             <Route path="/app/vde/:id" element={<Protected><DataRoom /></Protected>} />
