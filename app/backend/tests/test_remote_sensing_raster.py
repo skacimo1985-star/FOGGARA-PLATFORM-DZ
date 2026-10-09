@@ -125,6 +125,21 @@ def raster_assets(monkeypatch):
         mem.close()
 
 
+def test_masked_uint16_raster_converts_to_float_before_nan_fill():
+    data = np.ma.array(
+        np.array([[1000, 2000], [3000, 4000]], dtype=np.uint16),
+        mask=np.array([[False, True], [False, False]], dtype=bool),
+    )
+    values, mask = remote_sensing_raster._masked_float32(data)
+
+    assert values.dtype == np.float32
+    assert values[0, 0] == pytest.approx(1000.0)
+    assert np.isnan(values[0, 1])
+    assert mask.dtype == np.bool_
+    assert mask[0, 1]
+    assert not mask[0, 0]
+
+
 def test_live_ndvi_statistics_use_scale_and_scl_mask(raster_assets):
     result = remote_sensing_raster.compute_index_statistics(
         processing_plan("ndvi"),
