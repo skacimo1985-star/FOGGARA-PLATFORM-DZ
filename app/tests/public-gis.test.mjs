@@ -70,3 +70,32 @@ test("PublicGis.tsx remains valid React TypeScript JSX",()=>{
   const errors=(result.diagnostics||[]).filter(x=>x.category===ts.DiagnosticCategory.Error);
   assert.equal(errors.length,0,errors.map(e=>ts.flattenDiagnosticMessageText(e.messageText,"\n")).join("\n"));
 });
+
+test("every FOGGARA map loads its own canvas and controls CSS even on lazy public routes",()=>{
+  const map=read("../src/components/NationalMap.tsx");
+  const css=read("../src/pages/command-center.css");
+  const html=read("../index.html");
+  assert.ok(map.includes('import "../pages/command-center.css"'));
+  assert.ok(css.includes(".fg-maplibre-host{position:absolute;inset:0;width:100%;height:100%"));
+  assert.ok(css.includes(".fg-national-map-canvas{position:relative"));
+  assert.ok(css.includes(".fg-map-control-stack{position:absolute"));
+  assert.ok(html.includes('href="/vendor/maplibre-gl.css"'));
+  assert.ok(map.includes("map.fitBounds([[w,s],[e,n]]"));
+});
+
+test("coordinates and metric parcel size remain usable when WebGL or tiles fail",()=>{
+  const map=read("../src/pages/PublicGis.tsx");
+  const css=read("../src/pages/public-gis.css");
+  assert.ok(map.includes('className="fg-public-gis-coordinate-entry"'));
+  assert.ok(map.includes('function selectCoordinates('));
+  assert.ok(map.includes('setCoordinateError(true)'));
+  assert.ok(map.includes('rectanglePolygon(bounds)'));
+  assert.ok(map.includes('change(polygon)'));
+  assert.ok(map.includes('side<20||side>300'));
+  assert.ok(map.includes('lon< -8.8||lon>12.2'));
+  assert.ok(map.includes('api.post<Preview>("/expo/satellite/ndvi-preview"'));
+  assert.ok(css.includes(".fg-public-gis-coordinate-entry"));
+  const backend=read("../backend/app/main.py");
+  assert.ok(backend.includes("https://assets.openfreemap.com https://s3.amazonaws.com"));
+  assert.ok(backend.includes("worker-src 'self'"));
+});
