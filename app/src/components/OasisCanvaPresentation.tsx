@@ -203,11 +203,13 @@ function SlideView({slide}:{slide:Slide}){
   return <ClosingSlide slide={slide}/>;
 }
 
-export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLocale;compact?:boolean}){
+export function OasisCanvaPresentation({lang,compact=false,siteSevenSlides=false}:{lang:OasisCanvaLocale;compact?:boolean;siteSevenSlides?:boolean}){
   const [index,setIndex]=useState(0);
   const [playing,setPlaying]=useState(true);
   const controls=controlCopy[lang];
-  const slides=slideCopy[lang];
+  // Homepage edit of the locally reconstructed deck: 7 pages, omitting the problematic second panel.
+  // /presentation keeps its original complete presentation; this does not change the source Canva file.
+  const slides=siteSevenSlides ? [0,2,4,5,6,9,11].map(index=>slideCopy[lang][index]) : slideCopy[lang];
 
   useEffect(()=>{
     if(!playing||window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
