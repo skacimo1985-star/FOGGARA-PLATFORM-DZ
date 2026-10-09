@@ -2919,3 +2919,113 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
     line-height:1.12!important;
   }
 }
+
+
+/* CANVA_SOURCE_HERO_2026_10_09 */
+/* One intentional oasis photograph on the hero: no repeated, corrupt carousel frames. */
+.fg-moon-landing .fg-rebuilt-hero .fg-moon-hero-media-1{
+  background-image:url("/images/oasis-dawn.webp")!important;
+  background-color:#183123;
+  background-position:50% 56%;
+  background-size:cover;
+  filter:saturate(1.12) contrast(1.03) brightness(.92);
+}
+.fg-moon-landing .fg-rebuilt-hero .fg-moon-hero-overlay{
+  background:
+    linear-gradient(90deg,rgba(4,23,14,.83) 0%,rgba(4,23,14,.54) 37%,rgba(4,23,14,.10) 78%),
+    linear-gradient(0deg,rgba(3,16,10,.77) 0%,transparent 27%,rgba(3,16,10,.08) 100%);
+}
+.fg-moon-landing .fg-rebuilt-hero{
+  min-height:min(700px,calc(100svh - 130px));
+  background:#183123;
+}
+.fg-moon-landing .fg-rebuilt-hero-center{
+  width:min(610px,calc(100% - 44px));
+}
+.fg-moon-landing .fg-rebuilt-foggara{
+  font-size:clamp(44px,5.1vw,76px)!important;
+  letter-spacing:-.035em!important;
+  line-height:.95!important;
+  white-space:nowrap;
+}
+.fg-moon-landing .fg-rebuilt-sirep{
+  font-size:clamp(25px,2.8vw,39px)!important;
+}
+.fg-moon-landing .fg-rebuilt-lead{
+  max-width:530px;
+  font-size:clamp(14px,1.1vw,17px);
+  line-height:1.65;
+}
+.fg-moon-landing .fg-rebuilt-hero-bottom{
+  justify-content:flex-end;
+}
+/* Heritage information and real imagery are separate from the oasis hero. */
+.fg-moon-landing .fg-agriculture-template-art{
+  min-height:450px;
+  background:#173023 url("/images/foggara-sprite.webp") center/cover no-repeat!important;
+}
+.fg-moon-landing .fg-source-gallery{
+  width:min(1300px,calc(100% - 44px));
+  margin:30px auto;
+  min-height:460px!important;
+  grid-template-columns: minmax(0,.42fr) minmax(0,.58fr)!important;
+  grid-template-rows:460px!important;
+  gap:12px!important;
+}
+.fg-moon-landing .fg-source-gallery .fg-global-visual-main{
+  grid-column:1!important;
+  grid-row:1!important;
+  background:#173023 url("/images/foggara-heritage-poster.webp") center/cover no-repeat!important;
+}
+.fg-moon-landing .fg-source-gallery .fg-global-visual-heritage{
+  grid-column:2!important;
+  grid-row:1!important;
+  background:#173023 url("/images/foggara-sprite.webp") center/cover no-repeat!important;
+}
+.fg-moon-landing .fg-source-gallery figure img{
+  width:100%;height:100%;object-fit:cover;
+}
+.fg-moon-landing .fg-source-gallery .fg-global-visual-main img{
+  object-position:center;
+}
+.fg-moon-landing .fg-source-gallery .fg-global-visual-note{
+  bottom:20px;inset-inline-start:auto;inset-inline-end:20px;
+  min-width:0;max-width:330px;
+}
+.fg-source-canva-link{
+  display:inline-flex;align-items:center;gap:9px;
+  margin:12px 0 0;
+  color:#174f38;
+  text-decoration:underline;
+  text-underline-offset:4px;
+  font-size:14px;font-weight:700;
+}
+@media(max-width:820px){
+  .fg-moon-landing .fg-source-gallery{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-rows:330px!important;
+  }
+}
+@media(max-width:640px){
+  .fg-moon-landing .fg-rebuilt-foggara{
+    font-size:clamp(37px,10vw,55px)!important;
+    white-space:normal;
+  }
+  .fg-moon-landing .fg-rebuilt-hero-center{
+    inset-inline:22px;
+    width:calc(100% - 44px);
+  }
+  .fg-moon-landing .fg-source-gallery{
+    grid-template-columns:1fr!important;
+    grid-template-rows:360px 250px!important;
+  }
+  .fg-moon-landing .fg-source-gallery .fg-global-visual-main{
+    grid-column:1!important;grid-row:1!important;
+  }
+  .fg-moon-landing .fg-source-gallery .fg-global-visual-heritage{
+    grid-column:1!important;grid-row:2!important;
+  }
+  .fg-moon-landing .fg-source-gallery .fg-global-visual-note{
+    bottom:12px;inset-inline-end:12px;
+  }
+}
