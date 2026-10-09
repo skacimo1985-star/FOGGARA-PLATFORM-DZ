@@ -2,7 +2,6 @@
 
 These tests do not claim that weather, soil, or satellite inputs are live.
 """
-import math
 import pytest
 
 from app.services.agriculture_operations import irrigation_scenario, vegetation_index
