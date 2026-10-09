@@ -31,6 +31,9 @@ def test_rainfall_cannot_produce_negative_irrigation():
     (1, float("nan"), 1, 0, 0.8, 7),
     (1, float("inf"), 1, 0, 0.8, 7),
     (1, 5, 1, 0, 0.8, 31),
+    (1, 5, 1, 0, 0.8, 1.5),
+    (1, None, 1, 0, 0.8, 7),
+    (True, 5, 1, 0, 0.8, 7),
 ])
 def test_invalid_irrigation_inputs_rejected(inputs):
     with pytest.raises(ValueError):
