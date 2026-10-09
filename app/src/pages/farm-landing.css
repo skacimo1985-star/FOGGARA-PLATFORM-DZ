@@ -1,3 +1,14 @@
+/* Public-only container reset: legacy shell added an arbitrary 1400px cap
+   and 35px blank top/bottom margin to the root page. */
+.os-public-content.os-public-content-home {
+  max-width:none;
+  padding:0;
+  margin:0;
+}
+.os-public-content.os-public-content-home > .os-route-view {
+  padding:0;
+}
+
 /* Isolated, responsive public landing. No dependency on the old Moon/template CSS. */
 .fml-page {
   --fml-forest:#153d2c;
