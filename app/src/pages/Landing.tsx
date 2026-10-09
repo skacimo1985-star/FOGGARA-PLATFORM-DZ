@@ -247,7 +247,7 @@ export default function Landing() {
       <a href="#home">{copy.home}</a>
       <a href="#about">{copy.about}</a>
       <a href="#services">{copy.services}</a>
-      <a href="#presentation">{copy.presentation}</a>
+      <Link to="/presentation">{copy.presentation}</Link>
       <a href="#demo">{copy.demo}</a>
       <Link to="/contact">{copy.contact}</Link>
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
