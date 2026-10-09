@@ -27,8 +27,11 @@ test("FOGGARA visitor GIS has native drawing, live scenes and a real NDVI previe
   assert.ok(page.includes('to={user?"/app/gis":"/login?mode=team"}'));
   assert.ok(page.includes('from:{pathname:"/app/gis"}'));
   assert.ok(!page.includes('https://www.openstreetmap.org/#map'));
-  assert.ok(!page.includes('"/gis/operational-status"'));
-  assert.ok(!page.includes('"/agriculture/parcels"'));
+  // Organization-scoped DB status can be referenced in public component code,
+  // but the authenticated call only runs with a real signed-in user.
+  assert.ok(page.includes('if(!user)return;'));
+  assert.ok(page.includes('"/gis/operational-status"'));
+  assert.ok(page.includes('api.get<SavedField[]>("/agriculture/parcels")'));
   for(const path of ["../public/vendor/maplibre-gl.mjs","../public/vendor/maplibre-gl-worker.mjs","../public/vendor/maplibre-gl-shared.mjs","../public/vendor/maplibre-gl.css"]){
     assert.ok(existsSync(new URL(path,import.meta.url)),path);
   }
