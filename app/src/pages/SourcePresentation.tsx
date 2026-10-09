@@ -23,6 +23,7 @@ export default function SourcePresentation() {
      <p>عرض المنصة وفق الملف الأصلي المقدم من المؤسسة: ثماني مراحل مترابطة، من تحديد القطعة إلى اتخاذ القرار المبني على الأدلة.</p>
      <div className="source-actions"><a href="#source-chapters">استكشف العرض ↓</a><Link to="/app/gis">مساحة العمل <ArrowUpRight size={16}/></Link></div>
    </div></header>
+   <section className="source-deck-visuals source-deck-inner" aria-label="مشاهد من الواحات والموارد"><figure><img src="/images/user-oasis-hero.webp" alt="واحة صحراوية ومشهد من التراث المائي" loading="lazy"/><figcaption>التراث المائي · FOGGARA</figcaption></figure><figure><img src="/images/oasis-hero.webp" alt="مشهد واحة لدعم سياق المجالات الزراعية" loading="lazy"/><figcaption>المجال الزراعي · TERRAIN</figcaption></figure><figure><img src="/images/oasis-dawn.webp" alt="مشهد طبيعي لواحة صحراوية" loading="lazy"/><figcaption>الموارد والبيئة · WEFEH</figcaption></figure></section>
    <section id="source-chapters" className="source-deck-inner source-chapters" aria-label="مراحل عرض FOGGARA-DZ">
    {sections.map(({n,label,ar,desc,points,Icon})=><article className="source-chapter" key={n}>
      <div className="source-chapter-top"><span className="source-chapter-number">{n}</span><Icon size={32} strokeWidth={1.5}/></div>
