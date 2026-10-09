@@ -77,7 +77,7 @@ const controlCopy={
 
 function CoverSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-cover">
-    <img className="ocp-media-image" src="/images/user-oasis-hero.webp" alt="" aria-hidden="true"/>
+    <img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/>
     <div className="ocp-cover-shade"/>
     <div className="ocp-cover-copy">
       <span className="ocp-kicker" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</span>
