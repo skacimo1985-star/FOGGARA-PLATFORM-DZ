@@ -12,7 +12,7 @@ test('landing keeps the rejected bilingual text card removed',()=>{
 
 test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp")'));
-  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/foggara-video-frame-1.webp")'));
+  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/oasis-hero.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp")'));
   assert.match(css,/\.fg-moon-hero-media\s*\{[^}]*z-index\s*:\s*0\s*;/s);
   assert.match(css,/\.fg-moon-hero-overlay\s*\{[^}]*z-index\s*:\s*1\s*;/s);
@@ -24,7 +24,8 @@ test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
   assert.ok(hero.includes('FOGGARA-DZ'));
   assert.ok(hero.includes('NEXUS WEFEH'));
   assert.ok(hero.includes('index===0?"/images/user-oasis-hero.webp"'));
-  assert.ok(hero.includes('index===1?"/images/foggara-video-frame-1.webp"'));
+  assert.ok(hero.includes('index===1?"/images/oasis-hero.webp"'));
+  assert.match(css,/\.fg-rebuilt-foggara\s*\{[^}]*white-space\s*:\s*nowrap\s*;/s);
 });
 
 test('hero routes visitors through the optional Expo profile entry',()=>{
