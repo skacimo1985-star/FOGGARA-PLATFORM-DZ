@@ -222,6 +222,9 @@ type CropProfile = {
 
 type FieldIntelligenceStudy = {
   status: "READY" | "NO_USABLE_SCENE";
+  parcel_id?: number | null;
+  sample_geometry?: string;
+  geometry_mask_applied?: boolean;
   study_type?: string;
   bbox_wgs84: [number, number, number, number];
   period: { start: string; end: string };
@@ -230,7 +233,7 @@ type FieldIntelligenceStudy = {
   quality_indicator?: { score: number; grade: string; usability: string; standard_claim: boolean };
   spectral_processing?: {
     grid: { crs: string; width: number; height: number; resolution_m: number; effective_source_resolution_m?: number | null };
-    mask: { method: string; masked_scl_classes: number[]; cloud_masked_pixel_count: number; source_nodata_pixel_count: number };
+    mask: { method: string; masked_scl_classes: number[]; cloud_masked_pixel_count: number; source_nodata_pixel_count: number; geometry_mask_applied?: boolean; outside_geometry_pixel_count?: number };
     processing_plan_fingerprint: string;
   };
   domains: Record<string, {
@@ -613,10 +616,20 @@ export default function Gis() {
   const soilPh = fieldIntelligenceResult?.soil_context?.properties?.ph?.mean_0_20 ?? null;
   // An AOI or saved parcel is a valid analysis target even without a project.
   // The backend performs bounded, real provider/raster processing and enforces ownership.
+  // For saved parcels, the server resolves the authoritative geometry by ID.
+  // Unsaved drawn polygons must be saved before analysis; a bbox-only query
+  // would include neighbouring farms and misrepresent the actual field.
+  const savedParcelHasLocation = Boolean(selectedParcelRecord && (
+    selectedParcelRecord.boundary_geojson
+    || (typeof selectedParcelRecord.lat === "number" && typeof selectedParcelRecord.lon === "number")
+  ));
   const simpleAnalysisReady = Boolean(
-    currentRasterBudget.allowed
-    && (selectedParcelId || manualAnalysisBbox)
-    && (selectedParcelId || newFieldCrop.trim())
+    selectedParcelId
+      ? savedParcelHasLocation
+        && (!selectedParcelRecord?.boundary_geojson
+          || (currentRasterBudget.allowed && currentRasterBudget.pixels <= 250_000))
+      : manualAnalysisBbox && !draftPolygon && newFieldCrop.trim()
+        && currentRasterBudget.allowed && currentRasterBudget.pixels <= 250_000
   );
 
   useEffect(() => {
@@ -853,20 +866,24 @@ export default function Gis() {
   };
 
   const analyzeAllField = async () => {
-    if (!currentRasterBudget.allowed || fieldIntelligenceLoading || !sceneStart || !sceneEnd) return;
+    if (!simpleAnalysisReady || fieldIntelligenceLoading || !sceneStart || !sceneEnd) return;
     setFieldIntelligenceLoading(true);
     setFieldIntelligenceError(null);
     setFieldIntelligenceResult(null);
     try {
-      const crop = selectedParcelRecord?.crop || newFieldCrop.trim();
       const params = new URLSearchParams({
-        bbox: analysisBbox.map((value) => Number(value.toFixed(6))).join(","),
         start: sceneStart,
         end: sceneEnd,
-        crop,
         cloud_cover_lte: String(cloudCover),
         include_soil: "true",
       });
+      if (selectedParcelId) {
+        // The backend checks tenant ownership and masks pixels to the stored polygon.
+        params.set("parcel_id", String(selectedParcelId));
+      } else {
+        params.set("bbox", analysisBbox.map((value) => Number(value.toFixed(6))).join(","));
+        params.set("crop", newFieldCrop.trim());
+      }
       const result = await api.get<FieldIntelligenceStudy>(`/remote-sensing/studies/field-intelligence?${params.toString()}`);
       setFieldIntelligenceResult(result);
       if (result.scene?.id) setSelectedSceneId(result.scene.id);
@@ -1118,6 +1135,7 @@ export default function Gis() {
               {manualAnalysisBbox ? <p dir="ltr" className="fg-gis-aoi-readout">{draftPolygon ? "POLYGON / " : "RECTANGLE / "} WGS84 BBOX: {manualAnalysisBbox.map(n=>n.toFixed(5)).join(", ")} · {currentRasterBudget.areaKm2.toFixed(4)} km² · {currentRasterBudget.pixels.toLocaleString()} px</p> : null}
               {!currentRasterBudget.allowed && manualAnalysisBbox ? <p>{analysisCopy.zoom}</p> : null}
               {draftPolygon ? <p>{lang==="ar"?"سيُحفظ المضلع المرسوم نفسه، وليس المستطيل المحيط.":lang==="fr"?"Le polygone dessiné sera enregistré, pas son rectangle englobant.":"The drawn polygon will be saved, not its bounding rectangle."}</p> : null}
+              {draftPolygon ? <p>{lang==="ar"?"احفظ القطعة أولًا حتى تُحسب المؤشرات داخل حدود المضلع، وليس المستطيل المحيط به.":lang==="fr"?"Enregistrez d’abord la parcelle pour calculer les indices à l’intérieur du polygone.":"Save the parcel first to compute indices inside its polygon, rather than its bounding box."}</p> : null}
             </div>
           </div>
 
@@ -1140,8 +1158,17 @@ export default function Gis() {
               <div><span>{guideCopy.moisture}</span><strong dir="ltr">{moistureMean == null ? "—" : moistureMean.toFixed(3)}</strong><small>NDMI / NDWI / LSWI</small></div>
               <div><span>{guideCopy.soil}</span><strong dir="ltr">{soilPh == null ? "—" : soilPh.toFixed(2)}</strong><small>pH · 0–20 cm</small></div>
               <div><span>{guideCopy.quality}</span><strong dir="ltr">{fieldIntelligenceResult.quality_indicator?.score ?? "—"}</strong><small>{fieldIntelligenceResult.quality_indicator?.grade ?? "NOT VERIFIED"}</small></div>
+              <p className="fg-gis-result-provenance">
+                {fieldIntelligenceResult.geometry_mask_applied
+                  ? (lang==="ar"?"حساب المؤشرات داخل المضلع المحفوظ فقط":lang==="fr"?"Indices calculés uniquement à l’intérieur du polygone enregistré":"Indices computed within the saved polygon only")
+                  : (lang==="ar"?"تحليل مستطيل/نطاق تقديري، وليس حدود قطعة مثبتة":lang==="fr"?"Analyse d’une emprise estimée, pas d’un contour cadastral":"Estimated BBOX analysis, not a surveyed field boundary")}
+                {" · "}{fieldIntelligenceResult.scene?.datetime ?? "—"}
+                {" · "}{lang==="ar"?"محسوب وغير متحقق ميدانيًا":lang==="fr"?"Calculé, non vérifié sur le terrain":"Computed; not ground verified"}
+              </p>
             </>
-          ) : <p>{guideCopy.noResult}</p>}
+          ) : fieldIntelligenceResult?.status === "NO_USABLE_SCENE"
+            ? <p>{lang==="ar"?"لم يتوفر مشهد فضائي صالح لهذه المنطقة والفترة. لا توجد نتائج محسوبة.":lang==="fr"?"Aucune scène satellite utilisable pour cette zone et cette période. Aucun indice calculé.":"No usable satellite scene for this area and period. No indices were computed."}</p>
+            : <p>{guideCopy.noResult}</p>}
         </div>
       </section>
 
