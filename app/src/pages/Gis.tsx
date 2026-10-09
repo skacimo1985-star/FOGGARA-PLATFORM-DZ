@@ -13,6 +13,7 @@ import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
 import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 import "./command-center.css";
+import "./gis-direct-workflow.css";
 
 type SpatialFeature = {
   type: "Feature";
