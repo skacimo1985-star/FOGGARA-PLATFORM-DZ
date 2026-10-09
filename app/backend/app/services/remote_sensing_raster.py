@@ -91,6 +91,14 @@ def _open_asset(href: str):
     return rasterio.open(href, sharing=False)
 
 
+def _masked_float32(data) -> tuple[np.ndarray, np.ndarray]:
+    """Convert Rasterio masked integer rasters to float32 without NaN fill TypeError."""
+    float_data = np.ma.asarray(data, dtype=np.float32)
+    values = np.asarray(float_data.filled(np.nan), dtype=np.float32)
+    mask = np.ma.getmaskarray(data) | ~np.isfinite(values)
+    return values, np.asarray(mask, dtype=bool)
+
+
 def _read_aligned(
     asset: Mapping,
     *,
@@ -113,14 +121,7 @@ def _read_aligned(
             resampling=resampling,
         ) as vrt:
             data = vrt.read(1, masked=True)
-    # Rasterio commonly returns integer masked arrays (for example uint16
-    # Sentinel reflectance/SCL). Filling an integer MaskedArray with NaN raises
-    # TypeError before NumPy gets a chance to cast it. Cast the masked array
-    # itself first, then fill masked cells with NaN.
-    float_data = np.ma.asarray(data, dtype=np.float32)
-    values = np.asarray(float_data.filled(np.nan), dtype=np.float32)
-    mask = np.ma.getmaskarray(data) | ~np.isfinite(values)
-    return values, np.asarray(mask, dtype=bool)
+    return _masked_float32(data)
 
 
 def _scaled(values: np.ndarray, asset: Mapping) -> np.ndarray:
