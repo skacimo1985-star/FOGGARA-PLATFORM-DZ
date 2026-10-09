@@ -200,6 +200,11 @@
 .fg-field-db-save{display:flex;flex-direction:column;gap:9px;padding:13px;border:1px solid #dbeadd;border-radius:12px;background:white}
 .fg-field-db-save label{display:grid;gap:5px;font-size:11px;font-weight:720;color:#396049}
 .fg-field-db-save input{width:100%;min-width:0;min-height:39px;border:1px solid #c4dccb;border-radius:7px;padding:7px 10px;color:#143c2d;background:#fff;font:inherit}
-.fg-field-db-save button{display:flex;justify-content:center;align-items:center;gap:7px;min-height:42px;padding:9px;border:0;border-radius:8px;background:#176647;color:white;cursor:pointer;font:750 12px/1.4 inherit}
+.fg-field-db-save button{display:flex;justify-content:center;align-items:center;gap:7px;min-height:42px;padding:9px;border:0;border-radius:8px;background:#176647;color:white;cursor:pointer;font-family:inherit;font-size:12px;font-weight:750;line-height:1.4}
 .fg-field-db-save button:disabled{opacity:.46;cursor:default}
 @media(max-width:730px){.fg-map-zoom-toolbar{inset-block-end:50px;inset-inline-end:8px;min-width:45px}.fg-map-zoom-toolbar>button{min-width:45px;min-height:41px;font-size:23px}}
+
+.fg-field-map-analyze{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;border:0;border-radius:8px;padding:7px 12px;background:#136b43;color:white;font:inherit;font-size:11px;font-weight:800;line-height:1.3;cursor:pointer}
+.fg-field-map-analyze:disabled{opacity:.45;cursor:default}
+.fg-field-map-analyze:not(:disabled):hover{background:#0a5434}
+@media(max-width:430px){.fg-field-map-analyze{font-size:10px;padding:7px;max-width:190px;line-height:1.35;text-align:center}}
