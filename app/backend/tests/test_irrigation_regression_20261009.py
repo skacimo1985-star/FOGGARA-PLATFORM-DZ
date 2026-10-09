@@ -46,3 +46,8 @@ def test_ndvi_math_and_invalid_reflectance():
         vegetation_index(0, 0)
     with pytest.raises(ValueError):
         vegetation_index(1.1, 0.2)
+    with pytest.raises(ValueError):
+        vegetation_index(None, 0.2)
+    with pytest.raises(ValueError):
+        vegetation_index(True, 0.2)
+    assert vegetation_index('0.8', '0.2') == pytest.approx(0.6)
