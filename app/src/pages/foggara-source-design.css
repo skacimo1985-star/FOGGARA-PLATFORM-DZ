@@ -1,0 +1,44 @@
+/* Institutional palette from the supplied SIREP OASES identity. */
+.os-public-shell .os-header{background:#113f36;color:#fff;min-height:76px;padding:12px clamp(16px,4vw,64px)}
+.os-public-shell .os-brand{color:#fff}
+.os-public-shell .os-brand strong{font-size:24px;letter-spacing:.04em}
+.os-public-shell .os-brand small{color:#d9e3ce}
+.os-public-shell .os-brand-symbol{width:52px;height:52px;object-fit:contain;border-radius:50%}
+.os-public-shell .os-header-login{background:#e1bc6d;color:#143e34;border-radius:6px}
+.fg-landing{--fg-green:#174d3c;--fg-lime:#e1bc6d;background:#f6f3ea;color:#183f34}
+.fg-landing .fg-moon-topline{background:#f6f3ea;color:#365749;font-size:11px;min-height:30px}
+.fg-landing .fg-moon-nav{background:#fff;color:#183f34;gap:24px;min-height:58px}
+.fg-landing .fg-moon-nav a{font-size:13px;letter-spacing:.02em}
+.fg-landing .fg-rebuilt-hero{min-height:650px}
+.fg-landing .fg-rebuilt-hero-center h1{font-size:clamp(34px,4.4vw,62px)!important;line-height:1.1!important;letter-spacing:.01em!important}
+.fg-landing.fg-moon-landing .fg-rebuilt-foggara{font-size:clamp(38px,4.5vw,68px)!important;line-height:1.05!important;letter-spacing:0!important}
+.fg-landing.fg-moon-landing .fg-rebuilt-sirep{font-size:clamp(24px,2.6vw,38px)!important}
+.fg-landing.fg-moon-landing .fg-rebuilt-nexus{color:#e1bc6d!important;font-size:16px!important}
+.fg-landing .fg-rebuilt-hero-center{max-width:880px;margin-inline:auto}
+.fg-landing .fg-rebuilt-lead{max-width:640px;font-size:17px!important;line-height:1.8;margin-inline:auto}
+.fg-landing .fg-moon-btn{border-radius:6px;font-size:14px;min-height:48px}
+.fg-landing .fg-moon-btn-green{background:#174d3c;color:#fff}
+.fg-source-banner{margin:32px auto 0;max-width:1280px;padding:0 24px}
+.fg-source-banner img{display:block;width:100%;height:auto;border-radius:12px}
+.fg-landing .fg-global-operating,.fg-landing .fg-moon-offer,.fg-landing .fg-moon-about{padding-block:64px}
+.fg-landing h2{font-size:clamp(26px,3vw,40px)!important;line-height:1.3!important}
+.fg-landing h3{font-size:20px!important;line-height:1.45!important}
+.fg-landing p{line-height:1.8}
+.fg-landing .fg-global-step,.fg-landing .fg-moon-offer-card{border:1px solid #dce3d4;border-radius:10px;box-shadow:none}
+.fg-landing .fg-global-step:hover{border-color:#174d3c}
+.fg-landing .fg-global-visual-stage{max-width:1280px;margin-inline:auto}
+.fg-landing .fg-global-visual-stage figure{border-radius:10px;overflow:hidden}
+.fg-landing .fg-global-visual-heritage{background-image:url("/images/source-satellite.jpeg")!important}
+.fg-landing .fg-global-visual-field{background-image:url("/images/source-field.jpeg")!important}
+.fg-landing .fg-global-visual-evidence{background-image:url("/images/source-ecosystem.png")!important}
+.fg-landing a:focus-visible,.ocp-source button:focus-visible,.ocp-source a:focus-visible{outline:3px solid #c69536;outline-offset:4px}
+@media(max-width:760px){
+  .os-public-shell .os-header{padding:10px 16px}
+  .os-public-shell .os-brand strong{font-size:18px}
+  .os-public-shell .os-brand small{font-size:9px}
+  .os-public-shell .os-brand-symbol{width:40px;height:40px}
+  .fg-landing .fg-moon-nav{gap:18px;overflow-x:auto;justify-content:flex-start;padding-inline:20px}
+  .fg-landing .fg-rebuilt-hero{min-height:580px}
+  .fg-landing .fg-rebuilt-lead{font-size:15px!important}
+  .fg-source-banner{padding-inline:16px}
+}

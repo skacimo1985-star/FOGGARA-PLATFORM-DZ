@@ -88,6 +88,7 @@ def create_asset(payload: AssetIn, user: User = Depends(get_current_user), db: S
 
 # ---------- Projects ----------
 def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
+    r = None
     if site_id is not None:
         s = db.get(Site, site_id)
         if s is None or s.org_id != org_id:
@@ -100,6 +101,16 @@ def _check_links(db: Session, org_id: int, site_id, resource_id, asset_id):
         a = db.get(Asset, asset_id)
         if a is None or a.org_id != org_id:
             api_error(404, "NOT_FOUND", "Asset not found")
+        if resource_id is not None and a.resource_id != resource_id:
+            api_error(422, "INCONSISTENT_PROJECT_LINKS", "Asset does not belong to the selected resource")
+        # Resolve the resource even for an asset-only project so an explicit
+        # site cannot contradict the asset's resource ancestry.
+        if r is None:
+            r = db.get(WaterResource, a.resource_id)
+            if r is None or r.org_id != org_id:
+                api_error(404, "NOT_FOUND", "Resource not found")
+    if site_id is not None and r is not None and r.site_id != site_id:
+        api_error(422, "INCONSISTENT_PROJECT_LINKS", "Resource does not belong to the selected site")
 
 
 @router.get("/projects", response_model=Page[ProjectOut])

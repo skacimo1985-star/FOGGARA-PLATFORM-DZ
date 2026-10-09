@@ -19,27 +19,17 @@ test('Presentation.tsx remains valid TSX',()=>{
 test('presentation uses the shared supplied Oases Nexus deck',()=>{
   assert.ok(source.includes('OasisCanvaPresentation'));
   assert.ok(source.includes('<OasisCanvaPresentation lang={locale}/>'));
-  assert.ok(deck.includes('FROM HERITAGE TO DIGITAL TWIN'));
+  assert.ok(deck.includes('DÉFINIR LE TERRAIN'));
   assert.ok(deck.includes('EVIDENCE BEFORE DECISION'));
-  assert.ok(deck.includes('AGRITECH EXPO — LIVE DEMO'));
-  assert.ok(deck.includes('ANCESTRAL WISDOM. MODERN DECISIONS.'));
+  assert.ok(deck.includes('RENCONTRONS-NOUS AU STAND B02'));
 });
 
-test('deck mirrors the supplied visual language and uses existing platform media',()=>{
-  assert.ok(deckCss.includes('--paper:#f1e8d5'));
-  assert.ok(deckCss.includes('--ink:#171a17'));
-  assert.ok(deckCss.includes('--forest:#1f5b43'));
-  assert.ok(deckCss.includes('--clay:#b65a37'));
-  assert.ok(deckCss.includes('/images/oasis-dawn.webp'));
-  assert.ok(deckCss.includes('/images/oasis-hero.webp'));
-  assert.ok(deckCss.includes('/images/user-oasis-hero.webp'));
-  assert.equal(deckCss.includes('/images/foggara-video-frame-1.webp'),false);
-  assert.equal(deckCss.includes('/images/foggara-video-frame-2.webp'),false);
-  assert.ok(deckCss.includes('grid-template-columns:repeat(12'));
-  assert.ok(deck.includes('className="ocp-media-image"'));
-  assert.ok(deck.includes('src="/images/user-oasis-hero.webp"'));
-  assert.ok(deck.includes('src="/images/oasis-dawn.webp"'));
-  assert.ok(deckCss.includes('.ocp-media-image'));
+test('deck displays source artwork without overlaid recreated content',()=>{
+  assert.ok(deck.includes('className="ocp-source-image"'));
+  assert.ok(deck.includes('/images/source-deck/slide-'));
+  assert.ok(deckCss.includes('object-fit:contain'));
+  assert.ok(deckCss.includes('.ocp-source-caption'));
+  assert.ok(deck.includes('width="1536" height="864"'));
 });
 
 test('decision matrix remains available below the presentation',()=>{

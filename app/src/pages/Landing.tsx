@@ -14,6 +14,7 @@ import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
 import "./heritage-landing.css";
+import "./foggara-source-design.css";
 
 const domains = [
   {key:"water",Icon:Droplets},
@@ -106,17 +107,17 @@ export default function Landing() {
   const institutionCopy=lang==="fr"?{
     capabilities:["INGÉNIERIE","SERVICES NUMÉRIQUES","ÉNERGIE","AGRICULTURE","MESURE","ÉTALONNAGE","INSPECTION"],
     galleryAria:"FOGGARA-DZ · patrimoine, terrain et intelligence des ressources",
-    gallery:["OASIS & EAU","PATRIMOINE FOGGARA","TERRAIN & RESSOURCES","DONNÉES & PREUVES"],
+    gallery:["OASIS & EAU","OBSERVATION SATELLITE","TERRAIN & RESSOURCES","ÉCOSYSTÈME & PARTENAIRES"],
     demoModules:[["MODE EXPO","/expo"],["EAU & SOL","/agriculture-services"],["PRÉSENTATION","/presentation"]]
   }:lang==="en"?{
     capabilities:["ENGINEERING","DIGITAL SERVICES","ENERGY","AGRICULTURE","MEASUREMENT","CALIBRATION","INSPECTION"],
     galleryAria:"FOGGARA-DZ · heritage, field reality and resource intelligence",
-    gallery:["OASIS & WATER","FOGGARA HERITAGE","FIELD & RESOURCES","DATA & EVIDENCE"],
+    gallery:["OASIS & WATER","SATELLITE OBSERVATION","FIELD & RESOURCES","ECOSYSTEM & PARTNERS"],
     demoModules:[["EXPO MODE","/expo"],["WATER & SOIL","/agriculture-services"],["PRESENTATION","/presentation"]]
   }:{
     capabilities:["الهندسة","الخدمات الرقمية","الطاقة","الزراعة","القياس","المعايرة","التفتيش"],
     galleryAria:"فقارة الجزائر · التراث والميدان وذكاء الموارد",
-    gallery:["الواحة والمياه","تراث الفقارة","الميدان والموارد","البيانات والأدلة"],
+    gallery:["الواحة والمياه","الرصد بالأقمار الصناعية","الميدان والموارد","المنظومة والشركاء"],
     demoModules:[["وضع المعرض","/expo"],["المياه والتربة","/agriculture-services"],["عرض المنصة","/presentation"]]
   };
 
@@ -196,7 +197,7 @@ export default function Landing() {
     {Icon:MapPinned,to:"/app/gis",...{title:operatingCopy.steps[0][0],body:operatingCopy.steps[0][1],meta:operatingCopy.steps[0][2]}},
     {Icon:Satellite,to:"/app/agriculture",...{title:operatingCopy.steps[1][0],body:operatingCopy.steps[1][1],meta:operatingCopy.steps[1][2]}},
     {Icon:FlaskConical,to:"/agriculture-services",...{title:operatingCopy.steps[2][0],body:operatingCopy.steps[2][1],meta:operatingCopy.steps[2][2]}},
-    {Icon:ShieldCheck,to:"/app/studio",...{title:operatingCopy.steps[3][0],body:operatingCopy.steps[3][1],meta:operatingCopy.steps[3][2]}},
+    {Icon:ShieldCheck,to:"/app/projects",...{title:operatingCopy.steps[3][0],body:operatingCopy.steps[3][1],meta:operatingCopy.steps[3][2]}},
     {Icon:BrainCircuit,to:"/app/nexus",...{title:operatingCopy.steps[4][0],body:operatingCopy.steps[4][1],meta:operatingCopy.steps[4][2]}}
   ];
 
@@ -298,6 +299,9 @@ export default function Landing() {
       </button>)}
     </nav>
 
+    <figure className="fg-source-banner">
+      <img src="/images/sirep-wefeh-banner.png" width="1536" height="572" alt={lang==="ar"?"SIREP OASES — المياه والطاقة والغذاء والنظام البيئي والصحة":lang==="fr"?"SIREP OASES — eau, énergie, alimentation, écosystème et santé":"SIREP OASES — water, energy, food, ecosystem and health"} loading="lazy"/>
+    </figure>
     <section className="fg-global-operating" id="operating" aria-labelledby="fg-operating-title">
       <header className="fg-global-section-head">
         <div>
@@ -362,15 +366,15 @@ export default function Landing() {
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
-        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/source-satellite.jpeg" alt={lang==="ar"?"صور الأقمار الصناعية من عرض المؤسسة":"Satellite imagery from the company presentation"} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
       <figure className="fg-global-visual-field">
-        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[2]} loading="lazy"/>
+        <img src="/images/source-field.jpeg" alt={lang==="ar"?"فحص التربة في الميدان":"Soil inspection in the field"} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[2]}</figcaption>
       </figure>
       <figure className="fg-global-visual-evidence">
-        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[3]} loading="lazy"/>
+        <img src="/images/source-ecosystem.png" alt={lang==="ar"?"الشراكة ضمن المنظومة الوطنية":"Partnership in the national ecosystem"} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[3]}</figcaption>
       </figure>
       <div className="fg-global-visual-note">

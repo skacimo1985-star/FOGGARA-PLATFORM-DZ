@@ -83,7 +83,7 @@ def test_processing_plan_resolves_only_trusted_cogs_and_scl():
     plan = build_processing_plan(stac_item(), "ndvi")
 
     assert plan["index"] == "ndvi"
-    assert plan["formula_version"] == "foggara-rs-v1"
+    assert plan["formula_version"] == "foggara-rs-v2"
     assert plan["plan_version"] == "foggara-raster-plan-v1"
     assert len(plan["fingerprint_sha256"]) == 64
     assert plan["target_resolution_m"] == 10
