@@ -30,7 +30,7 @@ test("FOGGARA organization GIS reads genuine tenant data and saves boundaries in
   assert.ok(page.includes('await loadWorkspace()'));
   assert.ok(page.includes('!user||!area||!bbox||!fieldName.trim()||!fieldCrop.trim()'));
   assert.ok(page.includes('savedFieldId!==null'));
-  assert.ok(page.includes('savedFields.filter(p=>!p.archived)'));
+  assert.ok(page.includes('parcels.filter(p=>!p.archived)'));
 });
 
 test("stored fields use polygon-clipped full organization backend while guests keep bounded public preview",()=>{
