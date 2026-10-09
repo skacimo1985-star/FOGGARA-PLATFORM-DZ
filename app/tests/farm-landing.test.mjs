@@ -36,8 +36,11 @@ test("farm template services link to real routes while public Expo stays accessi
   }
   assert.ok(page.includes('id="farm-services"'));
   assert.ok(page.includes('id="oasis-gallery"'));
-  assert.ok(page.includes('OasisCanvaPresentation lang={lang} compact'));
+  assert.ok(page.includes('OasisCanvaPresentation lang={lang} compact siteSevenSlides'));
   assert.ok(page.includes("DAHXhRSdmV4"));
+  const deck=read("../src/components/OasisCanvaPresentation.tsx");
+  assert.ok(deck.includes("[0,2,4,5,6,9,11]"));
+  assert.ok(deck.includes("siteSevenSlides"));
   assert.ok(!page.includes("<iframe"));
   assert.ok(css.includes("max-width:560px"));
   assert.ok(css.includes("fg-hero-qr-code img{width:116px"));
