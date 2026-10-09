@@ -128,11 +128,11 @@
   animation:fgMoonHeroFade .42s ease both;
 }
 .fg-moon-hero-media-1{
-  background-image:url("/images/user-oasis-hero.webp");
+  background-image:url("/images/oasis-dawn.webp");
   background-position:center 58%;
 }
 .fg-moon-hero-media-2{
-  background-image:url("/images/user-oasis-hero.webp");
+  background-image:url("/images/oasis-dawn.webp");
   background-position:center 52%;
 }
 .fg-moon-hero-media-3{
@@ -236,7 +236,7 @@
 .fg-presentation-stage-1{background-image:url("/images/oasis-hero.webp");background-position:center 56%}
 .fg-presentation-stage-2{background-image:url("/images/oasis-dawn.webp");background-position:center 54%}
 .fg-presentation-stage-3{background-image:url("/images/oasis-dawn.webp");background-position:center 58%}
-.fg-presentation-stage-4{background-image:url("/images/user-oasis-hero.webp");background-position:center}
+.fg-presentation-stage-4{background-image:url("/images/oasis-dawn.webp");background-position:center}
 .fg-presentation-stage-5{
   background-image:url("/images/oasis-dawn.webp");
   background-size:400% 300%;
@@ -2126,7 +2126,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   opacity:1;
   filter:saturate(1.02) contrast(1.03) brightness(.82);
 }
-.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp");background-position:center 54%}
+.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/oasis-dawn.webp");background-position:center 54%}
 .fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/oasis-hero.webp");background-position:center 56%}
 .fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp");background-position:center 52%}
 .fg-rebuilt-hero .fg-moon-hero-overlay{
@@ -2735,7 +2735,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
 }
 .fg-global-visual-main{background:#173023 url("/images/oasis-dawn.webp") center/cover no-repeat!important}
 .fg-global-visual-heritage{background:#173023 url("/images/oasis-dawn.webp") center/cover no-repeat!important}
-.fg-global-visual-field{background:#173023 url("/images/user-oasis-hero.webp") center/cover no-repeat!important}
+.fg-global-visual-field{background:#173023 url("/images/oasis-dawn.webp") center/cover no-repeat!important}
 .fg-global-visual-evidence{background:#173023 url("/images/oasis-hero.webp") center/cover no-repeat!important}
 .fg-global-visual-stage img{
   position:absolute;
