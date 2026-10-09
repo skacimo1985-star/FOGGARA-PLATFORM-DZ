@@ -394,9 +394,9 @@ def field_intelligence_study(
         return {
             "status": "NO_USABLE_SCENE",
             "bbox_wgs84": raw_bbox,
-        "parcel_id": source_parcel_id,
-        "sample_geometry": sample_geometry,
-        "geometry_mask_applied": geometry is not None,
+            "parcel_id": source_parcel_id,
+            "sample_geometry": sample_geometry,
+            "geometry_mask_applied": geometry is not None,
             "period": {"start": start.isoformat(), "end": end.isoformat()},
             "crop_profile": resolve_crop_profile(resolved_crop),
             "scene": None,
