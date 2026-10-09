@@ -10,6 +10,9 @@
   body *{visibility:hidden!important}
   .fg-field-shell{padding:0!important;margin:0!important;min-height:auto!important;height:auto!important;overflow:visible!important}
   .fg-field-shell > :not(.fg-field-pdf-sheet){display:none!important}
+  .fg-gis-workspace > :not(.fg-field-pdf-sheet){display:none!important}
+  .fg-gis-workspace{margin:0!important;padding:0!important;max-width:none!important;width:100%!important;min-height:auto!important}
+  .fg-gis-workspace .fg-field-pdf-sheet{position:fixed!important;inset:0!important;width:100%!important;overflow:visible!important}
   .fg-field-pdf-sheet,.fg-field-pdf-sheet *{visibility:visible!important}
   .fg-field-pdf-sheet{display:block!important;position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;overflow:visible!important;background:#fff!important;color:#173d2e!important;font-family:"Tajawal","Hanken Grotesk",Arial,sans-serif!important;font-size:10px!important;line-height:1.45!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .fg-field-pdf-sheet *{box-sizing:border-box!important}
