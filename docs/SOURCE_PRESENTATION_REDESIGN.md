@@ -31,9 +31,13 @@ The existing implementation already contains self-hostable MapLibre GL JS, Raste
 
 ## Validation and release
 
-Local frontend tests: 77 passed. TypeScript and production build passed. ESLint passed. Project ancestry tests cover rejected create combinations, retained links on patch, atomic coherent patch, cross-organization concealment and service-site mismatch.
+Local frontend tests: 77 passed. TypeScript and production build passed. ESLint passed. Focused backend validation: 27 acceptance, ancestry and remote-sensing processing tests passed; 5 solar tests passed. Project ancestry tests cover rejected create combinations, retained links on patch, atomic coherent patch, cross-organization concealment and service-site mismatch.
 
-The broad SQLite run initially returned 430 passed, 1 skipped and 2 failures: a stale remote-sensing test expected formula v1 while the existing implementation and index catalogue use v2, and the local test environment lacked the development-only Pysolar dependency. The stale version assertion was updated without changing processing behavior. These failures must be rechecked before reporting a fully green suite. Browser smoke selectors were updated to the actual current landing, and source slide 2 is captured in Arabic, French and English.
+The broad SQLite run returned 430 passed, 1 skipped and 2 failures. A stale remote-sensing assertion expected formula v1 while the existing implementation and catalogue use v2; the assertion was corrected without changing processing behavior. The other failure was a missing development-only Pysolar dependency, which was installed locally. Both affected modules passed on targeted recheck. An additional broad rerun did not produce a complete reliable pytest report in this environment; a fully green broad suite is not established.
+
+Browser smoke selectors were updated to the actual current landing, and the test now captures source slide 2 in Arabic, French and English. These browser checks were not executed locally because the managed browser URL policy blocked the preview.
+
+GitHub PR #196: https://github.com/skacimo1985-star/FOGGARA-PLATFORM-DZ/pull/196. Its Verify FOGGARA run 37905456457 completed as failure; all five jobs reported failure with no steps and no available logs. The reason was not established. No merge or deployment was performed. PostgreSQL, container and visual release verification remain outstanding.
 
 The original live landing was inspected before editing. The local browser preview was blocked by browser URL policy, so local visual verification is incomplete. CI must pass before merge, including PostgreSQL/migration/container checks and browser smoke. Live release verification must separately confirm the supplied logo, eight-slide source viewer, visible satellite collage on slide 2, mobile layouts and protected-route behavior.
 
