@@ -24,7 +24,7 @@ export default function Presentation(){
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
  const exportResult=()=>{const file=new Blob([JSON.stringify({algorithm:'bounded-weighted-utility-browser-v1',status:'UNSAVED_USER_SCENARIO',created_at:new Date().toISOString(),inputs:axes,result},null,2)],{type:'application/json'});const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='foggara-user-matrix.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <div className="fp-presentation">
- <section className="fp-source-head" aria-label="FOGGARA-DZ">
+ <section className="fp-story-intro" aria-label="FOGGARA-DZ">
   <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
   <h2>{c.architecture}</h2>
   <p>{c.intro}</p>
