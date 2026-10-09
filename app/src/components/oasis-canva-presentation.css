@@ -171,7 +171,7 @@
 
 /* Complete 12-slide FOGGARA-DZ Nexus deck */
 .ocp-kicker{display:block;margin-bottom:18px;font:800 10px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sand)}
-.ocp-page-cover{background:url("/images/user-oasis-hero.webp") center/cover no-repeat;color:#fff}
+.ocp-page-cover{background:url("/images/oasis-dawn.webp") center/cover no-repeat;color:#fff}
 .ocp-cover-shade,.ocp-closing-shade,.ocp-expo-full-shade{position:absolute;inset:0;background:linear-gradient(90deg,#0a1712dd 0%,#0d1b15aa 48%,#0c171155 100%)}
 .ocp-cover-copy{position:absolute;z-index:3;left:7%;right:7%;bottom:11%}
 .ocp-cover-copy h3{font-size:clamp(64px,8.4vw,132px);line-height:.83;letter-spacing:-.065em;font-family:Arial,Helvetica,sans-serif;font-weight:900}
