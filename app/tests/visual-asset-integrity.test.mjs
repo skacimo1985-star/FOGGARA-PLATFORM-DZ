@@ -29,6 +29,11 @@ test('critical production WebP assets have a valid RIFF/WEBP signature',()=>{
 
 test('visual layout contains production-safe fallbacks and bounded hero type',()=>{
   assert.ok(source.includes('PRODUCTION_VISUAL_INTEGRITY_2026_10_09'));
+  assert.ok(source.includes('PROFESSIONAL_TYPE_SCALE_2026_10_09'));
+  assert.ok(source.includes('PROFESSIONAL_DECK_TYPE_SCALE_2026_10_09'));
+  assert.ok(source.includes('font-size:clamp(58px,5.6vw,96px)!important'));
+  assert.ok(source.includes('font-size:clamp(34px,3.8vw,58px)!important'));
   assert.ok(source.includes('white-space:nowrap'));
   assert.ok(source.includes('background:#173023 url("/images/oasis-dawn.webp")'));
+  assert.ok(source.includes('dir={lang==="ar"?"rtl":"ltr"}'));
 });
