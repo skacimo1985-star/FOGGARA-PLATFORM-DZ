@@ -280,7 +280,7 @@ export default function Landing() {
       <div className="fg-rebuilt-hero-bottom">
         <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
           {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
-            <img src={index===0?"/images/user-oasis-hero.webp":index===1?"/images/foggara-video-frame-1.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
+            <img src={index===0?"/images/user-oasis-hero.webp":index===1?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
           </button>)}
         </div>
         <div className="fg-rebuilt-domain-line" dir="ltr">
@@ -358,11 +358,11 @@ export default function Landing() {
 
     <div className="fg-global-visual-stage" aria-label={institutionCopy.galleryAria}>
       <figure className="fg-global-visual-main">
-        <img src="/images/user-oases-nexus-wefeh.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
+        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
-        <img src="/images/foggara-video-frame-2.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/user-heritage-digital-twin.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
       <figure className="fg-global-visual-field">
@@ -370,7 +370,7 @@ export default function Landing() {
         <figcaption>{institutionCopy.gallery[2]}</figcaption>
       </figure>
       <figure className="fg-global-visual-evidence">
-        <img src="/images/foggara-video-frame-1.webp" alt={institutionCopy.gallery[3]} loading="lazy"/>
+        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[3]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[3]}</figcaption>
       </figure>
       <div className="fg-global-visual-note">
