@@ -22,7 +22,19 @@ export default function Presentation(){
  const update=(index:number,patch:Partial<MatrixAxis>)=>setAxes(a=>a.map((row,i)=>i===index?{...row,...patch}:row));
  const exportResult=()=>{const file=new Blob([JSON.stringify({algorithm:'bounded-weighted-utility-browser-v1',status:'UNSAVED_USER_SCENARIO',created_at:new Date().toISOString(),inputs:axes,result},null,2)],{type:'application/json'});const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='foggara-user-matrix.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <div className="fp-presentation">
- <OasisCanvaPresentation lang={locale}/>
+ <section className="fp-original-canva" aria-label="FOGGARA Canva presentation">
+  <div className="fp-source-head">
+   <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
+   <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noreferrer">
+    {locale==="ar"?"فتح المصدر الأصلي":locale==="fr"?"Voir la source Canva":"View original Canva source"} <ArrowUpRight size={15}/>
+   </a>
+  </div>
+  <iframe src="https://www.canva.com/design/DAHXhnIEguc/view?embed" title="FOGGARA source presentation" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
+ </section>
+ <details className="fp-native-deck">
+  <summary>{locale==="ar"?"العرض التفاعلي للمنصة":locale==="fr"?"Version interactive":"Interactive site version"}</summary>
+  <OasisCanvaPresentation lang={locale}/>
+ </details>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
  <section id="presentation" className="fp-figma-bridge">
   <div className="fp-section-heading"><div><p className="fp-overline">WEFEH / NEXUS</p><h2>{c.architecture}</h2><p>{c.architectureSub}</p></div></div>
