@@ -35,6 +35,22 @@ test("FOGGARA PDF report documents source and explicitly differentiates uncomput
   assert.ok(pdf.includes('reportRef'));
 });
 
+test("private GIS exports the same protected report only for an explicit area",()=>{
+  const page=read("../src/pages/Gis.tsx");
+  assert.ok(page.includes('import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence}'));
+  assert.ok(page.includes('selectedParcelRecord?.boundary_geojson ?? draftPolygon'));
+  assert.ok(page.includes('(manualAnalysisBbox ? bboxPolygon(manualAnalysisBbox) : null)'));
+  assert.ok(page.includes('reportBbox.every((value,i)=>Math.abs(value-fieldIntelligenceResult.bbox_wgs84[i])<0.00001)'));
+  assert.ok(page.includes('fieldIntelligenceResult.period.start===sceneStart'));
+  assert.ok(page.includes('fieldIntelligenceResult.period.end===sceneEnd'));
+  assert.ok(page.includes('fieldIntelligenceResult.geometry_mask_applied===true'));
+  assert.ok(page.includes('disabled={!reportGeometry||!reportBbox}'));
+  assert.ok(page.includes('fieldId={selectedParcelId}'));
+  assert.ok(page.includes('<FieldPdfReport lang={lang}'));
+  const css=read("../src/components/field-pdf-report.css");
+  assert.ok(css.includes('.fg-gis-workspace > :not(.fg-field-pdf-sheet){display:none!important}'));
+});
+
 test("print/export to PDF uses local native print with searchable RTL, not a remote vendor",()=>{
   const pdf=read("../src/components/FieldPdfReport.tsx");
   const css=read("../src/components/field-pdf-report.css");
@@ -51,7 +67,7 @@ test("print/export to PDF uses local native print with searchable RTL, not a rem
 });
 
 test("PDF TypeScript and GIS TSX both transpile without syntax diagnostics",()=>{
-  for(const filename of ["../src/components/FieldPdfReport.tsx","../src/pages/PublicGis.tsx"]){
+  for(const filename of ["../src/components/FieldPdfReport.tsx","../src/pages/PublicGis.tsx","../src/pages/Gis.tsx"]){
     const source=read(filename);
     const output=ts.transpileModule(source,{fileName:filename,compilerOptions:{
       target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX,
