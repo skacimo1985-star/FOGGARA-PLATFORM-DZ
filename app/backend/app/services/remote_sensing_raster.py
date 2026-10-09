@@ -113,7 +113,12 @@ def _read_aligned(
             resampling=resampling,
         ) as vrt:
             data = vrt.read(1, masked=True)
-    values = np.asarray(data.filled(np.nan), dtype=np.float32)
+    # Rasterio commonly returns integer masked arrays (for example uint16
+    # Sentinel reflectance/SCL). Filling an integer MaskedArray with NaN raises
+    # TypeError before NumPy gets a chance to cast it. Cast the masked array
+    # itself first, then fill masked cells with NaN.
+    float_data = np.ma.asarray(data, dtype=np.float32)
+    values = np.asarray(float_data.filled(np.nan), dtype=np.float32)
     mask = np.ma.getmaskarray(data) | ~np.isfinite(values)
     return values, np.asarray(mask, dtype=bool)
 
@@ -254,7 +259,7 @@ def _compute_index_statistics_unlocked(
             )
     except RasterStatisticsError:
         raise
-    except (RasterioError, OSError, ValueError) as exc:
+    except (RasterioError, OSError, ValueError, TypeError) as exc:
         raise RasterStatisticsError("trusted Sentinel raster could not be read") from exc
 
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
@@ -427,7 +432,7 @@ def _compute_multi_index_statistics_unlocked(
             )
     except RasterStatisticsError:
         raise
-    except (RasterioError, OSError, ValueError) as exc:
+    except (RasterioError, OSError, ValueError, TypeError) as exc:
         raise RasterStatisticsError("trusted Sentinel multi-index raster could not be read") from exc
 
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
@@ -655,7 +660,7 @@ def _render_index_preview_png_unlocked(
             )
     except RasterStatisticsError:
         raise
-    except (RasterioError, OSError, ValueError) as exc:
+    except (RasterioError, OSError, ValueError, TypeError) as exc:
         raise RasterStatisticsError("trusted Sentinel raster could not be read") from exc
 
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
@@ -778,7 +783,7 @@ def _render_true_color_preview_png_unlocked(
             )
     except RasterStatisticsError:
         raise
-    except (RasterioError, OSError, ValueError) as exc:
+    except (RasterioError, OSError, ValueError, TypeError) as exc:
         raise RasterStatisticsError("trusted Sentinel true-color raster could not be read") from exc
 
     safe_scl = np.where(np.isfinite(scl_values), np.rint(scl_values), -32768.0)
