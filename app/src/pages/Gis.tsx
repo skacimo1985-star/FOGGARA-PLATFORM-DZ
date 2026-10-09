@@ -1036,6 +1036,7 @@ export default function Gis() {
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
           parcelBoundaries={parcelBoundaries}
+          draftParcelBoundary={draftPolygon}
           satelliteOverlay={satelliteOverlay}
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
