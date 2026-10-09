@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import {getOasisPhoto} from "./oasisVisuals";
 import "./oasis-canva-presentation.css";
 
 export type OasisCanvaLocale = "ar" | "fr" | "en";
@@ -77,7 +78,7 @@ const controlCopy={
 
 function CoverSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-cover">
-    <img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/>
+    <img className="ocp-media-image" src={getOasisPhoto("sunset-over-oasis") ?? "/images/oasis-dawn.webp"} alt="" aria-hidden="true"/>
     <div className="ocp-cover-shade"/>
     <div className="ocp-cover-copy">
       <span className="ocp-kicker" dir="ltr">SIREP OASES NEXUS WEFEH-DZ</span>
@@ -100,6 +101,7 @@ function FoggaraSlide({slide}:{slide:Slide}){
   const parts=["SOURCE","CAPTURE","GALLERY","OUTLET","KASRIA","GARDENS"];
   return <div className="ocp-page ocp-page-paper ocp-page-foggara">
     <div className="ocp-copy"><span className="ocp-kicker">03 / WATER HERITAGE</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    {getOasisPhoto("kasria-water-distribution")&&<img className="ocp-heritage-focus-image" src={getOasisPhoto("kasria-water-distribution") ?? ""} alt="" aria-hidden="true"/>}
     <div className="ocp-foggara-flow" dir="ltr">{parts.map((part,i)=><div key={part}><span>{String(i+1).padStart(2,"0")}</span><strong>{part}</strong>{i<parts.length-1&&<i>→</i>}</div>)}</div>
   </div>;
 }
@@ -182,7 +184,7 @@ function ExpoSlide({slide}:{slide:Slide}){
 
 function ClosingSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-closing">
-    <img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/>
+    <img className="ocp-media-image" src={getOasisPhoto("oasis-palm-reflection") ?? "/images/oasis-dawn.webp"} alt="" aria-hidden="true"/>
     <div className="ocp-closing-shade"/>
     <div className="ocp-closing-copy"><span className="ocp-kicker">FOGGARA-DZ · NEXUS WEFEH</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
   </div>;
