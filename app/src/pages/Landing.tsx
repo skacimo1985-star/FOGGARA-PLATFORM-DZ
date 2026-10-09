@@ -338,18 +338,18 @@ export default function Landing() {
         <Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link>
       </div>
       <figure className="fg-agriculture-template-art">
-        <img src="/images/foggara-sprite.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
+        <img src="/images/foggara-heritage-poster.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
         <figcaption><span>FIELD HERITAGE</span><strong>FOGGARA → DIGITAL TWIN</strong></figcaption>
       </figure>
     </section>
 
     <div className="fg-global-visual-stage fg-source-gallery" aria-label={institutionCopy.galleryAria}>
       <figure className="fg-global-visual-main">
-        <img src="/images/foggara-heritage-poster.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
-        <img src="/images/foggara-sprite.webp" alt={institutionCopy.gallery[2]} loading="lazy"/>
+        <img src="/images/foggara-sprite.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[2]}</figcaption>
       </figure>
       <div className="fg-global-visual-note">
@@ -386,23 +386,13 @@ export default function Landing() {
       <div className="fg-canva-original-design">
         <div className="fg-canva-source-header">
           <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
-          <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noreferrer">
+          <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noopener noreferrer">
             {lang==="ar"?"فتح عرض Canva الأصلي":lang==="fr"?"Voir la présentation Canva originale":"Open original Canva presentation"} <ArrowUpRight size={15}/>
           </a>
         </div>
-        <iframe
-          src="https://www.canva.com/design/DAHXhnIEguc/view?embed"
-          title={lang==="ar"?"عرض فقارة من Canva":lang==="fr"?"Présentation FOGGARA issue de Canva":"FOGGARA original Canva presentation"}
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
-        <p>{lang==="ar"?"محتوى العرض مأخوذ من التصميم الذي قدمته، مع استبعاد الشريحة الفضائية المكررة.":lang==="fr"?"Présentation issue de votre design, avec suppression de la diapositive satellite dupliquée.":"Presentation based on the supplied design, with the duplicate satellite slide omitted."}</p>
+        <p className="fg-canva-source-note">{lang==="ar"?"العرض التفاعلي ظاهر أدناه. لفتح الشرائح الأصلية استخدم رابط Canva أعلاه.":lang==="fr"?"La présentation interactive apparaît ci-dessous. Le lien ci-dessus ouvre les diapositives Canva originales.":"The interactive presentation appears below. The link above opens the original Canva slides."}</p>
       </div>
-      <details className="fg-canva-native-fallback">
-        <summary>{lang==="ar"?"نسخة عرض الموقع التفاعلية":lang==="fr"?"Version interactive intégrée au site":"Interactive site presentation"}</summary>
-        <OasisCanvaPresentation lang={lang} compact/>
-      </details>
+      <OasisCanvaPresentation lang={lang} compact/>
     </section>
 
     <section className="fg-moon-demo fg-global-demo" id="demo">
