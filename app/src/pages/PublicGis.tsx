@@ -177,93 +177,155 @@ export default function PublicGis(){
   const count=activeMetrics?.pixels?.valid;
   const coverage=activeMetrics?.pixels?.valid_fraction;
   const range=activeMetrics?.statistics;
-  return <main className="fg-public-gis" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
-    <header className="fg-public-gis-intro">
-      <div>
-        <p className="fg-public-gis-kicker"><Sprout size={18}/>{t.kicker}</p>
-        <h1>{t.title}</h1><p>{t.intro}</p>
-        <div className="fg-public-gis-ident"><span><Globe2 size={16}/>{t.public}</span><span><Database size={16}/>FOGGARA-DZ / WEFEH</span></div>
+
+  return <main className="fg-public-gis fg-field-shell" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
+    <header className="fg-field-topbar">
+      <div className="fg-field-brand">
+        <div className="fg-field-brand-mark" aria-hidden="true"><Sprout size={23}/></div>
+        <div className="fg-field-brand-copy"><strong>FOGGARA-DZ <span>GIS</span></strong><small>{v.suite}</small></div>
       </div>
-      <Link className="fg-public-gis-cta" onClick={persist} to={user?"/app/gis":"/login?mode=team"}
-        state={user?undefined:{from:{pathname:"/app/gis"}}}>
-        <ShieldCheck size={18}/>{t.signIn}<ArrowUpRight size={18}/>
-      </Link>
+      <div className="fg-field-top-title"><strong>{v.dashboard}</strong><small>{v.subtitle}</small></div>
+      <div className="fg-field-top-actions">
+        <span className="fg-field-access"><span className="fg-field-status-dot"/>{v.visitor}</span>
+        <Link to={user?"/app/gis":"/login?mode=team"} state={user?undefined:{from:{pathname:"/app/gis"}}}
+          onClick={persist} className="fg-field-account-link"><ShieldCheck size={16}/>{v.account}<ArrowUpRight size={15}/></Link>
+      </div>
     </header>
-    <section className="fg-public-gis-map" aria-label={t.tools}>
-      <h2>{t.step1}</h2><p>{t.select}</p>
-      <form className="fg-public-gis-coordinate-entry" onSubmit={selectCoordinates}>
-        <strong>{t.coordinateTitle}</strong>
-        <label>{t.latitude}<input type="number" required min="18.4" max="37.5" step="any" placeholder="33.80000" value={latitude} onChange={e=>setLatitude(e.target.value)}/></label>
-        <label>{t.longitude}<input type="number" required min="-8.8" max="12.2" step="any" placeholder="2.87000" value={longitude} onChange={e=>setLongitude(e.target.value)}/></label>
-        <label>{t.side}<input type="number" required min="20" max="300" step="10" value={sideMeters} onChange={e=>setSideMeters(e.target.value)}/></label>
-        <button type="submit">{t.setCoordinates}</button>
-        {coordinateError?<span role="alert">{t.invalidCoordinates}</span>:null}
-      </form>
-      <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
-        satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={setSelectedSceneId}
-        draftParcelBoundary={area}
-        analysisSelectionBbox={selection}
-        onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
-        onDrawParcelBoundary={geometry=>change(geometry)}
-      />
-      <div className="fg-public-gis-actions">
-        <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}>{t.retry}</button>
-        <button type="button" disabled={!area} onClick={exportGeometry}>{t.export}</button>
-        {bbox?<span dir="ltr">{t.bounds}: {bbox.map(x=>x.toFixed(5)).join(", ")}</span>:<span>{t.empty}</span>}
-        {area?<span>{t.area}: {polygonAreaHectares(area).toFixed(2)} ha</span>:null}
-      </div>
-    </section>
-    <section className="fg-public-gis-workflow" aria-label="FOGGARA FIELD">
-      <div className="fg-public-gis-tool">
-        <h2><Satellite size={22}/>{t.step2}</h2>
-        <div className="fg-public-gis-date-row">
-          <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{setStart(e.target.value);setResult(null);setScenes([]);}}/></label>
-          <label>{t.dateEnd}<input type="date" min={start} max={ISO(today)} value={end} onChange={e=>{setEnd(e.target.value);setResult(null);setScenes([]);}}/></label>
+
+    <div className="fg-field-workspace">
+      <aside className="fg-field-pane fg-field-setup" aria-label={v.left}>
+        <header className="fg-field-pane-title">
+          <div><small>{v.stepOne}</small><h2><LocateFixed size={19}/>{v.left}</h2></div>
+          <span className="fg-field-tool-icon"><Layers3 size={18}/></span>
+        </header>
+        <section className="fg-field-setup-section">
+          <h3>{v.drawing}</h3>
+          <p>{v.drawingHelp}</p>
+          <div className={area?"fg-field-aoi-state selected":"fg-field-aoi-state"}>
+            <span className="fg-field-state-icon">{area?<CheckCircle2 size={18}/>:<MapPinned size={18}/>}</span>
+            <div><strong>{area?v.selected:v.pending}</strong><small>{area?v.roi+" · GEOJSON":v.chooseCoords}</small></div>
+          </div>
+          {area&&bbox?<div className="fg-field-selection-facts">
+            <div><span>{v.surface}</span><strong>{polygonAreaHectares(area).toFixed(3)} <small>ha</small></strong></div>
+            <div><span>{v.resolution}</span><strong>10–20 <small>m</small></strong></div>
+            <div className="fg-field-extent"><span>{v.coordinates}</span><code dir="ltr">{bbox.map(x=>x.toFixed(5)).join("  ·  ")}</code></div>
+          </div>:null}
+          <button type="button" className="fg-field-inline-tool" aria-expanded={showCoordinates} onClick={()=>setShowCoordinates(x=>!x)}>
+            <LocateFixed size={16}/>{v.geoAction}
+          </button>
+          {showCoordinates?<form className="fg-public-gis-coordinate-entry" onSubmit={selectCoordinates}>
+            <strong>{t.coordinateTitle}</strong>
+            <label>{t.latitude}<input type="number" required min="18.4" max="37.5" step="any" placeholder="33.80000" value={latitude} onChange={e=>setLatitude(e.target.value)}/></label>
+            <label>{t.longitude}<input type="number" required min="-8.8" max="12.2" step="any" placeholder="2.87000" value={longitude} onChange={e=>setLongitude(e.target.value)}/></label>
+            <label>{t.side}<input type="number" required min="20" max="300" step="10" value={sideMeters} onChange={e=>setSideMeters(e.target.value)}/></label>
+            <button type="submit">{t.setCoordinates}</button>
+            {coordinateError?<span role="alert">{t.invalidCoordinates}</span>:null}
+          </form>:null}
+        </section>
+        <section className="fg-field-setup-section">
+          <div className="fg-field-section-head"><small>{v.stepTwo}</small><Satellite size={19}/></div>
+          <h3>{v.scenePanel}</h3>
+          <p className="fg-field-catalog-name"><CloudSun size={16}/>{v.catalog}</p>
+          <div className="fg-public-gis-date-row">
+            <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{setStart(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+            <label>{t.dateEnd}<input type="date" min={start} max={ISO(new Date())} value={end} onChange={e=>{setEnd(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+          </div>
+          {!rangeValid?<p className="fg-field-inline-warning" role="status">{v.invalidDate}</p>:null}
+          <button type="button" className="fg-public-gis-action fg-field-search" disabled={!bbox||searching||!rangeValid}
+            onClick={()=>void searchScenes()}>{searching?<Loader2 size={17} className="fg-field-spin"/>:<Satellite size={17}/>}
+            {searching?t.searching:t.search}<ArrowUpRight size={16}/>
+          </button>
+          <ErrorText error={searchError}/>
+          {scenes.length>0?<div className="fg-field-scene-list" aria-live="polite">
+            <div className="fg-field-scene-head"><strong>{scenes.length} {t.count}</strong><small>S2 L2A</small></div>
+            {scenes.slice(0,8).map(scene=><button type="button" key={scene.id}
+              className={scene.id===selectedSceneId?"fg-field-scene active":"fg-field-scene"}
+              aria-pressed={scene.id===selectedSceneId}
+              title={scene.id}
+              onClick={()=>{setSelectedSceneId(scene.id);setResult(null);setPreviewError(null);}}>
+              <span className="fg-field-scene-check">{scene.id===selectedSceneId?<CheckCircle2 size={17}/>:<Satellite size={17}/>}</span>
+              <span><strong dir="ltr">{scene.datetime?.slice(0,10)??"—"}</strong><small>{scene.platform??"Sentinel-2"} · {t.cloud}: {scene.cloud_cover_pct?.toFixed(0)??"—"}%</small></span>
+            </button>)}
+          </div>:hasSearched&&!searching&&!searchError?<p className="fg-field-empty-list">{v.sceneNone}</p>:<p className="fg-field-empty-list">{v.searchPrompt}</p>}
+        </section>
+        <div className="fg-field-setup-footer">
+          <button type="button" disabled={!area} onClick={exportGeometry}><Download size={16}/>{v.export}</button>
+          <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}><RefreshCw size={16}/>{v.reset}</button>
         </div>
-        <button type="button" className="fg-public-gis-action" disabled={!bbox||searching||!start||!end||start>end} onClick={()=>void searchScenes()}>
-          {searching?t.searching:t.search}<ArrowUpRight size={17}/>
-        </button>
-        <ErrorText error={searchError}/>
-        <p className="fg-public-gis-source">{t.provider}</p>
-        {scenes.length>0?<div className="fg-public-gis-scenes" aria-live="polite">
-          <strong>{scenes.length} {t.count}</strong>
-          {scenes.slice(0,8).map(scene=><button type="button" key={scene.id} className={scene.id===selectedSceneId?"active":""}
-            onClick={()=>setSelectedSceneId(scene.id)}>
-            <span>{scene.datetime?.slice(0,10)??scene.id}</span>
-            <small>{scene.platform??"Sentinel-2"} · {scene.cloud_cover_pct?.toFixed(1)??"—"}% ☁</small>
-          </button>)}
-        </div>:null}
-        {selected?<p>{t.date}: <strong dir="ltr">{selected.datetime?.slice(0,10)??"—"}</strong> · {t.cloud}: {selected.cloud_cover_pct?.toFixed(1)??"—"}%</p>:null}
-      </div>
-      <div className="fg-public-gis-tool">
-        <h2><Activity size={22}/>{t.step3}</h2>
-        <p>{t.local}</p>
-        <button type="button" className="fg-public-gis-action" disabled={!allowed||computing} onClick={()=>void preview()}>
-          {computing?t.running:t.run}<ArrowUpRight size={17}/>
-        </button>
-        {area&&!allowed?<p className="fg-public-gis-warning">{t.limit}</p>:!area?<p>{t.selectFirst}</p>:null}
-        <ErrorText error={previewError}/>
-        <div className="fg-public-gis-result" aria-live="polite">
-          {result?.status==="READY" ? <>
-            <span>{t.indices}</span>
-            <strong className="fg-public-gis-ndvi" dir="ltr">{typeof ndvi==="number"?ndvi.toFixed(3):"—"}</strong>
-            <span>{t.pixels}: {count??0}</span>
-            <small>{t.date}: {result.scene?.datetime?.slice(0,10)??"—"} · {t.observed}: {result.scene?.provider??"Element 84"}</small>
-            <p><ShieldCheck size={16}/>{t.notVerified}</p>
-          </>:result?.status==="NO_USABLE_SCENE"?<p>{t.noScene}</p>:<p>{t.noResult}</p>}
+      </aside>
+
+      <section className="fg-field-map-panel fg-public-gis-map" aria-label={v.map}>
+        <div className="fg-field-map-top">
+          <div><small>{v.workspace} / GIS</small><h2><MapIcon size={20}/>{v.map}</h2></div>
+          <div className="fg-field-map-pills">
+            <span><span className="fg-field-live-dot"/>{v.roi}</span>
+            <span>MapLibre · OSM</span>
+          </div>
         </div>
-        <small className="fg-public-gis-limits">{t.limits}</small>
-      </div>
-    </section>
-    <section className="fg-public-gis-handoff">
-      <div><h2><MapPinned size={24}/>{t.save}</h2><p>{t.saveNote}</p></div>
-      <Link to={user?"/app/gis":"/login?mode=team"} onClick={persist}
-        state={user?undefined:{from:{pathname:"/app/gis"}}}>
-        {t.signIn}<ArrowUpRight size={18}/>
-      </Link>
-    </section>
-    <footer className="fg-public-gis-attribution">
-      <Ruler size={15}/> FOGGARA-DZ GIS · MapLibre GL JS · OpenStreetMap © contributors · Sentinel-2/Copernicus · Element 84 Earth Search · Rasterio
-    </footer>
+        <div className="fg-field-map-stage">
+          <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
+            satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{setSelectedSceneId(sceneId);setResult(null);}}
+            draftParcelBoundary={area}
+            analysisSelectionBbox={selection}
+            onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
+            onDrawParcelBoundary={geometry=>change(geometry)}
+          />
+        </div>
+        <div className="fg-field-map-bottom">
+          <div><MapPinned size={16}/>{bbox?<span dir="ltr">{bbox.map(x=>x.toFixed(4)).join(" / ")}</span>:v.pending}</div>
+          <div>{area?<><CheckCircle2 size={15}/>{polygonAreaHectares(area).toFixed(2)} ha</>:<><Info size={15}/>{v.drawingHelp}</>}</div>
+        </div>
+      </section>
+
+      <aside className="fg-field-pane fg-field-insights" aria-label={v.right}>
+        <header className="fg-field-pane-title"><div><small>{v.stepThree}</small><h2><Activity size={20}/>{v.right}</h2></div><span className="fg-field-tool-icon"><Leaf size={19}/></span></header>
+        <section className="fg-field-insight-section">
+          <h3>{v.analysis}</h3>
+          <div className="fg-field-index-picker" role="group" aria-label={v.active}>
+            <button type="button" aria-pressed={index==="ndvi"} className={index==="ndvi"?"active":""}
+              onClick={()=>{setIndex("ndvi");setResult(null);setPreviewError(null);}}><Leaf size={16}/>NDVI<small>{v.vegetation}</small></button>
+            <button type="button" aria-pressed={index==="ndmi"} className={index==="ndmi"?"active":""}
+              onClick={()=>{setIndex("ndmi");setResult(null);setPreviewError(null);}}><Droplets size={16}/>NDMI<small>{v.canopyWater}</small></button>
+          </div>
+          <div className="fg-field-analysis-card" aria-live="polite">
+            {result?.status==="READY"&&typeof ndvi==="number"?<>
+              <div className="fg-field-analysis-label"><span>{v.computed}</span><span>{index.toUpperCase()}</span></div>
+              <strong className="fg-field-analysis-value" dir="ltr">{ndvi.toFixed(3)}</strong>
+              <div className="fg-field-spectrum" role="img" aria-label={v.active+" "+ndvi.toFixed(3)}>
+                <div className="fg-field-spectrum-marker" style={{insetInlineStart:(((Math.max(-1,Math.min(1,ndvi))+1)/2)*100)+"%"}}/>
+              </div>
+              <div className="fg-field-spectrum-labels" dir="ltr"><span>−1.0</span><span>0</span><span>+1.0</span></div>
+              <div className="fg-field-quality">
+                <div><span>{v.quality}</span><strong>{typeof coverage==="number"?(coverage*100).toFixed(1)+"%":"—"}</strong></div>
+                <div className="fg-field-quality-track"><span style={{width:Math.max(0,Math.min(100,(coverage??0)*100))+"%"}}/></div>
+              </div>
+              <div className="fg-field-metrics"><div><span>{v.sampleCount}</span><strong dir="ltr">{count??"—"}</strong></div><div><span>{v.range}</span><strong dir="ltr">{range?.min?.toFixed(3)??"—"} / {range?.max?.toFixed(3)??"—"}</strong></div></div>
+            </>:result?.status==="NO_USABLE_SCENE"?<div className="fg-field-no-data"><Info size={26}/><strong>{v.waiting}</strong><p>{v.resultUnavailable}</p></div>
+            :<div className="fg-field-no-data"><Activity size={29}/><strong>{v.notRun}</strong><p>{v.emptyResult}</p></div>}
+          </div>
+          {area&&!allowed?<p className="fg-field-inline-warning" role="status">{!rangeValid?v.invalidDate:v.pixelBudget}</p>:null}
+          <button type="button" className="fg-public-gis-action fg-field-analyze" disabled={!allowed||computing}
+            onClick={()=>void preview()}>{computing?<Loader2 size={18} className="fg-field-spin"/>:<Activity size={18}/>}
+            {computing?v.processing:t.run.replace("NDVI",index.toUpperCase())}<ArrowUpRight size={16}/></button>
+          <ErrorText error={previewError}/>
+          <small className="fg-field-limit-label">{t.limits}</small>
+        </section>
+        <section className="fg-field-insight-section fg-field-evidence">
+          <h3><ShieldCheck size={17}/>{v.provenance}</h3>
+          <div className="fg-field-evidence-row"><span>{v.acquired}</span><strong dir="ltr">{result?.scene?.datetime?.slice(0,10)??selected?.datetime?.slice(0,10)??"—"}</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.satellite}</span><strong>Element 84 · S2 L2A</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.backend}</span><strong>Rasterio · COMPUTED</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.mask}</span><strong>{result?.geometry_mask_applied?v.maskApplied:"—"}</strong></div>
+          <p className="fg-field-evidence-disclaimer"><Info size={16}/>{index==="ndmi"?v.indexNdmiNote:v.limitations}</p>
+          <p className="fg-field-evidence-caption">{v.sceneSpecific} {v.estimated}</p>
+        </section>
+        <Link className="fg-field-save-cta" to={user?"/app/gis":"/login?mode=team"}
+          state={user?undefined:{from:{pathname:"/app/gis"}}} onClick={persist}>
+          <Database size={17}/>{v.save}<ArrowUpRight size={16}/>
+        </Link>
+        <p className="fg-field-save-note">{v.noAccess}</p>
+      </aside>
+    </div>
+    <footer className="fg-field-footer"><span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span><span>MapLibre GL JS · OpenStreetMap © contributors · Copernicus Sentinel-2 · Element 84 · Rasterio</span></footer>
   </main>;
 }
