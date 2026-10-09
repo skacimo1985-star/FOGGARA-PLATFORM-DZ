@@ -883,6 +883,11 @@ export function NationalMap({
           };
           map.on("moveend", reportViewport);
           map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 0 });
+          // A manually entered AOI should be in view as soon as MapLibre loads.
+          if (analysisSelectionBboxRef.current) {
+            const [w,s,e,n]=analysisSelectionBboxRef.current;
+            map.fitBounds([[w,s],[e,n]],{padding:50,duration:0,maxZoom:16});
+          }
           reportViewport();
           setEngineState("ready");
         });
@@ -900,6 +905,13 @@ export function NationalMap({
       mapRef.current = null;
     };
   }, [compact]);
+
+  useEffect(() => {
+    const map=mapRef.current;
+    if(!map || !analysisSelectionBbox)return;
+    const [w,s,e,n]=analysisSelectionBbox;
+    map.fitBounds([[w,s],[e,n]],{padding:50,duration:400,maxZoom:16});
+  },[analysisSelectionBbox]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("foggara-sites");
