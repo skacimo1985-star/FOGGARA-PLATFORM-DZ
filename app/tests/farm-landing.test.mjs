@@ -1,4 +1,6 @@
 import test from "node:test";
+// The Render service has an explicit test allowlist; include GIS safety tests in that gate.
+import "./gis-direct-workflow.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 
