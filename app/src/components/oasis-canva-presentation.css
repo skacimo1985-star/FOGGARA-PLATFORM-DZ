@@ -503,3 +503,26 @@
   .ocp .ocp-page-closing{padding:22px}
   .ocp .ocp-page-closing .ocp-closing-copy h3{font-size:clamp(27px,6.2cqw,37px)!important}
 }
+
+/* Optional curated photograph visible only after the actual binary asset has been committed. */
+.ocp .ocp-page-foggara .ocp-heritage-focus-image{
+  display:block;
+  position:absolute;
+  right:5%;
+  top:16%;
+  width:39%;
+  height:47%;
+  object-fit:cover;
+  border-radius:9px;
+  opacity:.91;
+  border:4px solid #fff;
+  box-shadow:0 16px 34px #1428192b;
+}
+@media(max-width:860px){
+  .ocp .ocp-page-foggara .ocp-heritage-focus-image{
+    right:5%;top:44%;width:39%;height:20%;
+  }
+}
+@media(max-width:580px){
+  .ocp .ocp-page-foggara .ocp-heritage-focus-image{display:none}
+}
