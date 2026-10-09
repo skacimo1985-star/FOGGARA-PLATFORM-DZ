@@ -14,6 +14,7 @@ import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
 import "./heritage-landing.css";
+import "./visual-repairs.css";
 
 const domains = [
   {key:"water",Icon:Droplets},
