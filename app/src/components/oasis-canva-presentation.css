@@ -398,3 +398,18 @@
     line-height:1.08!important;
   }
 }
+
+/* Original eight-slide presentation, with no text masking the artwork. */
+.ocp-source{background:#f6f3ea;border:1px solid #dce3d4;border-radius:12px;overflow:hidden}
+.ocp-source-frame{margin:0}
+.ocp-source-image{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#f6f3ea}
+.ocp-source-caption{background:#113f36;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.ocp-source-caption span{font-size:12px;color:#e1bc6d}
+.ocp-source-caption h3{font-size:20px!important;line-height:1.4!important;margin:4px 0!important}
+.ocp-source-caption a{color:#fff;text-decoration:underline;text-underline-offset:4px}
+.ocp-source-controls{padding:18px;display:flex;justify-content:center;gap:12px;align-items:center}
+.ocp-source-controls nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.ocp-source-controls button{border:1px solid #bac8b6;border-radius:6px;background:#fff;color:#174d3c;min-width:40px;min-height:44px;cursor:pointer;display:grid;place-items:center}
+.ocp-source-controls button[aria-current]{background:#174d3c;color:#fff;border-color:#174d3c}
+.ocp-source-note{font-size:12px;text-align:center;padding:0 20px 18px;margin:0;color:#436052}
+@media(max-width:580px){.ocp-source-caption{padding:14px;flex-direction:column;align-items:flex-start}.ocp-source-controls{gap:6px;padding:12px 6px}.ocp-source-controls button{min-width:30px}.ocp-source-controls nav{gap:4px}.ocp-source-caption h3{font-size:17px!important}}

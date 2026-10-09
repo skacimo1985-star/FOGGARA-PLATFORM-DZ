@@ -62,6 +62,11 @@ def create_service_request(payload: ServiceRequestIn, user: User = Depends(get_c
         s = db.get(Site, payload.site_id)
         if s is None or s.org_id != user.org_id:
             api_error(404, "NOT_FOUND", "Site not found")
+    if payload.project_id is not None and payload.site_id is not None:
+        from .core import _check_links
+        if p.site_id is not None and p.site_id != payload.site_id:
+            api_error(422, "INCONSISTENT_PROJECT_LINKS", "Service site does not match the project site")
+        _check_links(db, user.org_id, payload.site_id, p.resource_id, p.asset_id)
     sr = ServiceRequest(org_id=user.org_id, created_by=user.id, status="submitted",
                         **payload.model_dump())
     db.add(sr)
