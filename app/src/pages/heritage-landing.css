@@ -2799,3 +2799,123 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   .fg-global-visual-evidence{grid-column:1!important;grid-row:4!important}
   .fg-global-visual-note{grid-column:1!important;grid-row:5!important}
 }
+
+
+/* PROFESSIONAL_TYPE_SCALE_2026_10_09 */
+.fg-moon-landing{
+  --fg-display-xl:clamp(48px,5.2vw,86px);
+  --fg-display-lg:clamp(38px,4.2vw,64px);
+  --fg-display-md:clamp(30px,3.3vw,52px);
+  --fg-body-lg:clamp(15px,1.15vw,18px);
+}
+.fg-rebuilt-hero{
+  min-height:min(700px,calc(100svh - 120px));
+}
+.fg-rebuilt-hero-center{
+  width:min(780px,calc(100% - 56px));
+}
+.fg-rebuilt-sirep{
+  font-size:clamp(28px,3.1vw,46px)!important;
+  line-height:1!important;
+  letter-spacing:-.025em!important;
+}
+.fg-rebuilt-foggara{
+  margin-top:10px;
+  font-size:clamp(58px,5.6vw,96px)!important;
+  line-height:.88!important;
+  letter-spacing:-.045em!important;
+}
+.fg-rebuilt-nexus{
+  margin-top:14px;
+  font-size:clamp(14px,1.25vw,20px)!important;
+  letter-spacing:.18em!important;
+}
+.fg-rebuilt-lead{
+  max-width:620px;
+  margin-top:18px;
+  font-size:var(--fg-body-lg);
+  line-height:1.6;
+}
+.fg-rebuilt-hero .fg-moon-btn{
+  min-height:46px;
+  padding-inline:22px;
+}
+.fg-rebuilt-hero .fg-moon-hero-actions{margin-top:20px}
+
+.fg-global-section-head h2,
+.fg-global-services>header h2{
+  font-size:var(--fg-display-lg)!important;
+  line-height:1.02!important;
+  letter-spacing:-.025em!important;
+}
+.fg-agriculture-template-copy h2{
+  max-width:620px;
+  font-size:var(--fg-display-lg)!important;
+  line-height:1.04!important;
+  letter-spacing:-.025em!important;
+}
+.fg-global-demo h2{
+  max-width:760px;
+  font-size:var(--fg-display-md)!important;
+  line-height:1.06!important;
+}
+.fg-lukas-about-label strong{
+  font-size:clamp(32px,3.6vw,54px)!important;
+  line-height:1!important;
+}
+.fg-lukas-about-copy>p{
+  font-size:clamp(17px,1.65vw,24px)!important;
+  line-height:1.55!important;
+  letter-spacing:-.02em!important;
+}
+
+.fg-moon-landing[lang="ar"]{
+  font-family:"Tajawal",Arial,sans-serif;
+}
+.fg-moon-landing[lang="ar"] :is(h1,h2,h3,.fg-rebuilt-sirep,.fg-rebuilt-foggara,.fg-lukas-about-label strong){
+  font-family:"Tajawal",Arial,sans-serif!important;
+  letter-spacing:0!important;
+}
+.fg-moon-landing[lang="ar"] .fg-rebuilt-sirep{
+  font-size:clamp(26px,2.8vw,42px)!important;
+  font-weight:700!important;
+}
+.fg-moon-landing[lang="ar"] .fg-rebuilt-foggara{
+  font-family:Arial,Helvetica,sans-serif!important;
+  letter-spacing:-.035em!important;
+}
+.fg-moon-landing[lang="ar"] :is(.fg-global-section-head h2,.fg-global-services>header h2,.fg-agriculture-template-copy h2){
+  font-size:clamp(34px,3.4vw,54px)!important;
+  line-height:1.18!important;
+  font-weight:700!important;
+}
+.fg-moon-landing[lang="ar"] .fg-global-demo h2{
+  font-size:clamp(34px,3.1vw,50px)!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+}
+.fg-moon-landing[lang="ar"] .fg-global-section-head>p,
+.fg-moon-landing[lang="ar"] .fg-agriculture-template-copy>p:not(.fg-eyebrow),
+.fg-moon-landing[lang="ar"] .fg-global-demo>div>p:not(.fg-eyebrow){
+  font-size:16px;
+  line-height:1.85;
+}
+
+@media(max-width:900px){
+  .fg-rebuilt-hero{min-height:650px}
+  .fg-rebuilt-foggara{font-size:clamp(54px,9vw,78px)!important}
+  .fg-rebuilt-sirep{font-size:clamp(26px,5vw,38px)!important}
+  .fg-rebuilt-domain-line{max-width:none}
+}
+@media(max-width:650px){
+  .fg-rebuilt-hero{min-height:600px}
+  .fg-rebuilt-foggara{font-size:clamp(46px,13vw,64px)!important}
+  .fg-rebuilt-sirep{font-size:26px!important}
+  .fg-global-section-head h2,
+  .fg-global-services>header h2,
+  .fg-agriculture-template-copy h2,
+  .fg-global-demo h2{
+    font-size:clamp(30px,9vw,42px)!important;
+    line-height:1.12!important;
+  }
+}
