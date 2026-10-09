@@ -45,3 +45,14 @@ test("active project cannot hijack a freshly drawn AOI",()=>{
   assert.match(page,/if \(manualAnalysisBbox \|\| draftPolygon \|\| !activeProjectSiteId/);
   assert.match(page,/polygonBoundingBox\(selectedParcelRecord\.boundary_geojson\)/);
 });
+
+test("pytest fixtures reject production and arbitrary database URLs before table drops",()=>{
+  const conf=read("../backend/tests/conftest.py");
+  const guardAt=conf.indexOf('if os.environ.get("ENV"');
+  const dbImportAt=conf.indexOf("from app.db import Base");
+  assert.ok(guardAt>=0 && dbImportAt>guardAt);
+  assert.ok(conf.includes("Refusing destructive pytest fixtures when ENV=prod"));
+  assert.ok(conf.includes("foggara_test"));
+  assert.ok(conf.includes('parsed_url.host not in (None, "localhost", "127.0.0.1")'));
+  assert.ok(conf.includes('os.environ["DATABASE_URL"] = _test_database_url'));
+});
