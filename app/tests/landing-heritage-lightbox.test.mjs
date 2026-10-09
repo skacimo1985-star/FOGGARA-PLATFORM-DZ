@@ -28,7 +28,12 @@ test('supplied heritage artwork is integrated once without reviving the old ligh
   assert.equal(landing.includes('fg-heritage-lightbox'),false);
   assert.equal(landing.includes('href="#heritage"'),false);
   assert.ok(landing.includes('fg-agriculture-template-story'));
-  assert.equal((landing.match(/user-heritage-digital-twin\.webp/g)||[]).length,1);
+  const storyStart=landing.indexOf('className="fg-agriculture-template-story"');
+  const storyEnd=landing.indexOf('className="fg-global-visual-stage"',storyStart);
+  const story=landing.slice(storyStart,storyEnd);
+  assert.ok(story.includes('/images/oasis-dawn.webp'));
+  assert.equal(story.includes('foggara-video-frame-1.webp'),false);
+  assert.equal(story.includes('foggara-video-frame-2.webp'),false);
   assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));
   assert.ok(landing.includes('KASRIA'));
   assert.ok(landing.includes('SEGUIA'));
