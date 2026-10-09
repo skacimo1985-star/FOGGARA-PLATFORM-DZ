@@ -446,12 +446,12 @@ export default function Gis() {
     ? {
         title: "Analyse de parcelle — mode simple",
         body: "Choisissez une parcelle, puis lancez une analyse complète. Les détails STAC, GeoJSON et indices restent disponibles dans les outils avancés.",
-        project: "1 · Projet",
+        project: "1 · Projet (facultatif)",
         parcel: "2 · Parcelle",
         analyze: "3 · Analyser",
         result: "4 · Résultat",
-        projectMissing: "Sélectionnez d’abord un projet actif.",
-        chooseProject: "Ouvrir les projets",
+        projectMissing: "Un projet n’est pas obligatoire pour analyser une zone. Vous pouvez en lier un plus tard.",
+        chooseProject: "Gérer les projets", optional: "Facultatif",
         chooseParcel: "Choisir une parcelle",
         areaHint: "Aucune parcelle ? Utilisez « Zone d’analyse » sur la carte, choisissez 2 coins, puis enregistrez la parcelle.",
         analyzeNow: "Analyser la parcelle",
@@ -471,12 +471,12 @@ export default function Gis() {
       ? {
           title: "Field analysis — simple mode",
           body: "Choose a field, then run one complete analysis. STAC, GeoJSON and raw index controls remain available under Advanced tools.",
-          project: "1 · Project",
+          project: "1 · Project (optional)",
           parcel: "2 · Field",
           analyze: "3 · Analyze",
           result: "4 · Result",
-          projectMissing: "Select an active project first.",
-          chooseProject: "Open projects",
+          projectMissing: "A project is optional for area analysis. You may link one later.",
+          chooseProject: "Manage projects", optional: "Optional",
           chooseParcel: "Choose a field",
           areaHint: "No field yet? Use “Select analysis area” on the map, pick 2 corners, then save the field.",
           analyzeNow: "Analyze field",
@@ -495,12 +495,12 @@ export default function Gis() {
       : {
           title: "تحليل الحقل — الوضع البسيط",
           body: "اختر القطعة ثم شغّل تحليلًا واحدًا شاملًا. تفاصيل STAC وGeoJSON واختيار المؤشرات تبقى داخل الأدوات المتقدمة.",
-          project: "1 · المشروع",
+          project: "1 · المشروع (اختياري)",
           parcel: "2 · القطعة",
           analyze: "3 · التحليل",
           result: "4 · النتيجة",
-          projectMissing: "اختر مشروعًا نشطًا أولًا.",
-          chooseProject: "فتح المشاريع",
+          projectMissing: "المشروع اختياري لتحليل منطقة من الخريطة. يمكنك ربطه لاحقًا.",
+          chooseProject: "إدارة المشاريع", optional: "اختياري",
           chooseParcel: "اختر القطعة",
           areaHint: "لا توجد قطعة؟ اضغط «حدد منطقة التحليل» على الخريطة، اختر زاويتين، ثم احفظ القطعة.",
           analyzeNow: "حلّل الحقل الآن",
@@ -597,9 +597,10 @@ export default function Gis() {
   const ndviMean = fieldIndexMean("ndvi");
   const moistureMean = fieldIndexMean("ndmi") ?? fieldIndexMean("ndwi") ?? fieldIndexMean("lswi");
   const soilPh = fieldIntelligenceResult?.soil_context?.properties?.ph?.mean_0_20 ?? null;
+  // An AOI or saved parcel is a valid analysis target even without a project.
+  // The backend performs bounded, real provider/raster processing and enforces ownership.
   const simpleAnalysisReady = Boolean(
-    activeProjectId
-    && currentRasterBudget.allowed
+    currentRasterBudget.allowed
     && (selectedParcelId || manualAnalysisBbox)
     && (selectedParcelId || newFieldCrop.trim())
   );
@@ -1044,7 +1045,7 @@ export default function Gis() {
         </div>
 
         <div className="fg-gis-steps">
-          <div className={activeProjectId ? "done" : ""}><b>01</b><span>{guideCopy.project}</span><strong>{activeProject?.title ?? guideCopy.missing}</strong></div>
+          <div className={activeProjectId ? "done" : ""}><b>01</b><span>{guideCopy.project}</span><strong>{activeProject?.title ?? guideCopy.optional}</strong></div>
           <div className={selectedParcelId || manualAnalysisBbox ? "done" : ""}><b>02</b><span>{guideCopy.parcel}</span><strong>{selectedParcelRecord?.name ?? (manualAnalysisBbox ? guideCopy.selectedArea : guideCopy.missing)}</strong></div>
           <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>03</b><span>{guideCopy.analyze}</span><strong>{fieldIntelligenceLoading ? guideCopy.analyzing : simpleAnalysisReady ? guideCopy.ready : guideCopy.missing}</strong></div>
           <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>04</b><span>{guideCopy.result}</span><strong>{fieldIntelligenceResult?.status === "READY" ? guideCopy.ready : guideCopy.missing}</strong></div>
@@ -1055,7 +1056,7 @@ export default function Gis() {
             <p>{guideCopy.projectMissing}</p>
             <Link to="/app/projects">{guideCopy.chooseProject}</Link>
           </div>
-        ) : (
+        ) : null}
           <div className="fg-gis-simple-controls">
             <label>
               <span>{guideCopy.chooseParcel}</span>
@@ -1073,9 +1074,10 @@ export default function Gis() {
                 {fieldIntelligenceLoading ? guideCopy.analyzing : guideCopy.analyzeNow}
               </button>
               {!selectedParcelId && !manualAnalysisBbox ? <p>{guideCopy.areaHint}</p> : null}
+              {manualAnalysisBbox ? <p dir="ltr" className="fg-gis-aoi-readout">WGS84 BBOX: {manualAnalysisBbox.map(n=>n.toFixed(5)).join(", ")} · {currentRasterBudget.areaKm2.toFixed(4)} km² · {currentRasterBudget.pixels.toLocaleString()} px</p> : null}
+              {!currentRasterBudget.allowed && manualAnalysisBbox ? <p>{analysisCopy.zoom}</p> : null}
             </div>
           </div>
-        )}
 
         {manualAnalysisBbox && !selectedParcelId ? (
           <div className="fg-gis-create-simple">
@@ -1086,7 +1088,7 @@ export default function Gis() {
             </button>
           </div>
         ) : null}
-
+        <ErrorText error={fieldError} />
         <ErrorText error={fieldIntelligenceError} />
 
         <div className="fg-gis-simple-result">
