@@ -1,8 +1,8 @@
-import {useState,type FormEvent} from "react";
+import {useEffect,useMemo,useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
-import {NationalMap,type SatelliteScene} from "@/components/NationalMap";
+import {NationalMap,type SatelliteScene,type ParcelBoundaryFeature} from "@/components/NationalMap";
 import {useAuth} from "@/context/useAuth";
 import {api} from "@/lib/api";
 import {WILAYAS} from "@/lib/wilayas";
@@ -15,6 +15,8 @@ import "./foggara-field-workbench.css";
 type Bbox=[number,number,number,number];
 type SceneList={provider:string;collection:string;live:boolean;count:number;scenes:SatelliteScene[]};
 type IndexKey="ndvi"|"ndmi";
+type SavedField={id:number;name:string;crop:string;area_ha:number;location:string;site_id:number|null;lat:number|null;lon:number|null;boundary_geojson:FoggaraPolygon|null;archived:boolean;is_demo:boolean};
+type OperationalStatus={database:{connected:boolean;engine:string};organization:{sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number}};
 type Preview={
   status:"READY"|"NO_USABLE_SCENE";
   product:string;
@@ -102,6 +104,14 @@ export default function PublicGis(){
   const [retry,setRetry]=useState(0);
   const [index,setIndex]=useState<IndexKey>("ndvi");
   const [hasSearched,setHasSearched]=useState(false);
+  const [savedFields,setSavedFields]=useState<SavedField[]>([]);
+  const [dbStatus,setDbStatus]=useState<OperationalStatus|null>(null);
+  const [dbError,setDbError]=useState<unknown>(null);
+  const [saving,setSaving]=useState(false);
+  const [saveError,setSaveError]=useState<unknown>(null);
+  const [savedFieldId,setSavedFieldId]=useState<number|null>(null);
+  const [fieldName,setFieldName]=useState("");
+  const [fieldCrop,setFieldCrop]=useState("");
   const [showCoordinates,setShowCoordinates]=useState(false);
   const [area,setArea]=useState<FoggaraPolygon|null>(null);
   const [latitude,setLatitude]=useState("");
@@ -118,6 +128,28 @@ export default function PublicGis(){
   const [computing,setComputing]=useState(false);
   const [start,setStart]=useState(ISO(begin));
   const [end,setEnd]=useState(ISO(today));
+  const loadWorkspace=async()=>{
+    if(!user)return;
+    try{
+      const [parcels,status]=await Promise.all([
+        api.get<SavedField[]>("/agriculture/parcels"),
+        api.get<OperationalStatus>("/gis/operational-status"),
+      ]);
+      setSavedFields(parcels.filter(p=>!p.archived));
+      setDbStatus(status);
+      setDbError(null);
+    }catch(error){setDbError(error);}
+  };
+  useEffect(()=>{
+    if(!user){setSavedFields([]);setDbStatus(null);setSavedFieldId(null);return;}
+    void loadWorkspace();
+  },[user]);
+  const mappedFields=useMemo(()=>savedFields.filter(p=>p.boundary_geojson&&boundsOfPolygon(p.boundary_geojson)),[savedFields]);
+  const mappedFeatures=useMemo<ParcelBoundaryFeature[]>(()=>
+    mappedFields.map(p=>({
+      type:"Feature",id:p.id,geometry:p.boundary_geojson as FoggaraPolygon,
+      properties:{id:p.id,name:p.name,crop:p.crop,area_ha:p.area_ha,location:p.location,site_id:p.site_id,is_demo:p.is_demo,selected:savedFieldId===p.id},
+    })),[mappedFields,savedFieldId]);
   const bbox=area?boundsOfPolygon(area):null;
   const pixels=bbox?pixelEstimate(bbox):0;
   const rangeDays=(new Date(end+"T00:00:00Z").getTime()-new Date(start+"T00:00:00Z").getTime())/86400000;
@@ -126,7 +158,7 @@ export default function PublicGis(){
   const change=(poly:FoggaraPolygon|null)=>{
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
-    setHasSearched(false);
+    setHasSearched(false);setSavedFieldId(null);setSaveError(null);
   };
   function selectCoordinates(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -142,6 +174,24 @@ export default function PublicGis(){
     if(!boundsOfPolygon(polygon)){setCoordinateError(true);return;}
     setCoordinateError(false);
     change(polygon);
+  }
+  const selectSavedField=(id:number)=>{
+    const item=savedFields.find(p=>p.id===id);
+    if(!item?.boundary_geojson||!boundsOfPolygon(item.boundary_geojson))return;
+    change(item.boundary_geojson);setSavedFieldId(id);
+    setFieldName(item.name);setFieldCrop(item.crop);
+  };
+  async function saveField(){
+    if(!user||!area||!bbox||!fieldName.trim()||!fieldCrop.trim()||saving)return;
+    setSaving(true);setSaveError(null);
+    try{
+      const saved=await api.post<SavedField>("/agriculture/parcels",{
+        name:fieldName.trim(),crop:fieldCrop.trim(),location:"FOGGARA GIS AOI "+bbox.map(n=>n.toFixed(5)).join(","),
+        area_ha:Math.max(0.001,Number(polygonAreaHectares(area).toFixed(5))),
+        boundary_geojson:area,site_id:null,stage:"initial",
+      });
+      setSavedFieldId(saved.id);await loadWorkspace();
+    }catch(error){setSaveError(error);}finally{setSaving(false);}
   }
   async function searchScenes(){
     if(!bbox||searching||!rangeValid)return;
@@ -249,6 +299,31 @@ export default function PublicGis(){
             </button>)}
           </div>:hasSearched&&!searching&&!searchError?<p className="fg-field-empty-list">{v.sceneNone}</p>:<p className="fg-field-empty-list">{v.searchPrompt}</p>}
         </section>
+        {user?<section className="fg-field-setup-section fg-field-db" aria-label={lang==="ar"?"قاعدة بيانات المؤسسة":lang==="fr"?"Base de données de l'organisation":"Organization database"}>
+          <div className="fg-field-section-head"><small>DATABASE · FOGGARA</small><Database size={18}/></div>
+          <h3>{lang==="ar"?"حقول المؤسسة المحفوظة":lang==="fr"?"Parcelles de l'organisation":"Saved organization fields"}</h3>
+          {dbStatus?<div className="fg-field-db-stats">
+            <span>{dbStatus.database.engine.toUpperCase()}</span>
+            <span>{lang==="ar"?"القطع":lang==="fr"?"Parcelles":"Fields"}: {dbStatus.organization.parcels}</span>
+            <span>{lang==="ar"?"المحددة":lang==="fr"?"Cartographiées":"Mapped"}: {dbStatus.organization.mapped_parcels}</span>
+          </div>:<p>{lang==="ar"?"جارٍ فحص قاعدة البيانات…":lang==="fr"?"Vérification de la base…":"Checking database…"}</p>}
+          <ErrorText error={dbError}/>
+          {mappedFields.length>0?<div className="fg-field-db-list">
+            {mappedFields.slice(0,25).map(p=><button key={p.id} type="button" className={savedFieldId===p.id?"active":""} onClick={()=>selectSavedField(p.id)} aria-pressed={savedFieldId===p.id}>
+              <MapPinned size={15}/><span><strong>{p.name}</strong><small>{p.crop} · {p.area_ha.toFixed(2)} ha</small></span>
+            </button>)}
+          </div>:<p>{lang==="ar"?"لا توجد قطع مرسومة محفوظة لهذه المؤسسة.":lang==="fr"?"Aucune parcelle cartographiée enregistrée.":"No mapped fields saved for this organization."}</p>}
+          <div className="fg-field-db-save">
+            <label>{lang==="ar"?"اسم القطعة":lang==="fr"?"Nom de la parcelle":"Field name"}<input value={fieldName} onChange={e=>setFieldName(e.target.value)} maxLength={160} placeholder={lang==="ar"?"قطعة الواحة":lang==="fr"?"Parcelle oasis":"Oasis parcel"}/></label>
+            <label>{lang==="ar"?"المحصول":lang==="fr"?"Culture":"Crop"}<input value={fieldCrop} onChange={e=>setFieldCrop(e.target.value)} maxLength={80} placeholder={lang==="ar"?"نخيل":lang==="fr"?"Palmier dattier":"Date palm"}/></label>
+            <button type="button" disabled={!area||!fieldName.trim()||!fieldCrop.trim()||saving||savedFieldId!==null} onClick={()=>void saveField()}>
+              {saving?<Loader2 size={16} className="fg-field-spin"/>:<Database size={16}/>}
+              {saving?(lang==="ar"?"جارٍ الحفظ…":lang==="fr"?"Enregistrement…":"Saving…"):
+                savedFieldId!==null?(lang==="ar"?"محفوظة في قاعدة البيانات":lang==="fr"?"Enregistrée":"Saved in database"):
+                (lang==="ar"?"حفظ القطعة في قاعدة البيانات":lang==="fr"?"Enregistrer dans la base":"Save field to database")}</button>
+            <ErrorText error={saveError}/>
+          </div>
+        </section>:null}
         <div className="fg-field-setup-footer">
           <button type="button" disabled={!area} onClick={exportGeometry}><Download size={16}/>{v.export}</button>
           <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}><RefreshCw size={16}/>{v.reset}</button>
@@ -265,6 +340,7 @@ export default function PublicGis(){
         </div>
         <div className="fg-field-map-stage">
           <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
+            parcelBoundaries={mappedFeatures} selectedParcelId={savedFieldId} onSelectParcel={selectSavedField}
             satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{setSelectedSceneId(sceneId);setResult(null);}}
             draftParcelBoundary={area}
             analysisSelectionBbox={selection}
