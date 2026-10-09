@@ -23,8 +23,10 @@ test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
   assert.ok(hero.includes('SIREP OASES'));
   assert.ok(hero.includes('FOGGARA-DZ'));
   assert.ok(hero.includes('NEXUS WEFEH'));
-  assert.ok(hero.includes('index===0?"/images/user-oasis-hero.webp"'));
-  assert.ok(hero.includes('index===1?"/images/oasis-hero.webp"'));
+  assert.ok(hero.includes('fg-moon-hero-media-1'));
+  assert.equal(hero.includes('fg-lukas-thumbs'),false);
+  assert.equal(hero.includes('fg-moon-arrow'),false);
+  assert.match(css,/\.fg-moon-landing \.fg-rebuilt-hero \.fg-moon-hero-media-1\s*\{[^}]*oasis-dawn\.webp/s);
   assert.match(css,/\.fg-rebuilt-foggara\s*\{[^}]*white-space\s*:\s*nowrap\s*;/s);
 });
 
