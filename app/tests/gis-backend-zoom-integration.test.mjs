@@ -77,6 +77,6 @@ test("changed GIS TypeScript and TSX sources remain parseable",()=>{
       jsx:tsx?ts.JsxEmit.ReactJSX:ts.JsxEmit.None,
     },reportDiagnostics:true});
     const errors=(t.diagnostics||[]).filter(x=>x.category===ts.DiagnosticCategory.Error);
-    assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText," ")),[],file);
+    assert.deepEqual(errors.map(x=>{const pos=x.file?.getLineAndCharacterOfPosition(x.start??0);return `${file}:${(pos?.line??0)+1}:${(pos?.character??0)+1} TS${x.code}: ${ts.flattenDiagnosticMessageText(x.messageText," ")}`;}),[],file);
   }
 });
