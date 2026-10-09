@@ -180,3 +180,26 @@
   .fg-field-map-pills{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.fg-field-shell *{transition:none!important;animation:none!important}}
+
+/* MapLibre zoom / AOI focus remains visible above the GIS utility cards. */
+.fg-map-zoom-toolbar{position:absolute;z-index:12;inset-block-end:54px;inset-inline-end:16px;display:flex;flex-direction:column;gap:0;align-items:stretch;min-width:54px;border:1px solid #bbd4c3;border-radius:11px;overflow:hidden;background:#ffffffed;box-shadow:0 9px 26px #082d2240;backdrop-filter:blur(10px);direction:ltr}
+.fg-map-zoom-toolbar>button{background:transparent;border:0;border-bottom:1px solid #d9e7dc;min-height:45px;min-width:54px;font-size:25px;line-height:1;font-weight:700;color:#12593b;cursor:pointer}
+.fg-map-zoom-toolbar>button:last-child{border-bottom:0;font-size:24px}
+.fg-map-zoom-toolbar>button:hover:not(:disabled){background:#e7f6e9}
+.fg-map-zoom-toolbar>button:disabled{opacity:.35;cursor:not-allowed}
+.fg-map-zoom-toolbar>span{text-align:center;font:700 11px/1.7 ui-monospace,Consolas,monospace;white-space:nowrap;padding:5px 7px;color:#355e49}
+.fg-field-db{padding-top:18px;background:#f8fcf7}
+.fg-field-db-stats{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.fg-field-db-stats>span{font-size:10px;padding:6px 9px;border:1px solid #c7e0d1;border-radius:8px;color:#1b6542;background:#ecf8ef;font-weight:720}
+.fg-field-db-list{display:grid;gap:7px;max-height:200px;overflow-y:auto}
+.fg-field-db-list button{width:100%;display:flex;gap:9px;align-items:center;text-align:start;padding:10px;background:#fff;border:1px solid #d7e7d8;border-radius:10px;color:#2d6242;cursor:pointer}
+.fg-field-db-list button.active{border-color:#258257;background:#e7f5e9}
+.fg-field-db-list button>span{display:grid;gap:2px;min-width:0}
+.fg-field-db-list button strong{font-size:12px;overflow-wrap:anywhere}
+.fg-field-db-list button small{font-size:10px;color:#687b6e;line-height:1.4}
+.fg-field-db-save{display:flex;flex-direction:column;gap:9px;padding:13px;border:1px solid #dbeadd;border-radius:12px;background:white}
+.fg-field-db-save label{display:grid;gap:5px;font-size:11px;font-weight:720;color:#396049}
+.fg-field-db-save input{width:100%;min-width:0;min-height:39px;border:1px solid #c4dccb;border-radius:7px;padding:7px 10px;color:#143c2d;background:#fff;font:inherit}
+.fg-field-db-save button{display:flex;justify-content:center;align-items:center;gap:7px;min-height:42px;padding:9px;border:0;border-radius:8px;background:#176647;color:white;cursor:pointer;font:750 12px/1.4 inherit}
+.fg-field-db-save button:disabled{opacity:.46;cursor:default}
+@media(max-width:730px){.fg-map-zoom-toolbar{inset-block-end:50px;inset-inline-end:8px;min-width:45px}.fg-map-zoom-toolbar>button{min-width:45px;min-height:41px;font-size:23px}}
