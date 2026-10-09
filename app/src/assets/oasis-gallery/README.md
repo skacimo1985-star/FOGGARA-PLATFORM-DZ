@@ -26,4 +26,4 @@ AI-assisted illustrative media provided by the user. These are not verified phot
 
 ## Integration and verification
 
-The `foggara_oasis_site_assets.zip` handoff archive contains the 13 optimized files in **this exact directory**. Extract its contents into the repository root, commit as binary files to the feature branch, then run `cd app && npm ci && node --test tests/farm-landing.test.mjs && npm run build`. Only merge and deploy after all expected image assets and tests are present.
+The `foggara_oasis_site_assets.zip` handoff archive contains the 13 optimized files in **this exact directory**. Extract its contents into the repository root, commit as binary files to the feature branch, then run `cd app && npm ci && node --test tests/farm-landing.test.mjs && npm run build`. The `farm-landing.test.mjs` image gate now **fails explicitly** if any of the 13 files is missing, too small, or not RIFF/WEBP binary. Extract the archive, run the included safe PowerShell installer against your existing Git clone, verify the tests and build, and only then mark PR #210 ready to merge. Do not bypass this check or merge a text-only branch.
