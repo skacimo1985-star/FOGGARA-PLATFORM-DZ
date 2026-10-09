@@ -54,6 +54,7 @@ type Props = {
   wilayas: WilayaMeta[];
   satelliteScenes?: SatelliteScene[];
   parcelBoundaries?: ParcelBoundaryFeature[];
+  draftParcelBoundary?: { type: "Polygon"; coordinates: [number, number][][] } | null;
   satelliteOverlay?: SatelliteRasterOverlay | null;
   analysisOverlay?: AnalysisRasterOverlay | null;
   selectedSceneId?: string | null;
@@ -333,6 +334,7 @@ export function NationalMap({
   wilayas,
   satelliteScenes = [],
   parcelBoundaries = [],
+  draftParcelBoundary = null,
   satelliteOverlay = null,
   analysisOverlay = null,
   selectedSceneId = null,
@@ -455,14 +457,25 @@ export function NationalMap({
 
   const parcelFeatureCollection = useMemo(() => ({
     type: "FeatureCollection" as const,
-    features: parcelBoundaries.map((feature) => ({
-      ...feature,
-      properties: {
-        ...feature.properties,
-        selected: feature.properties.id === selectedParcelId,
-      },
-    })),
-  }), [parcelBoundaries, selectedParcelId]);
+    features: [
+      ...parcelBoundaries.map((feature) => ({
+        ...feature,
+        properties: {
+          ...feature.properties,
+          selected: feature.properties.id === selectedParcelId,
+        },
+      })),
+      ...(draftParcelBoundary ? [{
+        type: "Feature" as const,
+        id: -1,
+        geometry: draftParcelBoundary,
+        properties: {
+          id: -1, name: "Unsaved drawn polygon", crop: "", area_ha: 0,
+          location: "", site_id: null, is_demo: false, selected: true,
+        },
+      }] : []),
+    ],
+  }), [parcelBoundaries, draftParcelBoundary, selectedParcelId]);
   parcelFeaturesRef.current = parcelFeatureCollection;
 
   const labels = locale === "fr"
@@ -802,7 +815,7 @@ export function NationalMap({
           map.on("click", "agri-parcel-fill", (event) => {
             if (drawingBoundaryRef.current || selectingAnalysisAreaRef.current || measureModeRef.current !== "none") return;
             const parcelId = Number(event.features?.[0]?.properties?.id);
-            if (Number.isFinite(parcelId) && onSelectParcelRef.current) {
+            if (Number.isFinite(parcelId) && parcelId > 0 && onSelectParcelRef.current) {
               onSelectParcelRef.current(parcelId);
             }
           });
@@ -1213,7 +1226,7 @@ export function NationalMap({
               ) : null}
             </div>
           ) : null}
-          {selectedParcelId && onDrawParcelBoundary ? (
+          {onDrawParcelBoundary ? (
             <div className="fg-map-control-card fg-map-draw-card">
               {!drawingBoundary ? (
                 <button

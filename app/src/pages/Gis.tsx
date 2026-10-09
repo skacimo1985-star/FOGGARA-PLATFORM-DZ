@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { MapPinned } from "lucide-react";
 import { api } from "@/lib/api";
+import {polygonAreaHectares,polygonBoundingBox} from "@/lib/geojson-area";
 import type { GisSite, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import { OperationalEmptyState } from "@/components/OperationalEmptyState";
 import { NationalMap, type AnalysisRasterOverlay, type ParcelBoundaryFeature, type SatelliteRasterOverlay, type SatelliteScene } from "@/components/NationalMap";
 import { setActiveParcelId, useOperationalContext } from "@/lib/operational-context";
 import "./command-center.css";
+import "./gis-direct-workflow.css";
 
 type SpatialFeature = {
   type: "Feature";
@@ -48,6 +50,12 @@ type SitesGeoJSON = {
     crs: string;
     spatial_engine: string;
   };
+};
+
+type GisOperationalStatus = {
+  database: {connected:boolean;engine:string;persistent_storage_claim:string;postgis_extension_verified:boolean};
+  organization: {sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number};
+  analysis: {satellite_provider:string;raster_engine:string;provider_online_verified:boolean;note:string};
 };
 
 type PolygonGeometry = {
@@ -323,6 +331,8 @@ function parcelBbox(feature: ParcelBoundaryFeature | null): [number, number, num
 export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
+  const [gisStatus,setGisStatus] = useState<GisOperationalStatus | null>(null);
+  const [gisStatusError,setGisStatusError] = useState<unknown>(null);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
@@ -341,6 +351,7 @@ export default function Gis() {
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
   const [manualAnalysisBbox, setManualAnalysisBbox] = useState<[number, number, number, number] | null>(null);
+  const [draftPolygon,setDraftPolygon] = useState<PolygonGeometry | null>(null);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldCrop, setNewFieldCrop] = useState("");
   const [fieldSaving, setFieldSaving] = useState(false);
@@ -373,6 +384,9 @@ export default function Gis() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
+    api.get<GisOperationalStatus>("/gis/operational-status")
+      .then(setGisStatus)
+      .catch(setGisStatusError);
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
       .then((r) => setData(r.sites))
       .catch(setError);
@@ -446,12 +460,12 @@ export default function Gis() {
     ? {
         title: "Analyse de parcelle — mode simple",
         body: "Choisissez une parcelle, puis lancez une analyse complète. Les détails STAC, GeoJSON et indices restent disponibles dans les outils avancés.",
-        project: "1 · Projet",
+        project: "1 · Projet (facultatif)",
         parcel: "2 · Parcelle",
         analyze: "3 · Analyser",
         result: "4 · Résultat",
-        projectMissing: "Sélectionnez d’abord un projet actif.",
-        chooseProject: "Ouvrir les projets",
+        projectMissing: "Un projet n’est pas obligatoire pour analyser une zone. Vous pouvez en lier un plus tard.",
+        chooseProject: "Gérer les projets", optional: "Facultatif",
         chooseParcel: "Choisir une parcelle",
         areaHint: "Aucune parcelle ? Utilisez « Zone d’analyse » sur la carte, choisissez 2 coins, puis enregistrez la parcelle.",
         analyzeNow: "Analyser la parcelle",
@@ -471,12 +485,12 @@ export default function Gis() {
       ? {
           title: "Field analysis — simple mode",
           body: "Choose a field, then run one complete analysis. STAC, GeoJSON and raw index controls remain available under Advanced tools.",
-          project: "1 · Project",
+          project: "1 · Project (optional)",
           parcel: "2 · Field",
           analyze: "3 · Analyze",
           result: "4 · Result",
-          projectMissing: "Select an active project first.",
-          chooseProject: "Open projects",
+          projectMissing: "A project is optional for area analysis. You may link one later.",
+          chooseProject: "Manage projects", optional: "Optional",
           chooseParcel: "Choose a field",
           areaHint: "No field yet? Use “Select analysis area” on the map, pick 2 corners, then save the field.",
           analyzeNow: "Analyze field",
@@ -495,12 +509,12 @@ export default function Gis() {
       : {
           title: "تحليل الحقل — الوضع البسيط",
           body: "اختر القطعة ثم شغّل تحليلًا واحدًا شاملًا. تفاصيل STAC وGeoJSON واختيار المؤشرات تبقى داخل الأدوات المتقدمة.",
-          project: "1 · المشروع",
+          project: "1 · المشروع (اختياري)",
           parcel: "2 · القطعة",
           analyze: "3 · التحليل",
           result: "4 · النتيجة",
-          projectMissing: "اختر مشروعًا نشطًا أولًا.",
-          chooseProject: "فتح المشاريع",
+          projectMissing: "المشروع اختياري لتحليل منطقة من الخريطة. يمكنك ربطه لاحقًا.",
+          chooseProject: "إدارة المشاريع", optional: "اختياري",
           chooseParcel: "اختر القطعة",
           areaHint: "لا توجد قطعة؟ اضغط «حدد منطقة التحليل» على الخريطة، اختر زاويتين، ثم احفظ القطعة.",
           analyzeNow: "حلّل الحقل الآن",
@@ -597,9 +611,10 @@ export default function Gis() {
   const ndviMean = fieldIndexMean("ndvi");
   const moistureMean = fieldIndexMean("ndmi") ?? fieldIndexMean("ndwi") ?? fieldIndexMean("lswi");
   const soilPh = fieldIntelligenceResult?.soil_context?.properties?.ph?.mean_0_20 ?? null;
+  // An AOI or saved parcel is a valid analysis target even without a project.
+  // The backend performs bounded, real provider/raster processing and enforces ownership.
   const simpleAnalysisReady = Boolean(
-    activeProjectId
-    && currentRasterBudget.allowed
+    currentRasterBudget.allowed
     && (selectedParcelId || manualAnalysisBbox)
     && (selectedParcelId || newFieldCrop.trim())
   );
@@ -818,15 +833,16 @@ export default function Gis() {
       const created = await api.post<ParcelRecord>("/agriculture/parcels", {
         name: newFieldName.trim(),
         crop: newFieldCrop.trim(),
-        area_ha: Math.max(0.01, Number((budget.areaKm2 * 100).toFixed(4))),
+        area_ha: Math.max(0.001, Number((draftPolygon ? polygonAreaHectares(draftPolygon) : budget.areaKm2 * 100).toFixed(6))),
         location: `GIS AOI ${((south+north)/2).toFixed(5)}, ${((west+east)/2).toFixed(5)}`,
-        boundary_geojson: bboxPolygon(manualAnalysisBbox),
+        boundary_geojson: draftPolygon ?? bboxPolygon(manualAnalysisBbox),
         site_id: activeProjectSiteId,
         stage: "initial",
       });
       await refreshParcelSpatialData();
       setActiveParcelId(created.id);
       setManualAnalysisBbox(null);
+      setDraftPolygon(null);
       setNewFieldName("");
       setFieldIntelligenceResult(null);
     } catch (err) {
@@ -871,7 +887,19 @@ export default function Gis() {
   };
 
   const saveParcelBoundary = async (geometry: PolygonGeometry) => {
-    if (!selectedParcelId) return;
+    if (!selectedParcelId) {
+      const bounds=polygonBoundingBox(geometry);
+      if (!bounds) {
+        setBoundaryError(new Error(parcelCopy.importError));
+        return;
+      }
+      // New users can draw the polygon before creating a project or parcel.
+      setDraftPolygon(geometry);
+      setManualAnalysisBbox(bounds);
+      setActiveParcelId(null);
+      setBoundaryError(null);
+      return;
+    }
     setBoundaryBusy(true);
     setBoundaryError(null);
     try {
@@ -987,6 +1015,17 @@ export default function Gis() {
       </section>
 
       <ErrorText error={error} />
+      <section className="fg-gis-db-diagnostics" aria-label={lang==="ar"?"جاهزية قاعدة بيانات GIS":lang==="fr"?"État de la base SIG":"GIS database status"}>
+        <strong>{lang==="ar"?"قاعدة البيانات الفعلية":lang==="fr"?"Base de données effective":"Actual database"}</strong>
+        {gisStatus ? <>
+          <span dir="ltr">{gisStatus.database.engine.toUpperCase()}</span>
+          <span>{lang==="ar"?"مواقع":lang==="fr"?"Sites":"Sites"}: {gisStatus.organization.sites}</span>
+          <span>{lang==="ar"?"قطع محفوظة":lang==="fr"?"Parcelles enregistrées":"Saved parcels"}: {gisStatus.organization.parcels}</span>
+          <span>{lang==="ar"?"حدود مكانية":lang==="fr"?"Limites cartographiées":"Mapped boundaries"}: {gisStatus.organization.mapped_parcels}</span>
+          <span>{lang==="ar"?"قياسات":lang==="fr"?"Observations":"Observations"}: {gisStatus.organization.observations}</span>
+          {gisStatus.database.engine!=="postgresql" ? <small>{lang==="ar"?"تحذير: تخزين PostgreSQL المستمر غير مثبت. تحقق من إعداد DATABASE_URL.":lang==="fr"?"Attention : stockage PostgreSQL persistant non confirmé. Vérifier DATABASE_URL.":"Warning: persistent PostgreSQL storage not confirmed. Check DATABASE_URL."}</small> : null}
+        </> : <span>{gisStatusError ? (lang==="ar"?"تعذر التحقق من اتصال قاعدة البيانات":lang==="fr"?"Connexion base non vérifiée":"Could not verify database connection") : "…"}</span>}
+      </section>
 
       <div className="fg-gis-map-first">
       {data === null && !error ? (
@@ -997,6 +1036,7 @@ export default function Gis() {
           wilayas={wilayas}
           satelliteScenes={satelliteScenes}
           parcelBoundaries={parcelBoundaries}
+          draftParcelBoundary={draftPolygon}
           satelliteOverlay={satelliteOverlay}
           analysisOverlay={analysisOverlay}
           selectedSceneId={selectedSceneId}
@@ -1010,6 +1050,7 @@ export default function Gis() {
           analysisSelectionBbox={manualAnalysisBbox}
           onAnalysisSelectionChange={(bbox) => {
             setManualAnalysisBbox(bbox);
+            setDraftPolygon(null);
             if (bbox) {
               setActiveParcelId(null);
               setSelectedSiteId(null);
@@ -1020,6 +1061,7 @@ export default function Gis() {
           onSelectSite={(siteId) => void selectSite(siteId)}
           onSelectParcel={(parcelId) => {
             setManualAnalysisBbox(null);
+            setDraftPolygon(null);
             setActiveParcelId(selectedParcelId === parcelId ? null : parcelId);
             setSelectedSiteId(null);
           }}
@@ -1044,7 +1086,7 @@ export default function Gis() {
         </div>
 
         <div className="fg-gis-steps">
-          <div className={activeProjectId ? "done" : ""}><b>01</b><span>{guideCopy.project}</span><strong>{activeProject?.title ?? guideCopy.missing}</strong></div>
+          <div className={activeProjectId ? "done" : ""}><b>01</b><span>{guideCopy.project}</span><strong>{activeProject?.title ?? guideCopy.optional}</strong></div>
           <div className={selectedParcelId || manualAnalysisBbox ? "done" : ""}><b>02</b><span>{guideCopy.parcel}</span><strong>{selectedParcelRecord?.name ?? (manualAnalysisBbox ? guideCopy.selectedArea : guideCopy.missing)}</strong></div>
           <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>03</b><span>{guideCopy.analyze}</span><strong>{fieldIntelligenceLoading ? guideCopy.analyzing : simpleAnalysisReady ? guideCopy.ready : guideCopy.missing}</strong></div>
           <div className={fieldIntelligenceResult?.status === "READY" ? "done" : ""}><b>04</b><span>{guideCopy.result}</span><strong>{fieldIntelligenceResult?.status === "READY" ? guideCopy.ready : guideCopy.missing}</strong></div>
@@ -1055,7 +1097,7 @@ export default function Gis() {
             <p>{guideCopy.projectMissing}</p>
             <Link to="/app/projects">{guideCopy.chooseProject}</Link>
           </div>
-        ) : (
+        ) : null}
           <div className="fg-gis-simple-controls">
             <label>
               <span>{guideCopy.chooseParcel}</span>
@@ -1073,9 +1115,11 @@ export default function Gis() {
                 {fieldIntelligenceLoading ? guideCopy.analyzing : guideCopy.analyzeNow}
               </button>
               {!selectedParcelId && !manualAnalysisBbox ? <p>{guideCopy.areaHint}</p> : null}
+              {manualAnalysisBbox ? <p dir="ltr" className="fg-gis-aoi-readout">{draftPolygon ? "POLYGON / " : "RECTANGLE / "} WGS84 BBOX: {manualAnalysisBbox.map(n=>n.toFixed(5)).join(", ")} · {currentRasterBudget.areaKm2.toFixed(4)} km² · {currentRasterBudget.pixels.toLocaleString()} px</p> : null}
+              {!currentRasterBudget.allowed && manualAnalysisBbox ? <p>{analysisCopy.zoom}</p> : null}
+              {draftPolygon ? <p>{lang==="ar"?"سيُحفظ المضلع المرسوم نفسه، وليس المستطيل المحيط.":lang==="fr"?"Le polygone dessiné sera enregistré, pas son rectangle englobant.":"The drawn polygon will be saved, not its bounding rectangle."}</p> : null}
             </div>
           </div>
-        )}
 
         {manualAnalysisBbox && !selectedParcelId ? (
           <div className="fg-gis-create-simple">
@@ -1086,7 +1130,7 @@ export default function Gis() {
             </button>
           </div>
         ) : null}
-
+        <ErrorText error={fieldError} />
         <ErrorText error={fieldIntelligenceError} />
 
         <div className="fg-gis-simple-result">

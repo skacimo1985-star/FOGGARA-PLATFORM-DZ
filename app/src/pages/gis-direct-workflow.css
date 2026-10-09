@@ -1,0 +1,7 @@
+/* Operational GIS: expose persisted database facts, not synthetic demo numbers. */
+.fg-gis-db-diagnostics{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0 18px;padding:14px 18px;border:1px solid #bfd9ca;background:#ecf6ef;border-radius:12px;color:#244936;font-size:13px;line-height:1.5}
+.fg-gis-db-diagnostics strong{font-weight:800;color:#123e2b}
+.fg-gis-db-diagnostics span{padding:5px 10px;border-radius:7px;background:#fff;border:1px solid #dce9df}
+.fg-gis-db-diagnostics small{display:block;width:100%;color:#935022;font-weight:700}
+.fg-gis-aoi-readout{max-width:100%;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:#35604c}
+@media(max-width:650px){.fg-gis-db-diagnostics{padding:12px}.fg-gis-db-diagnostics span{font-size:11px}}

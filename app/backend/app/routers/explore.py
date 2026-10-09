@@ -6,12 +6,12 @@
 from math import asin, cos, isfinite, radians, sin, sqrt
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import api_error, get_current_user
-from ..models import (AgriParcel, Asset, Indicator, Project, Service, ServiceRequest, Site,
+from ..models import (AgriObservation, AgriParcel, Asset, Indicator, Project, Service, ServiceRequest, Site,
                       User, WaterResource)
 from ..wilayas import WILAYAS
 from ..platform_models import NexusResource
@@ -121,6 +121,42 @@ def explore_domain(domain: str, user: User = Depends(get_current_user), db: Sess
         "services": _section(services, "services"),
         "projects": _section(projects, "projects"),
         "terminology": _section(terminology, "terminology"),
+    }
+
+
+# Database readiness is scoped to the signed-in organization.
+# Never reveal credentials, other tenants' records, or infer actual imagery from catalog metadata.
+@router.get("/gis/operational-status")
+def gis_operational_status(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Read-only production reality check: which DB engine and how many real records."""
+    def count(model, *conditions):
+        return db.scalar(select(func.count()).select_from(model).where(
+            model.org_id == user.org_id, *conditions
+        )) or 0
+
+    engine = db.get_bind().dialect.name
+    return {
+        "database": {
+            "connected": True,  # all queries above must succeed before returning HTTP 200
+            "engine": engine,
+            "persistent_storage_claim": "external_or_managed_postgresql" if engine == "postgresql" else "not_verified",
+            "postgis_extension_verified": False,
+        },
+        "organization": {
+            "sites": count(Site),
+            "projects": count(Project),
+            "parcels": count(AgriParcel, AgriParcel.archived.is_(False)),
+            "mapped_parcels": count(AgriParcel, AgriParcel.archived.is_(False), AgriParcel.boundary_geojson.isnot(None)),
+            "observations": count(AgriObservation),
+            "satellite_observations": count(AgriObservation, AgriObservation.source_type == "satellite"),
+        },
+        "analysis": {
+            "geometry": "WGS84 GeoJSON Polygon",
+            "satellite_provider": "element84-earth-search",
+            "raster_engine": "rasterio",
+            "provider_online_verified": False,
+            "note": "Catalog, provider and raster availability must be checked per requested AOI and date.",
+        },
     }
 
 
