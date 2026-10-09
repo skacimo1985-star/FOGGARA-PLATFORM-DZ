@@ -25,16 +25,15 @@ export default function Presentation(){
  <section className="fp-original-canva" aria-label="FOGGARA Canva presentation">
   <div className="fp-source-head">
    <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
-   <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noreferrer">
-    {locale==="ar"?"فتح المصدر الأصلي":locale==="fr"?"Voir la source Canva":"View original Canva source"} <ArrowUpRight size={15}/>
+   <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noopener noreferrer">
+    {locale==="ar"?"فتح المصدر الأصلي على Canva":locale==="fr"?"Voir la présentation originale sur Canva":"View original Canva presentation"} <ArrowUpRight size={15}/>
    </a>
   </div>
-  <iframe src="https://www.canva.com/design/DAHXhnIEguc/view?embed" title="FOGGARA source presentation" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
+  <p className="fp-source-note">{locale==="ar"?"العرض التفاعلي أدناه يعمل داخل المنصة، والمصدر الأصلي متاح عبر Canva.":locale==="fr"?"La version interactive fonctionne directement ci-dessous ; la source originale reste sur Canva.":"The interactive site version works below; the original source remains available on Canva."}</p>
  </section>
- <details className="fp-native-deck">
-  <summary>{locale==="ar"?"العرض التفاعلي للمنصة":locale==="fr"?"Version interactive":"Interactive site version"}</summary>
+ <div className="fp-native-deck fp-native-deck-visible">
   <OasisCanvaPresentation lang={locale}/>
- </details>
+ </div>
  <div className="fp-domain-bar">{NEXUS_DOMAINS.map(({key,icon:Icon,color},i)=><button key={key} aria-pressed={active===key} onClick={()=>setActive(active===key?'all':key)} style={{'--domain':color} as React.CSSProperties}><span className="fp-domain-index" dir="ltr">0{i+1}</span><Icon size={22}/><strong>{t(`landing.${key}`)}</strong><span className="fp-domain-arrow"><ArrowUpRight size={16}/></span></button>)}</div>
  <section id="presentation" className="fp-figma-bridge">
   <div className="fp-section-heading"><div><p className="fp-overline">WEFEH / NEXUS</p><h2>{c.architecture}</h2><p>{c.architectureSub}</p></div></div>
