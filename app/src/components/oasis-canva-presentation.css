@@ -341,10 +341,10 @@
   letter-spacing:-.035em!important;
 }
 .ocp-closing-copy h3{
-  max-width:820px;
-  font-size:clamp(44px,4.8vw,72px)!important;
-  line-height:.98!important;
-  letter-spacing:-.03em!important;
+  max-width:100%;
+  font-size:clamp(30px,3.6vw,54px)!important;
+  line-height:1.1!important;
+  letter-spacing:-.02em!important;
 }
 .ocp-kicker{
   margin-bottom:12px;
@@ -397,4 +397,109 @@
     font-size:clamp(28px,8vw,38px)!important;
     line-height:1.08!important;
   }
+}
+
+/* Screenshot regression 2026-10-09: balance slide content within the presentation stage. */
+.ocp .ocp-page-closing{
+  display:flex;
+  align-items:flex-end;
+  padding:clamp(26px,5%,66px);
+}
+.ocp .ocp-page-closing .ocp-closing-copy{
+  position:relative;
+  inset:auto;
+  width:100%;
+  max-width:950px;
+  padding:0 0 2%;
+}
+.ocp .ocp-page-closing .ocp-closing-copy h3{
+  max-width:100%;
+  font-size:clamp(28px,4.2cqw,54px)!important;
+  line-height:1.12!important;
+  overflow-wrap:break-word;
+  text-wrap:balance;
+}
+.ocp .ocp-page-closing .ocp-closing-copy p{
+  max-width:740px;
+  margin-top:14px;
+  font-size:clamp(12px,1.5cqw,17px);
+  line-height:1.5;
+}
+.ocp .ocp-page-services{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:clamp(14px,2cqw,26px);
+  padding:clamp(26px,5%,58px);
+}
+.ocp .ocp-page-services .ocp-copy{
+  position:relative;
+  inset:auto;
+  width:100%;
+  max-width:870px;
+  flex:0 0 auto;
+}
+.ocp .ocp-page-services .ocp-copy h3{
+  font-size:clamp(26px,3.8cqw,44px)!important;
+  line-height:1.16!important;
+  overflow-wrap:anywhere;
+  text-wrap:balance;
+}
+.ocp .ocp-page-services .ocp-copy p{
+  max-width:780px;
+  margin-top:10px;
+  font-size:clamp(12px,1.4cqw,16px);
+  line-height:1.55;
+}
+.ocp .ocp-page-services .ocp-services-cloud{
+  position:relative;
+  inset:auto;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-content:center;
+  gap:clamp(7px,1.2cqw,14px);
+  width:100%;
+  height:auto;
+  min-height:0;
+  margin:0;
+}
+.ocp .ocp-page-services .ocp-services-cloud span{
+  position:static;
+  inset:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:clamp(48px,6cqw,76px);
+  padding:10px;
+  background:#efe8d9;
+  border:1px solid #ded1b8;
+  border-radius:5px;
+  color:#163d30;
+  font-size:clamp(9px,1.1cqw,13px);
+  font-weight:800;
+  line-height:1.35;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  letter-spacing:.035em;
+}
+.ocp .ocp-page-services .ocp-services-cloud .s7{
+  background:#b65a37;
+  border-color:#b65a37;
+  color:#fff;
+}
+.ocp .ocp-stage{container-type:inline-size}
+@media(max-width:860px){
+  .ocp .ocp-page-services .ocp-services-cloud{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ocp .ocp-page-services{padding:clamp(22px,4%,40px)}
+  .ocp .ocp-page-closing .ocp-closing-copy h3{font-size:clamp(28px,5.2cqw,44px)!important}
+}
+@media(max-width:580px){
+  .ocp .ocp-page-services{justify-content:flex-start;gap:20px;padding:24px 18px}
+  .ocp .ocp-page-services .ocp-services-cloud{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .ocp .ocp-page-services .ocp-services-cloud span{min-height:52px;font-size:11px}
+  .ocp .ocp-page-services .ocp-copy h3{font-size:clamp(24px,6cqw,33px)!important}
+  .ocp .ocp-page-closing{padding:22px}
+  .ocp .ocp-page-closing .ocp-closing-copy h3{font-size:clamp(27px,6.2cqw,37px)!important}
 }

@@ -45,3 +45,27 @@ test("farm template services link to real routes while public Expo stays accessi
   assert.ok(css.includes("max-width:560px"));
   assert.ok(css.includes("fg-hero-qr-code img{width:116px"));
 });
+
+test("seven-slide presentation avoids cut-off closing titles and random service tiles",()=>{
+  const deckCss=read("../src/components/oasis-canva-presentation.css");
+  const deck=read("../src/components/OasisCanvaPresentation.tsx");
+  assert.ok(deckCss.includes("Screenshot regression 2026-10-09"));
+  assert.match(deckCss,/\.ocp \.ocp-page-closing\{[^}]*display:flex;/);
+  assert.match(deckCss,/\.ocp \.ocp-page-closing \.ocp-closing-copy\{[^}]*position:relative;/);
+  assert.match(deckCss,/\.ocp \.ocp-page-closing \.ocp-closing-copy h3\{[^}]*font-size:clamp\(28px,4\.2cqw,54px\)!important;/);
+  assert.match(deckCss,/\.ocp \.ocp-page-services \.ocp-services-cloud\{[^}]*display:grid;/);
+  assert.match(deckCss,/\.ocp \.ocp-page-services \.ocp-services-cloud span\{[^}]*position:static;/);
+  assert.ok(deckCss.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
+  assert.ok(deck.includes("SIREP OASES · SERVICES"));
+  assert.ok(deck.includes("FOGGARA-DZ · NEXUS WEFEH"));
+});
+
+test("restored gallery uses a bounded three-image layout with neutral poster background",()=>{
+  assert.match(css,/\.os-public-shell \.fg-landing > section\.fg-restored-gallery/);
+  assert.match(css,/\.fg-landing \.fg-restored-gallery h2\{/);
+  assert.ok(css.includes("width:min(1180px,calc(100% - 48px))"));
+  assert.ok(css.includes("object-fit:contain;"));
+  assert.ok(css.includes("background:#e9e5d8"));
+  assert.ok(css.includes("width:min(100%,1080px)"));
+  assert.ok(css.includes("height:600px"));
+});

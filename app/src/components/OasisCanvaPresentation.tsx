@@ -161,7 +161,7 @@ function ActionSlide({slide}:{slide:Slide}){
 function ServicesSlide({slide}:{slide:Slide}){
   const services=["ENGINEERING","DIGITAL SERVICES","ENERGY","AGRICULTURE","MEASUREMENT","CALIBRATION","INSPECTION"];
   return <div className="ocp-page ocp-page-dark ocp-page-services">
-    <div className="ocp-copy"><span className="ocp-kicker">10 / SIREP OASES</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-copy"><span className="ocp-kicker">SIREP OASES · SERVICES</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
     <div className="ocp-services-cloud" dir="ltr">{services.map((service,i)=><span key={service} className={"s"+(i+1)}>{service}</span>)}</div>
   </div>;
 }
@@ -184,7 +184,7 @@ function ClosingSlide({slide}:{slide:Slide}){
   return <div className="ocp-page ocp-page-closing">
     <img className="ocp-media-image" src="/images/oasis-dawn.webp" alt="" aria-hidden="true"/>
     <div className="ocp-closing-shade"/>
-    <div className="ocp-closing-copy"><span className="ocp-kicker">12 / FOGGARA-DZ</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
+    <div className="ocp-closing-copy"><span className="ocp-kicker">FOGGARA-DZ · NEXUS WEFEH</span><h3>{slide.title}</h3><p>{slide.body}</p></div>
   </div>;
 }
 
