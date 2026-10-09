@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight, ArrowDown, Droplets, Zap, Wheat, Leaf, HeartPulse,
   ShieldCheck, Users, MapPinned, BrainCircuit, Search, QrCode, CloudSun, Satellite, FlaskConical, Map,
-  Copy, Download, Check, ChevronLeft, ChevronRight, MapPin, Languages,
+  Copy, Download, Check, MapPin, Languages,
   Building2, ScanLine
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
@@ -31,7 +31,6 @@ export default function Landing() {
   const {t,i18n}=useTranslation();
   const [active,setActive]=useState("all");
   const [toolQuery,setToolQuery]=useState("");
-  const [heroSlide,setHeroSlide]=useState(0);
   const toolSearchRef=useRef<HTMLInputElement>(null);
   const [qrCopied,setQrCopied]=useState(false);
   const expoUrl="https://foggara-dz.onrender.com/expo";
@@ -209,11 +208,6 @@ export default function Landing() {
   },[]);
 
   useEffect(()=>{
-    const timer=window.setInterval(()=>setHeroSlide(value=>(value+1)%copy.hero.length),6000);
-    return()=>window.clearInterval(timer);
-  },[copy.hero.length]);
-
-  useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
         event.preventDefault();
@@ -235,7 +229,7 @@ export default function Landing() {
     }catch{/* Clipboard can be unavailable in restricted browser contexts. */}
   }
 
-  const hero=copy.hero[heroSlide];
+  const hero=copy.hero[0];
 
   return <div className="fg-public fg-landing fg-moon-landing" dir={i18n.dir()} lang={i18n.language}>
     <div className="fg-moon-topline">
@@ -255,7 +249,7 @@ export default function Landing() {
     </nav>
 
     <section className="fg-moon-hero fg-lukas-hero fg-rebuilt-hero" id="home" aria-labelledby="foggara-title">
-      <div className={`fg-moon-hero-media fg-moon-hero-media-${heroSlide+1}`} aria-hidden="true"/>
+      <div className="fg-moon-hero-media fg-moon-hero-media-1" aria-hidden="true"/>
       <div className="fg-moon-hero-overlay"/>
 
       <div className="fg-rebuilt-hero-top">
@@ -278,18 +272,11 @@ export default function Landing() {
       </div>
 
       <div className="fg-rebuilt-hero-bottom">
-        <div className="fg-lukas-thumbs" aria-label="FOGGARA-DZ hero scenes">
-          {copy.hero.map((item,index)=><button type="button" key={item.title} className={heroSlide===index?"active":""} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}>
-            <img src={index===0?"/images/user-oasis-hero.webp":index===1?"/images/oasis-hero.webp":"/images/oasis-dawn.webp"} alt="" loading="eager"/>
-          </button>)}
-        </div>
         <div className="fg-rebuilt-domain-line" dir="ltr">
           <span>WATER</span><span>ENERGY</span><span>FOOD</span><span>ECOSYSTEM</span><span>HEALTH</span>
         </div>
       </div>
 
-      <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
-      <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
     </section>
 
     <nav className="fg-lukas-domain-strip" aria-label={t("publicExperience.domains")}>
@@ -351,27 +338,19 @@ export default function Landing() {
         <Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link>
       </div>
       <figure className="fg-agriculture-template-art">
-        <img src="/images/oasis-dawn.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
+        <img src="/images/foggara-sprite.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
         <figcaption><span>FIELD HERITAGE</span><strong>FOGGARA → DIGITAL TWIN</strong></figcaption>
       </figure>
     </section>
 
-    <div className="fg-global-visual-stage" aria-label={institutionCopy.galleryAria}>
+    <div className="fg-global-visual-stage fg-source-gallery" aria-label={institutionCopy.galleryAria}>
       <figure className="fg-global-visual-main">
-        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[0]} loading="lazy"/>
-        <figcaption>{institutionCopy.gallery[0]}</figcaption>
-      </figure>
-      <figure className="fg-global-visual-heritage">
-        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/foggara-heritage-poster.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
-      <figure className="fg-global-visual-field">
-        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[2]} loading="lazy"/>
+      <figure className="fg-global-visual-heritage">
+        <img src="/images/foggara-sprite.webp" alt={institutionCopy.gallery[2]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[2]}</figcaption>
-      </figure>
-      <figure className="fg-global-visual-evidence">
-        <img src="/images/oasis-hero.webp" alt={institutionCopy.gallery[3]} loading="lazy"/>
-        <figcaption>{institutionCopy.gallery[3]}</figcaption>
       </figure>
       <div className="fg-global-visual-note">
         <span>HERITAGE → DATA → EVIDENCE → DECISION</span>
@@ -404,7 +383,26 @@ export default function Landing() {
         </div>
         <p>{lang==="fr"?"Du terrain à la preuve, de la preuve à l’arbitrage.":lang==="en"?"From field to evidence, from evidence to decision.":"من الميدان إلى الدليل، ومن الدليل إلى القرار."}</p>
       </header>
-      <OasisCanvaPresentation lang={lang} compact/>
+      <div className="fg-canva-original-design">
+        <div className="fg-canva-source-header">
+          <span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span>
+          <a href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noreferrer">
+            {lang==="ar"?"فتح عرض Canva الأصلي":lang==="fr"?"Voir la présentation Canva originale":"Open original Canva presentation"} <ArrowUpRight size={15}/>
+          </a>
+        </div>
+        <iframe
+          src="https://www.canva.com/design/DAHXhnIEguc/view?embed"
+          title={lang==="ar"?"عرض فقارة من Canva":lang==="fr"?"Présentation FOGGARA issue de Canva":"FOGGARA original Canva presentation"}
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+        <p>{lang==="ar"?"محتوى العرض مأخوذ من التصميم الذي قدمته، مع استبعاد الشريحة الفضائية المكررة.":lang==="fr"?"Présentation issue de votre design, avec suppression de la diapositive satellite dupliquée.":"Presentation based on the supplied design, with the duplicate satellite slide omitted."}</p>
+      </div>
+      <details className="fg-canva-native-fallback">
+        <summary>{lang==="ar"?"نسخة عرض الموقع التفاعلية":lang==="fr"?"Version interactive intégrée au site":"Interactive site presentation"}</summary>
+        <OasisCanvaPresentation lang={lang} compact/>
+      </details>
     </section>
 
     <section className="fg-moon-demo fg-global-demo" id="demo">

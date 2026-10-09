@@ -31,7 +31,7 @@ test('supplied heritage artwork is integrated once without reviving the old ligh
   const storyStart=landing.indexOf('className="fg-agriculture-template-story"');
   const storyEnd=landing.indexOf('className="fg-global-visual-stage"',storyStart);
   const story=landing.slice(storyStart,storyEnd);
-  assert.ok(story.includes('/images/oasis-dawn.webp'));
+  assert.ok(story.includes('/images/foggara-sprite.webp'));
   assert.equal(story.includes('foggara-video-frame-1.webp'),false);
   assert.equal(story.includes('foggara-video-frame-2.webp'),false);
   assert.ok(landing.includes('FROM HERITAGE TO DIGITAL TWIN'));

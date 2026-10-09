@@ -19,7 +19,7 @@ test('production visual sources never reference the corrupt legacy frame files',
 });
 
 test('critical production WebP assets have a valid RIFF/WEBP signature',()=>{
-  for(const asset of ['user-oasis-hero.webp','oasis-dawn.webp','oasis-hero.webp']){
+  for(const asset of ['oasis-dawn.webp','oasis-hero.webp','foggara-heritage-poster.webp','foggara-sprite.webp']){
     const bytes=readFileSync(new URL('../public/images/'+asset,import.meta.url));
     assert.equal(bytes.subarray(0,4).toString('ascii'),'RIFF',asset+' RIFF');
     assert.equal(bytes.subarray(8,12).toString('ascii'),'WEBP',asset+' WEBP');
@@ -36,4 +36,13 @@ test('visual layout contains production-safe fallbacks and bounded hero type',()
   assert.ok(source.includes('white-space:nowrap'));
   assert.ok(source.includes('background:#173023 url("/images/oasis-dawn.webp")'));
   assert.ok(source.includes('dir={lang==="ar"?"rtl":"ltr"}'));
+});
+
+
+test('Canva source is embedded and the old repeated hero carousel is absent',()=>{
+  const landing=readFileSync(new URL('../src/pages/Landing.tsx',import.meta.url),'utf8');
+  assert.ok(landing.includes('DAHXhnIEguc/view?embed'));
+  assert.ok(landing.includes('DAHXhRSdmV4'));
+  assert.equal(landing.includes('setHeroSlide'),false);
+  assert.ok(source.includes('CANVA_SOURCE_HERO_2026_10_09'));
 });
