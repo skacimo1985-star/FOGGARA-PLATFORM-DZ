@@ -11,8 +11,8 @@ import { ServiceOfferings } from "@/components/ServiceOfferings";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
-import {OasisHeroMedia, FoggaraStoryPresentation} from "@/components/FoggaraVisualStory";
-import {OasisPhotoGallery} from "@/components/OasisPhotoGallery";
+import {OasisHeroMedia} from "@/components/FoggaraVisualStory";
+import {FoggaraSourceDeck} from "@/components/FoggaraSourceDeck";
 import "./oasis-original-landing.css";
 import "@/components/foggara-visual-story.css";
 const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
@@ -117,7 +117,7 @@ export default function Landing() {
       gallery:"صور من تراث الواحات وهندسة الموارد",
       imageLabels:["واحة جزائرية","الفقارة وتوزيع المياه","نظام الفقارة والموارد"],
       deck:"العرض التفاعلي لمنصة فقارة",
-      deckText:"خمس مراحل مصورة تشرح منطق الفقارة، وتحويل القياسات والأدلة إلى قرارات ومتابعة."
+      deckText:"الشرائح الثماني من العرض المرفق: من تحديد الأرض والأقمار الصناعية إلى الأدلة والقرار، مع صور الفقارة والواحات."
     },
     fr:{
       kicker:"Des services reliés au terrain",
@@ -130,7 +130,7 @@ export default function Landing() {
       gallery:"Patrimoine des oasis et ingénierie des ressources",
       imageLabels:["Oasis algérienne","Foggara et partage de l'eau","Patrimoine de la foggara"],
       deck:"Présentation interactive FOGGARA",
-      deckText:"Cinq chapitres illustrés : patrimoine, eau, agriculture, preuve et décisions WEFEH."
+      deckText:"Les huit diapositives du support fourni, du terrain et du satellite à la preuve, aux décisions et à l’écosystème, enrichies des images des oasis."
     },
     en:{
       kicker:"Services connected to the field",
@@ -143,7 +143,7 @@ export default function Landing() {
       gallery:"Oasis heritage and resource engineering",
       imageLabels:["Algerian oasis","Foggara water sharing","Foggara heritage"],
       deck:"FOGGARA interactive presentation",
-      deckText:"Five illustrated chapters: heritage, water, agriculture, evidence and WEFEH decisions."
+      deckText:"The eight supplied slides, from terrain and satellite observation to evidence, decisions and the national ecosystem, with integrated oasis imagery."
     }
   }[lang];
   return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
@@ -215,14 +215,10 @@ export default function Landing() {
           <Link to={to==="/app/gis"&&!user?"/gis":to} className="fg-restored-service-link">{heritage.discover}<ArrowUpRight size={16}/></Link>
         </article>)}</div>
     </section>
-    <section className="fg-restored-gallery" id="oasis-gallery" aria-labelledby="fg-restored-gallery-title">
-      <h2 id="fg-restored-gallery-title">{restoredContent.gallery}</h2>
-      <OasisPhotoGallery lang={lang}/>
-    </section>
-    <section className="fg-restored-presentation" id="oasis-presentation" aria-labelledby="fg-restored-presentation-title">
-      <div className="fg-restored-heading"><p className="fg-eyebrow">FOGGARA-DZ · SIREP OASES NEXUS WEFEH</p><h2 id="fg-restored-presentation-title">{restoredContent.deck}</h2><p>{restoredContent.deckText}</p>
-      </div>
-      <FoggaraStoryPresentation lang={lang}/>
+    <section className="fg-restored-presentation fg-pptx-presentation" id="oasis-presentation" aria-labelledby="fg-restored-presentation-title">
+      <span id="oasis-gallery" className="fg-source-anchor" aria-hidden="true"/>
+      <div className="fg-restored-heading"><p className="fg-eyebrow">FOGGARA-DZ · SIREP OASES NEXUS WEFEH</p><h2 id="fg-restored-presentation-title">{restoredContent.deck}</h2><p>{restoredContent.deckText}</p></div>
+      <FoggaraSourceDeck lang={lang}/>
     </section>
     <ServiceOfferings/>
     <AgroCapabilities compact/>
