@@ -1,7 +1,6 @@
 import {useState} from "react";
-import {ChevronLeft, ChevronRight, Images} from "lucide-react";
+import {ChevronLeft, ChevronRight} from "lucide-react";
 import {getOasisPhoto} from "./oasisVisuals";
-import "./foggara-visual-story.css";
 
 type Locale = "ar" | "fr" | "en";
 const heroPhotos = [
