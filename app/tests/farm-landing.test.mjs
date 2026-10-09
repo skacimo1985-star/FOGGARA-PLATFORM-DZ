@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,existsSync} from "node:fs";
 
 const read=(path)=>readFileSync(new URL(path,import.meta.url),"utf8");
 const app=read("../src/App.tsx");
@@ -86,4 +86,23 @@ test("curated gallery auto-discovers only real binary photos and keeps old fallb
   assert.ok(deck.includes('getOasisPhoto("kasria-water-distribution")'));
   assert.ok(deck.includes('getOasisPhoto("oasis-palm-reflection")'));
   assert.ok(galleryCss.includes("grid-template-columns:repeat(3,minmax(0,1fr))"));
+});
+
+// Image deployment gate: prevents a text-only PR from publishing empty user photo slots.
+test("all 13 user-supplied curated gallery photos are committed as valid binary WebP images",()=>{
+  const required=[
+    "kasria-earth-channels", "palm-oasis-kasria", "kasria-water-distribution",
+    "oasis-irrigation-stream", "traditional-kasria-outlets", "rock-kasria-detail",
+    "palm-kasria-alternate", "oasis-palms-blue-sky", "oasis-palm-reflection",
+    "sunset-over-oasis", "oasis-rock-pool", "sahara-desert-rocks", "sahara-cultural-scene"
+  ];
+  const assetUrl=id=>new URL("../src/assets/oasis-gallery/"+id+".webp",import.meta.url);
+  const missing=required.filter(id=>!existsSync(assetUrl(id)));
+  assert.deepEqual(missing,[],"Missing curated WebP images. Install the 13 binaries from foggara_oasis_site_assets.zip before merge.");
+  for(const id of required){
+    const bytes=readFileSync(assetUrl(id));
+    assert.ok(bytes.length>20_000,id+" is unexpectedly small or empty");
+    assert.equal(bytes.subarray(0,4).toString("ascii"),"RIFF",id+" has invalid RIFF signature");
+    assert.equal(bytes.subarray(8,12).toString("ascii"),"WEBP",id+" has invalid WebP signature");
+  }
 });
