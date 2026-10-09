@@ -1,7 +1,7 @@
 import {useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
-import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf, Droplets,CalendarDays,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
+import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
 import {NationalMap,type SatelliteScene} from "@/components/NationalMap";
 import {useAuth} from "@/context/useAuth";
 import {api} from "@/lib/api";
@@ -10,6 +10,7 @@ import {polygonAreaHectares} from "@/lib/geojson-area";
 import {boundsOfPolygon,rectanglePolygon,saveFoggaraAoi,type FoggaraPolygon} from "@/lib/foggara-aoi";
 import {ErrorText} from "@/components/common";
 import "./public-gis.css";
+import "./foggara-field-workbench.css";
 
 type Bbox=[number,number,number,number];
 type SceneList={provider:string;collection:string;live:boolean;count:number;scenes:SatelliteScene[]};
