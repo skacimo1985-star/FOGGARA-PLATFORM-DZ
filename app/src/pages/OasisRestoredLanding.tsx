@@ -11,9 +11,10 @@ import { ServiceOfferings } from "@/components/ServiceOfferings";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
-import {OasisCanvaPresentation} from "@/components/OasisCanvaPresentation";
+import {OasisHeroMedia, FoggaraStoryPresentation} from "@/components/FoggaraVisualStory";
 import {OasisPhotoGallery} from "@/components/OasisPhotoGallery";
 import "./oasis-original-landing.css";
+import "@/components/foggara-visual-story.css";
 const domains = [{key:"water",Icon:Droplets},{key:"energy",Icon:Zap},{key:"food",Icon:Wheat},{key:"ecosystem",Icon:Leaf},{key:"health",Icon:HeartPulse}];
 const workspaces = [{key:"projects",Icon:FolderKanban,to:"/app/projects"},{key:"review",Icon:ShieldCheck,to:"/app/review"},{key:"dataRoom",Icon:LockKeyhole,to:"/app/vde"}];
 export default function Landing() {
@@ -116,8 +117,7 @@ export default function Landing() {
       gallery:"صور من تراث الواحات وهندسة الموارد",
       imageLabels:["واحة جزائرية","الفقارة وتوزيع المياه","نظام الفقارة والموارد"],
       deck:"العرض التفاعلي لمنصة فقارة",
-      deckText:"نسخة تفاعلية محلية من قصة المنصة؛ رابط Canva أدناه هو التصميم الأصلي الذي قدمته.",
-      original:"فتح التصميم الأصلي على Canva"
+      deckText:"خمس مراحل مصورة تشرح منطق الفقارة، وتحويل القياسات والأدلة إلى قرارات ومتابعة."
     },
     fr:{
       kicker:"Des services reliés au terrain",
@@ -130,8 +130,7 @@ export default function Landing() {
       gallery:"Patrimoine des oasis et ingénierie des ressources",
       imageLabels:["Oasis algérienne","Foggara et partage de l'eau","Patrimoine de la foggara"],
       deck:"Présentation interactive FOGGARA",
-      deckText:"Adaptation interactive locale de la présentation ; le lien Canva mène au design original fourni.",
-      original:"Voir le design original sur Canva"
+      deckText:"Cinq chapitres illustrés : patrimoine, eau, agriculture, preuve et décisions WEFEH."
     },
     en:{
       kicker:"Services connected to the field",
@@ -144,8 +143,7 @@ export default function Landing() {
       gallery:"Oasis heritage and resource engineering",
       imageLabels:["Algerian oasis","Foggara water sharing","Foggara heritage"],
       deck:"FOGGARA interactive presentation",
-      deckText:"An interactive local adaptation of the presentation; the Canva link opens the original design you supplied.",
-      original:"Open original Canva design"
+      deckText:"Five illustrated chapters: heritage, water, agriculture, evidence and WEFEH decisions."
     }
   }[lang];
   return <div className="fg-public fg-landing" dir={i18n.dir()} lang={i18n.language}>
@@ -154,7 +152,7 @@ export default function Landing() {
       <Link to="/presentation">{t("publicExperience.presentation")}</Link><Link to="/contact">{t("publicExperience.contact")}</Link>
     </nav>
     <section className="fg-landing-hero" aria-labelledby="foggara-title">
-      <picture className="fg-oasis-image"><source media="(max-width: 650px)" srcSet="/images/oasis-dawn-mobile.webp"/><img src="/images/oasis-dawn.webp" alt="" width="1891" height="831" fetchPriority="high" decoding="async"/></picture>
+      <OasisHeroMedia lang={lang}/>
       <div className="fg-landing-copy">
         <h1 id="foggara-title">{heritage.title}<br/><em>{heritage.accent}</em></h1>
         <p className="fg-landing-intro">{heritage.body}</p>
@@ -223,8 +221,8 @@ export default function Landing() {
     </section>
     <section className="fg-restored-presentation" id="oasis-presentation" aria-labelledby="fg-restored-presentation-title">
       <div className="fg-restored-heading"><p className="fg-eyebrow">FOGGARA-DZ · SIREP OASES NEXUS WEFEH</p><h2 id="fg-restored-presentation-title">{restoredContent.deck}</h2><p>{restoredContent.deckText}</p>
-      <a className="fg-restored-canva-link" href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noopener noreferrer">{restoredContent.original}<ArrowUpRight size={17}/></a></div>
-      <OasisCanvaPresentation lang={lang} compact siteSevenSlides/>
+      </div>
+      <FoggaraStoryPresentation lang={lang}/>
     </section>
     <ServiceOfferings/>
     <AgroCapabilities compact/>
