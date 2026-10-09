@@ -1,40 +1,47 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-const app=readFileSync(new URL("../src/App.tsx",import.meta.url),"utf8");
-const page=readFileSync(new URL("../src/pages/FarmLanding.tsx",import.meta.url),"utf8");
-const css=readFileSync(new URL("../src/pages/farm-landing.css",import.meta.url),"utf8");
 
-test("public homepage uses isolated farm landing instead of legacy Moon template",()=>{
-  assert.ok(app.includes('import("@/pages/FarmLanding")'));
-  assert.ok(page.includes('className="fml-page"'));
+const read=(path)=>readFileSync(new URL(path,import.meta.url),"utf8");
+const app=read("../src/App.tsx");
+const page=read("../src/pages/OasisRestoredLanding.tsx");
+const css=read("../src/pages/oasis-original-landing.css");
+const base=read("../src/pages/landing.css");
+
+test("homepage restores the historical full-width oasis visual without the Moon template",()=>{
+  assert.ok(app.includes('import("@/pages/OasisRestoredLanding")'));
+  assert.ok(page.includes('className="fg-public fg-landing"'));
+  assert.ok(page.includes('className="fg-landing-hero"'));
+  assert.ok(page.includes('className="fg-oasis-image"'));
+  assert.ok(page.includes('oasis-dawn-mobile.webp'));
+  assert.ok(css.includes("min-height:720px"));
+  assert.ok(css.includes("full-bleed")||css.includes("Full-bleed"));
   assert.equal(page.includes("fg-moon-landing"),false);
-  assert.equal(page.includes("iframe"),false);
+  assert.equal(css.includes("!important"),false);
+  assert.ok(base.includes("fg-oasis-image"));
 });
-test("hero and content use three distinct verified local image assets",()=>{
-  const used=[
-    'oasis-dawn.webp',
-    'foggara-heritage-poster.webp',
-    'foggara-sprite.webp'
-  ];
-  for(const asset of used){
-    assert.ok((page+css).includes(asset),asset);
+
+test("historical oasis and three additional illustrations exist as actual WEBP files",()=>{
+  for(const asset of ["oasis-dawn.webp","oasis-dawn-mobile.webp","oasis-hero.webp","foggara-heritage-poster.webp","foggara-sprite.webp"]){
+    assert.ok(page.includes(asset),asset);
     const b=readFileSync(new URL("../public/images/"+asset,import.meta.url));
     assert.equal(b.subarray(0,4).toString("ascii"),"RIFF",asset);
     assert.equal(b.subarray(8,12).toString("ascii"),"WEBP",asset);
   }
-  assert.ok(css.includes("fml-service-1"));
-  assert.ok(css.includes("fml-service-2"));
-  assert.ok(css.includes("fml-service-3"));
-  assert.equal(css.includes("!important"),false);
 });
-test("RTL, responsive bounds and direct working platform links",()=>{
-  assert.ok(page.includes('dir={locale==="ar"?"rtl":"ltr"}'));
-  assert.ok(css.includes("@media(max-width:450px)"));
-  assert.ok(css.includes("font-size:clamp(52px,6.4vw,92px)"));
-  assert.ok(css.includes("overflow-x:clip"));
-  for(const route of ["/expo","/presentation","/app/gis","/app/agriculture","/app/studio","/agriculture-services"]){
+
+test("farm template services link to real routes while public Expo stays accessible",()=>{
+  for(const route of ["/expo","/app/gis","/app/agriculture","/agriculture-services","/presentation"]){
     assert.ok(page.includes(route),route);
   }
-  assert.ok(page.includes('api.get<{counts:Counts}>("/expo/demo-data")'));
+  assert.ok(page.includes('id="farm-services"'));
+  assert.ok(page.includes('id="oasis-gallery"'));
+  assert.ok(page.includes('OasisCanvaPresentation lang={lang} compact siteSevenSlides'));
+  assert.ok(page.includes("DAHXhRSdmV4"));
+  const deck=read("../src/components/OasisCanvaPresentation.tsx");
+  assert.ok(deck.includes("[0,2,4,5,6,9,11]"));
+  assert.ok(deck.includes("siteSevenSlides"));
+  assert.ok(!page.includes("<iframe"));
+  assert.ok(css.includes("max-width:560px"));
+  assert.ok(css.includes("fg-hero-qr-code img{width:116px"));
 });
