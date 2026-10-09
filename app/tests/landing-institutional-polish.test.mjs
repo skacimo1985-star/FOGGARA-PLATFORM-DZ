@@ -7,17 +7,17 @@ const css=readFileSync(new URL('../src/pages/heritage-landing.css',import.meta.u
 
 test('institutional landing keeps a four-image visual story',()=>{
   for(const asset of [
-    '/images/user-heritage-digital-twin.webp',
-    '/images/user-oases-nexus-wefeh.webp',
-    '/images/foggara-video-frame-2.webp',
-    '/images/user-oasis-hero.webp',
-    '/images/foggara-video-frame-1.webp'
+    '/images/oasis-dawn.webp',
+    '/images/oasis-hero.webp',
+    '/images/user-oasis-hero.webp'
   ]){
     assert.ok(landing.includes(asset),asset);
   }
   assert.ok(landing.includes('fg-global-visual-heritage'));
   assert.ok(landing.includes('fg-global-visual-evidence'));
   assert.ok(landing.includes('fg-agriculture-template-story'));
+  assert.equal(landing.includes('foggara-video-frame-1.webp'),false);
+  assert.equal(landing.includes('foggara-video-frame-2.webp'),false);
 });
 
 test('company capabilities remain visible in all supported languages',()=>{
