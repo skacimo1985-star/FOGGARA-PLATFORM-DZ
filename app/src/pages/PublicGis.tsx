@@ -19,7 +19,7 @@ type SavedField={id:number;name:string;crop:string;area_ha:number;location:strin
 type OperationalStatus={database:{connected:boolean;engine:string};organization:{sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number}};
 type SavedParcelStudy={status:"READY"|"NO_USABLE_SCENE";scene:Preview["scene"];parcel_id:number|null;
   geometry_mask_applied:boolean;sample_geometry:string;
-  domains?:{vegetation?:{indices?:{ndvi?:PreviewIndex}};canopy_moisture?:{indices?:{ndmi?:PreviewIndex}}}};
+  domains?:{vegetation?:{indices?:{ndvi?:PreviewIndex}};canopy_moisture?:{indices?:{ndmi?:PreviewIndex}}};
   evidence:{verified:boolean};};
 type PreviewIndex={statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
   pixels?:{total:number;valid:number;valid_fraction:number};
