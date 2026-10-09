@@ -30,6 +30,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const teamMode = new URLSearchParams(location.search).get("mode") === "team";
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<unknown>(null);
   const [guestError, setGuestError] = useState<unknown>(null);
@@ -129,8 +130,8 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-5 lg:grid-cols-[1.15fr_.85fr]">
-      <Card className="border-emerald-700/30">
+    <div className="mx-auto grid max-w-4xl gap-5 lg:grid-cols-[1.15fr_.85fr]">
+      <Card className={teamMode?"order-2 lg:order-2 border-emerald-700/30":"border-emerald-700/30"}>
         <CardHeader>
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="rounded-full border px-3 py-1 text-[10px] font-bold tracking-[.12em] text-emerald-700">{copy.badge}</span>
@@ -158,9 +159,10 @@ export default function Login() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={teamMode?"order-1 lg:order-1 border-emerald-700/40":""}>
         <CardHeader>
           <CardTitle className="text-base">{copy.pro}</CardTitle>
+          {teamMode ? <p className="text-xs leading-6 text-muted-foreground">{lang==="ar"?"لحفظ قطعة GIS وتحليلها في فقارة، سجّل الدخول بحساب المؤسسة أو أنشئ حسابًا جديدًا.":lang==="fr"?"Connectez-vous avec un compte d’organisation pour enregistrer et analyser votre parcelle FOGGARA.":"Sign in with an organization account to persist and analyze your FOGGARA field."}</p> : null}
         </CardHeader>
         <CardContent>
           <form ref={formRef} onSubmit={onSubmit} className="space-y-4">

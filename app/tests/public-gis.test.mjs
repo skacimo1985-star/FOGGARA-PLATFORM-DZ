@@ -14,19 +14,42 @@ test("public GIS route loads without sign-in; operational organization GIS stays
   assert.ok(app.includes('if (!user) return <Navigate to="/login" replace'));
 });
 
-test("GIS guest view uses existing open source MapLibre without private API requests",()=>{
+test("FOGGARA visitor GIS has native drawing, live scenes and a real NDVI preview",()=>{
   const page=read("../src/pages/PublicGis.tsx");
   assert.ok(page.includes('NationalMap key={retry} sites={[]} wilayas={WILAYAS}'));
-  assert.ok(page.includes('onViewportChange={setViewport}'));
-  assert.ok(page.includes('to={user?"/app/gis":"/login"}'));
+  assert.ok(page.includes('onDrawParcelBoundary={geometry=>change(geometry)}'));
+  assert.ok(page.includes('onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}'));
+  assert.ok(page.includes('draftParcelBoundary={area}'));
+  assert.ok(page.includes('/expo/satellite/scenes'));
+  assert.ok(page.includes('api.post<Preview>("/expo/satellite/ndvi-preview"'));
+  assert.ok(page.includes('NDVI'));
+  assert.ok(page.includes('saveFoggaraAoi(area)'));
+  assert.ok(page.includes('to={user?"/app/gis":"/login?mode=team"}'));
   assert.ok(page.includes('from:{pathname:"/app/gis"}'));
-  assert.equal(page.includes('api.get('),false);
-  assert.equal(page.includes('api.post('),false);
-  assert.ok(page.includes('https://www.openstreetmap.org'));
-  assert.ok(page.includes('lang==="ar"?"rtl":"ltr"'));
+  assert.ok(!page.includes('https://www.openstreetmap.org/#map'));
+  assert.ok(!page.includes('"/gis/operational-status"'));
+  assert.ok(!page.includes('"/agriculture/parcels"'));
   for(const path of ["../public/vendor/maplibre-gl.mjs","../public/vendor/maplibre-gl-worker.mjs","../public/vendor/maplibre-gl-shared.mjs","../public/vendor/maplibre-gl.css"]){
     assert.ok(existsSync(new URL(path,import.meta.url)),path);
   }
+});
+
+test("a guest-drawn geometry passes into the protected FOGGARA workspace",()=>{
+  const page=read("../src/pages/Gis.tsx");
+  const handoff=read("../src/lib/foggara-aoi.ts");
+  assert.ok(page.includes('readFoggaraAoi()'));
+  assert.ok(page.includes('setDraftPolygon(pending)'));
+  assert.ok(page.includes('setManualAnalysisBbox(box)'));
+  assert.ok(page.includes('clearFoggaraAoi()'));
+  assert.ok(page.includes('if (manualAnalysisBbox || draftPolygon || !activeProjectSiteId'));
+  assert.ok(handoff.includes('FOGGARA_AOI_KEY="foggara_gis_aoi_v1"'));
+  assert.ok(handoff.includes('sessionStorage.setItem'));
+  assert.ok(handoff.includes('boundsOfPolygon(value:unknown)'));
+  const login=read("../src/pages/Login.tsx");
+  assert.ok(login.includes('new URLSearchParams(location.search).get("mode") === "team"'));
+  assert.ok(login.includes('teamMode?"order-1 lg:order-1'));
+
+  assert.ok(!handoff.includes('localStorage'));
 });
 
 test("public GIS navigation is visible from oasis homepage and existing protected links work",()=>{
