@@ -307,3 +307,40 @@
 @media(prefers-reduced-motion:reduce){
   .fg-hero-photo-choice,.fg-story button{transition:none}
 }
+
+/* Full /presentation route: editorial heading, not the obsolete Canva source banner. */
+.fp-presentation .fp-story-intro{
+  box-sizing:border-box;
+  width:min(1080px,calc(100% - 44px));
+  max-width:1080px;
+  margin:45px auto 26px;
+  padding:0;
+  text-align:start;
+  color:#163c32;
+}
+.fp-presentation .fp-story-intro>span{
+  color:#43765d;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.08em;
+}
+.fp-presentation .fp-story-intro h2{
+  max-width:850px;
+  margin:12px 0 0;
+  color:#163c32;
+  font-size:clamp(28px,3.6vw,48px);
+  font-weight:750;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.fp-presentation .fp-story-intro p{
+  max-width:750px;
+  margin:15px 0 0;
+  font-size:16px;
+  line-height:1.8;
+  color:#50675a;
+}
+@media(max-width:700px){
+  .fp-presentation .fp-story-intro{width:calc(100% - 32px);margin:25px auto 16px}
+  .fp-presentation .fp-story-intro p{font-size:14px}
+}
