@@ -1,10 +1,39 @@
 import os
+import re
+from pathlib import Path
+from sqlalchemy.engine import make_url
 
-# يدعم TEST_DATABASE_URL للاختبار المحلي، ويحترم DATABASE_URL في CI/PostgreSQL.
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL",
-    os.environ.get("DATABASE_URL", "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"),
+# The autouse fixtures below DROP ALL TABLES. Validate target *before* loading
+# app.db or importing anything that creates the SQLAlchemy engine.
+if os.environ.get("ENV", "").strip().lower() == "prod":
+    raise RuntimeError("Refusing destructive pytest fixtures when ENV=prod")
+
+_test_database_url = (
+    os.environ.get("TEST_DATABASE_URL")
+    or os.environ.get("DATABASE_URL")
+    or "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"
 )
+parsed_url = make_url(_test_database_url)
+engine_kind = parsed_url.get_backend_name()
+if engine_kind == "postgresql":
+    database = (parsed_url.database or "").strip()
+    if not re.fullmatch(r"foggara_test(?:_[a-z0-9_]+)?", database):
+        raise RuntimeError("Pytest is allowed only on dedicated foggara_test databases")
+    if parsed_url.host not in (None, "localhost", "127.0.0.1"):
+        raise RuntimeError("Refusing destructive pytest fixtures against nonlocal PostgreSQL hosts")
+elif engine_kind == "sqlite":
+    database = parsed_url.database or ""
+    if database != ":memory:" and not re.fullmatch(
+        r"(?:foggara_test|test_foggara)(?:_[a-z0-9_-]+)?\.(?:db|sqlite|sqlite3)",
+        Path(database).name,
+    ):
+        raise RuntimeError("Refusing destructive pytest fixtures against non-test SQLite files")
+else:
+    raise RuntimeError(f"Unsupported pytest database engine: {engine_kind}")
+
+# Never allow the application to inherit the operator's production DB URL.
+os.environ["DATABASE_URL"] = _test_database_url
+
 os.environ["JWT_SECRET"] = "test-secret-0123456789abcdef0123456789"
 
 import pytest
