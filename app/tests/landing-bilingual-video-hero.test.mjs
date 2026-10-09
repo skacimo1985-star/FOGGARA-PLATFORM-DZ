@@ -11,7 +11,7 @@ test('landing keeps the rejected bilingual text card removed',()=>{
 });
 
 test('reception hero is rebuilt around the oasis and SIREP OASES identity',()=>{
-  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/user-oasis-hero.webp")'));
+  assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-1{background-image:url("/images/oasis-dawn.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-2{background-image:url("/images/oasis-hero.webp")'));
   assert.ok(css.includes('.fg-rebuilt-hero .fg-moon-hero-media-3{background-image:url("/images/oasis-dawn.webp")'));
   assert.match(css,/\.fg-moon-hero-media\s*\{[^}]*z-index\s*:\s*0\s*;/s);
