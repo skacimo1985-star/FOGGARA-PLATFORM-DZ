@@ -50,6 +50,12 @@ type SitesGeoJSON = {
   };
 };
 
+type GisOperationalStatus = {
+  database: {connected:boolean;engine:string;persistent_storage_claim:string;postgis_extension_verified:boolean};
+  organization: {sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number};
+  analysis: {satellite_provider:string;raster_engine:string;provider_online_verified:boolean;note:string};
+};
+
 type PolygonGeometry = {
   type: "Polygon";
   coordinates: [number, number][][];
@@ -323,6 +329,8 @@ function parcelBbox(feature: ParcelBoundaryFeature | null): [number, number, num
 export default function Gis() {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<GisSite[] | null>(null);
+  const [gisStatus,setGisStatus] = useState<GisOperationalStatus | null>(null);
+  const [gisStatusError,setGisStatusError] = useState<unknown>(null);
   const [wilayas, setWilayas] = useState<WilayaMeta[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const wilayaFilter = searchParams.get("wilaya") || "";
@@ -373,6 +381,9 @@ export default function Gis() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
+    api.get<GisOperationalStatus>("/gis/operational-status")
+      .then(setGisStatus)
+      .catch(setGisStatusError);
     api.get<{ count: number; sites: GisSite[] }>("/gis/sites")
       .then((r) => setData(r.sites))
       .catch(setError);
@@ -988,6 +999,17 @@ export default function Gis() {
       </section>
 
       <ErrorText error={error} />
+      <section className="fg-gis-db-diagnostics" aria-label={lang==="ar"?"جاهزية قاعدة بيانات GIS":lang==="fr"?"État de la base SIG":"GIS database status"}>
+        <strong>{lang==="ar"?"قاعدة البيانات الفعلية":lang==="fr"?"Base de données effective":"Actual database"}</strong>
+        {gisStatus ? <>
+          <span dir="ltr">{gisStatus.database.engine.toUpperCase()}</span>
+          <span>{lang==="ar"?"مواقع":lang==="fr"?"Sites":"Sites"}: {gisStatus.organization.sites}</span>
+          <span>{lang==="ar"?"قطع محفوظة":lang==="fr"?"Parcelles enregistrées":"Saved parcels"}: {gisStatus.organization.parcels}</span>
+          <span>{lang==="ar"?"حدود مكانية":lang==="fr"?"Limites cartographiées":"Mapped boundaries"}: {gisStatus.organization.mapped_parcels}</span>
+          <span>{lang==="ar"?"قياسات":lang==="fr"?"Observations":"Observations"}: {gisStatus.organization.observations}</span>
+          {gisStatus.database.engine!=="postgresql" ? <small>{lang==="ar"?"تحذير: تخزين PostgreSQL المستمر غير مثبت. تحقق من إعداد DATABASE_URL.":lang==="fr"?"Attention : stockage PostgreSQL persistant non confirmé. Vérifier DATABASE_URL.":"Warning: persistent PostgreSQL storage not confirmed. Check DATABASE_URL."}</small> : null}
+        </> : <span>{gisStatusError ? (lang==="ar"?"تعذر التحقق من اتصال قاعدة البيانات":lang==="fr"?"Connexion base non vérifiée":"Could not verify database connection") : "…"}</span>}
+      </section>
 
       <div className="fg-gis-map-first">
       {data === null && !error ? (
