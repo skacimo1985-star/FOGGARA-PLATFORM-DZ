@@ -181,3 +181,113 @@ def test_isda_context_fails_per_property_without_fabricating(monkeypatch):
     assert result["available_properties"] == []
     assert set(result["unavailable_properties"]) == set(isda_soil_context.PRODUCTS)
     assert result["verified"] is False
+
+
+def test_field_intelligence_saved_parcel_masks_to_database_polygon_and_overrides_bbox(
+    client, world, monkeypatch,
+):
+    """The client must not be able to substitute an arbitrary AOI for a saved field."""
+    headers = login(client, "o1m@t.dz")
+    stored_geometry = {
+        "type": "Polygon",
+        "coordinates": [[
+            [2.0, 33.0], [2.01, 33.0], [2.007, 33.006],
+            [2.0, 33.01], [2.0, 33.0],
+        ]],
+    }
+    created = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "Real oasis plot", "crop": "date palm", "area_ha": 9,
+        "location": "Laghouat", "boundary_geojson": stored_geometry,
+    })
+    assert created.status_code == 201, created.text
+    parcel_id = created.json()["id"]
+    calls = {}
+    def scenes(bbox, *_args, **_kwargs):
+        calls["catalog_bbox"] = bbox
+        return [_feature()]
+    def raster(_plan, bbox, geometry_wgs84=None):
+        calls["analysis_bbox"] = bbox
+        calls["geometry"] = geometry_wgs84
+        return _multi()
+
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features", scenes)
+    monkeypatch.setattr(remote_sensing_catalog, "build_multi_index_plan", lambda _item: {"scene_id": "S2A_FIELD_001"})
+    monkeypatch.setattr(remote_sensing_catalog, "compute_multi_index_statistics", raster)
+    monkeypatch.setattr(remote_sensing_catalog, "sample_soil_context", lambda _bbox: _soil())
+
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "parcel_id": parcel_id,
+        "bbox": "20,10,20.01,10.01",  # deliberately wrong: DB geometry must win
+        "start": "2026-09-01",
+        "end": "2026-10-08",
+        "crop": "wheat",  # deliberately wrong: declared parcel crop must win
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "READY"
+    assert body["parcel_id"] == parcel_id
+    assert body["sample_geometry"] == "PARCEL_BOUNDARY_GEOJSON"
+    assert body["geometry_mask_applied"] is True
+    assert body["crop_profile"]["id"] == "date_palm"
+    assert calls["geometry"]["type"] == "Polygon"
+    assert calls["geometry"]["coordinates"] == stored_geometry["coordinates"]
+    assert calls["analysis_bbox"] == [2.0, 33.0, 2.01, 33.01]
+    assert calls["catalog_bbox"] == [2.0, 33.0, 2.01, 33.01]
+    assert body["evidence"]["verified"] is False
+
+
+def test_field_intelligence_rejects_other_tenant_parcel_before_provider_request(
+    client, world, monkeypatch,
+):
+    own_headers = login(client, "o1m@t.dz")
+    other_headers = login(client, "o2m@t.dz")
+    created = client.post("/api/agriculture/parcels", headers=own_headers, json={
+        "name": "Tenant-protected parcel", "crop": "date palm",
+        "area_ha": 1, "location": "Laghouat", "lat": 33.8, "lon": 2.87,
+    })
+    assert created.status_code == 201
+    monkeypatch.setattr(
+        remote_sensing_catalog, "_earth_search_features",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("Provider must not be contacted")),
+    )
+    result = client.get("/api/remote-sensing/studies/field-intelligence", headers=other_headers, params={
+        "parcel_id": created.json()["id"],
+        "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert result.status_code == 404
+    assert result.json()["detail"]["code"] == "NOT_FOUND"
+    anonymous = client.get("/api/remote-sensing/studies/field-intelligence", params={
+        "parcel_id": created.json()["id"], "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert anonymous.status_code == 401
+
+
+def test_field_intelligence_point_only_parcel_is_not_mislabelled_as_polygon(
+    client, world, monkeypatch,
+):
+    headers = login(client, "o1m@t.dz")
+    created = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "No surveyed boundaries", "crop": "wheat", "area_ha": 2,
+        "location": "Laghouat", "lat": 33.8, "lon": 2.87,
+    })
+    assert created.status_code == 201
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features", lambda *_args, **_kwargs: [])
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "parcel_id": created.json()["id"], "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "NO_USABLE_SCENE"
+    assert body["sample_geometry"] == "POINT_CENTERED_ESTIMATE_NOT_PARCEL_BOUNDARY"
+    assert body["geometry_mask_applied"] is False
+    assert body["scene"] is None
+    assert body["domains"] == {}
+
+
+def test_field_intelligence_requires_a_real_analysis_target(client, world):
+    headers = login(client, "o1m@t.dz")
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "ANALYSIS_TARGET_REQUIRED"
