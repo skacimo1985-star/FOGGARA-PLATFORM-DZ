@@ -30,6 +30,12 @@ def irrigation_scenario(area_ha, eto_mm_day, kc, effective_rain_mm, efficiency, 
 
 
 def vegetation_index(nir, red):
+    if isinstance(nir, bool) or isinstance(red, bool):
+        raise ValueError('Reflectance must be numeric')
+    try:
+        nir, red = float(nir), float(red)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Reflectance must be numeric') from exc
     if not all(math.isfinite(x) and 0 <= x <= 1 for x in (nir, red)) or nir + red == 0:
         raise ValueError('Use valid scaled surface reflectance; denominator must be positive')
     return (nir - red) / (nir + red)
