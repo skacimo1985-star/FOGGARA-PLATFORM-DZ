@@ -293,7 +293,7 @@ export default function PublicGis(){
               <div className="fg-field-analysis-label"><span>{v.computed}</span><span>{index.toUpperCase()}</span></div>
               <strong className="fg-field-analysis-value" dir="ltr">{ndvi.toFixed(3)}</strong>
               <div className="fg-field-spectrum" role="img" aria-label={v.active+" "+ndvi.toFixed(3)}>
-                <div className="fg-field-spectrum-marker" style={{insetInlineStart:(((Math.max(-1,Math.min(1,ndvi))+1)/2)*100)+"%"}}/>
+                <div className="fg-field-spectrum-marker" style={{left:(((Math.max(-1,Math.min(1,ndvi))+1)/2)*100)+"%"}}/>
               </div>
               <div className="fg-field-spectrum-labels" dir="ltr"><span>−1.0</span><span>0</span><span>+1.0</span></div>
               <div className="fg-field-quality">
