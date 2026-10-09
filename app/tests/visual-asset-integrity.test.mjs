@@ -39,10 +39,27 @@ test('visual layout contains production-safe fallbacks and bounded hero type',()
 });
 
 
-test('Canva source is embedded and the old repeated hero carousel is absent',()=>{
+test('Canva original is linked; interactive presentation remains visible without an iframe',()=>{
   const landing=readFileSync(new URL('../src/pages/Landing.tsx',import.meta.url),'utf8');
-  assert.ok(landing.includes('DAHXhnIEguc/view?embed'));
+  assert.equal(landing.includes('DAHXhnIEguc/view?embed'),false);
+  assert.equal(landing.includes('<iframe'),false);
+  assert.ok(landing.includes('<OasisCanvaPresentation lang={lang} compact/>'));
   assert.ok(landing.includes('DAHXhRSdmV4'));
   assert.equal(landing.includes('setHeroSlide'),false);
   assert.ok(source.includes('CANVA_SOURCE_HERO_2026_10_09'));
+});
+
+test('distinct service visuals and accessible closing section are included',()=>{
+  const css=readFileSync(new URL('../src/pages/visual-repairs.css',import.meta.url),'utf8');
+  const landing=readFileSync(new URL('../src/pages/Landing.tsx',import.meta.url),'utf8');
+  const presentation=readFileSync(new URL('../src/pages/Presentation.tsx',import.meta.url),'utf8');
+  assert.ok(css.includes('.fg-offer-1 .fg-moon-offer-mark'));
+  assert.ok(css.includes('.fg-offer-2 .fg-moon-offer-mark'));
+  assert.ok(css.includes('.fg-offer-3 .fg-moon-offer-mark'));
+  assert.ok(css.includes('color: #eef9ef!important'));
+  assert.ok(css.includes('padding: clamp(28px,4vw,60px)'));
+  assert.ok(landing.includes('fg-canva-source-note'));
+  assert.ok(presentation.includes('fp-native-deck-visible'));
+  assert.equal(presentation.includes('DAHXhnIEguc'),false);
+  assert.equal(presentation.includes('<iframe'),false);
 });
