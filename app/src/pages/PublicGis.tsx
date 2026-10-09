@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,Globe2,MapPinned,Ruler,Satellite,ShieldCheck,Sprout,Database,Activity} from "lucide-react";
@@ -105,7 +105,7 @@ export default function PublicGis(){
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
   };
-  function selectCoordinates(event:React.FormEvent<HTMLFormElement>){
+  function selectCoordinates(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
     const lat=Number(latitude),lon=Number(longitude),side=Number(sideMeters);
     if(!latitude.trim()||!longitude.trim()||!Number.isFinite(lat)||!Number.isFinite(lon)
