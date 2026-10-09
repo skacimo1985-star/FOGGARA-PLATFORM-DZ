@@ -325,7 +325,7 @@ export default function PublicGis(){
             </button>)}
           </div>:hasSearched&&!searching&&!searchError?<p className="fg-field-empty-list">{v.sceneNone}</p>:<p className="fg-field-empty-list">{v.searchPrompt}</p>}
         </section>
-        {user?<section className="fg-field-setup-section fg-field-db" aria-label={lang==="ar"?"قاعدة بيانات المؤسسة":lang==="fr"?"Base de données de l'organisation":"Organization database"}>
+        {user?<section id="foggara-field-save" className="fg-field-setup-section fg-field-db" aria-label={lang==="ar"?"قاعدة بيانات المؤسسة":lang==="fr"?"Base de données de l'organisation":"Organization database"}>
           <div className="fg-field-section-head"><small>DATABASE · FOGGARA</small><Database size={18}/></div>
           <h3>{lang==="ar"?"حقول المؤسسة المحفوظة":lang==="fr"?"Parcelles de l'organisation":"Saved organization fields"}</h3>
           {dbStatus?<div className="fg-field-db-stats">
@@ -370,7 +370,7 @@ export default function PublicGis(){
           <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
             parcelBoundaries={mappedFeatures} selectedParcelId={savedFieldId} onSelectParcel={selectSavedField}
             satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{setSelectedSceneId(sceneId);setResult(null);}}
-            draftParcelBoundary={area}
+            draftParcelBoundary={savedFieldId!==null?null:area}
             analysisSelectionBbox={selection}
             onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
             onDrawParcelBoundary={geometry=>change(geometry)}
@@ -424,10 +424,13 @@ export default function PublicGis(){
           <p className="fg-field-evidence-disclaimer"><Info size={16}/>{index==="ndmi"?v.indexNdmiNote:v.limitations}</p>
           <p className="fg-field-evidence-caption">{v.sceneSpecific} {v.estimated}</p>
         </section>
-        <Link className="fg-field-save-cta" to={user?"/app/gis":"/login?mode=team"}
-          state={user?undefined:{from:{pathname:"/app/gis"}}} onClick={persist}>
-          <Database size={17}/>{v.save}<ArrowUpRight size={16}/>
-        </Link>
+        {user
+          ?<button type="button" className="fg-field-save-cta"
+              onClick={()=>document.getElementById("foggara-field-save")?.scrollIntoView({behavior:"smooth",block:"start"})}>
+              <Database size={17}/>{v.save}<ArrowUpRight size={16}/></button>
+          :<Link className="fg-field-save-cta" to="/login?mode=team"
+              state={{from:{pathname:"/app/gis"}}} onClick={persist}>
+              <Database size={17}/>{v.save}<ArrowUpRight size={16}/></Link>}
         <p className="fg-field-save-note">{v.noAccess}</p>
       </aside>
     </div>
