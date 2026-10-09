@@ -38,7 +38,7 @@ const copy={
     local:"فقارة تقوم بالحساب في الـBackend الخاص بها باستخدام Rasterio وبيانات Sentinel-2 من مزود خارجي.",
     save:"احفظ القطعة في مساحة فقارة",saveNote:"معاينة الزائر مؤقتة؛ الحفظ الدائم والتحاليل المتقدمة تتطلب حساب المؤسسة.",
     prev:"لا يوجد مصدر قابل للاستخدام",empty:"حدد منطقة ليظهر نطاق التحليل هنا.",tools:"خريطة فقارة",count:"مشاهد متاحة",
-    retry:"إعادة تحميل الخريطة",public:"خدمات عامة بدون حساب",limits:"3 معاينات خلال 5 دقائق لكل زائر لحماية الخدمة.",
+    retry:"إعادة تحميل الخريطة",export:"تصدير حدود GeoJSON",public:"خدمات عامة بدون حساب",limits:"خدمة محدودة المعدل (3 طلبات خلال 5 دقائق لكل عنوان اتصال) لحماية الخادم.",
     dateStart:"من",dateEnd:"إلى",provider:"بيانات المشهد: Element 84 Earth Search · Sentinel-2 L2A",signIn:"الدخول لحفظ البيانات",
   },
   fr:{
@@ -53,7 +53,7 @@ const copy={
     local:"Calcul sur le backend FOGGARA via Rasterio, données Sentinel-2 provenant d'un fournisseur externe.",
     save:"Enregistrer la parcelle dans FOGGARA",saveNote:"L'aperçu visiteur est temporaire ; l'enregistrement et les analyses avancées exigent un compte d'organisation.",
     prev:"Aucun produit utilisable",empty:"Sélectionnez une zone pour activer le flux.",tools:"Carte FOGGARA",count:"scènes disponibles",
-    retry:"Recharger la carte",public:"Service public sans compte",limits:"3 aperçus toutes les 5 minutes par visiteur pour protéger le service.",
+    retry:"Recharger la carte",export:"Exporter les limites GeoJSON",public:"Service public sans compte",limits:"Service limitée à 3 demandes par 5 minutes par identité réseau pour protéger le serveur.",
     dateStart:"Du",dateEnd:"Au",provider:"Source : Element 84 Earth Search · Sentinel-2 L2A",signIn:"Connexion pour enregistrer",
   },
   en:{
@@ -68,7 +68,7 @@ const copy={
     local:"Computed on FOGGARA's backend using Rasterio and external Sentinel-2 acquisitions.",
     save:"Save the field in FOGGARA",saveNote:"Visitor analysis is temporary; permanent storage and advanced studies require an organization account.",
     prev:"No usable scene",empty:"Select an area to activate analysis.",tools:"FOGGARA map",count:"available scenes",
-    retry:"Reload map",public:"No account needed",limits:"3 previews per 5 minutes per visitor to protect service capacity.",
+    retry:"Reload map",export:"Export GeoJSON boundary",public:"No account needed",limits:"Service rate-limited to 3 requests per 5 minutes per connection identity to protect server capacity.",
     dateStart:"From",dateEnd:"To",provider:"Scene catalog: Element 84 Earth Search · Sentinel-2 L2A",signIn:"Sign in to save",
   },
 } as const;
@@ -120,6 +120,16 @@ export default function PublicGis(){
     }catch(e){setPreviewError(e);}finally{setComputing(false);}
   }
   const persist=()=>{if(area)saveFoggaraAoi(area);};
+  const exportGeometry=()=>{
+    if(!area)return;
+    const payload={type:"FeatureCollection",features:[{
+      type:"Feature",geometry:area,properties:{source:"FOGGARA-DZ",evidence_status:"USER_DRAWN",verified:false},
+    }]};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/geo+json"}));
+    const a=document.createElement("a");
+    a.href=url;a.download="foggara-field-boundary.geojson";
+    a.click();URL.revokeObjectURL(url);
+  };
   const selected=scenes.find(x=>x.id===selectedSceneId);
   const ndvi=result?.indices?.ndvi?.statistics?.mean;
   const count=result?.indices?.ndvi?.pixels?.valid;
@@ -146,6 +156,7 @@ export default function PublicGis(){
       />
       <div className="fg-public-gis-actions">
         <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}>{t.retry}</button>
+        <button type="button" disabled={!area} onClick={exportGeometry}>{t.export}</button>
         {bbox?<span dir="ltr">{t.bounds}: {bbox.map(x=>x.toFixed(5)).join(", ")}</span>:<span>{t.empty}</span>}
         {area?<span>{t.area}: {polygonAreaHectares(area).toFixed(2)} ha</span>:null}
       </div>
