@@ -74,7 +74,7 @@ test("changed GIS TypeScript and TSX sources remain parseable",()=>{
     const text=read(file),tsx=file.endsWith("tsx");
     const t=ts.transpileModule(text,{fileName:file,compilerOptions:{
       module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,
-      jsx:tsx?ts.JsxEmit.ReactJSX:ts.JsxEmit.None,
+      ...(tsx?{jsx:ts.JsxEmit.ReactJSX}:{}),
     },reportDiagnostics:true});
     const errors=(t.diagnostics||[]).filter(x=>x.category===ts.DiagnosticCategory.Error);
     assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText," ")),[],file);
