@@ -12,19 +12,22 @@ def main():
         for attempt in range(36):
             page.goto(BASE + "/", wait_until="networkidle", timeout=60000)
             try:
-                expect(page.locator(".fg-oasis-image img")).to_have_count(1, timeout=5000)
-                expect(page.locator(".fg-offerings-grid article")).to_have_count(7, timeout=5000)
-                expect(page.locator(".wefeh-node")).to_have_count(5, timeout=5000)
+                expect(page.locator(".fg-source-banner img")).to_have_count(1, timeout=5000)
+                expect(page.locator(".fg-global-operating-grid a")).to_have_count(5, timeout=5000)
+                expect(page.locator(".ocp-source-controls nav button")).to_have_count(8, timeout=5000)
                 break
             except AssertionError:
                 if attempt == 35:
                     raise
                 time.sleep(5)
         assert page.locator(".os-brand-symbol").evaluate("e => e.complete && e.naturalWidth > 0")
-        expect(page.locator(".fg-hero-qr")).to_be_visible()
-        expect(page.locator(".fg-hero-qr-code")).to_have_attribute("href", BASE + "/expo")
-        assert page.locator(".fg-hero-qr-code img").evaluate("e => e.complete && e.naturalWidth > 0")
-        expect(page.locator('.fg-hero-qr-actions a[download]')).to_have_attribute("href", "/expo-qr.svg")
+        page.locator(".fg-source-banner").scroll_into_view_if_needed()
+        assert page.locator(".fg-source-banner img").evaluate("e => e.complete && e.naturalWidth > 0")
+        page.locator(".fg-moon-qr").scroll_into_view_if_needed()
+        expect(page.locator(".fg-moon-qr")).to_be_visible()
+        expect(page.locator(".fg-moon-qr > a")).to_have_attribute("href", BASE + "/expo")
+        assert page.locator(".fg-moon-qr img").evaluate("e => e.complete && e.naturalWidth > 0")
+        expect(page.locator('.fg-moon-qr a[download]')).to_have_attribute("href", "/expo-qr.svg")
         qr_response = page.context.request.get(BASE + "/expo-qr.svg")
         assert qr_response.ok
         assert "https://foggara-dz.onrender.com/expo" in qr_response.text()
@@ -34,23 +37,28 @@ def main():
         expect(page.locator(".fg-tool-card")).to_have_count(1)
         page.keyboard.press("Escape")
         expect(page.locator(".fg-tool-card")).to_have_count(6)
-        page.locator(".wefeh-node").first.click()
-        expect(page.locator(".wefeh-node").first).to_have_attribute("aria-pressed", "true")
-        expect(page.locator(".wefeh-link.is-active")).to_have_count(1)
-        page.locator(".wefeh-node").first.click()
+        page.locator(".fg-lukas-domain-strip button").first.click()
+        expect(page.locator(".fg-lukas-domain-strip button").first).to_have_attribute("aria-pressed", "true")
+        page.locator(".fg-lukas-domain-strip button").first.click()
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         for locale in ("ar", "fr", "en"):
             page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
             expect(page.locator("html")).to_have_attribute("dir", "rtl" if locale == "ar" else "ltr")
             expect(page.locator("#foggara-title")).to_be_visible()
-            for index, path in ((0, "/app/agriculture"), (1, "/app/metrology"), (2, "/app/projects")):
-                page.locator(".fg-role-switch button").nth(index).click()
-                expect(page.locator(".fg-guide-card").first).to_have_attribute("href", path)
+            for index, path in enumerate(("/app/gis", "/app/agriculture", "/agriculture-services", "/app/projects", "/app/nexus")):
+                expect(page.locator(".fg-global-operating-grid a").nth(index)).to_have_attribute("href", path)
+            page.locator(".ocp-source").scroll_into_view_if_needed()
+            for index in range(8):
+                page.locator(".ocp-source-controls nav button").nth(index).click()
+                expect(page.locator(".ocp-source-image")).to_have_attribute("src", f"/images/source-deck/slide-{index+1}.webp")
+                page.wait_for_function("document.querySelector('.ocp-source-image').complete && document.querySelector('.ocp-source-image').naturalWidth > 0")
+                expect(page.locator(".ocp-source-controls nav button").nth(index)).to_have_attribute("aria-current", "step")
             for width in (390, 768, 1440):
                 page.set_viewport_size({"width": width, "height": 1000})
                 assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), (locale, width)
-        page.locator(".fg-guide-preview a").click()
+        page.goto(BASE + "/presentation", wait_until="networkidle")
+        page.locator("#matrix").scroll_into_view_if_needed()
         expect(page.locator("#matrix")).to_be_in_viewport()
         for index in range(5):
             axis = page.locator(".fp-axis").nth(index)
@@ -65,7 +73,7 @@ def main():
         expect(page.locator(".fp-score-orbit.blocked strong")).to_have_text("—")
         page.locator(".os-brand").click()
         expect(page.locator("#foggara-title")).to_be_visible()
-        assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
+        expect(page.locator(".fg-rebuilt-hero")).to_be_visible()
         page.goto(BASE + "/expo", wait_until="networkidle")
         expect(page.locator(".fg-expo-share-qr")).to_be_visible()
         assert page.locator(".fg-expo-qr-image img").evaluate("e => e.complete && e.naturalWidth > 0")
@@ -88,7 +96,7 @@ def main():
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
         page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
         assert not errors, errors
-        print("Hosted release passed: AR/FR/EN, responsive layout, role workflows, matrix, hard constraints and SPA stylesheet isolation.")
+        print("Hosted release passed: AR/FR/EN, responsive layout, eight source slides, operating links, matrix, hard constraints and SPA stylesheet isolation.")
         browser.close()
 
 if __name__ == "__main__":
