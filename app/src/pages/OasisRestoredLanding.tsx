@@ -227,7 +227,7 @@ export default function Landing() {
     <section className="fg-restored-presentation" id="oasis-presentation" aria-labelledby="fg-restored-presentation-title">
       <div className="fg-restored-heading"><p className="fg-eyebrow">FOGGARA-DZ · SIREP OASES NEXUS WEFEH</p><h2 id="fg-restored-presentation-title">{restoredContent.deck}</h2><p>{restoredContent.deckText}</p>
       <a className="fg-restored-canva-link" href="https://www.canva.com/design/DAHXhRSdmV4/ATD6KuOpMPyI5uk8Lq9N-A/edit?ui=e30" target="_blank" rel="noopener noreferrer">{restoredContent.original}<ArrowUpRight size={17}/></a></div>
-      <OasisCanvaPresentation lang={lang} compact/>
+      <OasisCanvaPresentation lang={lang} compact siteSevenSlides/>
     </section>
     <ServiceOfferings/>
     <AgroCapabilities compact/>
