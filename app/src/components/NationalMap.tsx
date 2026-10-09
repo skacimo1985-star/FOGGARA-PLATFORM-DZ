@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GisSite, WilayaMeta } from "@/types";
+// The map is rendered on public /gis and /expo before any dashboard route loads.
+// Keep its canvas and controls styles with the shared component, not the dashboard.
+import "../pages/command-center.css";
 
 export type SatelliteRasterOverlay = {
   url: string;
