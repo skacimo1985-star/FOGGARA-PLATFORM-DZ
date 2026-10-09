@@ -217,7 +217,7 @@ export function OasisCanvaPresentation({lang,compact=false}:{lang:OasisCanvaLoca
 
   const progress=useMemo(()=>((index+1)/slides.length)*100,[index,slides.length]);
 
-  return <section className={`ocp ocp-source-design ${compact?"ocp-compact":""}`} aria-label="FOGGARA-DZ Nexus">
+  return <section className={`ocp ocp-source-design ${compact?"ocp-compact":""}`} lang={lang} dir={lang==="ar"?"rtl":"ltr"} aria-label="FOGGARA-DZ Nexus">
     <div className="ocp-stage">
       <div key={`${lang}-${index}`} className="ocp-slide-shell"><SlideView slide={slides[index]}/></div>
       <div className="ocp-source-mark"><span>FOGGARA-DZ NEXUS</span><b dir="ltr">{String(index+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</b></div>
