@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { MapPinned } from "lucide-react";
 import { api } from "@/lib/api";
+import {polygonAreaHectares,polygonBoundingBox} from "@/lib/geojson-area";
 import type { GisSite, WilayaMeta } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -349,6 +350,7 @@ export default function Gis() {
   const [satelliteError, setSatelliteError] = useState<unknown>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number]>([-8.8, 18.4, 12.2, 37.5]);
   const [manualAnalysisBbox, setManualAnalysisBbox] = useState<[number, number, number, number] | null>(null);
+  const [draftPolygon,setDraftPolygon] = useState<PolygonGeometry | null>(null);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldCrop, setNewFieldCrop] = useState("");
   const [fieldSaving, setFieldSaving] = useState(false);
@@ -830,15 +832,16 @@ export default function Gis() {
       const created = await api.post<ParcelRecord>("/agriculture/parcels", {
         name: newFieldName.trim(),
         crop: newFieldCrop.trim(),
-        area_ha: Math.max(0.01, Number((budget.areaKm2 * 100).toFixed(4))),
+        area_ha: Math.max(0.001, Number((draftPolygon ? polygonAreaHectares(draftPolygon) : budget.areaKm2 * 100).toFixed(6))),
         location: `GIS AOI ${((south+north)/2).toFixed(5)}, ${((west+east)/2).toFixed(5)}`,
-        boundary_geojson: bboxPolygon(manualAnalysisBbox),
+        boundary_geojson: draftPolygon ?? bboxPolygon(manualAnalysisBbox),
         site_id: activeProjectSiteId,
         stage: "initial",
       });
       await refreshParcelSpatialData();
       setActiveParcelId(created.id);
       setManualAnalysisBbox(null);
+      setDraftPolygon(null);
       setNewFieldName("");
       setFieldIntelligenceResult(null);
     } catch (err) {
@@ -883,7 +886,19 @@ export default function Gis() {
   };
 
   const saveParcelBoundary = async (geometry: PolygonGeometry) => {
-    if (!selectedParcelId) return;
+    if (!selectedParcelId) {
+      const bounds=polygonBoundingBox(geometry);
+      if (!bounds) {
+        setBoundaryError(new Error(parcelCopy.importError));
+        return;
+      }
+      // New users can draw the polygon before creating a project or parcel.
+      setDraftPolygon(geometry);
+      setManualAnalysisBbox(bounds);
+      setActiveParcelId(null);
+      setBoundaryError(null);
+      return;
+    }
     setBoundaryBusy(true);
     setBoundaryError(null);
     try {
@@ -1033,6 +1048,7 @@ export default function Gis() {
           analysisSelectionBbox={manualAnalysisBbox}
           onAnalysisSelectionChange={(bbox) => {
             setManualAnalysisBbox(bbox);
+            setDraftPolygon(null);
             if (bbox) {
               setActiveParcelId(null);
               setSelectedSiteId(null);
@@ -1043,6 +1059,7 @@ export default function Gis() {
           onSelectSite={(siteId) => void selectSite(siteId)}
           onSelectParcel={(parcelId) => {
             setManualAnalysisBbox(null);
+            setDraftPolygon(null);
             setActiveParcelId(selectedParcelId === parcelId ? null : parcelId);
             setSelectedSiteId(null);
           }}
@@ -1096,8 +1113,9 @@ export default function Gis() {
                 {fieldIntelligenceLoading ? guideCopy.analyzing : guideCopy.analyzeNow}
               </button>
               {!selectedParcelId && !manualAnalysisBbox ? <p>{guideCopy.areaHint}</p> : null}
-              {manualAnalysisBbox ? <p dir="ltr" className="fg-gis-aoi-readout">WGS84 BBOX: {manualAnalysisBbox.map(n=>n.toFixed(5)).join(", ")} · {currentRasterBudget.areaKm2.toFixed(4)} km² · {currentRasterBudget.pixels.toLocaleString()} px</p> : null}
+              {manualAnalysisBbox ? <p dir="ltr" className="fg-gis-aoi-readout">{draftPolygon ? "POLYGON / " : "RECTANGLE / "} WGS84 BBOX: {manualAnalysisBbox.map(n=>n.toFixed(5)).join(", ")} · {currentRasterBudget.areaKm2.toFixed(4)} km² · {currentRasterBudget.pixels.toLocaleString()} px</p> : null}
               {!currentRasterBudget.allowed && manualAnalysisBbox ? <p>{analysisCopy.zoom}</p> : null}
+              {draftPolygon ? <p>{lang==="ar"?"سيُحفظ المضلع المرسوم نفسه، وليس المستطيل المحيط.":lang==="fr"?"Le polygone dessiné sera enregistré, pas son rectangle englobant.":"The drawn polygon will be saved, not its bounding rectangle."}</p> : null}
             </div>
           </div>
 
