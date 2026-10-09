@@ -1,0 +1,18 @@
+/* Scoped, no global typography overrides. Works with the historical oasis homepage. */
+.oasis-gallery-content{width:100%;min-width:0}
+.oasis-gallery-filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:0 0 23px}
+.oasis-gallery-filters button{appearance:none;border:1px solid #cadbd0;background:#f5f8f3;color:#1e4a37;padding:10px 17px;border-radius:999px;font:700 13px/1.4 inherit;min-height:43px;cursor:pointer}
+.oasis-gallery-filters button:hover,.oasis-gallery-filters button:focus-visible{border-color:#28674d;outline-offset:3px}
+.oasis-gallery-filters button.active{background:#1d533e;color:#fff;border-color:#1d533e}
+.oasis-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.oasis-gallery-card{min-width:0;margin:0;border:1px solid #dce4d7;border-radius:12px;overflow:hidden;background:#f5f7f0;display:flex;flex-direction:column}
+.oasis-gallery-card a{display:block;min-width:0;aspect-ratio:16/10;overflow:hidden;background:#e7ebe1}
+.oasis-gallery-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .25s ease}
+.oasis-gallery-card a:hover img{transform:scale(1.035)}
+.oasis-gallery-card a:focus-visible{outline:3px solid #1d533e;outline-offset:-3px}
+.oasis-gallery-card figcaption{font-size:14px;line-height:1.55;min-height:64px;padding:16px 18px;color:#173f35;font-weight:700;display:flex;align-items:center}
+.oasis-gallery-disclaimer{font-size:12px;line-height:1.6;color:#52665b;margin:18px 0 0;max-width:760px}
+.oasis-gallery-empty{color:#6d766d;font-size:13px}
+@media(max-width:850px){.oasis-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.oasis-gallery-grid{grid-template-columns:1fr}.oasis-gallery-filters{gap:6px}.oasis-gallery-filters button{padding:9px 12px;font-size:12px}.oasis-gallery-card a{aspect-ratio:16/10}}
+@media(prefers-reduced-motion:reduce){.oasis-gallery-card img{transition:none}}
