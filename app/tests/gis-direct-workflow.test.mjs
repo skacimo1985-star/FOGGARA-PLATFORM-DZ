@@ -23,6 +23,10 @@ test("field polygons can be drawn and saved before a parcel or project exists",(
   assert.match(map,/\{onDrawParcelBoundary \? \(/);
   assert.doesNotMatch(map,/\{selectedParcelId && onDrawParcelBoundary \? \(/);
   assert.match(page,/setDraftPolygon\(geometry\)/);
+  assert.ok(page.includes('draftParcelBoundary={draftPolygon}'));
+  assert.ok(map.includes('draftParcelBoundary?: { type: "Polygon"'));
+  assert.ok(map.includes('id: -1'));
+  assert.ok(map.includes('parcelId > 0'));
   assert.match(page,/polygonBoundingBox\(geometry\)/);
   assert.match(page,/boundary_geojson: draftPolygon \?\? bboxPolygon\(manualAnalysisBbox\)/);
   assert.match(page,/polygonAreaHectares\(draftPolygon\)/);
