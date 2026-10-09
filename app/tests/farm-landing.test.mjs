@@ -36,8 +36,10 @@ test("farm template services link to real routes while public Expo stays accessi
   }
   assert.ok(page.includes('id="farm-services"'));
   assert.ok(page.includes('id="oasis-gallery"'));
-  assert.ok(page.includes('<OasisPhotoGallery lang={lang}/>'));
-  assert.ok(page.includes('<FoggaraStoryPresentation lang={lang}/>'));
+  assert.ok(page.includes('<FoggaraSourceDeck lang={lang}/>'));
+  assert.ok(page.includes('id="oasis-gallery" className="fg-source-anchor"'));
+  assert.ok(!page.includes('<OasisPhotoGallery'));
+  assert.ok(page.includes('<FoggaraSourceDeck lang={lang}/>'));
   assert.equal(page.includes("canva.com"),false);
   assert.equal(page.includes("restoredContent.original"),false);
   assert.ok(!page.includes("<iframe"));
@@ -45,24 +47,32 @@ test("farm template services link to real routes while public Expo stays accessi
   assert.ok(css.includes("fg-hero-qr-code img{width:116px"));
 });
 
-test("photo-led hero and platform presentation share five chapters, no Canva sales link",()=>{
-  const visual=read("../src/components/FoggaraVisualStory.tsx");
-  const style=read("../src/components/foggara-visual-story.css");
+test("uploaded eight-slide source presentation replaces homepage heritage photo gallery",()=>{
+  const source=read("../src/components/FoggaraSourceDeck.tsx");
+  const style=read("../src/components/foggara-source-deck.css");
   const full=read("../src/pages/Presentation.tsx");
+  const visuals=read("../src/components/oasisVisuals.ts");
   assert.ok(page.includes('<OasisHeroMedia lang={lang}/>'));
-  assert.ok(page.includes('<FoggaraStoryPresentation lang={lang}/>'));
-  assert.ok(full.includes('<FoggaraStoryPresentation lang={locale}/>'));
-  assert.equal(full.includes("canva.com"),false);
-  assert.ok(visual.includes('getOasisPhoto(photo.id)'));
-  assert.ok(visual.includes('aria-pressed={active===index}'));
-  assert.ok(visual.includes('aria-current={i===index?"step":undefined}'));
-  assert.ok(visual.includes('role="region"'));
-  for(const id of ['heritage','water','agri','evidence','nexus']){
-    assert.ok(visual.includes('id:"'+id+'"'),id);
+  assert.ok(page.includes('<FoggaraSourceDeck lang={lang}/>'));
+  assert.ok(full.includes('<FoggaraSourceDeck lang={locale}/>'));
+  assert.equal(page.includes('<OasisPhotoGallery'),false);
+  assert.equal(page.includes("canva.com"),false);
+  assert.ok(page.indexOf('id="oasis-gallery"') < page.indexOf('<FoggaraSourceDeck lang={lang}/>'));
+  assert.ok(source.includes('getOasisPhoto(id)'));
+  assert.ok(source.includes('aria-current={i===index?"step":undefined}'));
+  assert.ok(source.includes('aria-live="polite"'));
+  assert.ok(source.includes('tabIndex={0}'));
+  for(const id of ['terrain','satellite','water-soil-crops','evidence','arbitration','sovereign-ai','ecosystem','expo']){
+    assert.ok(source.includes('id:"'+id+'"'),id);
   }
-  assert.ok(style.includes('grid-template')||style.includes('.fg-story-chapters'));
-  assert.ok(style.includes('max-width:590px'));
-  assert.ok(style.includes('@media(max-width:700px)'));
+  for(const phrase of ['DÉFINIR LE TERRAIN','OBSERVER PAR SATELLITE','PREUVE AVANT DÉCISION','DE L’ANALYSE À L’ARBITRAGE','IA SOUVERAINE ET SERVICES','UN ÉCOSYSTÈME NATIONAL','RENCONTRONS-NOUS AU STAND B02']){
+    assert.ok(source.includes(phrase),phrase);
+  }
+  assert.ok(source.includes("sourceSlides.map((item,i)"));
+  assert.ok(source.includes('frame.photos.map(id=>'));
+  assert.ok(visuals.includes('import.meta.glob("../assets/oasis-gallery/*.webp"'));
+  assert.ok(style.includes('grid-template-columns:repeat(8,minmax(0,1fr))'));
+  assert.ok(style.includes('@media(max-width:680px)'));
   assert.ok(style.includes('prefers-reduced-motion'));
 });
 
@@ -80,14 +90,12 @@ test("seven-slide presentation avoids cut-off closing titles and random service 
   assert.ok(deck.includes("FOGGARA-DZ · NEXUS WEFEH"));
 });
 
-test("restored gallery uses a bounded three-image layout with neutral poster background",()=>{
-  assert.match(css,/\.os-public-shell \.fg-landing > section\.fg-restored-gallery/);
-  assert.match(css,/\.fg-landing \.fg-restored-gallery h2\{/);
+test("the existing presentation section takes the place of the old gallery without a duplicate viewer",()=>{
+  assert.equal((page.match(/<FoggaraSourceDeck lang=\{lang\}\/>/g)||[]).length,1);
+  assert.ok(page.includes('className="fg-restored-presentation fg-pptx-presentation"'));
+  assert.ok(page.includes('id="oasis-presentation"'));
+  assert.ok(page.includes('id="oasis-gallery"'));
   assert.ok(css.includes("width:min(1180px,calc(100% - 48px))"));
-  assert.ok(css.includes("object-fit:contain;"));
-  assert.ok(css.includes("background:#e9e5d8"));
-  assert.ok(css.includes("width:min(100%,1080px)"));
-  assert.ok(css.includes("height:600px"));
 });
 
 test("curated gallery auto-discovers only real binary photos and keeps old fallback",()=>{
