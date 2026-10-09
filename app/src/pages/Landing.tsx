@@ -48,7 +48,7 @@ export default function Landing() {
   const lang:Locale=i18n.language==="fr"?"fr":i18n.language==="en"?"en":"ar";
 
   const copy=lang==="fr"?{
-    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",heritage:"FOGGARA",demo:"DÉMO",contact:"CONTACT",
+    home:"ACCUEIL",about:"À PROPOS",services:"SERVICES",heritage:"FOGGARA",presentation:"PRÉSENTATION",demo:"DÉMO",contact:"CONTACT",
     topNational:"PLATEFORME NATIONALE ALGÉRIENNE",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"De l’ingéniosité hydraulique des oasis à une plateforme nationale de décision : terrain, données, preuves, analyse et action."},
@@ -73,7 +73,7 @@ export default function Landing() {
     openDemo:"OUVRIR LA DÉMO",copy:"COPIER",copied:"COPIÉ",download:"QR SVG",
     toolsEyebrow:"FOGGARA / SERVICES NUMÉRIQUES",toolsTitle:"CHOISISSEZ UN OUTIL. COMMENCEZ IMMÉDIATEMENT.",toolsBody:"Recherche rapide, accès direct et résultats traçables.",search:"Rechercher satellite, météo, sol, SIG, IA…",open:"OUVRIR",public:"PUBLIC",workspace:"ESPACE",noResults:"Aucun service ne correspond."
   }:lang==="en"?{
-    home:"HOME",about:"ABOUT",services:"SERVICES",heritage:"FOGGARA",demo:"DEMO",contact:"CONTACT",
+    home:"HOME",about:"ABOUT",services:"SERVICES",heritage:"FOGGARA",presentation:"PRESENTATION",demo:"DEMO",contact:"CONTACT",
     topNational:"ALGERIAN NATIONAL PLATFORM",topLang:"AR · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"From oasis water ingenuity to a national decision platform: field reality, data, evidence, analysis and action."},
@@ -98,7 +98,7 @@ export default function Landing() {
     openDemo:"OPEN DEMO",copy:"COPY",copied:"COPIED",download:"QR SVG",
     toolsEyebrow:"FOGGARA / DIGITAL SERVICES",toolsTitle:"CHOOSE A TOOL. START NOW.",toolsBody:"Fast search, direct entry and traceable results.",search:"Search satellite, weather, soil, GIS, AI…",open:"OPEN",public:"PUBLIC",workspace:"WORKSPACE",noResults:"No matching service."
   }:{
-    home:"الرئيسية",about:"من نحن",services:"الخدمات",heritage:"الفقارة",demo:"الديمو",contact:"اتصل بنا",
+    home:"الرئيسية",about:"من نحن",services:"الخدمات",heritage:"الفقارة",presentation:"عرض المنصة",demo:"الديمو",contact:"اتصل بنا",
     topNational:"المنصة الجزائرية الوطنية",topLang:"العربية · FR · EN",topExpo:"AGRITECH EXPO",
     hero:[
       {eyebrow:"SIREP OASES · FOGGARA-DZ",title:"FOGGARA-DZ",accent:"NEXUS WEFEH",body:"من عبقرية توزيع المياه في الواحات إلى منصة وطنية للقرار تربط الميدان والبيانات والأدلة والتحليل والتنفيذ."},
@@ -225,7 +225,7 @@ export default function Landing() {
       <a href="#about">{copy.about}</a>
       <a href="#services">{copy.services}</a>
       <a href="#heritage">{copy.heritage}</a>
-      <Link to="/presentation">{t("publicExperience.presentation")}</Link>
+      <Link to="/presentation">{copy.presentation}</Link>
       <a href="#demo">{copy.demo}</a>
       <Link to="/contact">{copy.contact}</Link>
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
