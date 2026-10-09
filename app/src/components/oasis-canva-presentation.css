@@ -309,7 +309,7 @@
 }
 .ocp-sat-main{background:url("/images/oasis-dawn.webp") center/cover no-repeat}
 .ocp-sat-stack i:nth-child(2){background:url("/images/oasis-hero.webp") 68% 36%/cover}
-.ocp-sat-stack i:nth-child(4){background:url("/images/user-heritage-digital-twin.webp") center/cover}
+.ocp-sat-stack i:nth-child(4){background:url("/images/oasis-dawn.webp") center/cover}
 .ocp-page-expo .ocp-copy{background:linear-gradient(#143126ee,#151a17f5),url("/images/oasis-hero.webp") center/cover}
 @media(max-width:860px){
   .ocp-cover-copy h3{font-size:clamp(42px,10vw,76px)}
