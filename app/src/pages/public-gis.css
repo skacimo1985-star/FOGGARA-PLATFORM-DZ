@@ -1,0 +1,26 @@
+.fg-public-gis{--fg-forest:#173f35;color:var(--fg-forest);background:#f2f7f1;min-height:100vh;padding:42px max(24px,calc((100vw - 1440px)/2)) 84px}
+.fg-public-gis-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:36px;margin:0 auto 30px;max-width:1320px}
+.fg-public-gis-intro>div{min-width:0;max-width:910px}
+.fg-public-gis-kicker{display:flex;align-items:center;gap:9px;color:#276a58;text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:780}
+.fg-public-gis-intro h1{margin:16px 0;max-width:900px;font-size:clamp(30px,3.8vw,55px);line-height:1.2;letter-spacing:-.025em;font-weight:750}
+.fg-public-gis-intro p:not(.fg-public-gis-kicker){max-width:850px;line-height:1.8;font-size:15px;color:#466458}
+.fg-public-gis-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0;padding:15px 19px;border-radius:10px;background:#18573f;color:#fff;font-size:14px;font-weight:760;text-decoration:none;min-height:50px}
+.fg-public-gis-cta:hover{background:#226d51;color:#fff}
+.fg-public-gis-map{max-width:1320px;margin:0 auto;min-width:0}
+.fg-public-gis-map .fg-national-map{width:100%;max-width:100%}
+.fg-public-gis-map .fg-national-map-canvas{min-height:540px}
+.fg-public-gis-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:13px 0 0;font-size:13px;color:#3f5e50}
+.fg-public-gis-actions button,.fg-public-gis-actions a{border:1px solid #bdd4c1;border-radius:8px;background:#fff;color:#225844;padding:9px 14px;min-height:40px;font:inherit;cursor:pointer;text-decoration:none}
+.fg-public-gis-actions a{text-decoration:underline;text-underline-offset:3px}
+.fg-public-gis-actions span{max-width:100%;overflow-wrap:anywhere;font-size:12px}
+.fg-public-gis-footer{display:grid;grid-template-columns:1fr 1fr;gap:30px;max-width:1320px;margin:48px auto 0}
+.fg-public-gis-footer>div{min-width:0;border-radius:14px;padding:26px 30px;background:#fff;border:1px solid #dce8dc}
+.fg-public-gis-footer h2{margin:0 0 19px;font-size:22px}
+.fg-public-gis-footer p{display:flex;align-items:center;gap:12px;line-height:1.75;color:#365747}
+.fg-public-gis-footer p svg{flex-shrink:0;color:#427a58}
+.fg-public-gis-privacy{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.fg-public-gis-privacy p{margin:0}
+.fg-public-gis-privacy small{color:#5a715f;line-height:1.7}
+.fg-public-gis-privacy a{color:#216247;text-decoration:underline}
+.fg-public-gis :is(button,a):focus-visible{outline:3px solid #439976;outline-offset:3px}
+@media(max-width:800px){.fg-public-gis{padding:24px 16px 54px}.fg-public-gis-intro{display:block}.fg-public-gis-cta{margin-top:20px}.fg-public-gis-footer{grid-template-columns:1fr}.fg-public-gis-footer>div{padding:22px}.fg-public-gis-map .fg-national-map-canvas{min-height:460px}}
