@@ -9,7 +9,6 @@ const Operations = lazy(() => import("@/pages/Operations"));
 const Account = lazy(() => import("@/pages/Account"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const Agriculture = lazy(() => import("@/features/agriculture/Agriculture"));
-const Presentation = lazy(() => import("@/pages/Presentation"));
 const SourcePresentation = lazy(() => import("@/pages/SourcePresentation"));
 const Landing = lazy(() => import("@/pages/Landing"));
 const AgricultureServices = lazy(() => import("@/pages/AgricultureServices"));
@@ -97,8 +96,8 @@ export default function App() {
             <Route path="/app/account" element={<Protected><Account /></Protected>} />
             <Route path="/app/agriculture" element={<Protected><Agriculture /></Protected>} />
             <Route path="/app/nexus" element={<Protected><NexusWorkspace /></Protected>} />
-            <Route path="/presentation" element={<Presentation />} />
-            <Route path="/presentation-source" element={<SourcePresentation />} />
+            <Route path="/presentation" element={<SourcePresentation />} />
+            <Route path="/presentation-source" element={<Navigate to="/presentation" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/expo" element={<Expo />} />
             <Route path="/register" element={<Onboarding />} />
