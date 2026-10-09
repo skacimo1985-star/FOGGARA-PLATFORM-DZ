@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { api } from "@/lib/api";
-import { OasisCanvaPresentation } from "@/components/OasisCanvaPresentation";
 import { WILAYAS } from "@/lib/wilayas";
 import "./operations.css";
 import "./landing.css";
@@ -248,7 +247,7 @@ export default function Landing() {
       <a href="#home">{copy.home}</a>
       <a href="#about">{copy.about}</a>
       <a href="#services">{copy.services}</a>
-      <a href="#presentation">{copy.presentation}</a>
+      <Link to="/presentation">{copy.presentation}</Link>
       <a href="#demo">{copy.demo}</a>
       <Link to="/contact">{copy.contact}</Link>
       <a className="fg-moon-nav-cta" href="#tools"><Search size={16}/>{copy.services}</a>
@@ -404,7 +403,7 @@ export default function Landing() {
         </div>
         <p>{lang==="fr"?"Du terrain à la preuve, de la preuve à l’arbitrage.":lang==="en"?"From field to evidence, from evidence to decision.":"من الميدان إلى الدليل، ومن الدليل إلى القرار."}</p>
       </header>
-      <OasisCanvaPresentation lang={lang} compact/>
+      <div className="fg-presentation-source-link"><Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link></div>
     </section>
 
     <section className="fg-moon-demo fg-global-demo" id="demo">
