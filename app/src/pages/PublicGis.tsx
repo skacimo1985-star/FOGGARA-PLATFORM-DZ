@@ -130,7 +130,7 @@ export default function PublicGis(){
         <h1>{t.title}</h1><p>{t.intro}</p>
         <div className="fg-public-gis-ident"><span><Globe2 size={16}/>{t.public}</span><span><Database size={16}/>FOGGARA-DZ / WEFEH</span></div>
       </div>
-      <Link className="fg-public-gis-cta" onClick={persist} to={user?"/app/gis":"/login"}
+      <Link className="fg-public-gis-cta" onClick={persist} to={user?"/app/gis":"/login?mode=team"}
         state={user?undefined:{from:{pathname:"/app/gis"}}}>
         <ShieldCheck size={18}/>{t.signIn}<ArrowUpRight size={18}/>
       </Link>
@@ -194,7 +194,7 @@ export default function PublicGis(){
     </section>
     <section className="fg-public-gis-handoff">
       <div><h2><MapPinned size={24}/>{t.save}</h2><p>{t.saveNote}</p></div>
-      <Link to={user?"/app/gis":"/login"} onClick={persist}
+      <Link to={user?"/app/gis":"/login?mode=team"} onClick={persist}
         state={user?undefined:{from:{pathname:"/app/gis"}}}>
         {t.signIn}<ArrowUpRight size={18}/>
       </Link>
