@@ -9,6 +9,7 @@ import {WILAYAS} from "@/lib/wilayas";
 import {polygonAreaHectares} from "@/lib/geojson-area";
 import {boundsOfPolygon,rectanglePolygon,saveFoggaraAoi,type FoggaraPolygon} from "@/lib/foggara-aoi";
 import {ErrorText} from "@/components/common";
+import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
 import "./public-gis.css";
 import "./foggara-field-workbench.css";
 
@@ -51,7 +52,7 @@ const copy={
     local:"فقارة تقوم بالحساب في الـBackend الخاص بها باستخدام Rasterio وبيانات Sentinel-2 من مزود خارجي.",
     save:"احفظ القطعة في مساحة فقارة",saveNote:"معاينة الزائر مؤقتة؛ الحفظ الدائم والتحاليل المتقدمة تتطلب حساب المؤسسة.",
     prev:"لا يوجد مصدر قابل للاستخدام",empty:"حدد منطقة ليظهر نطاق التحليل هنا.",tools:"خريطة فقارة",count:"مشاهد متاحة",
-    retry:"إعادة تحميل الخريطة",export:"تصدير حدود GeoJSON",public:"خدمات عامة بدون حساب",limits:"خدمة محدودة المعدل (3 طلبات خلال 5 دقائق لكل عنوان اتصال) لحماية الخادم.",
+    retry:"إعادة تحميل الخريطة",export:"تصدير حدود GeoJSON",pdf:"تقرير PDF",public:"خدمات عامة بدون حساب",limits:"خدمة محدودة المعدل (3 طلبات خلال 5 دقائق لكل عنوان اتصال) لحماية الخادم.",
     dateStart:"من",dateEnd:"إلى",provider:"بيانات المشهد: Element 84 Earth Search · Sentinel-2 L2A",signIn:"الدخول لحفظ البيانات",
   },
   fr:{
@@ -66,7 +67,7 @@ const copy={
     local:"Calcul sur le backend FOGGARA via Rasterio, données Sentinel-2 provenant d'un fournisseur externe.",
     save:"Enregistrer la parcelle dans FOGGARA",saveNote:"L'aperçu visiteur est temporaire ; l'enregistrement et les analyses avancées exigent un compte d'organisation.",
     prev:"Aucun produit utilisable",empty:"Sélectionnez une zone pour activer le flux.",tools:"Carte FOGGARA",count:"scènes disponibles",
-    retry:"Recharger la carte",export:"Exporter les limites GeoJSON",public:"Service public sans compte",limits:"Service limitée à 3 demandes par 5 minutes par identité réseau pour protéger le serveur.",
+    retry:"Recharger la carte",export:"Exporter les limites GeoJSON",pdf:"Rapport PDF",public:"Service public sans compte",limits:"Service limitée à 3 demandes par 5 minutes par identité réseau pour protéger le serveur.",
     dateStart:"Du",dateEnd:"Au",provider:"Source : Element 84 Earth Search · Sentinel-2 L2A",signIn:"Connexion pour enregistrer",
   },
   en:{
@@ -81,7 +82,7 @@ const copy={
     local:"Computed on FOGGARA's backend using Rasterio and external Sentinel-2 acquisitions.",
     save:"Save the field in FOGGARA",saveNote:"Visitor analysis is temporary; permanent storage and advanced studies require an organization account.",
     prev:"No usable scene",empty:"Select an area to activate analysis.",tools:"FOGGARA map",count:"available scenes",
-    retry:"Reload map",export:"Export GeoJSON boundary",public:"No account needed",limits:"Service rate-limited to 3 requests per 5 minutes per connection identity to protect server capacity.",
+    retry:"Reload map",export:"Export GeoJSON boundary",pdf:"PDF report",public:"No account needed",limits:"Service rate-limited to 3 requests per 5 minutes per connection identity to protect server capacity.",
     dateStart:"From",dateEnd:"To",provider:"Scene catalog: Element 84 Earth Search · Sentinel-2 L2A",signIn:"Sign in to save",
   },
 } as const;
@@ -254,6 +255,11 @@ export default function PublicGis(){
   const count=activeMetrics?.pixels?.valid;
   const coverage=activeMetrics?.pixels?.valid_fraction;
   const range=activeMetrics?.statistics;
+  const pdfEvidence:FieldPdfEvidence=result?{
+    index,status:result.status,scene:result.scene,
+    geometry_mask_applied:result.geometry_mask_applied===true,
+    metrics:activeMetrics??null,verified:result.evidence.verified===true,
+  }:null;
 
   return <main className="fg-public-gis fg-field-shell" dir={lang==="ar"?"rtl":"ltr"} lang={lang}>
     <header className="fg-field-topbar">
@@ -352,6 +358,11 @@ export default function PublicGis(){
         </section>:null}
         <div className="fg-field-setup-footer">
           <button type="button" disabled={!area} onClick={exportGeometry}><Download size={16}/>{v.export}</button>
+          <button type="button" className="fg-field-pdf-button" disabled={!area||!bbox}
+            title={lang==="ar"?"اختر حفظ كملف PDF في نافذة الطباعة":lang==="fr"?"Choisissez Enregistrer au format PDF dans la boîte d'impression":"Choose Save as PDF in the print dialog"}
+            onClick={()=>printFoggaraFieldReport(fieldName.trim()||null,savedFieldId)}>
+            <Download size={16}/>{t.pdf}
+          </button>
           <button type="button" onClick={()=>{setRetry(x=>x+1);change(null);}}><RefreshCw size={16}/>{v.reset}</button>
         </div>
       </aside>
@@ -435,5 +446,10 @@ export default function PublicGis(){
       </aside>
     </div>
     <footer className="fg-field-footer"><span>FOGGARA-DZ · SIREP OASES NEXUS WEFEH</span><span>MapLibre GL JS · OpenStreetMap © contributors · Copernicus Sentinel-2 · Element 84 · Rasterio</span></footer>
+    {area&&bbox?<FieldPdfReport
+      lang={lang} geometry={area} bbox={bbox} estimatedAreaHa={polygonAreaHectares(area)}
+      fieldName={fieldName.trim()||null} crop={fieldCrop.trim()||null} fieldId={savedFieldId}
+      period={{start,end}} evidence={pdfEvidence} createdAt={new Date().toISOString()}
+    />:null}
   </main>;
 }
