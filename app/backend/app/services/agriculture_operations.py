@@ -7,8 +7,15 @@ import math
 
 def irrigation_scenario(area_ha, eto_mm_day, kc, effective_rain_mm, efficiency, days):
     values = (area_ha, eto_mm_day, kc, effective_rain_mm, efficiency, days)
-    if not all(math.isfinite(float(x)) for x in values):
+    try:
+        numeric = tuple(float(x) for x in values)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Inputs must be numeric') from exc
+    if not all(math.isfinite(x) for x in numeric):
         raise ValueError('Inputs must be finite')
+    if any(isinstance(x, bool) for x in values) or numeric[-1] != int(numeric[-1]):
+        raise ValueError('Inputs must be numeric and days must be a whole number')
+    area_ha, eto_mm_day, kc, effective_rain_mm, efficiency, days = numeric
     if not (0 < area_ha <= 100000 and 0 <= eto_mm_day <= 30 and 0 <= kc <= 2
             and 0 <= effective_rain_mm <= 2000 and 0 < efficiency <= 1 and 1 <= days <= 30):
         raise ValueError('Inputs out of range')
@@ -23,6 +30,12 @@ def irrigation_scenario(area_ha, eto_mm_day, kc, effective_rain_mm, efficiency, 
 
 
 def vegetation_index(nir, red):
+    if isinstance(nir, bool) or isinstance(red, bool):
+        raise ValueError('Reflectance must be numeric')
+    try:
+        nir, red = float(nir), float(red)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Reflectance must be numeric') from exc
     if not all(math.isfinite(x) and 0 <= x <= 1 for x in (nir, red)) or nir + red == 0:
         raise ValueError('Use valid scaled surface reflectance; denominator must be positive')
     return (nir - red) / (nir + red)
