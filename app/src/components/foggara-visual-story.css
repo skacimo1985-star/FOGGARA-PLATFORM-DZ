@@ -133,7 +133,7 @@
   content:"";
   position:absolute;
   inset:0;
-  z-index:0;
+  z-index:1;
   pointer-events:none;
   background:linear-gradient(90deg,#0a281ff5 0%,#0c2d24d8 43%,#103f3335 100%);
 }
@@ -146,11 +146,11 @@
   width:100%;
   height:100%;
   object-fit:cover;
-  z-index:-1;
+  z-index:0;
 }
 .fg-story-body{
   position:relative;
-  z-index:1;
+  z-index:2;
   max-width:590px;
   width:68%;
   color:#f9f7eb;
@@ -195,7 +195,7 @@
 }
 .fg-story-counter{
   position:absolute;
-  z-index:2;
+  z-index:3;
   top:28px;
   right:28px;
   padding:8px 12px;
