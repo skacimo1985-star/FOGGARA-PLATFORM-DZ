@@ -32,7 +32,7 @@ test('deck mirrors the supplied visual language and uses existing platform media
   assert.ok(deckCss.includes('--clay:#b65a37'));
   assert.ok(deckCss.includes('/images/oasis-dawn.webp'));
   assert.ok(deckCss.includes('/images/oasis-hero.webp'));
-  assert.ok(deckCss.includes('/images/user-oasis-hero.webp'));
+  assert.equal(deckCss.includes('/images/user-oasis-hero.webp'),false);
   assert.equal(deckCss.includes('/images/foggara-video-frame-1.webp'),false);
   assert.equal(deckCss.includes('/images/foggara-video-frame-2.webp'),false);
   assert.ok(deckCss.includes('grid-template-columns:repeat(12'));
