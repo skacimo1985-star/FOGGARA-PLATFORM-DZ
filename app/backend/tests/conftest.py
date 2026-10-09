@@ -23,7 +23,7 @@ if engine_kind == "postgresql":
         raise RuntimeError("Refusing destructive pytest fixtures against nonlocal PostgreSQL hosts")
 elif engine_kind == "sqlite":
     database = parsed_url.database or ""
-    if database != ":memory:" and not re.fullmatch(
+    if database not in ("", ":memory:") and not re.fullmatch(
         r"(?:foggara_test|test_foggara)(?:_[a-z0-9_-]+)?\.(?:db|sqlite|sqlite3)",
         Path(database).name,
     ):
