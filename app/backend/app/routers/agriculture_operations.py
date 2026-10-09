@@ -40,8 +40,7 @@ class ParcelIn(Input):
                 raise ValueError(str(exc)) from exc
             self.boundary_geojson = normalized
             self.lon, self.lat = meta['centroid']
-            self.area_ha = meta['estimated_area_ha']
-            # Persist the server-computed geometry area, never a user-supplied bbox guess.
+            # Persist the server-computed geometry area, never a client-supplied guess.
             self.area_ha = meta['estimated_area_ha']
         elif (self.lat is None) != (self.lon is None):
             raise ValueError('Latitude and longitude must be supplied together')
@@ -64,6 +63,7 @@ class ParcelUpdate(Input):
                 raise ValueError(str(exc)) from exc
             self.boundary_geojson = normalized
             self.lon, self.lat = meta['centroid']
+            self.area_ha = meta['estimated_area_ha']
         elif ('lat' in self.model_fields_set) != ('lon' in self.model_fields_set):
             raise ValueError('Latitude and longitude must be provided together')
         return self
