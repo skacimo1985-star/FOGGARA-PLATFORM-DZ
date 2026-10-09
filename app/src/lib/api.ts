@@ -51,7 +51,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const controller = new AbortController();
   const isLongRunningAnalysis = path.startsWith("/remote-sensing/catalog/scenes/") && path.includes("/statistics?");
-  const isLongRunningStudy = path.startsWith("/remote-sensing/studies/");
+  // STAC asset IO/raster NDVI can exceed the standard 20 s request budget.
+  // Keep this exception scoped to the server-bounded public satellite preview.
+  const isPublicRasterPreview = path === "/expo/satellite/ndvi-preview";
+  const isLongRunningStudy = path.startsWith("/remote-sensing/studies/") || isPublicRasterPreview;
   const timeoutMs = isLongRunningStudy
     ? 120_000
     : path.startsWith("/auth/") || path === "/org/invitations/accept" || isLongRunningAnalysis

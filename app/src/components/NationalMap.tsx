@@ -126,6 +126,9 @@ type MapInstance = {
   setTerrain: (terrain: Record<string, unknown> | null) => void;
   fitBounds: (bounds: [Point, Point], options?: Record<string, unknown>) => void;
   flyTo: (options: Record<string, unknown>) => void;
+  zoomIn: (options?: Record<string, unknown>) => void;
+  zoomOut: (options?: Record<string, unknown>) => void;
+  getZoom: () => number;
   getBounds: () => {
     getWest: () => number;
     getSouth: () => number;
@@ -374,6 +377,7 @@ export function NationalMap({
   const analysisOverlayRef = useRef<AnalysisRasterOverlay | null>(analysisOverlay);
   const analysisSelectionBboxRef = useRef<[number, number, number, number] | null>(analysisSelectionBbox);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">("loading");
+  const [zoomLevel, setZoomLevel] = useState(4);
   const [mapMode, setMapMode] = useState<"street" | "satellite" | "relief" | "analysis">("street");
   const [visibleLayers, setVisibleLayers] = useState({
     sites: true,
@@ -538,6 +542,7 @@ export function NationalMap({
   useEffect(() => {
     let cancelled = false;
     let map: MapInstance | null = null;
+    let resizeObserver: ResizeObserver | null = null;
     let loadTimeout: number | null = null;
 
     const boot = async () => {
@@ -557,6 +562,13 @@ export function NationalMap({
           maplibreLogo: false,
         });
         mapRef.current = map;
+        // MapLibre is embedded in responsive panes. Reflow changes can leave a
+        // stale canvas size unless the map engine is explicitly resized.
+        const mapContainer = containerRef.current;
+        resizeObserver = mapContainer && typeof ResizeObserver !== "undefined"
+          ? new ResizeObserver(() => { if (!cancelled) map?.resize(); })
+          : null;
+        if (mapContainer) resizeObserver?.observe(mapContainer);
 
         map.addControl(new module.NavigationControl({ showCompass: true, visualizePitch: true }), "top-left");
         map.addControl(new module.FullscreenControl(), "top-left");
@@ -882,6 +894,9 @@ export function NationalMap({
             ]);
           };
           map.on("moveend", reportViewport);
+          const updateZoom = () => { if (!cancelled) setZoomLevel(Number(map?.getZoom().toFixed(1) ?? 4)); };
+          map.on("zoomend", updateZoom);
+          updateZoom();
           map.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 0 });
           // A manually entered AOI should be in view as soon as MapLibre loads.
           if (analysisSelectionBboxRef.current) {
@@ -901,6 +916,7 @@ export function NationalMap({
     return () => {
       cancelled = true;
       if (loadTimeout !== null) window.clearTimeout(loadTimeout);
+      resizeObserver?.disconnect();
       map?.remove();
       mapRef.current = null;
     };
@@ -1091,6 +1107,11 @@ export function NationalMap({
   const resetMap = () => {
     mapRef.current?.fitBounds(ALGERIA_BOUNDS, { padding: compact ? 18 : 34, duration: 500 });
   };
+  const zoomToArea = () => {
+    if (!analysisSelectionBbox) return;
+    const [w,s,e,n] = analysisSelectionBbox;
+    mapRef.current?.fitBounds([[w,s],[e,n]], { padding: 65, maxZoom: 17, duration: 350 });
+  };
 
   return (
     <section className={`fg-national-map ${compact ? "compact" : ""} ${guided ? "guided" : ""}`} aria-label={labels.title}>
@@ -1107,6 +1128,12 @@ export function NationalMap({
 
       <div className="fg-national-map-canvas">
         <div ref={containerRef} className="fg-maplibre-host" role="application" aria-label={labels.title} />
+        <div className="fg-map-zoom-toolbar" role="group" aria-label={locale === "ar" ? "التحكم في تكبير الخريطة" : locale === "fr" ? "Zoom de la carte" : "Map zoom"}>
+          <button type="button" disabled={engineState !== "ready"} aria-label={locale === "ar" ? "تكبير" : locale === "fr" ? "Zoom avant" : "Zoom in"} title="Zoom +" onClick={() => mapRef.current?.zoomIn({ duration: 250 })}>+</button>
+          <span dir="ltr" aria-label="Zoom level">Z {zoomLevel.toFixed(1)}</span>
+          <button type="button" disabled={engineState !== "ready"} aria-label={locale === "ar" ? "تصغير" : locale === "fr" ? "Zoom arrière" : "Zoom out"} title="Zoom −" onClick={() => mapRef.current?.zoomOut({ duration: 250 })}>−</button>
+          <button type="button" disabled={engineState !== "ready" || !analysisSelectionBbox} aria-label={locale === "ar" ? "الرجوع إلى القطعة" : locale === "fr" ? "Cadrer la parcelle" : "Fit selected field"} title={locale === "ar" ? "تركيز على القطعة" : "Fit field"} onClick={zoomToArea}>⌖</button>
+        </div>
         <div className="fg-map-control-stack">
           <div className="fg-map-control-card" aria-label={labels.modes}>
             <small>{labels.modes}</small>

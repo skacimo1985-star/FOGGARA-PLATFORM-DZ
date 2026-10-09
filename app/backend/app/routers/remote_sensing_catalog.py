@@ -10,9 +10,13 @@ import math
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..db import get_db
 
 from ..deps import api_error, get_current_user
-from ..models import User
+from ..models import AgriParcel, User
 from ..services.remote_sensing_indices import public_index_definitions
 from ..services.field_intelligence import public_field_capabilities, resolve_crop_profile
 from ..services.isda_soil_context import sample_soil_context
@@ -311,20 +315,46 @@ def field_intelligence_capabilities(_user: User = Depends(get_current_user)):
 
 @router.get("/studies/field-intelligence")
 def field_intelligence_study(
-    bbox: str = Query(..., min_length=7, max_length=160),
     start: date = Query(...),
     end: date = Query(...),
+    bbox: str | None = Query(default=None, min_length=7, max_length=160),
+    parcel_id: int | None = Query(default=None, gt=0),
+    scene_id: str | None = Query(default=None, min_length=6, max_length=180),
     crop: str = Query(default="", max_length=120),
     cloud_cover_lte: float = Query(default=30, ge=0, le=100),
     include_soil: bool = Query(default=True),
     _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     if start > end:
         api_error(422, "INVALID_DATE_RANGE", "start date must not be after end date")
     if (end - start).days > 366:
         api_error(422, "DATE_RANGE_TOO_LARGE", "field intelligence is limited to 366 days")
 
-    raw_bbox = _parse_bbox(bbox)
+    # Saved parcels are resolved on the server from the signed-in tenant.
+    # The client cannot override stored geometry with a forged rectangle.
+    geometry = None
+    sample_geometry = "AOI_BOUNDING_BOX"
+    source_parcel_id = None
+    resolved_crop = crop
+    if parcel_id is not None:
+        parcel = db.scalar(select(AgriParcel).where(
+            AgriParcel.id == parcel_id,
+            AgriParcel.org_id == _user.org_id,
+        ))
+        if parcel is None:
+            api_error(404, "NOT_FOUND", "Parcel not found")
+        if parcel.archived:
+            api_error(409, "PARCEL_ARCHIVED", "Parcel is archived")
+        from .satellite_parcels import _analysis_target
+        raw_bbox, geometry, sample_geometry, _fingerprint = _analysis_target(parcel)
+        source_parcel_id = parcel.id
+        resolved_crop = parcel.crop
+        db.rollback()  # free DB transaction before external raster IO
+    else:
+        if bbox is None:
+            api_error(422, "ANALYSIS_TARGET_REQUIRED", "Select a saved parcel or analysis area")
+        raw_bbox = _parse_bbox(bbox)
     try:
         validate_analysis_bbox(raw_bbox)
     except RasterStatisticsError as exc:
@@ -340,6 +370,9 @@ def field_intelligence_study(
 
     capabilities = public_field_capabilities()
     features = _earth_search_features(raw_bbox, start, end, cloud_cover_lte, 12)
+    if scene_id:
+        # Selection is permitted only among scenes from the trusted STAC response.
+        features = [feature for feature in features if feature.get("id") == scene_id]
     selected_feature = None
     selected_plan = None
     selected_scene = None
@@ -362,8 +395,11 @@ def field_intelligence_study(
         return {
             "status": "NO_USABLE_SCENE",
             "bbox_wgs84": raw_bbox,
+            "parcel_id": source_parcel_id,
+            "sample_geometry": sample_geometry,
+            "geometry_mask_applied": False,
             "period": {"start": start.isoformat(), "end": end.isoformat()},
-            "crop_profile": resolve_crop_profile(crop),
+            "crop_profile": resolve_crop_profile(resolved_crop),
             "scene": None,
             "domains": {},
             "soil_context": None,
@@ -373,17 +409,21 @@ def field_intelligence_study(
         }
 
     try:
-        spectral = compute_multi_index_statistics(selected_plan, raw_bbox)
+        spectral = (compute_multi_index_statistics(selected_plan, raw_bbox, geometry_wgs84=geometry)
+                    if geometry is not None else compute_multi_index_statistics(selected_plan, raw_bbox))
     except RasterCapacityError:
         api_error(429, "RASTER_ANALYSIS_BUSY", "Field-intelligence raster capacity is busy; retry later")
     except RasterStatisticsError as exc:
         api_error(502, "REMOTE_RASTER_UNAVAILABLE", str(exc))
 
+    if geometry is not None and not spectral.get("mask", {}).get("geometry_mask_applied"):
+        api_error(502, "PARCEL_MASK_MISSING", "Raster did not apply the saved parcel boundary mask")
+
     indices = spectral["indices"]
     ndvi_valid = float(indices.get("ndvi", {}).get("pixels", {}).get("valid_fraction") or 0.0)
     quality = operational_quality_indicator(ndvi_valid, selected_scene.get("cloud_cover_pct"))
     soil = sample_soil_context(raw_bbox) if include_soil else None
-    profile = resolve_crop_profile(crop)
+    profile = resolve_crop_profile(resolved_crop)
 
     domains = {
         "vegetation": {
@@ -423,6 +463,10 @@ def field_intelligence_study(
         "status": "READY",
         "study_type": "field_intelligence_snapshot",
         "bbox_wgs84": raw_bbox,
+        "parcel_id": source_parcel_id,
+        "sample_geometry": sample_geometry,
+        "geometry_mask_applied": bool(spectral.get("mask", {}).get("geometry_mask_applied")),
+
         "period": {"start": start.isoformat(), "end": end.isoformat()},
         "crop_profile": profile,
         "scene": {
@@ -454,6 +498,7 @@ def field_intelligence_study(
         },
         "limitations": [
             "No spectral result is automatically upgraded to VERIFIED.",
+            "Soil model context uses bounding-area sampling; it is not a laboratory-certified polygon measurement.",
             "N/P/K/pH prescriptions require validated soil measurements or a separately validated chemical-soil provider contract.",
             "Individual date-palm counting requires validated very-high-resolution imagery, not Sentinel-2 alone.",
         ],

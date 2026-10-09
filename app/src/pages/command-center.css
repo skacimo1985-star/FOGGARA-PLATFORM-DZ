@@ -550,3 +550,13 @@
   .fg-gis-simple-primary{align-items:stretch;flex-direction:column}.fg-gis-simple-primary button{width:100%}
   .fg-national-map.guided .fg-national-map-canvas{min-height:420px}
 }
+
+/* Shared MapLibre zoom tools: mounted on BOTH public and authenticated GIS.
+   The full map layout is loaded from NationalMap's own stylesheet. */
+.fg-map-zoom-toolbar{position:absolute;z-index:12;inset-block-end:54px;inset-inline-end:16px;display:flex;flex-direction:column;min-width:50px;border:1px solid #bbd4c3;border-radius:11px;overflow:hidden;background:#fffffff0;box-shadow:0 8px 22px #082d2238;direction:ltr}
+.fg-map-zoom-toolbar button{border:0;border-bottom:1px solid #d9e7dc;background:transparent;min-width:50px;min-height:44px;font-size:24px;font-weight:720;line-height:1;color:#145b3b;cursor:pointer}
+.fg-map-zoom-toolbar button:last-child{border-bottom:0}
+.fg-map-zoom-toolbar button:disabled{opacity:.35;cursor:default}
+.fg-map-zoom-toolbar button:not(:disabled):hover{background:#e7f6e9}
+.fg-map-zoom-toolbar span{font:700 11px/1.8 ui-monospace,Consolas,monospace;color:#315d45;text-align:center;padding:4px 6px}
+@media(max-width:730px){.fg-map-zoom-toolbar{inset-inline-end:8px;inset-block-end:42px}.fg-map-zoom-toolbar button{min-height:41px;min-width:44px}}

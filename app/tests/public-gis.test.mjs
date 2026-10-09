@@ -19,7 +19,7 @@ test("FOGGARA visitor GIS has native drawing, live scenes and a real NDVI previe
   assert.ok(page.includes('NationalMap key={retry} sites={[]} wilayas={WILAYAS}'));
   assert.ok(page.includes('onDrawParcelBoundary={geometry=>change(geometry)}'));
   assert.ok(page.includes('onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}'));
-  assert.ok(page.includes('draftParcelBoundary={area}'));
+  assert.ok(page.includes('draftParcelBoundary={savedFieldId!==null?null:area}'));
   assert.ok(page.includes('/expo/satellite/scenes'));
   assert.ok(page.includes('api.post<Preview>("/expo/satellite/ndvi-preview"'));
   assert.ok(page.includes('NDVI'));

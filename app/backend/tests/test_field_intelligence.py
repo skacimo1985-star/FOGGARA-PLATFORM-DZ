@@ -181,3 +181,103 @@ def test_isda_context_fails_per_property_without_fabricating(monkeypatch):
     assert result["available_properties"] == []
     assert set(result["unavailable_properties"]) == set(isda_soil_context.PRODUCTS)
     assert result["verified"] is False
+
+
+def test_saved_parcel_intelligence_uses_authoritative_polygon_not_supplied_bbox(client, world, monkeypatch):
+    headers = login(client, "o1m@t.dz")
+    polygon = {"type": "Polygon", "coordinates": [[
+        [2.0, 33.0], [2.01, 33.0], [2.007, 33.006], [2.0, 33.01], [2.0, 33.0],
+    ]]}
+    created = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "FOGGARA verified geometry test", "crop": "date palm",
+        "area_ha": 1, "location": "Laghouat", "boundary_geojson": polygon,
+    })
+    assert created.status_code == 201, created.text
+    field_id = created.json()["id"]
+    seen = {}
+    def catalog(bbox, *args, **kwargs):
+        seen["catalog_bbox"] = bbox
+        return [_feature()]
+    def multi(plan, bbox, geometry_wgs84=None):
+        seen["spectral_bbox"] = bbox
+        seen["polygon"] = geometry_wgs84
+        result = _multi()
+        result["mask"]["geometry_mask_applied"] = True
+        return result
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features", catalog)
+    monkeypatch.setattr(remote_sensing_catalog, "build_multi_index_plan", lambda _item: {"scene_id": "S2A_FIELD_001"})
+    monkeypatch.setattr(remote_sensing_catalog, "compute_multi_index_statistics", multi)
+    monkeypatch.setattr(remote_sensing_catalog, "sample_soil_context", lambda _bbox: _soil())
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "parcel_id": field_id, "bbox": "80,11,80.01,11.01", "crop": "wheat",
+        "scene_id": "S2A_FIELD_001", "start": "2026-09-01", "end": "2026-10-08", "include_soil": "false",
+    })
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["parcel_id"] == field_id
+    assert result["sample_geometry"] == "PARCEL_BOUNDARY_GEOJSON"
+    assert result["geometry_mask_applied"] is True
+    assert result["crop_profile"]["id"] == "date_palm"
+    assert seen["catalog_bbox"] == [2.0, 33.0, 2.01, 33.01]
+    assert seen["spectral_bbox"] == [2.0, 33.0, 2.01, 33.01]
+    assert seen["polygon"] == polygon
+    assert result["domains"]["vegetation"]["indices"]["ndvi"]["statistics"]["mean"] == 0.62
+
+
+def test_saved_parcel_field_intelligence_is_org_isolated(client, world, monkeypatch):
+    own = login(client, "o1m@t.dz")
+    other = login(client, "o2m@t.dz")
+    created = client.post("/api/agriculture/parcels", headers=own, json={
+        "name": "Protected Oasis", "crop": "date palm", "area_ha": 1,
+        "location": "Laghouat", "lat": 33.8, "lon": 2.87,
+    })
+    assert created.status_code == 201, created.text
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features",
+                        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("Provider contacted before checking owner")))
+    blocked = client.get("/api/remote-sensing/studies/field-intelligence", headers=other, params={
+        "parcel_id": created.json()["id"], "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert blocked.status_code == 404
+    no_auth = client.get("/api/remote-sensing/studies/field-intelligence", params={
+        "parcel_id": created.json()["id"], "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert no_auth.status_code == 401
+
+
+def test_saved_parcel_field_analysis_never_reports_results_if_polygon_mask_failed(client, world, monkeypatch):
+    headers = login(client, "o1m@t.dz")
+    polygon = {"type": "Polygon", "coordinates": [[
+        [2.0, 33.0], [2.001, 33.0], [2.001, 33.001], [2.0, 33.001], [2.0, 33.0],
+    ]]}
+    saved = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "Mask required", "crop": "wheat", "area_ha": 1,
+        "location": "Laghouat", "boundary_geojson": polygon,
+    })
+    assert saved.status_code == 201
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features", lambda *_args, **_kwargs: [_feature()])
+    monkeypatch.setattr(remote_sensing_catalog, "build_multi_index_plan", lambda _item: {"scene_id": "S2A_FIELD_001"})
+    monkeypatch.setattr(remote_sensing_catalog, "compute_multi_index_statistics", lambda *_args, **_kwargs: _multi())
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "parcel_id": saved.json()["id"], "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert response.status_code == 502
+    assert response.json()["detail"]["code"] == "PARCEL_MASK_MISSING"
+
+
+def test_saved_parcel_scene_selection_never_bypasses_trusted_stac(client, world, monkeypatch):
+    headers = login(client, "o1m@t.dz")
+    saved = client.post("/api/agriculture/parcels", headers=headers, json={
+        "name": "Scene selection", "crop": "wheat", "area_ha": 1,
+        "location": "Laghouat", "lat": 33.8, "lon": 2.87,
+    })
+    assert saved.status_code == 201
+    monkeypatch.setattr(remote_sensing_catalog, "_earth_search_features", lambda *_args, **_kwargs: [_feature()])
+    monkeypatch.setattr(remote_sensing_catalog, "build_multi_index_plan",
+                        lambda *_args: (_ for _ in ()).throw(AssertionError("No plan for untrusted scene")))
+    response = client.get("/api/remote-sensing/studies/field-intelligence", headers=headers, params={
+        "parcel_id": saved.json()["id"], "scene_id": "S2B_NOT_IN_STAC_2026",
+        "start": "2026-09-01", "end": "2026-10-08",
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "NO_USABLE_SCENE"
+    assert response.json()["domains"] == {}
