@@ -760,6 +760,26 @@ def test_parcel_boundary_geojson_sets_centroid_and_rejects_self_intersection(cli
     assert float(body['lat']) == pytest.approx(33.8, abs=1e-5)
     assert float(body['lon']) == pytest.approx(2.87, abs=1e-5)
 
+    # Even if the API client supplies an arbitrary area, the stored value comes
+    # from server-validated WGS84 geometry and stays consistent after redrawing.
+    from app.services.parcel_geometry import normalize_parcel_boundary
+    expected_area = normalize_parcel_boundary(boundary)[1]['estimated_area_ha']
+    assert float(body['area_ha']) == pytest.approx(expected_area, rel=1e-5)
+    narrower = {
+        'type': 'Polygon',
+        'coordinates': [[
+            [2.8695, 33.7995], [2.8700, 33.7995],
+            [2.8700, 33.8005], [2.8695, 33.8005],
+            [2.8695, 33.7995],
+        ]],
+    }
+    edited = client.patch(f"/api/agriculture/parcels/{body['id']}", headers=h,
+                          json={'boundary_geojson': narrower})
+    assert edited.status_code == 200, edited.text
+    assert float(edited.json()['area_ha']) == pytest.approx(
+        normalize_parcel_boundary(narrower)[1]['estimated_area_ha'], rel=1e-5)
+    assert float(edited.json()['area_ha']) < float(body['area_ha'])
+
     crossed = {
         'type': 'Polygon',
         'coordinates': [[
@@ -999,3 +1019,28 @@ def test_gis_parcel_geojson_exposes_only_owned_real_boundaries(client, world):
     other_geo = client.get('/api/gis/parcels.geojson', headers=h2)
     assert other_geo.status_code == 200
     assert other_geo.json()['features'] == []
+
+
+def test_gis_operational_status_is_authenticated_org_scoped_and_no_secrets(client, world):
+    assert client.get('/api/gis/operational-status').status_code == 401
+    first = login(client, 'o1m@t.dz')
+    second = login(client, 'o2m@t.dz')
+    initial = client.get('/api/gis/operational-status', headers=first)
+    assert initial.status_code == 200, initial.text
+    assert initial.json()['database']['connected'] is True
+    assert initial.json()['database']['engine'] in ('postgresql', 'sqlite')
+    assert initial.json()['database']['postgis_extension_verified'] is False
+    base_count = initial.json()['organization']['parcels']
+
+    saved = client.post('/api/agriculture/parcels', headers=first, json={
+        'name': 'Database readiness parcel', 'crop': 'date palm', 'area_ha': 1,
+        'location': 'Laghouat',
+    })
+    assert saved.status_code == 201, saved.text
+    current = client.get('/api/gis/operational-status', headers=first)
+    assert current.json()['organization']['parcels'] == base_count + 1
+    other = client.get('/api/gis/operational-status', headers=second)
+    assert other.status_code == 200
+    assert 'DATABASE_URL' not in str(current.json())
+    assert 'postgresql://' not in str(current.json())
+    assert 'password' not in str(current.json()).lower()
