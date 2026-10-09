@@ -11,7 +11,7 @@ test("public homepage uses isolated farm landing instead of legacy Moon template
   assert.equal(page.includes("fg-moon-landing"),false);
   assert.equal(page.includes("iframe"),false);
 });
-test("hero and content use four distinct verified local image assets",()=>{
+test("hero and content use three distinct verified local image assets",()=>{
   const used=[
     'oasis-dawn.webp',
     'foggara-heritage-poster.webp',
