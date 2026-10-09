@@ -234,7 +234,7 @@
   transition:background-position .45s ease;
 }
 .fg-presentation-stage-1{background-image:url("/images/oasis-hero.webp");background-position:center 56%}
-.fg-presentation-stage-2{background-image:url("/images/user-heritage-digital-twin.webp");background-position:center 54%}
+.fg-presentation-stage-2{background-image:url("/images/oasis-dawn.webp");background-position:center 54%}
 .fg-presentation-stage-3{background-image:url("/images/oasis-dawn.webp");background-position:center 58%}
 .fg-presentation-stage-4{background-image:url("/images/user-oasis-hero.webp");background-position:center}
 .fg-presentation-stage-5{
@@ -242,7 +242,7 @@
   background-size:400% 300%;
   background-position:66.666% 50%;
 }
-.fg-presentation-stage-6{background-image:url("/images/user-heritage-digital-twin.webp");background-position:center 24%}
+.fg-presentation-stage-6{background-image:url("/images/oasis-dawn.webp");background-position:center 24%}
 .fg-web-presentation-stage-shade{
   position:absolute;
   inset:0;
@@ -2362,7 +2362,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
 }
 .fg-moon-offer-mark::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(4,15,9,.08),rgba(4,15,9,.78))}
 .fg-offer-1 .fg-moon-offer-mark{background-image:url("/images/oasis-hero.webp")!important}
-.fg-offer-2 .fg-moon-offer-mark{background-image:url("/images/user-heritage-digital-twin.webp")!important}
+.fg-offer-2 .fg-moon-offer-mark{background-image:url("/images/oasis-dawn.webp")!important}
 .fg-offer-3 .fg-moon-offer-mark{background-image:url("/images/oasis-dawn.webp")!important}
 .fg-moon-offer-card>div:last-child{padding:30px!important;text-align:left}
 .fg-moon-landing[dir=rtl] .fg-moon-offer-card>div:last-child{text-align:right}
@@ -2734,7 +2734,7 @@ html[data-theme="dark"] body .fg-foggara-demo-feature{background:#111}
   background-color:#173023;
 }
 .fg-global-visual-main{background:#173023 url("/images/oasis-dawn.webp") center/cover no-repeat!important}
-.fg-global-visual-heritage{background:#173023 url("/images/user-heritage-digital-twin.webp") center/cover no-repeat!important}
+.fg-global-visual-heritage{background:#173023 url("/images/oasis-dawn.webp") center/cover no-repeat!important}
 .fg-global-visual-field{background:#173023 url("/images/user-oasis-hero.webp") center/cover no-repeat!important}
 .fg-global-visual-evidence{background:#173023 url("/images/oasis-hero.webp") center/cover no-repeat!important}
 .fg-global-visual-stage img{
