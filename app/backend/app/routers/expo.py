@@ -22,9 +22,16 @@ from ..models import AgriObservation, AgriParcel, Project, Site, User, WaterReso
 from ..ratelimit import check_rate_limit
 from .remote_sensing_catalog import (
     EARTH_SEARCH_SEARCH_URL,
+    _earth_search_features,
+    _study_pixel_budget,
     SENTINEL_COLLECTION,
     _parse_bbox,
     _scene_from_feature,
+)
+from ..services.parcel_geometry import normalize_parcel_boundary, ParcelGeometryError
+from ..services.remote_sensing_processing import build_processing_plan, ProcessingPlanError
+from ..services.remote_sensing_raster import (
+    compute_index_statistics, validate_analysis_bbox, RasterCapacityError, RasterStatisticsError,
 )
 
 router = APIRouter(prefix="/api/expo", tags=["expo"])
@@ -333,3 +340,101 @@ def expo_satellite_scenes(
         "count": len(scenes),
         "scenes": scenes,
     }
+
+
+class PublicFieldPreviewIn(ExpoInput):
+    """Bounded public *non-persistent* analysis; never accesses private parcels."""
+    boundary_geojson: dict
+    start: date
+    end: date
+
+
+@router.post("/satellite/ndvi-preview")
+def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
+    """Actual Sentinel-2 NDVI within a visitor-drawn polygon on FOGGARA's own map.
+
+    Strict limit protects the free web worker from arbitrary public raster workloads.
+    Not evidence of soil chemistry, crop identity or field verification.
+    """
+    check_rate_limit(
+        request, "expo:ndvi-preview",
+        "RATE_LIMIT_EXPO_NDVI_PREVIEW_MAX", "RATE_LIMIT_EXPO_NDVI_PREVIEW_WINDOW",
+        3, 300,
+    )
+    if payload.start > payload.end or (payload.end - payload.start).days > 31:
+        api_error(422, "INVALID_DATE_RANGE", "Select a period of up to 31 days")
+    if payload.end > datetime.now(timezone.utc).date():
+        api_error(422, "FUTURE_DATE", "Future satellite acquisitions cannot be requested")
+    try:
+        polygon, meta = normalize_parcel_boundary(payload.boundary_geojson)
+    except ParcelGeometryError as exc:
+        api_error(422, "INVALID_PREVIEW_POLYGON", str(exc))
+    bbox = list(meta["bbox"])
+    west, south, east, north = bbox
+    aw, ass, ae, an = ALGERIA_BOUNDS
+    if not (aw <= west < east <= ae and ass <= south < north <= an):
+        api_error(422, "PREVIEW_OUTSIDE_ALGERIA", "FOGGARA public previews are limited to Algeria")
+    try:
+        validate_analysis_bbox(bbox)
+    except RasterStatisticsError as exc:
+        api_error(422, "INVALID_PREVIEW_AREA", str(exc))
+    if _study_pixel_budget(bbox) > 1600:
+        api_error(422, "PREVIEW_TOO_LARGE", "Select a smaller polygon (maximum 1,600 estimated Sentinel pixels)")
+
+    features = _earth_search_features(bbox, payload.start, payload.end, 35.0, 4)
+    skipped = []
+    for feature in features:
+        scene = _scene_from_feature(feature)
+        if not scene.get("id") or scene.get("geometry") is None:
+            continue
+        try:
+            plan = build_processing_plan(feature, "ndvi")
+        except ProcessingPlanError:
+            skipped.append({"scene_id": scene["id"], "reason": "required_bands_unavailable"})
+            continue
+        try:
+            # The raster engine applies Sentinel-2 SCL quality masks and
+            # clips to this polygon; it never returns neighbouring field pixels.
+            result = compute_index_statistics(plan, bbox, geometry_wgs84=polygon)
+        except RasterCapacityError:
+            api_error(429, "PUBLIC_ANALYSIS_BUSY", "FOGGARA raster engine is busy; retry later")
+        except RasterStatisticsError:
+            skipped.append({"scene_id": scene["id"], "reason": "remote_raster_unavailable"})
+            continue
+        valid = int(result.get("pixels", {}).get("valid", 0))
+        if valid == 0:
+            skipped.append({"scene_id": scene["id"], "reason": "no_cloud_free_pixels"})
+            continue
+        return {
+            "status": "READY",
+            "product": "FOGGARA FIELD / NDVI PREVIEW",
+            "scene": {
+                "id": scene["id"], "datetime": scene.get("datetime"),
+                "cloud_cover_pct": scene.get("cloud_cover_pct"),
+                "provider": scene.get("provider"),
+            },
+            "bbox_wgs84": bbox,
+            "area_ha_estimated": meta["estimated_area_ha"],
+            "geometry_mask_applied": bool(result.get("mask", {}).get("geometry_mask_applied")),
+            "indices": {"ndvi": {
+                "statistics": result.get("statistics"),
+                "pixels": result.get("pixels"),
+                "mask": result.get("mask"),
+            }},
+            "evidence": {"scene": "OBSERVED", "ndvi": "COMPUTED", "verified": False},
+            "persisted": False,
+            "interpretation": "NDVI measures spectral vegetation greenness, not crop yield, disease, nutrient content or soil moisture.",
+            "limitations": ["Visitor preview is not saved to an organization.", "Remote imagery may not be available for the requested period."],
+        }
+    return {
+        "status": "NO_USABLE_SCENE",
+        "product": "FOGGARA FIELD / NDVI PREVIEW",
+        "bbox_wgs84": bbox,
+        "area_ha_estimated": meta["estimated_area_ha"],
+        "indices": {},
+        "scene": None,
+        "skipped": skipped,
+        "evidence": {"verified": False},
+        "persisted": False,
+    }
+
