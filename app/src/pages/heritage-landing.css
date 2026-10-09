@@ -76,6 +76,7 @@
   position:relative;
   z-index:35;
   width:min(1180px,calc(100% - 48px));
+  max-width:100%;
   min-height:66px;
   margin:0 auto -34px;
   padding:0 24px;
@@ -95,6 +96,7 @@
   z-index:-1;
 }
 .fg-moon-nav a{
+  white-space:nowrap;
   min-height:66px;
   display:inline-flex;
   align-items:center;
