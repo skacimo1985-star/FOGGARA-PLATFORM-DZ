@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState,type FormEvent} from "react";
+import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
@@ -110,6 +110,7 @@ export default function PublicGis(){
   const t=copy[lang];
   const v=wb[lang];
   const [retry,setRetry]=useState(0);
+  const resultsRef=useRef<HTMLDivElement|null>(null);
   const [index,setIndex]=useState<IndexKey>("ndvi");
   const [hasSearched,setHasSearched]=useState(false);
   const [savedFields,setSavedFields]=useState<SavedField[]>([]);
@@ -249,6 +250,7 @@ export default function PublicGis(){
   const selected=scenes.find(x=>x.id===selectedSceneId);
   const activeMetrics=result?.indices?.[index];
   const ndvi=activeMetrics?.statistics?.mean;
+  useEffect(()=>{if(result)resultsRef.current?.scrollIntoView({behavior:"smooth",block:"nearest"});},[result]);
   const count=activeMetrics?.pixels?.valid;
   const coverage=activeMetrics?.pixels?.valid_fraction;
   const range=activeMetrics?.statistics;
@@ -359,7 +361,9 @@ export default function PublicGis(){
           <div><small>{v.workspace} / GIS</small><h2><MapIcon size={20}/>{v.map}</h2></div>
           <div className="fg-field-map-pills">
             <span><span className="fg-field-live-dot"/>{v.roi}</span>
-            <span>MapLibre · OSM</span>
+            <button type="button" className="fg-field-map-analyze" disabled={!allowed||computing}
+              onClick={()=>void preview()}>{computing?<Loader2 size={15} className="fg-field-spin"/>:<Activity size={15}/>}
+              {computing?v.processing:t.run.replace("NDVI",index.toUpperCase())}</button>
           </div>
         </div>
         <div className="fg-field-map-stage">
@@ -388,7 +392,7 @@ export default function PublicGis(){
             <button type="button" aria-pressed={index==="ndmi"} className={index==="ndmi"?"active":""}
               onClick={()=>{setIndex("ndmi");setResult(null);setPreviewError(null);}}><Droplets size={16}/>NDMI<small>{v.canopyWater}</small></button>
           </div>
-          <div className="fg-field-analysis-card" aria-live="polite">
+          <div className="fg-field-analysis-card" ref={resultsRef} aria-live="polite">
             {result?.status==="READY"&&typeof ndvi==="number"?<>
               <div className="fg-field-analysis-label"><span>{v.computed}</span><span>{index.toUpperCase()}</span></div>
               <strong className="fg-field-analysis-value" dir="ltr">{ndvi.toFixed(3)}</strong>
