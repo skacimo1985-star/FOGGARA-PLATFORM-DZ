@@ -37,7 +37,7 @@ test('deck mirrors the supplied visual language and uses existing platform media
   assert.equal(deckCss.includes('/images/foggara-video-frame-2.webp'),false);
   assert.ok(deckCss.includes('grid-template-columns:repeat(12'));
   assert.ok(deck.includes('className="ocp-media-image"'));
-  assert.ok(deck.includes('src="/images/user-oasis-hero.webp"'));
+  assert.equal(deck.includes('src="/images/user-oasis-hero.webp"'),false);
   assert.ok(deck.includes('src="/images/oasis-dawn.webp"'));
   assert.ok(deckCss.includes('.ocp-media-image'));
 });
