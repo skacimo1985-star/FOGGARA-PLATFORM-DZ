@@ -39,3 +39,9 @@ test("no simulated pH and no claiming AOI bbox is parcel geometry",()=>{
   assert.match(page,/Estimated BBOX analysis, not a surveyed field boundary/);
   assert.match(page,/Save the parcel first to compute indices inside its polygon/);
 });
+
+test("active project cannot hijack a freshly drawn AOI",()=>{
+  const page=read("../src/pages/Gis.tsx");
+  assert.match(page,/if \(manualAnalysisBbox \|\| draftPolygon \|\| !activeProjectSiteId/);
+  assert.match(page,/polygonBoundingBox\(selectedParcelRecord\.boundary_geojson\)/);
+});
