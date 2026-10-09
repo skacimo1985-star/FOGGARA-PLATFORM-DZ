@@ -39,10 +39,10 @@
 .fml-jumpbar a{color:var(--fml-forest);font-size:13px;font-weight:700}
 .fml-jumpbar a:hover,.fml-jumpbar a:focus-visible{color:#246842;text-decoration:underline;text-underline-offset:4px}
 .fml-hero{position:relative;isolation:isolate;display:flex;align-items:center;min-height:clamp(540px,66vw,700px);background:var(--fml-deep);color:#fff;overflow:hidden}
-.fml-hero-image{position:absolute;inset:0;z-index:-2;background:url("/images/oasis-dawn.webp") center 52%/cover no-repeat}
-.fml-hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(6,33,23,.94),rgba(6,33,23,.67) 48%,rgba(6,33,23,.14)),linear-gradient(0deg,rgba(6,33,23,.56),transparent 40%)}
+.fml-hero-image{position:absolute;inset:0;z-index:0;pointer-events:none;background:url("/images/oasis-dawn.webp") center 52%/cover no-repeat}
+.fml-hero-shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(6,33,23,.94),rgba(6,33,23,.67) 48%,rgba(6,33,23,.14)),linear-gradient(0deg,rgba(6,33,23,.56),transparent 40%)}
 .fml-page[dir="rtl"] .fml-hero-shade{background:linear-gradient(270deg,rgba(6,33,23,.94),rgba(6,33,23,.67) 48%,rgba(6,33,23,.14)),linear-gradient(0deg,rgba(6,33,23,.56),transparent 40%)}
-.fml-hero-content{padding-top:86px;padding-bottom:95px;position:relative;z-index:1}
+.fml-hero-content{padding-top:86px;padding-bottom:95px;position:relative;z-index:2}
 .fml-overline,.fml-eyebrow{text-transform:none;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--fml-leaf)}
 .fml-overline{color:var(--fml-lime);max-width:700px}
 .fml-mark{margin-top:14px;color:#d5efd4;font:700 13px/1.6 "Hanken Grotesk",Arial,sans-serif;letter-spacing:.11em}
@@ -54,8 +54,8 @@
   line-height:1;
   font-weight:800;
   letter-spacing:-.052em;
-  overflow-wrap:normal;
-  white-space:nowrap;
+  overflow-wrap:anywhere;
+  white-space:normal;
   max-width:100%;
 }
 .fml-hero h2{margin-top:17px;max-width:800px;font-size:clamp(23px,2.6vw,36px);line-height:1.25;font-weight:750;color:#f8fff9}
@@ -67,7 +67,7 @@
 .fml-btn-accent:hover,.fml-btn-accent:focus-visible{background:#e4ffb8;border-color:#e4ffb8}
 .fml-btn-outline{color:#fff;border-color:#e6f6e2a3;background:#13372f88}
 .fml-btn-outline:hover,.fml-btn-outline:focus-visible{background:#fff1;color:#fff}
-.fml-hero-caption{position:absolute;z-index:1;bottom:27px;right:max(24px,calc((100vw - 1180px)/2));font:700 11px/1.4 "Hanken Grotesk",sans-serif;letter-spacing:.15em;color:#e1f4dd}
+.fml-hero-caption{position:absolute;z-index:2;bottom:27px;right:max(24px,calc((100vw - 1180px)/2));font:700 11px/1.4 "Hanken Grotesk",sans-serif;letter-spacing:.15em;color:#e1f4dd}
 .fml-domains{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fff;box-shadow:0 9px 30px #123b2120;position:relative;z-index:2;margin-top:-19px;padding:14px;border-radius:8px}
 .fml-domain{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 8px;color:var(--fml-forest);border-inline-end:1px solid #dde6d9;font-size:12px;font-weight:800;min-width:0}
 .fml-domain:last-child{border-inline-end:0}
@@ -183,6 +183,8 @@
  .fml-domains{grid-template-columns:repeat(2,minmax(0,1fr))}
  .fml-domain:nth-child(3){border-inline-end:1px solid #dde6d9}
  .fml-domain:nth-child(2),.fml-domain:nth-child(4){border-inline-end:0}
+ .fml-hero-content{padding-top:48px;padding-bottom:74px}
+ .fml-buttons .fml-btn{max-width:100%;white-space:normal;text-align:center}
  .fml-figures,.fml-tool-links{grid-template-columns:1fr 1fr}
  .fml-process-steps{grid-template-columns:1fr 1fr}
  .fml-process-steps li{min-height:160px;padding:16px 13px}
