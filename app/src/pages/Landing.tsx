@@ -244,9 +244,9 @@ export default function Landing() {
           <Link className="fg-moon-btn fg-moon-btn-green" to={user?"/app":"/expo"}>{user?copy.enter:copy.visitor}</Link>
         </div>
       </div>
-      <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label="Previous slide" onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
-      <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label="Next slide" onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
-      <div className="fg-moon-dots" aria-label="Hero slides">{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`Slide ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
+      <button type="button" className="fg-moon-arrow fg-moon-arrow-prev" aria-label={lang==="ar"?"الشريحة السابقة":lang==="fr"?"Diapositive précédente":"Previous slide"} onClick={()=>setHeroSlide((heroSlide+copy.hero.length-1)%copy.hero.length)}><ChevronLeft/></button>
+      <button type="button" className="fg-moon-arrow fg-moon-arrow-next" aria-label={lang==="ar"?"الشريحة التالية":lang==="fr"?"Diapositive suivante":"Next slide"} onClick={()=>setHeroSlide((heroSlide+1)%copy.hero.length)}><ChevronRight/></button>
+      <div className="fg-moon-dots" aria-label={lang==="ar"?"شرائح الواحة":lang==="fr"?"Diapositives de l’oasis":"Oasis slides"}>{copy.hero.map((_,index)=><button type="button" key={index} aria-label={`${lang==="ar"?"الشريحة":lang==="fr"?"Diapositive":"Slide"} ${index+1}`} aria-current={heroSlide===index} onClick={()=>setHeroSlide(index)}/>)}</div>
     </section>
 
     <section className="fg-moon-about" id="about">
