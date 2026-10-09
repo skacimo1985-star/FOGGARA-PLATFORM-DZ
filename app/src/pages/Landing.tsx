@@ -351,7 +351,7 @@ export default function Landing() {
         <Link className="fg-moon-btn fg-moon-btn-green" to="/presentation">{copy.presentation}<ArrowUpRight size={16}/></Link>
       </div>
       <figure className="fg-agriculture-template-art">
-        <img src="/images/user-heritage-digital-twin.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
+        <img src="/images/oasis-dawn.webp" alt={lang==="fr"?"Système traditionnel de partage de l’eau par foggara":lang==="en"?"Traditional foggara water-sharing system":"نظام الفقارة التقليدي لتوزيع المياه"} loading="lazy"/>
         <figcaption><span>FIELD HERITAGE</span><strong>FOGGARA → DIGITAL TWIN</strong></figcaption>
       </figure>
     </section>
@@ -362,7 +362,7 @@ export default function Landing() {
         <figcaption>{institutionCopy.gallery[0]}</figcaption>
       </figure>
       <figure className="fg-global-visual-heritage">
-        <img src="/images/user-heritage-digital-twin.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
+        <img src="/images/oasis-dawn.webp" alt={institutionCopy.gallery[1]} loading="lazy"/>
         <figcaption>{institutionCopy.gallery[1]}</figcaption>
       </figure>
       <figure className="fg-global-visual-field">
