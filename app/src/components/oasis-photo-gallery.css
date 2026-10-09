@@ -1,7 +1,7 @@
 /* Scoped, no global typography overrides. Works with the historical oasis homepage. */
 .oasis-gallery-content{width:100%;min-width:0}
 .oasis-gallery-filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:0 0 23px}
-.oasis-gallery-filters button{appearance:none;border:1px solid #cadbd0;background:#f5f8f3;color:#1e4a37;padding:10px 17px;border-radius:999px;font:700 13px/1.4 inherit;min-height:43px;cursor:pointer}
+.oasis-gallery-filters button{appearance:none;border:1px solid #cadbd0;background:#f5f8f3;color:#1e4a37;padding:10px 17px;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;line-height:1.4;min-height:43px;cursor:pointer}
 .oasis-gallery-filters button:hover,.oasis-gallery-filters button:focus-visible{border-color:#28674d;outline-offset:3px}
 .oasis-gallery-filters button.active{background:#1d533e;color:#fff;border-color:#1d533e}
 .oasis-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
