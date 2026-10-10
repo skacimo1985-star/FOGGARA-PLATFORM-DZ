@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {createGisRequestScope} from "@/lib/gis-request-scope";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { MapPinned,FileDown } from "lucide-react";
@@ -226,6 +227,8 @@ type FieldIntelligenceStudy = {
   status: "READY" | "NO_USABLE_SCENE";
   study_type?: string;
   geometry_mask_applied?: boolean;
+  parcel_id?: number|null;
+  preview?:{data_url:string;bbox:[number,number,number,number];index:RemoteIndex;geometry_mask_applied:boolean}|null;
   bbox_wgs84: [number, number, number, number];
   period: { start: string; end: string };
   crop_profile: CropProfile;
@@ -368,8 +371,9 @@ export default function Gis() {
   const [fieldSaving, setFieldSaving] = useState(false);
   const [fieldError, setFieldError] = useState<unknown>(null);
   const [fieldIntelligenceLoading, setFieldIntelligenceLoading] = useState(false);
+  const fieldRequestScope=useRef(createGisRequestScope());
   const [fieldIntelligenceError, setFieldIntelligenceError] = useState<unknown>(null);
-  const [fieldIntelligenceResult, setFieldIntelligenceResult] = useState<FieldIntelligenceStudy | null>(null);
+  const [storedFieldIntelligenceResult, setFieldIntelligenceResult] = useState<(FieldIntelligenceStudy & {request_context:string}) | null>(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const defaultStart = useMemo(() => {
     const date = new Date();
@@ -602,6 +606,10 @@ export default function Gis() {
   );
   const selectedParcelBbox = useMemo(() => parcelBbox(selectedParcel), [selectedParcel]);
   const analysisBbox = selectedParcelBbox ?? manualAnalysisBbox ?? viewportBbox;
+  const fieldContext=JSON.stringify([selectedParcelId,manualAnalysisBbox,sceneStart,sceneEnd,cloudCover,selectedParcelRecord?.boundary_geojson]);
+  const fieldIntelligenceResult=storedFieldIntelligenceResult?.request_context===fieldContext
+    && (!selectedSceneId||storedFieldIntelligenceResult.scene?.id===selectedSceneId)
+    ?storedFieldIntelligenceResult:null;
 
   const selectedScene = useMemo(
     () => satelliteScenes.find((scene) => scene.id === selectedSceneId) ?? null,
@@ -618,6 +626,7 @@ export default function Gis() {
     ?? (manualAnalysisBbox ? bboxPolygon(manualAnalysisBbox) : null);
   const reportBbox = reportGeometry ? polygonBoundingBox(reportGeometry) : null;
   const reportReadyForEvidence=Boolean(reportBbox&&fieldIntelligenceResult
+    && (!selectedParcelId || fieldIntelligenceResult.parcel_id===selectedParcelId)
     && reportBbox.every((value,i)=>Math.abs(value-fieldIntelligenceResult.bbox_wgs84[i])<0.00001)
     && fieldIntelligenceResult.period.start===sceneStart && fieldIntelligenceResult.period.end===sceneEnd);
   const reportIndex = selectedIndex==="ndmi"?"ndmi":"ndvi";
@@ -653,6 +662,12 @@ export default function Gis() {
     && (selectedParcelId || manualAnalysisBbox)
     && (selectedParcelId || newFieldCrop.trim())
   );
+
+  useEffect(()=>{
+    const scope=fieldRequestScope.current;
+    scope.invalidate();
+    return()=>scope.invalidate();
+  },[selectedParcelId,manualAnalysisBbox,sceneStart,sceneEnd,cloudCover,selectedParcelRecord?.boundary_geojson,selectedIndex,selectedSceneId]);
 
   useEffect(() => {
     setAnalysisResult(null);
@@ -892,6 +907,7 @@ export default function Gis() {
     setFieldIntelligenceLoading(true);
     setFieldIntelligenceError(null);
     setFieldIntelligenceResult(null);
+    const isCurrent=fieldRequestScope.current.capture();
     try {
       const crop = selectedParcelRecord?.crop || newFieldCrop.trim();
       const params = new URLSearchParams({
@@ -901,12 +917,18 @@ export default function Gis() {
         crop,
         cloud_cover_lte: String(cloudCover),
         include_soil: "true",
+        preview_index:selectedIndex,
       });
+      if(selectedParcelId)params.set("parcel_id",String(selectedParcelId));
+      if(selectedSceneId)params.set("scene_id",selectedSceneId);
       const result = await api.get<FieldIntelligenceStudy>(`/remote-sensing/studies/field-intelligence?${params.toString()}`);
-      setFieldIntelligenceResult(result);
+      if(!isCurrent())return;
+      setFieldIntelligenceResult({...result,request_context:fieldContext});
+      setAnalysisOverlay(result.preview?.geometry_mask_applied
+        ?{url:result.preview.data_url,bbox:result.preview.bbox,index:result.preview.index}:null);
       if (result.scene?.id) setSelectedSceneId(result.scene.id);
     } catch (err) {
-      setFieldIntelligenceError(err);
+      if(isCurrent())setFieldIntelligenceError(err);
     } finally {
       setFieldIntelligenceLoading(false);
     }
@@ -1745,3 +1767,4 @@ export default function Gis() {
     </div>
   );
 }
+

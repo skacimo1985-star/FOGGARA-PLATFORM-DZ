@@ -349,6 +349,7 @@ class PublicFieldPreviewIn(ExpoInput):
     start: date
     end: date
     index: Literal["ndvi", "ndmi"] = "ndvi"
+    include_preview: bool = False
     scene_id: str | None = Field(default=None, min_length=6, max_length=180)
 
 
@@ -402,7 +403,8 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
         try:
             # The raster engine applies Sentinel-2 SCL quality masks and
             # clips to this polygon; it never returns neighbouring field pixels.
-            result = compute_index_statistics(plan, bbox, geometry_wgs84=polygon)
+            result = (compute_index_statistics(plan, bbox, geometry_wgs84=polygon, include_preview=True)
+                      if payload.include_preview else compute_index_statistics(plan, bbox, geometry_wgs84=polygon))
         except RasterCapacityError:
             api_error(429, "PUBLIC_ANALYSIS_BUSY", "FOGGARA raster engine is busy; retry later")
         except RasterStatisticsError:
@@ -429,6 +431,8 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
             "bbox_wgs84": bbox,
             "area_ha_estimated": meta["estimated_area_ha"],
             "geometry_mask_applied": bool(result.get("mask", {}).get("geometry_mask_applied")),
+            "preview": result.get("preview") if payload.include_preview else None,
+            "grid": result.get("grid"),
             "indices": {payload.index: {
                 "statistics": result.get("statistics"),
                 "pixels": result.get("pixels"),
@@ -451,4 +455,5 @@ def expo_field_ndvi_preview(payload: PublicFieldPreviewIn, request: Request):
         "evidence": {"verified": False},
         "persisted": False,
     }
+
 
