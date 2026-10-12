@@ -342,7 +342,7 @@ def main():
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path == "/app/agriculture":
                         expect(page.locator(".fg-intelligence-band")).to_be_visible()
-                        expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
+                        expect(page.locator(".fg-intelligence-metric")).to_have_count(14)
                         expect(page.locator(".fg-remote-sensing-state")).to_be_visible()
                         expect(page.locator(".fg-remote-sensing-grid > div")).to_have_count(4)
                     if path == "/app/water":
