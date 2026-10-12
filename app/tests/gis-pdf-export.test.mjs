@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(path,import.meta.url),"utf8");
 
 test("FOGGARA's GIS has a real PDF export action on field area, not fabricated server data",()=>{
   const page=read("../src/pages/PublicGis.tsx");
-  assert.ok(page.includes('import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence}'));
+  assert.ok(page.includes('import {FieldPdfReport,type FieldPdfEvidence}'));
   assert.ok(page.includes('onClick={()=>printFoggaraFieldReport(fieldName.trim()||null,savedFieldId)}'));
   assert.ok(page.includes('disabled={!area||!bbox}'));
   assert.ok(page.includes('result?{'));
@@ -37,7 +37,7 @@ test("FOGGARA PDF report documents source and explicitly differentiates uncomput
 
 test("private GIS exports the same protected report only for an explicit area",()=>{
   const page=read("../src/pages/Gis.tsx");
-  assert.ok(page.includes('import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence}'));
+  assert.ok(page.includes('import {FieldPdfReport,type FieldPdfEvidence}'));
   assert.ok(page.includes('selectedParcelRecord?.boundary_geojson ?? draftPolygon'));
   assert.ok(page.includes('(manualAnalysisBbox ? bboxPolygon(manualAnalysisBbox) : null)'));
   assert.ok(page.includes('reportBbox.every((value,i)=>Math.abs(value-fieldIntelligenceResult.bbox_wgs84[i])<0.00001)'));
@@ -52,7 +52,8 @@ test("private GIS exports the same protected report only for an explicit area",(
 });
 
 test("print/export to PDF uses local native print with searchable RTL, not a remote vendor",()=>{
-  const pdf=read("../src/components/FieldPdfReport.tsx");
+  const pdf=read("../src/lib/print-field-report.ts");
+  const report=read("../src/components/FieldPdfReport.tsx");
   const css=read("../src/components/field-pdf-report.css");
   assert.ok(pdf.includes('window.print()'));
   assert.ok(pdf.includes('window.addEventListener("afterprint",restore)'));
@@ -63,7 +64,7 @@ test("print/export to PDF uses local native print with searchable RTL, not a rem
   assert.ok(css.includes('@media print'));
   assert.ok(css.includes('.fg-field-pdf-sheet,.fg-field-pdf-sheet *{visibility:visible!important}'));
   assert.ok(css.includes('-webkit-print-color-adjust:exact'));
-  for(const lang of ['ar:','fr:','en:'])assert.ok(pdf.includes(lang));
+  for(const lang of ['ar:','fr:','en:'])assert.ok(report.includes(lang));
 });
 
 test("PDF TypeScript and GIS TSX both transpile without syntax diagnostics",()=>{

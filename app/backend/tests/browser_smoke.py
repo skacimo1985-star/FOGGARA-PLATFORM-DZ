@@ -97,7 +97,7 @@ def main():
                 expect(page.locator(".wefeh-links")).to_be_visible()
                 expect(page.locator(".wefeh-node")).to_have_count(5)
                 expect(page.locator(".fg-platform-spine")).to_be_visible()
-                for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
+                for locale, title in (("fr", "Préserver nos ressources."), ("en", "Stewards of our resources."), ("ar", "نصون مواردنا.")):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     expect(page.locator("#foggara-title")).to_contain_text(title)
                     expect(page.locator("html")).to_have_attribute("dir", "rtl" if locale == "ar" else "ltr")

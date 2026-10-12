@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type {NationalMapProps} from "./NationalMap";
@@ -33,16 +33,16 @@ export default function RasterFallbackMap(props:NationalMapProps){
   const [opacity,setOpacity]=useState(0.8);
   const [showResult,setShowResult]=useState(true);
   useEffect(()=>{callbacks.current=props;});
-  const startDrawing=(next:Mode)=>{
+  const startDrawing=useCallback((next:Mode)=>{
     modeRef.current=next;pointsRef.current=[];
     setMode(next);setPoints([]);setInvalid(false);drawingLayer.current?.clearLayers();
-  };
-  const accept=(poly:FoggaraPolygon)=>{
+  },[]);
+  const accept=useCallback((poly:FoggaraPolygon)=>{
     if(!boundsOfPolygon(poly)||polygonAreaHectares(poly)<=0){setInvalid(true);return;}
     if(callbacks.current.onDrawParcelBoundary)callbacks.current.onDrawParcelBoundary(poly);
     else callbacks.current.onAnalysisSelectionChange?.(boundsOfPolygon(poly));
     startDrawing("none");
-  };
+  },[startDrawing]);
   useEffect(()=>{
     if(!host.current)return;
     const map=L.map(host.current,{zoomControl:true,doubleClickZoom:false,maxZoom:19});
@@ -79,7 +79,7 @@ export default function RasterFallbackMap(props:NationalMapProps){
     observer.observe(host.current);
     map.whenReady(()=>setReady(true));
     return()=>{observer.disconnect();map.remove();mapRef.current=null;};
-  },[]);
+  },[accept]);
   useEffect(()=>{
     const layer=boundaryLayer.current;if(!ready||!layer)return;
     layer.clearLayers();

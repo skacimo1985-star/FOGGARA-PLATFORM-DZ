@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
@@ -10,7 +10,8 @@ import {WILAYAS} from "@/lib/wilayas";
 import {polygonAreaHectares} from "@/lib/geojson-area";
 import {boundsOfPolygon,rectanglePolygon,saveFoggaraAoi,type FoggaraPolygon} from "@/lib/foggara-aoi";
 import {ErrorText} from "@/components/common";
-import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
+import {FieldPdfReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
+import {printFoggaraFieldReport} from "@/lib/print-field-report";
 import "./public-gis.css";
 import "./foggara-field-workbench.css";
 
@@ -149,7 +150,7 @@ export default function PublicGis(){
     requestScope.current.invalidate();setResult(null);setPreviewError(null);
     setSearching(false);setComputing(false);
   };
-  const loadWorkspace=async()=>{
+  const loadWorkspace=useCallback(async()=>{
     if(!user)return;
     const isCurrent=workspaceScope.current.capture();
     try{
@@ -162,14 +163,16 @@ export default function PublicGis(){
       setDbStatus(status);
       setDbError(null);
     }catch(error){if(isCurrent())setDbError(error);}
-  };
+  },[user]);
   useEffect(()=>{
-    workspaceScope.current.invalidate();setSavedFields([]);setDbStatus(null);setDbError(null);setSavedFieldId(null);
-    requestScope.current.invalidate();setResult(null);setPreviewError(null);
+    const workspace=workspaceScope.current;
+    const requests=requestScope.current;
+    workspace.invalidate();setSavedFields([]);setDbStatus(null);setDbError(null);setSavedFieldId(null);
+    requests.invalidate();setResult(null);setPreviewError(null);
     if(!user){setSavedFields([]);setDbStatus(null);setSavedFieldId(null);return;}
     void loadWorkspace();
-    return ()=>{requestScope.current.invalidate();workspaceScope.current.invalidate();};
-  },[user]);
+    return ()=>{requests.invalidate();workspace.invalidate();};
+  },[user,loadWorkspace]);
   const mappedFields=useMemo(()=>savedFields.filter(p=>p.boundary_geojson&&boundsOfPolygon(p.boundary_geojson)),[savedFields]);
   const mappedFeatures=useMemo<ParcelBoundaryFeature[]>(()=>
     mappedFields.map(p=>({
