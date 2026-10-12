@@ -12,7 +12,7 @@ def main():
         for attempt in range(36):
             page.goto(BASE + "/", wait_until="networkidle", timeout=60000)
             try:
-                expect(page.locator(".fg-oasis-image img")).to_have_count(1, timeout=5000)
+                expect(page.locator(".fg-hero-media img")).to_have_count(1, timeout=5000)
                 expect(page.locator(".fg-offerings-grid article")).to_have_count(7, timeout=5000)
                 expect(page.locator(".wefeh-node")).to_have_count(5, timeout=5000)
                 break
