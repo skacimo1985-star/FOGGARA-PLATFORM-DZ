@@ -98,6 +98,23 @@ jobs:
       - name: Build real Rust comparison engine
         working-directory: app/engines/nexus-core
         run: cargo build --release --locked
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.18.0'
+      - run: npm ci && npm run build
+        working-directory: app
+      - run: pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m tests.browser_smoke
+        working-directory: app/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: foggara-browser-verification
+          path: app/backend/qa
+          retention-days: 14
       - name: Run backend tests with diagnostics
         working-directory: app/backend
         env:
@@ -116,23 +133,6 @@ jobs:
           path: app/backend/test-results
           if-no-files-found: warn
           retention-days: 7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22.18.0'
-      - run: npm ci && npm run build
-        working-directory: app
-      - run: pip install playwright==1.55.0
-      - run: python -m playwright install --with-deps chromium
-      - run: python -m tests.browser_smoke
-        working-directory: app/backend
-        env:
-          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/foggara_migration
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: foggara-browser-verification
-          path: app/backend/qa
-          retention-days: 14
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: foggara-operational-package
