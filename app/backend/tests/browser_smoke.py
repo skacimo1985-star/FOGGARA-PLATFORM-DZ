@@ -81,7 +81,7 @@ def main():
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
                 expect(page.locator(".fg-offerings-grid article")).to_have_count(7)
-                assert page.locator(".fg-oasis-image img").evaluate("e => e.complete && e.naturalWidth > 0")
+                assert page.locator(".fg-hero-media img").evaluate("e => e.complete && e.naturalWidth > 0")
                 expect(page.locator(".fg-hero-qr")).to_be_visible()
                 expect(page.locator(".fg-hero-qr-code")).to_have_attribute("href", "https://foggara-dz.onrender.com/expo")
                 assert page.locator(".fg-hero-qr-code img").evaluate("e => e.complete && e.naturalWidth > 0")
