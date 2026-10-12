@@ -187,6 +187,12 @@ export default function Login() {
             <Button type="submit" className="w-full" variant="outline" disabled={busy || retryIn > 0}>
               {busy ? t("common.loading") : t("auth.submit")}
             </Button>
+            <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={()=>{
+              formRef.current?.reset();
+              if(!retryIn)setError(null);
+              setShowPassword(false);setCapsLock(false);
+              formRef.current?.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+            }}>{t("auth.clearSaved")}</Button>
           </form>
           <div className="mt-4 flex flex-wrap justify-between gap-3 text-xs text-oasis-strong">
             <Link to="/register">{t("membership.register")}</Link>

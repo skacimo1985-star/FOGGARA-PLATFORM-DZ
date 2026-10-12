@@ -9,15 +9,35 @@ from pathlib import Path
 import httpx
 
 def ensure_no_overflow(page, context):
-    if page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"):
+    from playwright.sync_api import TimeoutError as BrowserTimeoutError
+    # ResizeObserver and newly selected locale fonts settle asynchronously.
+    # Keep the strict width check; persistent overflow still fails with diagnostics.
+    page.evaluate("""async () => {
+        await document.fonts.ready;
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }""")
+    try:
+        page.wait_for_function(
+            "document.documentElement.scrollWidth <= window.innerWidth + 1", timeout=2000)
         return
+    except BrowserTimeoutError:
+        pass
     page.screenshot(path="qa/overflow-failure.png", full_page=True)
     offending = page.evaluate("""() => [...document.querySelectorAll('body *')].map(e => {
         const r=e.getBoundingClientRect();
         return {tag:e.tagName, cls:e.className?.baseVal ?? e.className,
                 left:Math.round(r.left), right:Math.round(r.right), width:Math.round(r.width)};
     }).filter(e => e.width>0 && (e.right>innerWidth+1 || e.left < -1)).slice(0,20)""")
-    raise AssertionError((context, offending))
+    dimensions = page.evaluate("""() => ({
+        viewport: innerWidth, scrollX, root: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth,
+        boxes: [...document.querySelectorAll('body *')].filter(e => e.scrollWidth > e.clientWidth + 1)
+            .map(e => ({tag:e.tagName, cls:e.className?.baseVal ?? e.className,
+                client:e.clientWidth, scroll:e.scrollWidth, overflow:getComputedStyle(e).overflowX,
+                before:getComputedStyle(e,'::before').width, after:getComputedStyle(e,'::after').width}))
+            .slice(0,20)
+    })""")
+    raise AssertionError((context, offending, dimensions))
 
 
 def main():
@@ -81,7 +101,7 @@ def main():
                 page.goto("http://127.0.0.1:8000/", wait_until="networkidle")
                 expect(page.locator("#foggara-title")).to_be_visible()
                 expect(page.locator(".fg-offerings-grid article")).to_have_count(7)
-                assert page.locator(".fg-oasis-image img").evaluate("e => e.complete && e.naturalWidth > 0")
+                assert page.locator(".fg-hero-media img").evaluate("e => e.complete && e.naturalWidth > 0")
                 expect(page.locator(".fg-hero-qr")).to_be_visible()
                 expect(page.locator(".fg-hero-qr-code")).to_have_attribute("href", "https://foggara-dz.onrender.com/expo")
                 assert page.locator(".fg-hero-qr-code img").evaluate("e => e.complete && e.naturalWidth > 0")
@@ -97,7 +117,7 @@ def main():
                 expect(page.locator(".wefeh-links")).to_be_visible()
                 expect(page.locator(".wefeh-node")).to_have_count(5)
                 expect(page.locator(".fg-platform-spine")).to_be_visible()
-                for locale, title in (("fr", "Des ressources reliées."), ("en", "Connected resources."), ("ar", "موارد مترابطة.")):
+                for locale, title in (("fr", "Préserver nos ressources."), ("en", "Stewards of our resources."), ("ar", "نصون مواردنا.")):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     expect(page.locator("#foggara-title")).to_contain_text(title)
                     expect(page.locator("html")).to_have_attribute("dir", "rtl" if locale == "ar" else "ltr")
@@ -107,7 +127,7 @@ def main():
                     page.locator(".fg-pillars button").first.click()
                     for width in (390, 768, 1440):
                         page.set_viewport_size({"width": width, "height": 1000})
-                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), (locale, width)
+                        ensure_no_overflow(page, ("landing", locale, width))
                         expect(page.locator(".wefeh-node")).to_have_count(5)
                         assert page.locator(".os-brand-symbol").evaluate("e => e.complete && e.naturalWidth > 0")
                     page.screenshot(path=str(out / f"landing-{locale}.png"), full_page=True)
@@ -132,11 +152,11 @@ def main():
                 # SPA navigation retains lazy styles: the landing must remain isolated.
                 page.locator('.os-brand').click()
                 expect(page.locator("#foggara-title")).to_be_visible()
-                assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
+                assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "flex"
 
                 for width in (390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), "Horizontal overflow"
+                    ensure_no_overflow(page, ("landing-after-navigation", width))
                     page.screenshot(path=str(out / f"landing-{width}.png"), full_page=True)
                 page.goto("http://127.0.0.1:8000/expo", wait_until="networkidle")
                 expect(page.locator(".fg-expo-share-qr")).to_be_visible()
@@ -172,7 +192,7 @@ def main():
                 page.locator("#password").evaluate("(e, value) => e.value = value", password)
                 page.get_by_role("button", name="إظهار كلمة المرور", exact=True).click()
                 expect(page.locator("#password")).to_have_value(password)
-                page.locator('button[type="submit"]').click()
+                page.locator('form:has(#email) button[type="submit"]').click()
                 expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
                 expect(page.locator('[name="service_id"]')).not_to_have_value("")
                 # Session persistence is intentional: the JWT is restored from sessionStorage via /auth/me.
@@ -186,7 +206,7 @@ def main():
                 for locale in ("ar", "fr", "en"):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     page.set_viewport_size({"width":390,"height":1000})
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
+                    ensure_no_overflow(page, ("agro", locale, 390))
                 page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
                 for path in ("about", "privacy", "terms", "rights", "contact"):
                     response = page.goto("http://127.0.0.1:8000/" + path)
@@ -322,7 +342,7 @@ def main():
                         assert not page.get_by_role("alert").count(), (path, page.locator("body").inner_text()[:1000], console_errors[-5:])
                     if path == "/app/agriculture":
                         expect(page.locator(".fg-intelligence-band")).to_be_visible()
-                        expect(page.locator(".fg-intelligence-metric")).to_have_count(9)
+                        expect(page.locator(".fg-intelligence-metric")).to_have_count(14)
                         expect(page.locator(".fg-remote-sensing-state")).to_be_visible()
                         expect(page.locator(".fg-remote-sensing-grid > div")).to_have_count(4)
                     if path == "/app/water":
@@ -335,9 +355,11 @@ def main():
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/gis":
+                        page.locator(".fg-gis-advanced-toggle").click()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
-                        expect(page.locator(".fg-map-site")).to_have_count(2)
-                        page.locator(".fg-map-site").first.click()
+                        expect(page.locator("tbody tr")).to_have_count(2)
+                        page.locator("tbody tr").first.click()
+                        expect(page.locator(".fg-gis-spatial-summary h2")).to_be_visible()
                         expect(page.locator(".fg-gis-nearest li")).to_have_count(1)
                     if path == "/app/review":
                         expect(page.locator(".fg-evidence-assurance")).to_be_visible()

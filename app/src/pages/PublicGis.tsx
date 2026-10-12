@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Map as MapIcon,Layers3,CheckCircle2,CloudSun,Leaf,Droplets,Download,Loader2,LocateFixed,Info,RefreshCw} from "lucide-react";
@@ -138,7 +138,7 @@ export default function PublicGis(){
   const [computing,setComputing]=useState(false);
   const [start,setStart]=useState(ISO(begin));
   const [end,setEnd]=useState(ISO(today));
-  const loadWorkspace=async()=>{
+  const loadWorkspace=useCallback(async()=>{
     if(!user)return;
     try{
       const [parcels,status]=await Promise.all([
@@ -149,11 +149,11 @@ export default function PublicGis(){
       setDbStatus(status);
       setDbError(null);
     }catch(error){setDbError(error);}
-  };
+  },[user]);
   useEffect(()=>{
     if(!user){setSavedFields([]);setDbStatus(null);setSavedFieldId(null);return;}
     void loadWorkspace();
-  },[user]);
+  },[user,loadWorkspace]);
   const mappedFields=useMemo(()=>savedFields.filter(p=>p.boundary_geojson&&boundsOfPolygon(p.boundary_geojson)),[savedFields]);
   const mappedFeatures=useMemo<ParcelBoundaryFeature[]>(()=>
     mappedFields.map(p=>({
