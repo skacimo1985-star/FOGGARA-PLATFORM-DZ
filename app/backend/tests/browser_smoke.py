@@ -9,8 +9,19 @@ from pathlib import Path
 import httpx
 
 def ensure_no_overflow(page, context):
-    if page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"):
+    from playwright.sync_api import TimeoutError as BrowserTimeoutError
+    # ResizeObserver and newly selected locale fonts settle asynchronously.
+    # Keep the strict width check; persistent overflow still fails with diagnostics.
+    page.evaluate("""async () => {
+        await document.fonts.ready;
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }""")
+    try:
+        page.wait_for_function(
+            "document.documentElement.scrollWidth <= window.innerWidth + 1", timeout=2000)
         return
+    except BrowserTimeoutError:
+        pass
     page.screenshot(path="qa/overflow-failure.png", full_page=True)
     offending = page.evaluate("""() => [...document.querySelectorAll('body *')].map(e => {
         const r=e.getBoundingClientRect();
@@ -145,7 +156,7 @@ def main():
 
                 for width in (390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), "Horizontal overflow"
+                    ensure_no_overflow(page, ("landing-after-navigation", width))
                     page.screenshot(path=str(out / f"landing-{width}.png"), full_page=True)
                 page.goto("http://127.0.0.1:8000/expo", wait_until="networkidle")
                 expect(page.locator(".fg-expo-share-qr")).to_be_visible()
@@ -195,7 +206,7 @@ def main():
                 for locale in ("ar", "fr", "en"):
                     page.get_by_role("combobox", name="Language", exact=True).select_option(locale)
                     page.set_viewport_size({"width":390,"height":1000})
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), ("agro",locale)
+                    ensure_no_overflow(page, ("agro", locale, 390))
                 page.get_by_role("combobox", name="Language", exact=True).select_option("ar")
                 for path in ("about", "privacy", "terms", "rights", "contact"):
                     response = page.goto("http://127.0.0.1:8000/" + path)
