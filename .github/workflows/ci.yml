@@ -39,6 +39,9 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.lock -r requirements-dev.txt
         working-directory: app/backend
+      - name: Verify database guard without connecting to a database
+        run: python -m unittest tests.test_database_safety -v
+        working-directory: app/backend
       - run: python -m alembic upgrade head
         working-directory: app/backend
         env:
