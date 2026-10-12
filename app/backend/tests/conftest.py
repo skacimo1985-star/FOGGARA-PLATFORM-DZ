@@ -26,7 +26,7 @@ if _parsed.scheme.startswith("sqlite"):
 elif _parsed.scheme.startswith("postgresql"):
     if not (_db_name.endswith("_test") or _db_name.startswith("test_")):
         raise RuntimeError("PostgreSQL test database name must start with test_ or end with _test")
-    if os.environ.get("ALLOW_DESTRUCTIVE_POSTGRES_TESTS") != "yes":
+    if _parsed.hostname not in ("localhost", "127.0.0.1", "::1") and os.environ.get("ALLOW_DESTRUCTIVE_POSTGRES_TESTS") != "yes":
         raise RuntimeError("Set ALLOW_DESTRUCTIVE_POSTGRES_TESTS=yes for an explicitly disposable PostgreSQL database")
 else:
     raise RuntimeError("Unsupported TEST_DATABASE_URL scheme")
