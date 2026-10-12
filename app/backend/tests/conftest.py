@@ -1,10 +1,28 @@
 import os
+from urllib.parse import urlsplit
 
-# يدعم TEST_DATABASE_URL للاختبار المحلي، ويحترم DATABASE_URL في CI/PostgreSQL.
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL",
-    os.environ.get("DATABASE_URL", "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"),
-)
+# Tests may destroy tables. Never inherit the application's DATABASE_URL.
+_test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+if not _test_url:
+    raise RuntimeError(
+        "TEST_DATABASE_URL must point to an isolated disposable test database; "
+        "refusing to run destructive tests against DATABASE_URL."
+    )
+
+_parsed = urlsplit(_test_url.replace("postgresql+psycopg://", "postgresql://", 1))
+_db_name = (_parsed.path.rsplit("/", 1)[-1] or "").lower()
+if _parsed.scheme.startswith("sqlite"):
+    if _db_name not in (":memory:", "") and not (
+        _db_name.endswith("_test.db") or _db_name.endswith("_test.sqlite")
+    ):
+        raise RuntimeError("SQLite test database filename must end in _test.db or _test.sqlite")
+elif _parsed.scheme.startswith("postgresql"):
+    if not (_db_name.endswith("_test") or _db_name.startswith("test_")):
+        raise RuntimeError("PostgreSQL test database name must start with test_ or end with _test")
+else:
+    raise RuntimeError("Unsupported TEST_DATABASE_URL scheme")
+
+os.environ["DATABASE_URL"] = _test_url
 os.environ["JWT_SECRET"] = "test-secret-0123456789abcdef0123456789"
 
 import pytest
