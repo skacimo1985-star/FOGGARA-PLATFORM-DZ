@@ -5,21 +5,25 @@ import {ArrowUpRight,MapPinned,Satellite,ShieldCheck,Sprout,Database,Activity,Ma
 import {NationalMap,type SatelliteScene,type ParcelBoundaryFeature} from "@/components/NationalMap";
 import {useAuth} from "@/context/useAuth";
 import {api} from "@/lib/api";
+import {createGisRequestScope} from "@/lib/gis-request-scope";
 import {WILAYAS} from "@/lib/wilayas";
 import {polygonAreaHectares} from "@/lib/geojson-area";
 import {boundsOfPolygon,rectanglePolygon,saveFoggaraAoi,type FoggaraPolygon} from "@/lib/foggara-aoi";
 import {ErrorText} from "@/components/common";
-import {FieldPdfReport,printFoggaraFieldReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
+import {FieldPdfReport,type FieldPdfEvidence} from "@/components/FieldPdfReport";
+import {printFoggaraFieldReport} from "@/lib/print-field-report";
 import "./public-gis.css";
 import "./foggara-field-workbench.css";
 
 type Bbox=[number,number,number,number];
 type SceneList={provider:string;collection:string;live:boolean;count:number;scenes:SatelliteScene[]};
 type IndexKey="ndvi"|"ndmi";
+type MapPreview={data_url:string;bbox:Bbox;index:IndexKey;render_crs:string;geometry_mask_applied:boolean};
+type RasterGrid={resolution_m:number;effective_source_resolution_m?:number;resampled?:boolean};
 type SavedField={id:number;name:string;crop:string;area_ha:number;location:string;site_id:number|null;lat:number|null;lon:number|null;boundary_geojson:FoggaraPolygon|null;archived:boolean;is_demo:boolean};
 type OperationalStatus={database:{connected:boolean;engine:string};organization:{sites:number;projects:number;parcels:number;mapped_parcels:number;observations:number;satellite_observations:number}};
 type SavedParcelStudy={status:"READY"|"NO_USABLE_SCENE";scene:Preview["scene"];parcel_id:number|null;
-  geometry_mask_applied:boolean;sample_geometry:string;
+  geometry_mask_applied:boolean;sample_geometry:string;preview?:MapPreview|null;spectral_processing?:{grid:RasterGrid};
   domains?:{vegetation?:{indices?:{ndvi?:PreviewIndex}};canopy_moisture?:{indices?:{ndmi?:PreviewIndex}}};
   evidence:{verified:boolean};};
 type PreviewIndex={statistics?:{min:number|null;max:number|null;mean:number|null;median:number|null};
@@ -38,6 +42,8 @@ type Preview={
     mask?:{geometry_mask_applied:boolean;outside_geometry_pixel_count:number}}>>;
   evidence:{verified:boolean};
   persisted:boolean;
+  preview?:MapPreview|null;
+  grid?:RasterGrid;
 };
 const copy={
   ar:{
@@ -112,6 +118,8 @@ export default function PublicGis(){
   const v=wb[lang];
   const [retry,setRetry]=useState(0);
   const resultsRef=useRef<HTMLDivElement|null>(null);
+  const requestScope=useRef(createGisRequestScope());
+  const workspaceScope=useRef(createGisRequestScope());
   const [index,setIndex]=useState<IndexKey>("ndvi");
   const [hasSearched,setHasSearched]=useState(false);
   const [savedFields,setSavedFields]=useState<SavedField[]>([]);
@@ -138,21 +146,32 @@ export default function PublicGis(){
   const [computing,setComputing]=useState(false);
   const [start,setStart]=useState(ISO(begin));
   const [end,setEnd]=useState(ISO(today));
+  const invalidateResults=()=>{
+    requestScope.current.invalidate();setResult(null);setPreviewError(null);
+    setSearching(false);setComputing(false);
+  };
   const loadWorkspace=useCallback(async()=>{
     if(!user)return;
+    const isCurrent=workspaceScope.current.capture();
     try{
       const [parcels,status]=await Promise.all([
         api.get<SavedField[]>("/agriculture/parcels"),
         api.get<OperationalStatus>("/gis/operational-status"),
       ]);
+      if(!isCurrent())return;
       setSavedFields(parcels.filter(p=>!p.archived));
       setDbStatus(status);
       setDbError(null);
-    }catch(error){setDbError(error);}
+    }catch(error){if(isCurrent())setDbError(error);}
   },[user]);
   useEffect(()=>{
+    const workspace=workspaceScope.current;
+    const requests=requestScope.current;
+    workspace.invalidate();setSavedFields([]);setDbStatus(null);setDbError(null);setSavedFieldId(null);
+    requests.invalidate();setResult(null);setPreviewError(null);
     if(!user){setSavedFields([]);setDbStatus(null);setSavedFieldId(null);return;}
     void loadWorkspace();
+    return ()=>{requests.invalidate();workspace.invalidate();};
   },[user,loadWorkspace]);
   const mappedFields=useMemo(()=>savedFields.filter(p=>p.boundary_geojson&&boundsOfPolygon(p.boundary_geojson)),[savedFields]);
   const mappedFeatures=useMemo<ParcelBoundaryFeature[]>(()=>
@@ -166,6 +185,7 @@ export default function PublicGis(){
   const rangeValid=Number.isFinite(rangeDays)&&rangeDays>=0&&rangeDays<=31&&end<=ISO(new Date());
   const allowed=Boolean(area&&bbox&&pixels>0&&pixels<=(user&&savedFieldId!==null?250_000:1600)&&rangeValid);
   const change=(poly:FoggaraPolygon|null)=>{
+    invalidateResults();
     setArea(poly);setSelection(poly?boundsOfPolygon(poly):null);setScenes([]);
     setSelectedSceneId(null);setResult(null);setPreviewError(null);setSearchError(null);
     setHasSearched(false);setSavedFieldId(null);setSaveError(null);
@@ -194,48 +214,54 @@ export default function PublicGis(){
   async function saveField(){
     if(!user||!area||!bbox||!fieldName.trim()||!fieldCrop.trim()||saving)return;
     setSaving(true);setSaveError(null);
+    const isCurrent=requestScope.current.capture();
     try{
       const saved=await api.post<SavedField>("/agriculture/parcels",{
         name:fieldName.trim(),crop:fieldCrop.trim(),location:"FOGGARA GIS AOI "+bbox.map(n=>n.toFixed(5)).join(","),
         area_ha:Math.max(0.001,Number(polygonAreaHectares(area).toFixed(5))),
         boundary_geojson:area,site_id:null,stage:"initial",
       });
-      setSavedFieldId(saved.id);await loadWorkspace();
-    }catch(error){setSaveError(error);}finally{setSaving(false);}
+      if(isCurrent()){invalidateResults();setSavedFieldId(saved.id);await loadWorkspace();}
+    }catch(error){if(isCurrent())setSaveError(error);}finally{setSaving(false);}
   }
   async function searchScenes(){
     if(!bbox||searching||!rangeValid)return;
+    invalidateResults();const isCurrent=requestScope.current.capture();
     setSearching(true);setSearchError(null);setScenes([]);setSelectedSceneId(null);
     try{
       const params=new URLSearchParams({bbox:bbox.join(","),start,end,cloud_cover_lte:"35",limit:"8"});
       const found=await api.get<SceneList>(`/expo/satellite/scenes?${params.toString()}`);
+      if(!isCurrent())return;
       setScenes(found.scenes);
       if(found.scenes[0])setSelectedSceneId(found.scenes[0].id);
-    }catch(e){setSearchError(e);}finally{setSearching(false);setHasSearched(true);}
+    }catch(e){if(isCurrent())setSearchError(e);}finally{if(isCurrent()){setSearching(false);setHasSearched(true);}}
   }
   async function preview(){
     if(!area||!allowed||computing)return;
     setComputing(true);setPreviewError(null);setResult(null);
+    const isCurrent=requestScope.current.capture();
     try{
       if(user&&savedFieldId!==null){
         // Authenticated evidence: server reads the authoritative saved geometry
         // from this user's organization and masks every spectral index to it.
         const params=new URLSearchParams({parcel_id:String(savedFieldId),start,end,
-          include_soil:"false",cloud_cover_lte:"35"});
+          include_soil:"false",cloud_cover_lte:"35",preview_index:index});
         if(selectedSceneId)params.set("scene_id",selectedSceneId);
         const study=await api.get<SavedParcelStudy>(`/remote-sensing/studies/field-intelligence?${params.toString()}`);
+        if(!isCurrent())return;
         const actual=study.status==="READY"
           ?index==="ndvi"?study.domains?.vegetation?.indices?.ndvi:study.domains?.canopy_moisture?.indices?.ndmi
           :undefined;
         setResult({status:study.status,product:"FOGGARA FIELD / "+index.toUpperCase(),
           index,scene:study.scene,area_ha_estimated:polygonAreaHectares(area),
           geometry_mask_applied:study.geometry_mask_applied,
-          indices:actual?{[index]:actual}:{},evidence:study.evidence,persisted:false});
+          indices:actual?{[index]:actual}:{},evidence:study.evidence,persisted:false,
+          preview:study.preview,grid:study.spectral_processing?.grid});
       }else{
-        const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
-        setResult(response);
+        const response=await api.post<Preview>("/expo/satellite/ndvi-preview",{boundary_geojson:area,start,end,index,include_preview:true,...(selectedSceneId?{scene_id:selectedSceneId}:{})});
+        if(isCurrent())setResult(response);
       }
-    }catch(e){setPreviewError(e);}finally{setComputing(false);}
+    }catch(e){if(isCurrent())setPreviewError(e);}finally{if(isCurrent())setComputing(false);}
   }
   const persist=()=>{if(area)saveFoggaraAoi(area);};
   const exportGeometry=()=>{
@@ -310,8 +336,8 @@ export default function PublicGis(){
           <h3>{v.scenePanel}</h3>
           <p className="fg-field-catalog-name"><CloudSun size={16}/>{v.catalog}</p>
           <div className="fg-public-gis-date-row">
-            <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{setStart(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
-            <label>{t.dateEnd}<input type="date" min={start} max={ISO(new Date())} value={end} onChange={e=>{setEnd(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+            <label>{t.dateStart}<input type="date" max={end} value={start} onChange={e=>{invalidateResults();setStart(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
+            <label>{t.dateEnd}<input type="date" min={start} max={ISO(new Date())} value={end} onChange={e=>{invalidateResults();setEnd(e.target.value);setResult(null);setScenes([]);setSelectedSceneId(null);setHasSearched(false);}}/></label>
           </div>
           {!rangeValid?<p className="fg-field-inline-warning" role="status">{v.invalidDate}</p>:null}
           <button type="button" className="fg-public-gis-action fg-field-search" disabled={!bbox||searching||!rangeValid}
@@ -325,7 +351,7 @@ export default function PublicGis(){
               className={scene.id===selectedSceneId?"fg-field-scene active":"fg-field-scene"}
               aria-pressed={scene.id===selectedSceneId}
               title={scene.id}
-              onClick={()=>{setSelectedSceneId(scene.id);setResult(null);setPreviewError(null);}}>
+              onClick={()=>{invalidateResults();setSelectedSceneId(scene.id);setResult(null);setPreviewError(null);}}>
               <span className="fg-field-scene-check">{scene.id===selectedSceneId?<CheckCircle2 size={17}/>:<Satellite size={17}/>}</span>
               <span><strong dir="ltr">{scene.datetime?.slice(0,10)??"—"}</strong><small>{scene.platform??"Sentinel-2"} · {t.cloud}: {scene.cloud_cover_pct?.toFixed(0)??"—"}%</small></span>
             </button>)}
@@ -380,7 +406,9 @@ export default function PublicGis(){
         <div className="fg-field-map-stage">
           <NationalMap key={retry} sites={[]} wilayas={WILAYAS} locale={lang}
             parcelBoundaries={mappedFeatures} selectedParcelId={savedFieldId} onSelectParcel={selectSavedField}
-            satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{setSelectedSceneId(sceneId);setResult(null);}}
+            satelliteScenes={scenes} selectedSceneId={selectedSceneId} onSelectScene={sceneId=>{invalidateResults();setSelectedSceneId(sceneId);}}
+            analysisOverlay={result?.status==="READY"&&result.preview?.geometry_mask_applied&&result.preview.index===index
+              ?{url:result.preview.data_url,bbox:result.preview.bbox,index}:null}
             draftParcelBoundary={savedFieldId!==null?null:area}
             analysisSelectionBbox={selection}
             onAnalysisSelectionChange={b=>change(b?rectanglePolygon(b):null)}
@@ -399,9 +427,9 @@ export default function PublicGis(){
           <h3>{v.analysis}</h3>
           <div className="fg-field-index-picker" role="group" aria-label={v.active}>
             <button type="button" aria-pressed={index==="ndvi"} className={index==="ndvi"?"active":""}
-              onClick={()=>{setIndex("ndvi");setResult(null);setPreviewError(null);}}><Leaf size={16}/>NDVI<small>{v.vegetation}</small></button>
+              onClick={()=>{invalidateResults();setIndex("ndvi");}}><Leaf size={16}/>NDVI<small>{v.vegetation}</small></button>
             <button type="button" aria-pressed={index==="ndmi"} className={index==="ndmi"?"active":""}
-              onClick={()=>{setIndex("ndmi");setResult(null);setPreviewError(null);}}><Droplets size={16}/>NDMI<small>{v.canopyWater}</small></button>
+              onClick={()=>{invalidateResults();setIndex("ndmi");}}><Droplets size={16}/>NDMI<small>{v.canopyWater}</small></button>
           </div>
           <div className="fg-field-analysis-card" ref={resultsRef} aria-live="polite">
             {result?.status==="READY"&&typeof ndvi==="number"?<>
@@ -430,8 +458,11 @@ export default function PublicGis(){
           <h3><ShieldCheck size={17}/>{v.provenance}</h3>
           <div className="fg-field-evidence-row"><span>{v.acquired}</span><strong dir="ltr">{result?.scene?.datetime?.slice(0,10)??selected?.datetime?.slice(0,10)??"—"}</strong></div>
           <div className="fg-field-evidence-row"><span>{v.satellite}</span><strong>Element 84 · S2 L2A</strong></div>
-          <div className="fg-field-evidence-row"><span>{v.backend}</span><strong>Rasterio · COMPUTED</strong></div>
+          <div className="fg-field-evidence-row"><span>{v.backend}</span><strong>{result?.status==="READY"?"Rasterio · COMPUTED":v.notRun}</strong></div>
           <div className="fg-field-evidence-row"><span>{v.mask}</span><strong>{result?.geometry_mask_applied?v.maskApplied:"—"}</strong></div>
+          {result?.grid?<div className="fg-field-evidence-row"><span>{v.resolution}</span><strong dir="ltr">
+            {result.grid.resolution_m} m · {lang==="ar"?"دقة المصدر":lang==="fr"?"source":"source"}: {result.grid.effective_source_resolution_m??"—"} m
+          </strong></div>:null}
           <p className="fg-field-evidence-disclaimer"><Info size={16}/>{index==="ndmi"?v.indexNdmiNote:v.limitations}</p>
           <p className="fg-field-evidence-caption">{v.sceneSpecific} {v.estimated}</p>
         </section>
@@ -453,3 +484,4 @@ export default function PublicGis(){
     />:null}
   </main>;
 }
+

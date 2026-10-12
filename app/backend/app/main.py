@@ -74,7 +74,7 @@ _CSP = (
     "script-src 'self'; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
-    "img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://tiles.openfreemap.org https://assets.openfreemap.com https://s3.amazonaws.com; "
+    "img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://tiles.openfreemap.org https://assets.openfreemap.com https://s3.amazonaws.com https://tile.openstreetmap.org; "
     "connect-src 'self' https://tiles.openfreemap.org https://assets.openfreemap.com https://s3.amazonaws.com; "
     "worker-src 'self'; "
     "frame-ancestors 'none'; "
@@ -216,3 +216,4 @@ if _dist.is_dir():
         if full_path and candidate.is_file():
             return FileResponse(candidate)
         return FileResponse(_dist / "index.html")
+

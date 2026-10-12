@@ -323,6 +323,7 @@ def field_intelligence_study(
     crop: str = Query(default="", max_length=120),
     cloud_cover_lte: float = Query(default=30, ge=0, le=100),
     include_soil: bool = Query(default=True),
+    preview_index: str | None = Query(default=None, pattern=SUPPORTED_INDEX_PATTERN),
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -409,8 +410,12 @@ def field_intelligence_study(
         }
 
     try:
-        spectral = (compute_multi_index_statistics(selected_plan, raw_bbox, geometry_wgs84=geometry)
-                    if geometry is not None else compute_multi_index_statistics(selected_plan, raw_bbox))
+        if preview_index is not None:
+            spectral = compute_multi_index_statistics(selected_plan, raw_bbox,
+                geometry_wgs84=geometry, preview_index=preview_index)
+        else:
+            spectral = (compute_multi_index_statistics(selected_plan, raw_bbox, geometry_wgs84=geometry)
+                        if geometry is not None else compute_multi_index_statistics(selected_plan, raw_bbox))
     except RasterCapacityError:
         api_error(429, "RASTER_ANALYSIS_BUSY", "Field-intelligence raster capacity is busy; retry later")
     except RasterStatisticsError as exc:
@@ -462,6 +467,7 @@ def field_intelligence_study(
     return {
         "status": "READY",
         "study_type": "field_intelligence_snapshot",
+        "preview": spectral.get("preview"),
         "bbox_wgs84": raw_bbox,
         "parcel_id": source_parcel_id,
         "sample_geometry": sample_geometry,
@@ -810,3 +816,4 @@ def scene_index_statistics(
         if "bbox" in message or "pixel budget" in message or "too large" in message:
             api_error(422, "RASTER_ANALYSIS_BOUNDS_INVALID", message)
         api_error(502, "REMOTE_RASTER_UNAVAILABLE", "Trusted Sentinel raster analysis failed")
+
