@@ -192,7 +192,7 @@ def main():
                 page.locator("#password").evaluate("(e, value) => e.value = value", password)
                 page.get_by_role("button", name="إظهار كلمة المرور", exact=True).click()
                 expect(page.locator("#password")).to_have_value(password)
-                page.locator('button[type="submit"]').click()
+                page.locator('form:has(#email) button[type="submit"]').click()
                 expect(page).to_have_url(__import__("re").compile(r"/app/services\?service=\d+$"))
                 expect(page.locator('[name="service_id"]')).not_to_have_value("")
                 # Session persistence is intentional: the JWT is restored from sessionStorage via /auth/me.

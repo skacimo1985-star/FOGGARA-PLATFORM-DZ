@@ -189,7 +189,8 @@ export default function Login() {
             </Button>
             <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={()=>{
               formRef.current?.reset();
-              setError(null);setShowPassword(false);setCapsLock(false);
+              if(!retryIn)setError(null);
+              setShowPassword(false);setCapsLock(false);
               formRef.current?.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
             }}>{t("auth.clearSaved")}</Button>
           </form>
