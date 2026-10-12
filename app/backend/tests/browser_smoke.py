@@ -355,6 +355,7 @@ def main():
                         expect(page.locator(".fg-decision-intelligence")).to_be_visible()
                         expect(page.locator(".fg-decision-lifecycle button")).to_have_count(6)
                     if path == "/app/gis":
+                        page.locator(".fg-gis-advanced-toggle").click()
                         expect(page.locator(".fg-gis-spatial-panel")).to_be_visible()
                         expect(page.locator(".fg-map-site")).to_have_count(2)
                         page.locator(".fg-map-site").first.click()
