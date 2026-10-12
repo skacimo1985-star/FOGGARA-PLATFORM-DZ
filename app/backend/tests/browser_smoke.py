@@ -17,7 +17,16 @@ def ensure_no_overflow(page, context):
         return {tag:e.tagName, cls:e.className?.baseVal ?? e.className,
                 left:Math.round(r.left), right:Math.round(r.right), width:Math.round(r.width)};
     }).filter(e => e.width>0 && (e.right>innerWidth+1 || e.left < -1)).slice(0,20)""")
-    raise AssertionError((context, offending))
+    dimensions = page.evaluate("""() => ({
+        viewport: innerWidth, scrollX, root: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth,
+        boxes: [...document.querySelectorAll('body *')].filter(e => e.scrollWidth > e.clientWidth + 1)
+            .map(e => ({tag:e.tagName, cls:e.className?.baseVal ?? e.className,
+                client:e.clientWidth, scroll:e.scrollWidth, overflow:getComputedStyle(e).overflowX,
+                before:getComputedStyle(e,'::before').width, after:getComputedStyle(e,'::after').width}))
+            .slice(0,20)
+    })""")
+    raise AssertionError((context, offending, dimensions))
 
 
 def main():
