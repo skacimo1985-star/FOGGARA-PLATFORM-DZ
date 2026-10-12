@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
+from sqlalchemy.engine import make_url
 
 # Tests may destroy tables. Never inherit the application's DATABASE_URL.
 _test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
@@ -19,7 +20,7 @@ if _parsed.scheme.startswith("sqlite"):
         _db_name.endswith("_test.db") or _db_name.endswith("_test.sqlite")
     ):
         raise RuntimeError("SQLite tests require a disposable *_test.db or *_test.sqlite file")
-    _sqlite_path = Path(unquote(_parsed.path))
+    _sqlite_path = Path(make_url(_test_url).database)
     if _sqlite_path.exists():
         raise RuntimeError("SQLite test database already exists; refusing destructive reuse")
 elif _parsed.scheme.startswith("postgresql"):
