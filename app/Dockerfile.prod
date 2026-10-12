@@ -6,7 +6,7 @@ RUN cargo build --release --locked
 # Dockerfile.prod — بناء إنتاجي بلا PostgreSQL مضمّن (بلا pgserver).
 # يتطلب DATABASE_URL خارجيًا (خدمة db في docker-compose.yml أو خادم PostgreSQL قائم).
 # Dockerfile الأصلي يبقى للتجربة الشاملة بأمر واحد.
-FROM node:20-slim AS web
+FROM node:26-slim AS web
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

@@ -3,7 +3,7 @@ WORKDIR /engine
 COPY engines/nexus-core/ ./
 RUN cargo build --release --locked
 
-FROM node:22.18.0-bookworm-slim AS web
+FROM node:26.11.1-bookworm-slim AS web
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
