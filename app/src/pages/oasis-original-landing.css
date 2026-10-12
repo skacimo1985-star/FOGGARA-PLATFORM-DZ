@@ -199,3 +199,11 @@
   .fg-landing .fg-restored-photo-grid img{height:220px}
   .fg-landing .fg-restored-presentation .ocp-stage{height:600px}
 }
+
+/* Long translated controls wrap instead of widening the mobile document. */
+@media(max-width:560px){
+ .os-public-shell:has(.fg-landing) .os-header{height:auto;flex-wrap:wrap;gap:12px;padding-block:12px}
+ .os-public-shell:has(.fg-landing) .os-header-controls{min-width:0;max-width:100%;flex-wrap:wrap;justify-content:flex-end}
+ .os-public-shell:has(.fg-landing) .os-brand{min-width:0;max-width:100%}
+ .fg-landing .fg-landing-footer nav{max-width:100%;flex-wrap:wrap}
+}

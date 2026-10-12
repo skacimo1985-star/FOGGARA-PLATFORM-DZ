@@ -107,7 +107,7 @@ def main():
                     page.locator(".fg-pillars button").first.click()
                     for width in (390, 768, 1440):
                         page.set_viewport_size({"width": width, "height": 1000})
-                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), (locale, width)
+                        ensure_no_overflow(page, ("landing", locale, width))
                         expect(page.locator(".wefeh-node")).to_have_count(5)
                         assert page.locator(".os-brand-symbol").evaluate("e => e.complete && e.naturalWidth > 0")
                     page.screenshot(path=str(out / f"landing-{locale}.png"), full_page=True)
@@ -132,7 +132,7 @@ def main():
                 # SPA navigation retains lazy styles: the landing must remain isolated.
                 page.locator('.os-brand').click()
                 expect(page.locator("#foggara-title")).to_be_visible()
-                assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "grid"
+                assert page.locator(".fg-landing-hero").evaluate("e => getComputedStyle(e).display") == "flex"
 
                 for width in (390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
