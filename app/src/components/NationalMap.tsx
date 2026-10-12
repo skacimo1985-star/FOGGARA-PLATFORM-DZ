@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { GisSite, WilayaMeta } from "@/types";
 // The map is rendered on public /gis and /expo before any dashboard route loads.
 // Keep its canvas and controls styles with the shared component, not the dashboard.
@@ -80,6 +80,8 @@ type Props = {
 };
 
 type Point = [number, number];
+export type NationalMapProps = Props;
+const RasterFallbackMap = lazy(() => import("./RasterFallbackMap"));
 
 type SiteFeature = {
   type: "Feature";
@@ -398,6 +400,7 @@ export function NationalMap({
   const measureModeRef = useRef<"none" | "distance" | "area">("none");
   const selectingAnalysisAreaRef = useRef(false);
 
+  useEffect(() => {
   onSelectSiteRef.current = onSelectSite;
   onSelectParcelRef.current = onSelectParcel;
   onDrawParcelBoundaryRef.current = onDrawParcelBoundary;
@@ -411,6 +414,9 @@ export function NationalMap({
   satelliteOverlayRef.current = satelliteOverlay;
   analysisOverlayRef.current = analysisOverlay;
   analysisSelectionBboxRef.current = analysisSelectionBbox;
+  }, [onSelectSite, onSelectParcel, onDrawParcelBoundary, drawingBoundary, measureMode,
+    onSelectWilaya, onSelectScene, onViewportChange, onAnalysisSelectionChange,
+    selectingAnalysisArea, satelliteOverlay, analysisOverlay, analysisSelectionBbox]);
 
   const plotted = useMemo(
     () => sites
@@ -1114,6 +1120,13 @@ export function NationalMap({
   };
 
   return (
+    engineState === "error" ? <Suspense fallback={<div role="status">{labels.loading}</div>}>
+      <RasterFallbackMap sites={sites} wilayas={wilayas} locale={locale} compact={compact}
+        parcelBoundaries={parcelBoundaries} draftParcelBoundary={draftParcelBoundary}
+        analysisOverlay={analysisOverlay} analysisSelectionBbox={analysisSelectionBbox}
+        onDrawParcelBoundary={onDrawParcelBoundary} onAnalysisSelectionChange={onAnalysisSelectionChange}
+        onSelectParcel={onSelectParcel} onSelectSite={onSelectSite} onViewportChange={onViewportChange}/>
+    </Suspense> :
     <section className={`fg-national-map ${compact ? "compact" : ""} ${guided ? "guided" : ""}`} aria-label={labels.title}>
       <div className="fg-national-map-head">
         <div>
@@ -1344,12 +1357,6 @@ export function NationalMap({
         {engineState === "loading" && (
           <div className="fg-map-engine-state" aria-live="polite">{labels.loading}</div>
         )}
-        {engineState === "error" && (
-          <div className="fg-map-engine-state error" role="status">
-            <strong>{labels.unavailable}</strong>
-            <span>{labels.unavailableNote}</span>
-          </div>
-        )}
       </div>
 
       <div className="fg-national-map-foot">
@@ -1362,3 +1369,4 @@ export function NationalMap({
     </section>
   );
 }
+

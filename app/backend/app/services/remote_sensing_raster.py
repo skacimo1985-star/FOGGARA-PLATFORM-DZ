@@ -7,6 +7,7 @@ FOGGARA index, and returns statistics. It does not persist imagery or products.
 """
 from __future__ import annotations
 
+import base64
 import math
 import struct
 import threading
@@ -20,7 +21,7 @@ from rasterio.errors import RasterioError
 from rasterio.features import geometry_mask
 from rasterio.transform import from_bounds
 from rasterio.vrt import WarpedVRT
-from rasterio.warp import transform_bounds, transform_geom
+from rasterio.warp import reproject, transform_bounds, transform_geom
 
 from .remote_sensing_indices import compute_index, get_index_definition
 from .remote_sensing_processing import (
@@ -208,6 +209,7 @@ def _compute_index_statistics_unlocked(
     plan: Mapping,
     bbox,
     geometry_wgs84: Mapping | None = None,
+    include_preview: bool = False,
 ) -> dict:
     analysis_bbox = validate_analysis_bbox(bbox)
     assets = plan.get("required_assets")
@@ -327,7 +329,7 @@ def _compute_index_statistics_unlocked(
         ):
             raise RasterStatisticsError("vectorized index result diverges from scientific kernel")
 
-    return {
+    result = {
         "scene_id": plan.get("scene_id"),
         "index": plan.get("index"),
         "formula_version": plan.get("formula_version"),
@@ -367,6 +369,12 @@ def _compute_index_statistics_unlocked(
             "persisted": False,
         },
     }
+    if include_preview and valid_pixels:
+        result["preview"] = _map_index_preview(
+            str(plan["index"]), index_values, valid_mask, target_crs,
+            target_transform, analysis_bbox, geometry_wgs84,
+        )
+    return result
 
 
 
@@ -374,6 +382,7 @@ def _compute_multi_index_statistics_unlocked(
     plan: Mapping,
     bbox,
     geometry_wgs84: Mapping | None = None,
+    preview_index: str | None = None,
 ) -> dict:
     """Read shared Sentinel bands once and compute indices over the requested field geometry."""
     analysis_bbox = validate_analysis_bbox(bbox)
@@ -461,6 +470,9 @@ def _compute_multi_index_statistics_unlocked(
     total_pixels = int(np.count_nonzero(analysis_mask))
     outside_geometry_pixels = int(width * height - total_pixels)
 
+    if preview_index is not None and preview_index not in indices:
+        raise RasterStatisticsError("preview index is not present in the processing plan")
+    preview = None
     results: dict[str, dict] = {}
     for index_key in indices:
         definition = get_index_definition(str(index_key))
@@ -496,10 +508,16 @@ def _compute_multi_index_statistics_unlocked(
             "application_domain": definition.application_domain,
             "reference_url": definition.reference_url or None,
         }
+        if preview_index == index_key and valid_pixels:
+            preview = _map_index_preview(
+                str(index_key), values, valid_mask, target_crs,
+                target_transform, analysis_bbox, geometry_wgs84,
+            )
 
     return {
         "scene_id": plan.get("scene_id"),
         "indices": results,
+        "preview": preview,
         "processing_plan_fingerprint": plan.get("fingerprint_sha256"),
         "analysis_bbox_wgs84": list(analysis_bbox),
         "grid": {
@@ -534,6 +552,7 @@ def compute_multi_index_statistics(
     plan: Mapping,
     bbox,
     geometry_wgs84: Mapping | None = None,
+    preview_index: str | None = None,
 ) -> dict:
     if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
         raise RasterCapacityError("raster analysis capacity is busy")
@@ -542,12 +561,14 @@ def compute_multi_index_statistics(
             plan,
             bbox,
             geometry_wgs84=geometry_wgs84,
+            preview_index=preview_index,
         )
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
 
 
-def compute_index_statistics(plan: Mapping, bbox, geometry_wgs84: Mapping | None = None) -> dict:
+def compute_index_statistics(plan: Mapping, bbox, geometry_wgs84: Mapping | None = None,
+                             include_preview: bool = False) -> dict:
     """Run one bounded synchronous raster analysis per API instance.
 
     Heavy raster IO is intentionally fail-fast under contention so authenticated
@@ -556,7 +577,8 @@ def compute_index_statistics(plan: Mapping, bbox, geometry_wgs84: Mapping | None
     if not _RASTER_ANALYSIS_SEMAPHORE.acquire(blocking=False):
         raise RasterCapacityError("raster analysis capacity is busy")
     try:
-        return _compute_index_statistics_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84)
+        return _compute_index_statistics_unlocked(plan, bbox, geometry_wgs84=geometry_wgs84,
+                                                  include_preview=include_preview)
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
 
@@ -606,6 +628,45 @@ def _colorize_index(index_key: str, values: np.ndarray, valid_mask: np.ndarray) 
         rgba[..., 2] = np.where(valid_mask, (45 + 35 * (1.0 - normalized)).astype(np.uint8), 0)
     rgba[..., 3] = np.where(valid_mask, 205, 0).astype(np.uint8)
     return rgba
+
+
+def _map_index_preview(index_key, values, valid_mask, source_crs, source_transform,
+                       bbox, geometry_wgs84=None) -> dict | None:
+    """Render the SAME computed sample in the map's Mercator projection.
+
+    UTM pixel grids cannot be stretched directly onto geographic image corners.
+    Nearest-neighbour reprojection preserves the sampled colours and alpha;
+    reapplying the polygon also keeps holes and neighbouring fields transparent.
+    This does not change the statistics, pixel budget or source resolution.
+    """
+    height, width = values.shape
+    target_crs = "EPSG:3857"
+    bounds = transform_bounds("EPSG:4326", target_crs, *bbox, densify_pts=21)
+    target_transform = from_bounds(*bounds, width, height)
+    source_rgba = _colorize_index(index_key, values, valid_mask)
+    rgba = np.zeros_like(source_rgba)
+    for channel in range(4):
+        reproject(
+            source=source_rgba[..., channel], destination=rgba[..., channel],
+            src_transform=source_transform, src_crs=source_crs,
+            dst_transform=target_transform, dst_crs=target_crs,
+            resampling=Resampling.nearest,
+        )
+    if geometry_wgs84 is not None:
+        projected = transform_geom("EPSG:4326", target_crs, geometry_wgs84, precision=9)
+        inside = geometry_mask([projected], out_shape=(height, width),
+                               transform=target_transform, invert=True, all_touched=False)
+        rgba[~inside] = 0
+    # Do not attach an entirely empty map product to a valid numerical sample.
+    if not np.any(rgba[..., 3]):
+        return None
+    return {
+        "data_url": "data:image/png;base64," + base64.b64encode(_encode_rgba_png(rgba)).decode("ascii"),
+        "bbox": list(bbox), "index": index_key,
+        "render_crs": target_crs, "width": width, "height": height,
+        "geometry_mask_applied": geometry_wgs84 is not None,
+        "evidence_status": "COMPUTED", "verified": False,
+    }
 
 
 def _render_index_preview_png_unlocked(
@@ -869,3 +930,4 @@ def render_true_color_preview_png(
         )
     finally:
         _RASTER_ANALYSIS_SEMAPHORE.release()
+
