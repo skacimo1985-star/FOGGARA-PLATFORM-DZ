@@ -59,6 +59,17 @@ jobs:
                   assert "max-age" in response.headers["Strict-Transport-Security"]
                   assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
                   print("Page served:", path)
+          for path in ("/expo", "/demo", "/agriculture-services"):
+              with urllib.request.urlopen(base + path, timeout=20) as response:
+                  body = response.read().decode("utf-8")
+                  assert response.status == 200 and '<div id="root">' in body, path
+                  assert "text/html" in response.headers.get("Content-Type", ""), path
+                  print("Public SPA route served:", path)
+          with urllib.request.urlopen(base + "/expo-qr.svg", timeout=20) as response:
+              body = response.read().decode("utf-8")
+              assert response.status == 200 and "<svg" in body, "expo-qr.svg"
+              assert "image/svg+xml" in response.headers.get("Content-Type", ""), "expo-qr.svg"
+              print("Public QR asset served: /expo-qr.svg")
           asset = re.search(r'<script[^>]+src="([^"]+)"', html).group(1)
           with urllib.request.urlopen(base + asset, timeout=20) as response:
               assert response.status == 200 and len(response.read()) > 100
