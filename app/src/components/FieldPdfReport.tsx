@@ -178,6 +178,8 @@ export function FieldPdfReport({lang,geometry,bbox,estimatedAreaHa,fieldName,cro
   </article>;
 }
 
+// This browser print helper intentionally lives with its report component.
+// eslint-disable-next-line react-refresh/only-export-components
 export function printFoggaraFieldReport(fieldName:string|null,fieldId:number|null){
   // A browser-native PDF keeps Arabic/French text selectable and preserves
   // fonts without shipping a heavyweight canvas-based PDF generator.
