@@ -1,5 +1,6 @@
 import os
-from urllib.parse import urlsplit
+from pathlib import Path
+from urllib.parse import urlsplit, unquote
 
 # Tests may destroy tables. Never inherit the application's DATABASE_URL.
 _test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
@@ -10,15 +11,22 @@ if not _test_url:
     )
 
 _parsed = urlsplit(_test_url.replace("postgresql+psycopg://", "postgresql://", 1))
-_db_name = (_parsed.path.rsplit("/", 1)[-1] or "").lower()
+_db_name = unquote(_parsed.path.rsplit("/", 1)[-1] or "").lower()
 if _parsed.scheme.startswith("sqlite"):
-    if _db_name not in (":memory:", "") and not (
+    # In-memory SQLite is not reliable for a multi-connection test suite.
+    # Require a named, disposable file rather than accepting an empty path.
+    if _db_name in ("", ":memory:") or not (
         _db_name.endswith("_test.db") or _db_name.endswith("_test.sqlite")
     ):
-        raise RuntimeError("SQLite test database filename must end in _test.db or _test.sqlite")
+        raise RuntimeError("SQLite tests require a disposable *_test.db or *_test.sqlite file")
+    _sqlite_path = Path(unquote(_parsed.path))
+    if _sqlite_path.exists():
+        raise RuntimeError("SQLite test database already exists; refusing destructive reuse")
 elif _parsed.scheme.startswith("postgresql"):
     if not (_db_name.endswith("_test") or _db_name.startswith("test_")):
         raise RuntimeError("PostgreSQL test database name must start with test_ or end with _test")
+    if os.environ.get("ALLOW_DESTRUCTIVE_POSTGRES_TESTS") != "yes":
+        raise RuntimeError("Set ALLOW_DESTRUCTIVE_POSTGRES_TESTS=yes for an explicitly disposable PostgreSQL database")
 else:
     raise RuntimeError("Unsupported TEST_DATABASE_URL scheme")
 
