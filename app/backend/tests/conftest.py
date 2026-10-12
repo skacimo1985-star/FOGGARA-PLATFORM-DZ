@@ -1,21 +1,35 @@
 import os
+from urllib.parse import urlsplit, parse_qs, unquote
 
-# يدعم TEST_DATABASE_URL للاختبار المحلي، ويحترم DATABASE_URL في CI/PostgreSQL.
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL",
-    os.environ.get("DATABASE_URL", "postgresql+psycopg://postgres@/foggara_test?host=/tmp/pgdata"),
-)
+# Tests are destructive. Never inherit a development/production DATABASE_URL.
+test_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+if not test_url:
+    raise RuntimeError("TEST_DATABASE_URL is required for destructive tests; use a disposable dedicated test database.")
+
+parsed = urlsplit(test_url)
+database = unquote(parsed.path.rsplit("/", 1)[-1]).lower()
+if not database or not (database.endswith("_test") or database.startswith("test_")):
+    raise RuntimeError("Refusing destructive tests: database name must start with test_ or end with _test.")
+if parsed.scheme.startswith("sqlite"):
+    if database in ("", ":memory:"):
+        raise RuntimeError("Use a named disposable SQLite test file, not an ambiguous database.")
+    if parsed.path.startswith("/") and not os.environ.get("FOGGARA_ALLOW_SQLITE_TEST_FILE"):
+        raise RuntimeError("Set FOGGARA_ALLOW_SQLITE_TEST_FILE=1 after verifying the disposable SQLite test path.")
+elif not parsed.scheme.startswith("postgresql"):
+    raise RuntimeError("Only dedicated PostgreSQL or SQLite test databases are supported.")
+
+if test_url == os.environ.get("DATABASE_URL"):
+    raise RuntimeError("TEST_DATABASE_URL must differ from DATABASE_URL.")
+os.environ["DATABASE_URL"] = test_url
 os.environ["JWT_SECRET"] = "test-secret-0123456789abcdef0123456789"
 
 import pytest
 from fastapi.testclient import TestClient
-
 from app.db import Base, engine, SessionLocal
 from app.main import app
 from app.models import Organization, User
 from app.security import hash_password
 from app.services.indicators import ensure_default_indicator
-
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
@@ -23,17 +37,14 @@ def setup_db():
     Base.metadata.create_all(engine)
     yield
 
-
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter():
-    """عزل الاختبارات: عدّادات تحديد المعدل تُصفَّر قبل كل اختبار."""
     from app.ratelimit import limiter
     limiter.reset()
     from app.platform_models import AuthThrottle
     with engine.begin() as connection:
         connection.execute(AuthThrottle.__table__.delete())
     yield
-
 
 @pytest.fixture()
 def db():
@@ -46,7 +57,6 @@ def db():
     finally:
         s.close()
 
-
 @pytest.fixture()
 def world(db):
     org1 = Organization(code="T-ORG1", name_ar="م1", name_fr="O1", name_en="O1", is_demo=True)
@@ -55,23 +65,17 @@ def world(db):
     db.flush()
     users = {}
     for org, prefix in ((org1, "o1"), (org2, "o2")):
-        users[f"{prefix}_member"] = User(org_id=org.id, email=f"{prefix}m@t.dz",
-                                         password_hash=hash_password("pass#1"),
-                                         full_name=f"{prefix} member", role="member")
-        users[f"{prefix}_reviewer"] = User(org_id=org.id, email=f"{prefix}r@t.dz",
-                                           password_hash=hash_password("pass#1"),
-                                           full_name=f"{prefix} reviewer", role="reviewer")
+        users[f"{prefix}_member"] = User(org_id=org.id, email=f"{prefix}m@t.dz", password_hash=hash_password("pass#1"), full_name=f"{prefix} member", role="member")
+        users[f"{prefix}_reviewer"] = User(org_id=org.id, email=f"{prefix}r@t.dz", password_hash=hash_password("pass#1"), full_name=f"{prefix} reviewer", role="reviewer")
     db.add_all(users.values())
     db.flush()
     ensure_default_indicator(db)
     db.commit()
     return {"org1": org1, "org2": org2, **users}
 
-
 @pytest.fixture()
 def client():
     return TestClient(app)
-
 
 def login(client, email):
     r = client.post("/api/auth/login", json={"email": email, "password": "pass#1"})
