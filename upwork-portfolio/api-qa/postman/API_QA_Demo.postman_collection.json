@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "API QA Demo | Independent Portfolio",
+    "description": "Public Postman Echo example requests. Actual HTTP execution not verified.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Echo query parameter",
+      "request": {
+        "method": "GET",
+        "url": "https://postman-echo.com/get?name=demo",
+        "description": "200 and args.name should equal demo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Query echo', () => { const d = pm.response.json(); pm.expect(d.args.name).to.eql('demo'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Expected 404",
+      "request": {
+        "method": "GET",
+        "url": "https://postman-echo.com/status/404",
+        "description": "404 is the expected negative test result."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Expected HTTP 404', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Headers JSON response",
+      "request": {
+        "method": "GET",
+        "url": "https://postman-echo.com/headers",
+        "description": "200 response with headers object."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Headers object', () => { const d = pm.response.json(); pm.expect(d.headers).to.be.an('object'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
