@@ -8,7 +8,7 @@ const polygon=(coordinates)=>({type:"Polygon",coordinates});
 
 test("WGS84 1-degree polygon has positive plausible approximate hectares",()=>{
  const area=polygonAreaHectares(polygon([outer]));
- assert.ok(area>120000 && area<125000);
+ assert.ok(area>1_230_000 && area<1_250_000);
 });
 
 test("interior hole is deducted regardless of ring winding",()=>{
