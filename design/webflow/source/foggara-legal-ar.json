@@ -1,0 +1,428 @@
+{
+  "source": "Webflow live designer",
+  "locale": "legal-ar",
+  "pageId": "6ad3587d9b363dce600add0d",
+  "tree": {
+    "type": "Body",
+    "children": [
+      {
+        "type": "Block",
+        "classes": [
+          "nx-root",
+          "is-arabic"
+        ],
+        "attributes": {
+          "lang": "ar",
+          "dir": "rtl"
+        },
+        "children": [
+          {
+            "type": "Block",
+            "classes": [
+              "lp-legalbody"
+            ],
+            "children": [
+              {
+                "type": "Link",
+                "classes": [
+                  "lp-legallink"
+                ],
+                "attributes": {
+                  "href": "/foggara"
+                },
+                "children": [
+                  {
+                    "type": "String",
+                    "text": "FOGGARA-DZ ← الرئيسية"
+                  }
+                ]
+              },
+              {
+                "type": "Heading",
+                "classes": [
+                  "lp-title"
+                ],
+                "children": [
+                  {
+                    "type": "String",
+                    "text": "الخصوصية · شروط الاستخدام"
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalnav"
+                ],
+                "children": [
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#privacy"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "الخصوصية"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#terms"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "شروط الاستخدام"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#cookies"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "ملفات الارتباط"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#publisher"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "بيانات الناشر"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "privacy"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "سياسة الخصوصية"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "هذه السياسة تخص موقع التعريف والتواصل FOGGARA-DZ، وليست سياسة التطبيق التشغيلي المستقبلي. الجهة الناشرة: EURL SIREP OASES NEXUS WEFEH، الأغواط، الجزائر. للاستفسارات وطلبات الحقوق: kacimo2000@gmail.com."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "عند إرسال بريد، نتلقى عنوانك ومحتوى رسالتك وما تختار تقديمه من اسم وصفة ومؤسسة وموقع مشروع. الغرض هو فهم طلبك والرد عليه ومتابعة المناقشة التي بادرت بها. لا تُستخدم مراسلتك للاشتراك التلقائي في تسويق دوري."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "أزرار التواصل تفتح برنامج البريد؛ لا تُرسل البيانات بمجرد الضغط. يقدّم Webflow استضافة الموقع، وتُستقبل المراسلات في Gmail. قد تعالج هذه الجهات بيانات تقنية أو مراسلات خارج الجزائر وفق خدماتها؛ لا ندّعي حصر الاستضافة داخل الجزائر."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "تُتاح المراسلات لمن يلزم لمعالجة الطلب، ولا يُشارك ملف مشروع مع شريك محتمل دون ترتيب مناسب مع صاحبه. يقتصر الاحتفاظ على المدة اللازمة للطلب والمتابعة والالتزامات القانونية ذات الصلة؛ يمكنك طلب حذف ما لا يلزم الاحتفاظ به."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "يمكنك طلب المعلومات والوصول والتصحيح والاعتراض أو حذف البيانات بحسب الحالة والقانون المطبق عبر البريد المذكور. قد نطلب الحد الأدنى للتحقق من هويتك. يمكنك التواصل مع السلطة الوطنية لحماية المعطيات ذات الطابع الشخصي ANPDP بشأن حقوقك."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "لا ترسل بيانات صحية أو وثائق هوية أو معلومات مصرفية أو أسرارًا تقنية عبر المراسلة الأولى. تُرتّب مشاركة الوثائق الحساسة بشكل مستقل. المرجع العام: القانون 18-07 المعدّل والمتمّم؛ هذه الصفحة لا تشكّل شهادة امتثال."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "terms"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "شروط الاستخدام"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "يعرض الموقع هوية المشروع والهيكلة والخدمات المقترحة. عرض وظيفة أو سيناريو لا يعني تفعيلها أو توافر بيانات حية. يُحدّد نطاق كل خدمة وتكلفتها ومدتها ومسؤوليات الأطراف في اتفاق مستقل."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "المحتوى عام ولا يحل محل دراسة ميدانية أو رأي مهني مخصص. لا تعتمد عليه منفردًا لتشغيل معدات أو اتخاذ قرار استثماري. التوقعات والفوائد المستهدفة ليست نتائج مثبتة ولا ضمانًا للعائد."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "يحظر إساءة استخدام الموقع أو محاولة الوصول غير المصرح به أو إرسال محتوى غير مشروع. تبقى حقوق المحتوى والعلامات لأصحابها؛ استخدام مواد الغير لا يعني شراكة أو اعتمادًا."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "التواصل لا ينشئ عقدًا أو حصرية أو التزام تمويل. تُناقش السرية وحقوق الملفات قبل تبادل المحتوى الحساس. قد تُحدّث الصفحات؛ تسري الالتزامات المتفق عليها في العقود المستقلة."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "cookies"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "ملفات الارتباط والتقنيات"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "لم نضف في هذه النسخة أدوات إعلانات أو تحليلات تسويقية جديدة. قد تستخدم الاستضافة والمتصفح والخدمات الخارجية بيانات تقنية لازمة للتشغيل والأمن."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "يجب مراجعة التخزين وملفات الارتباط على النطاق المنشور قبل تفعيل أي تتبع اختياري. لا تمثل هذه الصفحة أداة موافقة ولا تؤكد خلو خدمات الطرف الثالث من ملفات الارتباط. يمكنك إدارة ملفات الارتباط من إعدادات المتصفح."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "publisher"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "بيانات الناشر"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "EURL SIREP OASES NEXUS WEFEH · FOGGARA-DZ. المسؤول عن التواصل: MAHROUG ERRAS BELKACEM، مهندس ومسير. الموقع: الأغواط، الجزائر. البريد: kacimo2000@gmail.com."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "FOGGARA-DZ اسم المشروع الرقمي؛ الموقع لا يمثل جهة حكومية ولا تفويضًا رسميًا وطنيًا. تاريخ تحديث هذه الصفحات: 17 أكتوبر 2026."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Paragraph",
+                "classes": [
+                  "lp-note"
+                ],
+                "children": [
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "https://anpdp.dz"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "ANPDP"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "String",
+                    "text": " · "
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "https://webflow.com/legal/privacy"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Webflow Privacy"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
