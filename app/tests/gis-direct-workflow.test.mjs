@@ -50,7 +50,7 @@ test("organization GIS diagnostics report real database state, not a synthetic c
 
 test("MIT Turf-style WGS84 polygon hectares give realistic reproducible geometry",async()=>{
   const src=read("../src/lib/geojson-area.ts");
-  assert.ok(src.includes("Turf.js, MIT"));
+  assert.match(src, /(?:Turf\.js[^\n]*MIT|@turf\/area[^\n]*MIT|MIT[^\n]*Turf\.js)/i, "expected Turf.js MIT license attribution");
   const parsed=ts.transpileModule(src,{
     compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022},
     reportDiagnostics:true,fileName:"geojson-area.ts"
