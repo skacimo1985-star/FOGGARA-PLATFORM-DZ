@@ -1,6 +1,7 @@
 /**
  * Spherical polygon area for GeoJSON WGS84 exterior rings.
  * Adapted from the geodesic ring area method in @turf/area (Turf.js, MIT).
+ * Original source: Turf.js, MIT license; @turf/area
  * Upstream: https://github.com/Turfjs/turf/tree/master/packages/turf-area
  * Copyright Turf.js contributors. This adaptation is supplied under MIT.
  *
