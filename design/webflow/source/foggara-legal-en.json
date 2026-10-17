@@ -1,0 +1,428 @@
+{
+  "source": "Webflow live designer",
+  "locale": "legal-en",
+  "pageId": "6ad358c194286fa0bf568e3b",
+  "tree": {
+    "type": "Body",
+    "children": [
+      {
+        "type": "Block",
+        "classes": [
+          "nx-root",
+          "is-latin"
+        ],
+        "attributes": {
+          "lang": "en",
+          "dir": "ltr"
+        },
+        "children": [
+          {
+            "type": "Block",
+            "classes": [
+              "lp-legalbody"
+            ],
+            "children": [
+              {
+                "type": "Link",
+                "classes": [
+                  "lp-legallink"
+                ],
+                "attributes": {
+                  "href": "/foggara-en"
+                },
+                "children": [
+                  {
+                    "type": "String",
+                    "text": "FOGGARA-DZ ← Home"
+                  }
+                ]
+              },
+              {
+                "type": "Heading",
+                "classes": [
+                  "lp-title"
+                ],
+                "children": [
+                  {
+                    "type": "String",
+                    "text": "Privacy · Terms of use"
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalnav"
+                ],
+                "children": [
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#privacy"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Privacy"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#terms"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Terms of use"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#cookies"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Cookies"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "#publisher"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Publisher details"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "privacy"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Privacy notice"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "This notice covers the FOGGARA-DZ information and contact website, not a future operational application. Publisher: EURL SIREP OASES NEXUS WEFEH, Laghouat, Algeria. Privacy enquiries: kacimo2000@gmail.com."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "When you email us, we receive your email address, message and any name, role, organisation or project location you choose to provide. We use these to understand and answer your request and continue the discussion you initiated. Contact does not automatically subscribe you to marketing."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Contact buttons open your email application; clicking alone does not submit a request. Webflow hosts the site and Gmail receives correspondence. These providers may process technical data or messages outside Algeria. We do not claim Algeria-only hosting."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Correspondence is accessible as needed to handle the request. A project dossier is not shared with a potential partner without an appropriate arrangement with its owner. Retention is limited to the needs of the enquiry, follow-up and applicable legal obligations; you may request deletion of data no longer needed."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Depending on your circumstances and applicable law, you may request information, access, correction, objection or deletion by email. Minimal identity verification may be necessary. You may contact Algeria’s ANPDP regarding your rights."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Do not send health data, identity documents, banking details or technical secrets in your first message. Sensitive document exchange requires a separate arrangement. General reference: Law 18-07 as amended. This notice is not a compliance certification."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "terms"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Terms of use"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "The website describes the project, its architecture and intended services. A feature description does not guarantee that it is active or connected to live data. Service scope, price, timing and responsibilities are set out in a separate agreement."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "General information does not replace a field assessment or tailored professional advice. Do not use it as the sole basis for equipment operation or an investment decision. Intended benefits are not verified results or guaranteed returns."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Misuse, unauthorised access attempts and unlawful submissions are prohibited. Content and trademarks remain the property of their respective owners. Mentioning a third party does not imply endorsement."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Contact does not create a contract, exclusivity or a funding commitment. Confidentiality and document rights should be agreed before sensitive information is exchanged. Pages may change; contractual commitments remain governed by separate agreements."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "cookies"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Cookies and technologies"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "No new advertising or marketing analytics tools were added in this version. Hosting, browsers and external services may use technical data needed for operation and security."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Cookies and storage on the published domain must be reviewed before optional tracking is enabled. This notice is not a consent manager and does not certify the absence of third-party cookies. You can manage cookies through your browser settings."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Block",
+                "classes": [
+                  "lp-legalblock"
+                ],
+                "attributes": {
+                  "id": "publisher"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "classes": [
+                      "lp-h3"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Publisher details"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "EURL SIREP OASES NEXUS WEFEH · FOGGARA-DZ. Contact: MAHROUG ERRAS BELKACEM, engineer and manager. Location: Laghouat, Algeria. Email: kacimo2000@gmail.com."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Paragraph",
+                    "classes": [
+                      "lp-copy"
+                    ],
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "FOGGARA-DZ is the digital project name. This website does not represent a government authority or claim an official national mandate. Updated: 17 October 2026."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Paragraph",
+                "classes": [
+                  "lp-note"
+                ],
+                "children": [
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "https://anpdp.dz"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "ANPDP"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "String",
+                    "text": " · "
+                  },
+                  {
+                    "type": "Link",
+                    "classes": [
+                      "lp-legallink"
+                    ],
+                    "attributes": {
+                      "href": "https://webflow.com/legal/privacy"
+                    },
+                    "children": [
+                      {
+                        "type": "String",
+                        "text": "Webflow Privacy"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
